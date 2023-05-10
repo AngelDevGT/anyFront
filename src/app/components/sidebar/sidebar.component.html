@@ -1,0 +1,110 @@
+<nav
+[ngbCollapse]="isMenuCollapsed"
+id="sidebarMenu"
+class="collapse d-lg-block sidebar bg-white"
+>
+  <div class="position-sticky">
+    <div class="list-group list-group-flush mx-3 mt-4">
+        <button 
+          type="button"
+          class="list-group-item py-2"
+          data-toggle="collapse" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#administrar-lvl1" 
+          aria-controls="administrar-lvl1" 
+          aria-expanded="false" 
+          >
+          <div class="d-flex flex-row sidebar-row">
+            <!-- <i class="material-icons icon">trolley</i> -->
+            <i class="material-icons icon">tune</i>
+            <span>Administrar</span>
+            <i class="material-icons icon">arrow_drop_down</i>
+          </div>
+        </button>
+        <div id="administrar-lvl1" class="panel-collapse collapse">
+          <div class="position-sticky">
+            <div class="list-group list-group-flush">
+              <a href="#" class="list-group-item py-2 ripple" aria-current="true">
+                <div class="d-flex flex-row sidebar-row">
+                  <!-- <i class="material-icons icon">trolley</i> -->
+                  <i class="material-icons icon">arrow_right</i>
+                  <span>Materia prima</span>
+                </div>
+              </a>
+            </div>
+            <div class="list-group list-group-flush">
+              <a href="#" class="list-group-item py-2 ripple" aria-current="true">
+                <div class="d-flex flex-row sidebar-row">
+                  <!-- <i class="material-icons icon">inventory_2</i> -->
+                  <i class="material-icons icon">arrow_right</i>
+                  <span>Productos</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+        <button 
+        type="button"
+        class="list-group-item py-2"
+        data-toggle="collapse" 
+        data-bs-toggle="collapse" 
+        data-bs-target="#fabrica-lvl1" 
+        aria-controls="fabrica-lvl1" 
+        aria-expanded="false" 
+        >
+        <div class="d-flex flex-row sidebar-row">
+          <i class="material-icons icon">trolley</i>
+          <!-- <i class="material-icons icon">inventory_2</i> -->
+          <span>Fabrica</span>
+          <i class="material-icons icon">arrow_drop_down</i>
+        </div>
+      </button>
+      <div id="fabrica-lvl1" class="panel-collapse collapse">
+        <div class="position-sticky">
+          <div class="list-group list-group-flush">
+            <a href="#" class="list-group-item py-2 ripple" aria-current="true">
+              <div class="d-flex flex-row sidebar-row">
+                <!-- <i class="material-icons icon">trolley</i> -->
+                <i class="material-icons icon">arrow_right</i>
+                <span>Materia prima</span>
+              </div>
+            </a>
+          </div>
+          <div class="list-group list-group-flush">
+            <a href="#" class="list-group-item py-2 ripple" aria-current="true">
+              <div class="d-flex flex-row sidebar-row">
+                <!-- <i class="material-icons icon">inventory_2</i> -->
+                <i class="material-icons icon">arrow_right</i>
+                <span>Productos</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+      <a href="#" class="list-group-item py-2" aria-current="true">
+        <div class="d-flex flex-row sidebar-row">
+          <i class="material-icons icon">dashboard</i>
+          <span>Productos</span>
+        </div>
+      </a>
+      <a href="#" class="list-group-item py-2" aria-current="true">
+        <div class="d-flex flex-row sidebar-row">
+          <i class="material-icons icon">dashboard</i>
+          <span>Tablero</span>
+        </div>
+      </a>
+      <a href="#" class="list-group-item py-2" aria-current="true">
+        <div class="d-flex flex-row sidebar-row">
+          <i class="material-icons icon">dashboard</i>
+          <span>Tablero</span>
+        </div>
+      </a>
+      <a href="#" class="list-group-item py-2" aria-current="true">
+        <div class="d-flex flex-row sidebar-row">
+          <i class="material-icons icon">dashboard</i>
+          <span>Tablero</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</nav>

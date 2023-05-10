@@ -1,0 +1,9 @@
+@use '@angular/material' as mat;
+@import "/node_modules/bootstrap/scss/bootstrap";
+
+
+@include mat.core();
+
+// $primary: mat-palette(map.get($theme-colors, "math-grey"));
+// $accent:  mat-palette($mat-light-blue, 600, 300, 600);
+// $warn:    mat-palette($mat-deep-orange, 300, 500, 800);
