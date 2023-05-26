@@ -1,113 +1,3 @@
-<!-- <mat-toolbar color="primary" class="mat-elevation-z6">
-  <span>
-      <div>
-          <img style="width: 35px;height: 35px;" src="assets/img/brand/embutidos_any_900x150_white.png">
-          <a mat-button routerLink="inicio">
-              <h1>Embutidos Any</h1>
-          </a>
-      </div>
-  </span>
-
-  <div class="spacer"></div>
-
-  <div *ngIf="existSession" class="conten">
-      <mat-form-field>
-          <mat-select [(value)]="selectedCategory" placeholder="Categoria" [formControl]="category"
-              panelClass="testClass">
-              <mat-option *ngFor="let cat of categoryList" [value]="cat">{{cat}}</mat-option>
-          </mat-select>
-      </mat-form-field>
-  </div>
-
-
-  
-
-
-  <div *ngIf="existSession" style="margin: 5px;">
-      <form class="example-form">
-          <input type="text" [(ngModel)]="searchInput" (keyup)="onKey($event)" style="margin: 5px;font-size: medium;"
-              placeholder="Buscar..." [formControl]="control" [matAutocomplete]="auto">
-          <mat-autocomplete #auto="matAutocomplete">
-              <mat-option (click)="selectUser(reslt)" *ngFor="let reslt of resultListSearch" [value]="reslt.value">
-                  {{reslt.viewValue}}
-              </mat-option>
-          </mat-autocomplete>
-      </form>
-  </div>
-
-  
-
-
-  <button  mat-mini-fab color="yellow">
-      <mat-icon>search</mat-icon>
-  </button>
-
-  <div>
-      <a class="nav-link" *ngIf="existSession" mat-button routerLink="inicio">Inicio</a>
-      <a id="boton-ir-perfil" class="nav-link" *ngIf="existSession" mat-button routerLink=""
-          (click)="goToPageUserProfile()">Perfil</a>
-      <a id="boton-ir-tablero" class="nav-link" *ngIf="existSession" mat-button routerLink="dashboard">Tablero</a>
-      <a class="nav-link" *ngIf="!existSession" mat-button routerLink="crearUsuario">Crear Usuario</a>
-      <a class="nav-link" *ngIf="existSession" mat-button routerLink="editProfile">Editar Perfil</a>
-      <a class="nav-link" mat-button>Nosotros</a>
-      <a class="nav-link" *ngIf="!existSession" mat-raised-button color="accent" routerLink="login">Iniciar
-          Sesion</a>
-      <a id="boton-cerrar-sesion" class="nav-link" *ngIf="existSession" mat-raised-button color="gray"
-          routerLink="login" (click)="logOut()">Cerrar Sesion</a>
-  </div>
-
-</mat-toolbar> -->
-
-
-<!-- <nav class="navbar py-3 navbar-dark bg-dark shadow-sm">
-    <div class="container justify-content-between">
-        <button
-              class="navbar-toggler"
-              type="button"
-              data-mdb-toggle="collapse"
-              data-mdb-target="#sidebarMenu"
-              aria-controls="sidebarMenu"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-              >
-        <i class="fas fa-bars"></i>
-      </button>
-        <div class="col-md-4">
-            <a href="/home" class="navbar-brand">
-                <img src="assets/img/brand/embutidos_any_900x150_white.png" style="height: 35px;" class="d-inline-block align-middle mr-2"> -->
-                <!-- <span class="text-uppercase font-weight-bold">Company</span> -->
-            <!-- </a>
-        </div> -->
-        <!-- <div class="hidden-xs hidden-sm col-md-12 hidden-lg">
-            <a href="/home" class="navbar-brand col-xs-12 hidden-sm hidden-md hidden-lg">
-                <img src="assets/img/brand/embutidos_any_logo.png" style="height: 35px;" class="d-inline-block align-middle mr-2">
-                <span class="text-uppercase font-weight-bold">Company</span>
-            </a>
-        </div> -->
-        <!-- <button class="col-md-2 btn btn-outline-light" type="submit">Cerrar Sesion</button> -->
-  
-      <!-- <button type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler"><span class="navbar-toggler-icon"></span></button>
-  
-      <div id="navbarSupportedContent" class="collapse navbar-collapse">
-        <ul class="navbar-nav ml-auto">
-          <li class="nav-item active"><a href="/home" class="nav-link">Home <span class="sr-only">(current)</span></a></li>
-          <li class="nav-item"><a href="#" class="nav-link">About</a></li>
-          <li class="nav-item"><a href="#" class="nav-link">Services</a></li>
-          <li class="nav-item"><a href="#" class="nav-link">Contact</a></li>
-        </ul>
-      </div> -->
-    <!-- </div>
-  </nav> -->
-
-
-<!-- <nav class="navbar navbar-expand navbar-dark bg-dark px-3" *ngIf="existSession">
-    <div class="navbar-nav">
-        <a class="nav-item nav-link" routerLink="home">Home</a>
-        <a class="nav-item nav-link" routerLink="users">Users</a>
-        <button class="btn btn-link nav-item nav-link">Logout</button>
-    </div>
-</nav> -->
-
   <!-- Navbar -->
   <nav
        id="main-navbar"
@@ -115,16 +5,6 @@
        >
     <!-- Container wrapper -->
     <div class="container-fluid">
-      <!-- <a
-        class="btn btn-primary"
-        data-bs-toggle="collapse"
-        href="#sidebarMenu"
-        role="button"
-        aria-expanded="false"
-        aria-controls="sidebarMenu"
-        >
-        <mat-icon>table_rows_narrow</mat-icon>
-    </a> -->
       <button
               (click)="setIsMenuCollapsed(isMenuCollapsed)"
               class="navbar-toggler mx-auto"
@@ -167,16 +47,8 @@
                     </span>
                 </button>
               </div>
-        <!-- <span class="input-group-text border-0"
-              ><i class="large material-icons">search</i>
-            </span> -->
-      </form>
 
-      <!-- <form class="d-none d-md-flex input-group w-auto my-auto">
-        <input type="search" placeholder="Search...">
-        <button type="submit" class="btn btn-success">
-            <span class="btn-label"><i class="large material-icons">search</i></span></button>
-      </form> -->
+      </form>
 
       <!-- Right links -->
       <ul class="navbar-nav ms-auto d-flex flex-row">
@@ -184,30 +56,19 @@
 
         <!-- Avatar -->
         <li class="nav-item dropdown">
-          <a
-             class="nav-link dropdown-toggle hidden-arrow d-flex align-items-center"
-             href="#"
-             id="navbarDropdownMenuLink"
-             role="button"
-             data-mdb-toggle="dropdown"
-             aria-expanded="false"
-             >
-            <img
-                 src="https://mdbootstrap.com/img/Photos/Avatars/img (31).jpg"
-                 class="rounded-circle"
-                 height="22"
-                 alt=""
-                 loading="lazy"
-                 />
-          </a>
-          <ul
-              class="dropdown-menu dropdown-menu-end"
-              aria-labelledby="navbarDropdownMenuLink"
-              >
-            <li><a class="dropdown-item" href="#">My profile</a></li>
-            <li><a class="dropdown-item" href="#">Settings</a></li>
-            <li><a class="dropdown-item" href="#">Logout</a></li>
-          </ul>
+          <button mat-icon-button [matMenuTriggerFor]="menu" class="btn btn-outline-light mat-menu-button">
+            <i class="large material-icons mat-menu-icon">apps</i>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item>
+              <mat-icon>person</mat-icon>
+              <span>Mi perfil</span>
+            </button>
+            <button (click)="logOut()" mat-menu-item>
+              <mat-icon>logout</mat-icon>
+              <span>Cerrar Sesión</span>
+            </button>
+          </mat-menu>
         </li>
       </ul>
     </div>

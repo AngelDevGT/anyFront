@@ -1,0 +1,17 @@
+.custom-button {
+    background: #fccb90;
+    /* Chrome 10-25, Safari 5.1-6 */
+    background: -webkit-linear-gradient(to right, #ee7724, #d8363a, #dd3675, #b44593);
+    /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    background: linear-gradient(to right, #ee7724, #d8363a, #dd3675, #b44593);
+
+    border-width: 0;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: #fff;
+
+    &:hover {
+        background: linear-gradient(to right, lighten(#ee7724, 10%), lighten(#d8363a, 10%), lighten(#dd3675, 10%), lighten(#b44593, 10%));
+    }
+}

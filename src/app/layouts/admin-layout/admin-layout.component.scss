@@ -1,12 +1,20 @@
+@import '/src/scss/colors';
+
 @media (min-width: 991.98px) {
     main {
       padding-left: 240px;
-      margin-top: 5%;
+      padding-top: 50px;
+      // margin-top: 70px;
     }
   }
 
 @media (max-width: 991.97px) {
     main {
-        margin-top: 10%;
+        padding-top: 50px;
+        // margin-top: 70px;
     }
+}
+
+.main-container{
+  background-color: $background-color;
 }

@@ -1,0 +1,133 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>Crear Producto</mat-card-title>
+            <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <form [formGroup]="productForm" (ngSubmit)="onSaveForm()">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-start col-md-8 align-self-start">
+                            <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
+                                <mat-label>Nombre del producto</mat-label>
+                                <input id="nombre-form-crear-comunidad" type="text" formControlName="productName" matInput
+                                    [ngClass]="{ 'is-invalid': f['productName'].errors }" />
+                                <div class="invalid-feedback" *ngIf="f['productName'].errors">
+                                    <div *ngIf="f['productName'].hasError('required')">
+                                        Nombre requerido
+                                    </div>
+                                    <div *ngIf="f['productName'].errors['maxlength']">
+                                        La descripcion debe tener maximo 50 caracteres
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                <mat-label>Fecha aplicacion</mat-label>
+                                <input id="applyDate-form-crear-comunidad" formControlName="applyDate" 
+                                [ngClass]="{ 'is-invalid': f['applyDate'].errors }" matInput [min]="minDate" [matDatepicker]="picker">
+                                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                                <mat-datepicker touchUi #picker disabled="false"></mat-datepicker>
+                                <div class="invalid-feedback" *ngIf="f['applyDate'].errors">
+                                    <div *ngIf="f['applyDate'].errors['required']">
+                                        Fecha requerida
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field class="col-sm-12 col-md-8 custom-input align-self-start" appearance="outline">
+                                <mat-label>Establecimiento</mat-label>
+                                <input id="establishment-form-crear-comunidad" type="text" formControlName="establishment" matInput
+                                    [ngClass]="{ 'is-invalid': f['establishment'].errors }" 
+                                    [matAutocomplete]="auto"/>
+                                <mat-autocomplete autoActiveFirstOption #auto="matAutocomplete">
+                                    <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
+                                        {{option}}
+                                    </mat-option>
+                                </mat-autocomplete>
+                                <div class="invalid-feedback" *ngIf="f['establishment'].errors">
+                                    <div *ngIf="f['establishment'].errors['required']">
+                                        Establecimiento requerido
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                <mat-label>Medida</mat-label>
+                                <mat-select [value]="selectedMeasureSubject.value" matInput disableOptionCentering formControlName="measure"
+                                    [ngClass]="{ 'is-invalid': f['measure'].errors }" (valueChange)="selectedMeasureSubject.next($event)" (change)="changeMeasure($event)">
+                                    <mat-option value="unidad">Unidad</mat-option>
+                                    <mat-option value="peso">Peso</mat-option>
+                                </mat-select>
+                                <div class="invalid-feedback" *ngIf="f['measure'].errors">
+                                    <div *ngIf="f['measure'].errors['required']">
+                                        Medida requerida
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field *ngIf="measureOptions[0]" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                <mat-label>Precio</mat-label>
+                                <input id="price-form-crear-comunidad" type="number" min=0 formControlName="price" matInput
+                                    [ngClass]="{ 'is-invalid': f['price'].errors }" />
+                                <span matTextPrefix>Q.&nbsp;</span>
+                                <div class="invalid-feedback" *ngIf="f['price'].errors">
+                                    <div *ngIf="f['price'].errors['required']">
+                                        Precio requerido
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field *ngIf="measureOptions[1]" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                <mat-label>Precio docena</mat-label>
+                                <input id="pricePerDozen-form-crear-comunidad" type="number" min=0
+                                    formControlName="pricePerDozen" matInput
+                                    [ngClass]="{ 'is-invalid': f['pricePerDozen'].errors }" />
+                                <span matTextPrefix>Q.&nbsp;</span>
+                                <div class="invalid-feedback" *ngIf="f['pricePerDozen'].errors">
+                                    <div *ngIf="f['pricePerDozen'].errors['required']">
+                                        Precio requerido
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="container">
+                                <div class="row justify-content-center">
+                                    <!-- <p class="text-muted"><strong>Imagen del producto:</strong></p> -->
+
+                                    <div class="col-12 text-center" *ngIf="!imgResultAfterResizeMax">
+                                        <button type="button" class="btn btn-outline-secondary form-group w-100" (click)="uploadAndReturnWithMaxSize()">
+                                            Seleccionar imagen
+                                        </button>
+                                    </div>
+
+                                    <div class="col-8 text-start" *ngIf="imgResultAfterResizeMax">
+                                        <button type="button" class="btn btn-outline-secondary form-group" (click)="uploadAndReturnWithMaxSize()">
+                                            Cambiar imagen
+                                        </button>
+                                    </div>
+
+                                    <div *ngIf="imgResultAfterResizeMax" class="col-4 text-end">
+                                        <button type="button" class="btn btn-outline-danger form-group pb-0" (click)="removePhoto()">
+                                            <i class="material-icons icon">close</i>
+                                        </button>
+                                    </div>
+                                        <!-- <input class="col-12" (change)="cargarImagen($event)" type="file" id="" name=""
+                                            accept="image/png, image/jpeg" formControlName="photo" /> -->
+                    
+                                    <!--Previsualizacion de la imagen-->
+                                        <img class="responsive form-group" *ngIf="imgResultAfterResizeMax" [src]="imgResultAfterResizeMax" alt="" />
+                                        <!-- <img [src]="imagenCargada" alt="" /> -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-12 text-center p-2">
+                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="productForm.invalid"
+                                class="btn btn-outline-success btn-lg">
+                                Crear producto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

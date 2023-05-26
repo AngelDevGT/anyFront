@@ -5,9 +5,12 @@ import { first } from 'rxjs/operators';
 
 import { AccountService, AlertService } from '@app/services';
 
-@Component({ templateUrl: 'register.component.html' })
+@Component({ 
+    templateUrl: 'register.component.html',
+    styleUrls: ['register.component.scss']
+})
 export class RegisterComponent implements OnInit {
-    form!: FormGroup;
+    registerForm!: FormGroup;
     loading = false;
     submitted = false;
 
@@ -20,7 +23,7 @@ export class RegisterComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        this.form = this.formBuilder.group({
+        this.registerForm = this.formBuilder.group({
             completeName: ['', Validators.required],
             username: ['', Validators.required],
             email: ['', Validators.required],
@@ -29,7 +32,7 @@ export class RegisterComponent implements OnInit {
     }
 
     // convenience getter for easy access to form fields
-    get f() { return this.form.controls; }
+    get f() { return this.registerForm.controls; }
 
     onSubmit() {
         this.submitted = true;
@@ -37,15 +40,15 @@ export class RegisterComponent implements OnInit {
         // reset alerts on submit
         this.alertService.clear();
 
-        console.log(this.form.value);
+        console.log(this.registerForm.value);
 
         // stop here if form is invalid
-        if (this.form.invalid) {
+        if (this.registerForm.invalid) {
             return;
         }
 
         this.loading = true;
-        this.accountService.register(this.form.value)
+        this.accountService.register(this.registerForm.value)
             .pipe(first())
             .subscribe({
                 next: () => {

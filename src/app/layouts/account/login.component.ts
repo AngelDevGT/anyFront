@@ -5,9 +5,12 @@ import { first } from 'rxjs/operators';
 
 import { AccountService, AlertService } from '@app/services';
 
-@Component({ templateUrl: 'login.component.html' })
+@Component({ 
+    templateUrl: 'login.component.html',
+    styleUrls: ['login.component.scss']
+})
 export class LoginComponent implements OnInit {
-    form!: FormGroup;
+    loginForm!: FormGroup;
     loading = false;
     submitted = false;
 
@@ -20,14 +23,14 @@ export class LoginComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        this.form = this.formBuilder.group({
+        this.loginForm = this.formBuilder.group({
             email: ['', Validators.required],
             password: ['', Validators.required]
         });
     }
 
     // convenience getter for easy access to form fields
-    get f() { return this.form.controls; }
+    get f() { return this.loginForm.controls; }
 
     onSubmit() {
         this.submitted = true;
@@ -36,12 +39,12 @@ export class LoginComponent implements OnInit {
         this.alertService.clear();
 
         // stop here if form is invalid
-        if (this.form.invalid) {
+        if (this.loginForm.invalid) {
             return;
         }
 
         this.loading = true;
-        console.log(this.form.value);
+        console.log(this.loginForm.value);
         this.accountService.login(this.f['email'].value, this.f['password'].value)
             .pipe(first())
             .subscribe({
