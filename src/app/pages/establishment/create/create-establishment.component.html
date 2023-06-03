@@ -1,0 +1,61 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>Crear Establecimiento</mat-card-title>
+            <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <form [formGroup]="establishmentForm" (ngSubmit)="onSaveForm()">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-start col-md-8 align-self-start">
+                            <mat-form-field class="col-sm-6 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>Nombre</mat-label>
+                                <input id="nombre-form-crear-comunidad" type="text" formControlName="name" matInput
+                                    [ngClass]="{ 'is-invalid': f['name'].errors }" />
+                                <div class="invalid-feedback" *ngIf="f['name'].errors">
+                                    <div *ngIf="f['name'].hasError('required')">
+                                        Nombre requerido
+                                    </div>
+                                    <div *ngIf="f['name'].errors['maxlength']">
+                                        La descripcion debe tener maximo 50 caracteres
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field class="col-sm-6 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>Direccion</mat-label>
+                                <input id="nombre-form-crear-comunidad" type="text" formControlName="address" matInput
+                                    [ngClass]="{ 'is-invalid': f['address'].errors }" />
+                                <div class="invalid-feedback" *ngIf="f['address'].errors">
+                                    <div *ngIf="f['address'].hasError('required')">
+                                        Direccion requerida
+                                    </div>
+                                    <div *ngIf="f['address'].errors['maxlength']">
+                                        La descripcion debe tener maximo 50 caracteres
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
+                                <mat-label>Descripcion</mat-label>
+                                <textarea id="nombre-form-crear-comunidad" type="text" formControlName="description" matInput
+                                    [ngClass]="{ 'is-invalid': f['description'].errors }"></textarea>
+                                <div class="invalid-feedback" *ngIf="f['description'].errors">
+                                    <div *ngIf="f['description'].errors['maxlength']">
+                                        La descripcion debe tener maximo 50 caracteres
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                        </div>
+                        <div class="col-sm-12 text-center p-2">
+                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="establishmentForm.invalid"
+                                class="btn btn-outline-success btn-lg">
+                                Crear Establecimiento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

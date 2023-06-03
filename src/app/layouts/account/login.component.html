@@ -1,0 +1,71 @@
+<div class="container">
+    <div class="row justify-content-center p-sm-2 p-lg-4">
+        <mat-card class="col col-lg-6">
+            <mat-card-content>
+                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+                    <div class="d-flex flex-wrap justify-content-center">
+                        <img width="100%" class="col-sm-10 my-3" src="assets/img/brand/embutidos_any_black.png"/>
+                        <mat-form-field class="col-sm-10 custom-input" appearance="outline">
+                            <mat-label>Correo electronico</mat-label>
+                            <input id="email-form-iniciar-sesion" type="text" formControlName="email" matInput
+                                [ngClass]="{ 'is-invalid': f['email'].errors }" />
+                            <div class="invalid-feedback" *ngIf="f['email'].errors">
+                                <div *ngIf="f['email'].hasError('required')">
+                                    Correo electronico requerido
+                                </div>
+                            </div>
+                        </mat-form-field>
+                        <mat-form-field class="col-sm-10 custom-input" appearance="outline">
+                            <mat-label>Contraseña</mat-label>
+                            <input id="password-form-iniciar-sesion" type="password" formControlName="password" matInput
+                                [ngClass]="{ 'is-invalid': f['password'].errors }" />
+                            <div class="invalid-feedback" *ngIf="f['password'].errors">
+                                <div *ngIf="f['password'].hasError('required')">
+                                    Contraseña requerida
+                                </div>
+                            </div>
+                        </mat-form-field>
+                        <div class="col-md-8 col-sm-12 text-center">
+                            <button [disabled]="loading" class="btn btn-danger custom-button btn-lg">
+                                <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                                Iniciar Sesión
+                            </button>
+                        </div>
+                        <div class="col-sm-12 text-center my-2">
+                            <a routerLink="../register" class="btn btn-outline-secondary">Crear Cuenta</a>
+                        </div>
+                    </div>
+                </form>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</div>
+
+<!-- <div class="card">
+    <h4 class="card-header">Login</h4>
+    <div class="card-body">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+                <label class="form-label">Correo electronico</label>
+                <input type="text" formControlName="email" class="form-control" [ngClass]="{ 'is-invalid': submitted && f['email'].errors }" />
+                <div *ngIf="submitted && f['email'].errors" class="invalid-feedback">
+                    <div *ngIf="f['email'].errors['required']">Username is required</div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" formControlName="password" class="form-control" [ngClass]="{ 'is-invalid': submitted && f['password'].errors }" />
+                <div *ngIf="submitted && f['password'].errors" class="invalid-feedback">
+                    <div *ngIf="f['password'].errors['required']">Password is required</div>
+                </div>
+            </div>
+            <div>
+                <button [disabled]="loading" class="btn btn-primary">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    Login
+                </button>
+                <a routerLink="../register" class="btn btn-link">Register</a>
+            </div>
+        </form>
+    </div>
+</div> -->

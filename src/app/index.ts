@@ -1,0 +1,13 @@
+export * from './app.routing';
+export * from './app.component';
+export * from './app.module';
+// export * from '@app/app.component';
+// export * from '@app/components/alert/alert.component';
+// export * from '@app/models/alert.model';
+// export * from '@app/models/user.model';
+// export * from '@app/services/account.service';
+// export * from '@app/services/alert.service';
+// export * from '@app/home/home.component';
+// export * from '@app/helpers/auth.guard';
+// export * from '@app/helpers/error.interceptor';
+// export * from '@app/helpers/jwt.interceptor';

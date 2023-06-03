@@ -1,0 +1,74 @@
+.social-link{
+    width: 40px;
+    height: 35px;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    border-radius: 7px;
+    transition: all 0.3s;
+    font-size: 0.7rem;
+    box-shadow: 0 1px 2px 0 rgba(136, 144, 195, 0.5);
+    text-decoration: none;
+}
+
+.social-link:hover {
+    background: #ddd;
+    text-decoration: none;
+    color: #555;
+}
+
+.fas.fa-share-alt:hover {
+    color: #0d47a1 !important;
+}
+
+.text-overlay-image{
+    color: #000;
+    background-color: rgba(231, 76, 60, 0.8);
+    font-size: 17px;
+    color: #fff;
+    padding: 1% 4%;
+}
+
+.description{
+    .small{
+        color: #343434;
+    }
+}
+
+.card-wrapper {
+    display: flex;
+    justify-content: center;
+
+    .card{
+        max-width: 400px; // ancho máximo de la card
+        // max-height: 500px; // altura máxima de la card
+        // border-radius: 10px;
+
+
+        // box-shadow: 0 4px 7px 0 rgba(136, 144, 195, 0.2), 0 4px 10px 0 rgba(37, 44, 97, 0.2);
+        // border-width: 0;
+
+
+        // margin: 5% 0 5% 0;
+        
+        .card-img-top {
+            // border-radius: 10px 10px 0 0;
+
+
+            // box-shadow: 0 4px 7px 0 rgba(136, 144, 195, 0.2);
+            // border-width: 0;
+            max-height: 100px; // ajusta la altura máxima según tus necesidades
+            
+            // max-width: 100%; // ancho máximo de la imagen
+            object-fit: cover; // asegura que la imagen se ajuste al ancho de la card
+        }
+    }
+}
+
+@media (min-width: 992px) {
+    .card-img-top {
+        max-height: calc(100vh - 300px); // altura máxima de la imagen para pantallas grandes
+    }
+}

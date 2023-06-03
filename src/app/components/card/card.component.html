@@ -1,0 +1,33 @@
+<div class="card-wrapper">
+  <div class="card">
+    <div class="position-relative">
+      <img class="img-fluid card-img-top" 
+      src="https://mdbootstrap.com/img/Photos/Horizontal/Food/full page/2.jpg"/>
+      <!-- <div class="photos">Photos</div> -->
+      <div class="position-absolute bottom-0 w-75">
+        <div class="text-overlay-image">{{cardElements['title']}}</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="d-flex flex-column description">
+        <p *ngFor="let description of cardElements['descriptions']" class="mb-0 text-muted">
+          {{description.name}}
+          <span class="small">
+            {{description.value}}
+          </span>
+        </p>
+      </div>
+      <div class="d-flex justify-content-center">
+        <ul class="social mb-0 list-inline mt-3">
+          <li *ngFor="let button of cardElements['buttons']" class="list-inline-item">
+            <a href="#" class="social-link">
+              <i class="material-icons icon p-md-1 my-1 me-0" [title]="button.title">
+                {{button.value}}
+              </i>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

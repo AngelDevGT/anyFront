@@ -1,0 +1,14 @@
+<!-- Sidenav -->
+<!-- <app-sidebar></app-sidebar> -->
+<!-- nav -->
+<app-sidebar [isMenuCollapsed]="isMenuCollapsed">
+</app-sidebar>
+<app-navbar (isMenuCollapsedResponse)="isCollapsedResponse($event)" [isMenuCollapsed]="isMenuCollapsed">
+</app-navbar>
+<main>
+  <div class="main-container">
+      <!-- Pages -->
+      <div class="px-4 pt-2"><alert></alert></div>
+      <router-outlet></router-outlet>
+  </div>
+</main>

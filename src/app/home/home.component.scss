@@ -1,0 +1,85 @@
+// form{
+//     align-items: center;
+//     align-content: center;
+// }
+
+
+// .custom-form-field {
+//     width: 200px;
+//     font-size: 12px;
+//     margin-top: 3px;
+//     margin-bottom: -1.25em;
+  
+//     mat-datepicker-toggle {
+//         font-size: 12px;
+//     }
+  
+//     mat-label, mat-select {
+//         padding-bottom: 2px;
+//         font-size: 12px;
+//     }
+//   }
+
+mat-form-field{
+    width: 100%;
+    // margin-left: 5%;
+    // height: 30px !important;
+    // width: 50%;
+    // margin-left: 25%;
+    // height: 50%;
+    // // width: 90%;
+    // display: flex;
+    // align-items: flex-end;
+    // height: 10px !important;
+    
+}
+
+// ::ng-deep .mat-form-field {
+//     font-size: 12px; // example
+// }
+
+// mat-select{
+//     // width: 90%;
+//     // margin-left: 5%;
+//     height: 5px !important;
+//     // height: 30px !important;
+//     // width: 50%;
+//     // margin-left: 25%;
+//     // height: 50%;
+//     // // width: 90%;
+//     // display: flex;
+//     // align-items: flex-end;
+//     // height: 10px !important;
+    
+// }
+
+
+// mat-label{
+//     // width:50%;
+//     align-self: center;
+//     // margin-left: 25% ;
+    
+// }
+
+
+.mat-form-field mat-select {
+    height: 10px;
+    // transition: height ease-in-out 100ms;
+}
+
+.parent {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+  }
+
+
+.centrado{
+    align-content: center;
+}
+
+.mat-success {
+    background-color: #33c000;
+    color: #fff;
+}
