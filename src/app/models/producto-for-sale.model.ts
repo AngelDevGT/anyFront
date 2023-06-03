@@ -1,5 +1,5 @@
 export class ProductForSale {
-    id?: string;
+    _id?: string;
     name?: string;
     measure?: string; //Peso o unidad
     price?: string;

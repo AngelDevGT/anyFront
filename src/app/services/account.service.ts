@@ -59,7 +59,6 @@ export class AccountService {
                 ...user
             }});
         // let newUser = { ...user };
-        console.log(newUser);
         return this.http.post(`${environment.apiUrl}/newUser`, newUser);
     }
 

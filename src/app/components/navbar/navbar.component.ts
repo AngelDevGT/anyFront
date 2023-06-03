@@ -1,7 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
-import { DataService } from '@app/services';
-import { SessionService } from '@app/services';
 import { AccountService } from '@app/services';
 import { FormControl, FormGroup } from '@angular/forms';
 import { startWith, map } from 'rxjs/operators';
@@ -43,7 +41,7 @@ export class NavbarComponent implements OnInit {
   // selectedCategory = this.categoryList[0];
 
 
-  constructor(private dataService: DataService, private accountService: AccountService, private router: Router) {
+  constructor( private accountService: AccountService, private router: Router) {
     // this.existSession = sessionService.existSession();
     this.existSession = accountService.isActiveUser();
   }

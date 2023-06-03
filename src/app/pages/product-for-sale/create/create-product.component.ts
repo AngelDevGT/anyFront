@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {BehaviorSubject, Observable} from 'rxjs';
-import {map, startWith} from 'rxjs/operators';
+import {first, map, startWith} from 'rxjs/operators';
 import {
     DataUrl,
     DOC_ORIENTATION,
@@ -8,8 +8,7 @@ import {
     UploadResponse,
 } from 'ngx-image-compress';
 
-import { User } from '@app/models';
-import { AccountService } from '@app/services';
+import { AccountService, AlertService, DataService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -17,6 +16,8 @@ FormGroup,
 Validators,
 FormControl,
 } from '@angular/forms';
+import { Establishment } from '@app/models/establishment.model';
+import { Router } from '@angular/router';
 
 @Component({ 
     selector: 'page-create-product',
@@ -25,7 +26,6 @@ FormControl,
 })
 export class CreateProductComponent implements OnInit{
 
-    user: User | null;
     productForm!: FormGroup;
     fileList: FileList | null | undefined;
     imagenCargada: string | ArrayBuffer | null | undefined;
@@ -34,11 +34,18 @@ export class CreateProductComponent implements OnInit{
     selectedMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     measureOptions: boolean[] = [false, false]; // 0: price, 1: pricePerDozen
     imgResultAfterResizeMax: DataUrl = '';
+    establishmentOptions?: Establishment[];
+    id?: string;
+    title!: string;
+    loading = false;
+    submitting = false;
     
     minDate: Date = new Date();
 
-    constructor(private accountService: AccountService, public _builder: FormBuilder, private imageCompress: NgxImageCompressService) {
-        this.user = this.accountService.userValue;
+    constructor(private dataService: DataService, public _builder: FormBuilder, 
+        private imageCompress: NgxImageCompressService, private alertService: AlertService,
+        private router: Router) {
+        this.retriveOptions();
         this.productForm = this.createFormGroup();
         this.selectedMeasureSubject.subscribe(value => {
             this.setMeasureOptions(value);
@@ -54,12 +61,38 @@ export class CreateProductComponent implements OnInit{
         );
     }
 
+    retriveOptions(){
+        this.establishmentOptions = undefined;
+        this.dataService.getAllEstablishmentsByFilter({"status": 1})
+            .pipe(first())
+            .subscribe({
+                next: (establishments: any) => {
+                    this.establishmentOptions = establishments.findEstablishmentResponse?.establishment;
+                }
+            });
+    }
+
     onResetForm() {
         this.productForm.reset();
     }
 
     onSaveForm() {
-        console.log(this.productForm.value);
+        this.alertService.clear();
+        this.submitting = true;
+        this.saveProduct()
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                    this.alertService.success('Producto guardado', { keepAfterRouteChange: true });
+                    this.router.navigateByUrl('/products');
+                },
+                error: error => {
+                    let errorResponse = error.error;
+                    errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateProductResponse ? errorResponse.updateProductResponse : 'Error, consulte con el administrador';
+                    this.alertService.error(errorResponse.AcknowledgementDescription);
+                    this.submitting = false;
+                }
+            });
     }
 
     get f() {
@@ -73,6 +106,10 @@ export class CreateProductComponent implements OnInit{
 
     get productPhoto(){
         return this.productForm.get('photo');
+    }
+
+    get establishmentSelect(){
+        return this.productForm.get('establishment');
     }
 
     resetMeasureOptions(){
@@ -91,27 +128,25 @@ export class CreateProductComponent implements OnInit{
         }
     }
 
-    cargarImagen(e: Event) {
-        const element = e.currentTarget as HTMLInputElement;
-        this.fileList = element.files;
-        if (this.fileList) {
-            const target = e.target as HTMLInputElement;
-            const file: File = (target.files as FileList)[0];
-            const reader = new FileReader();
-            reader.onload = (e) => (this.imagenCargada = reader.result);
-            reader.readAsDataURL(file);
-        }
-    }
-
     changeMeasure(e: any){
         this.measureSelect!.setValue(e.target.value, {
         onlySelf: true
         });
     }
 
+    changeEstablishment(e: any){
+        this.establishmentSelect!.setValue(e.target.value, {
+        onlySelf: true
+        });
+    }
+
+    saveProduct(){
+        return this.dataService.addProduct(this.productForm.value, this.imgResultAfterResizeMax);
+    }
+
     createFormGroup() {
         return new FormGroup({
-            productName: new FormControl('', [
+            name: new FormControl('', [
             Validators.required,
             Validators.minLength(1),
             Validators.maxLength(50),

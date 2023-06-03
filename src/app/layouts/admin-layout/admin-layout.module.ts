@@ -20,7 +20,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { HomeComponent } from "@app/home";
 import { ComponentsModule } from "@app/components";
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { ViewProductComponent, CreateProductComponent, CreateEstablishmentComponent } from "@app/pages";
+import { ViewProductComponent, CreateProductComponent, ListEstablishmentComponent, AddEditEstablishmentComponent } from "@app/pages";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -51,7 +51,8 @@ import { ViewProductComponent, CreateProductComponent, CreateEstablishmentCompon
         HomeComponent,
         ViewProductComponent,
         CreateProductComponent,
-        CreateEstablishmentComponent,
+        ListEstablishmentComponent,
+        AddEditEstablishmentComponent,
         // UsersLayoutComponent
     ]
   })

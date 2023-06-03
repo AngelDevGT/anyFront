@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import {map, startWith} from 'rxjs/operators';
+import {first, map, startWith} from 'rxjs/operators';
 
 import { User } from '@app/models';
 import { AccountService } from '@app/services';
+import { DataService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -11,6 +12,7 @@ Validators,
 FormControl,
 } from '@angular/forms';
 import { Observable } from 'rxjs';
+import { ProductForSale } from '@app/models/producto-for-sale.model';
 
 @Component({ 
     selector: 'page-view-product',
@@ -19,6 +21,8 @@ import { Observable } from 'rxjs';
 })
 export class ViewProductComponent implements OnInit {
 
+    products?: ProductForSale[];
+    allProducts?: ProductForSale[];
     productForm!: FormGroup;
     pageSize = 5;
     page = 1;
@@ -30,91 +34,10 @@ export class ViewProductComponent implements OnInit {
     creatorUserOptions: string[] = ['User10', 'User21', 'User43'];
     filteredCreatorUserOptions?: Observable<string[]>;
 
-    cards = [
-        {
-            title: 'Longaniza pequeña',
-            descriptions : [
-                {name:'Establecimiento:', value: 'Tienda Central'},
-                {name:'Precio:', value: 'Q 1.50'},
-                {name:'Fecha aplicacion:', value: '2023/05/05'}
-            ],
-            buttons: [
-                {title: 'Ver producto', value: 'visibility'},
-                {title: 'Editar producto', value: 'edit'},
-                {title: 'Eliminar producto', value: 'delete'},
-            ]
-        },
-        {
-            title: 'Chorizo pequeño',
-            descriptions : [
-                {name:'Establecimiento:', value: 'Tienda Central'},
-                {name:'Precio:', value: 'Q 1.50'},
-                {name:'Fecha aplicacion:', value: '2023/05/05'}
-            ],
-            buttons: [
-                {title: 'Ver producto', value: 'visibility'},
-                {title: 'Editar producto', value: 'edit'},
-                {title: 'Eliminar producto', value: 'delete'},
-            ]
-        },
-        {
-            title: 'Pasta de Longaniza',
-            descriptions : [
-                {name:'Establecimiento:', value: 'Tienda Central'},
-                {name:'Precio:', value: 'Q 10.00'},
-                {name:'Fecha aplicacion:', value: '2023/05/05'}
-            ],
-            buttons: [
-                {title: 'Ver producto', value: 'visibility'},
-                {title: 'Editar producto', value: 'edit'},
-                {title: 'Eliminar producto', value: 'delete'},
-            ]
-        },
-        {
-            title: 'Pasta de Chorizo',
-            descriptions : [
-                {name:'Establecimiento:', value: 'Tienda Central'},
-                {name:'Precio:', value: 'Q 10.00'},
-                {name:'Fecha aplicacion:', value: '2023/05/05'}
-            ],
-            buttons: [
-                {title: 'Ver producto', value: 'visibility'},
-                {title: 'Editar producto', value: 'edit'},
-                {title: 'Eliminar producto', value: 'delete'},
-            ]
-        },
-        {
-            title: 'Longaniza mediana',
-            descriptions : [
-                {name:'Establecimiento:', value: 'Tienda Central'},
-                {name:'Precio:', value: 'Q 3.00'},
-                {name:'Fecha aplicacion:', value: '2023/05/05'}
-            ],
-            buttons: [
-                {title: 'Ver producto', value: 'visibility'},
-                {title: 'Editar producto', value: 'edit'},
-                {title: 'Eliminar producto', value: 'delete'},
-            ]
-        },
-        {
-            title: 'Chorizo mediano',
-            descriptions : [
-                {name:'Establecimiento:', value: 'Tienda Central'},
-                {name:'Precio:', value: 'Q 3.00'},
-                {name:'Fecha aplicacion:', value: '2023/05/05'}
-            ],
-            buttons: [
-                {title: 'Ver producto', value: 'visibility'},
-                {title: 'Editar producto', value: 'edit'},
-                {title: 'Eliminar producto', value: 'delete'},
-            ]
-        }
-    ];
+    cards?: any[];
 
-    user: User | null;
-
-    constructor(private accountService: AccountService, public _builder: FormBuilder) {
-        this.user = this.accountService.userValue;
+    constructor(private dataService: DataService, public _builder: FormBuilder) {
+        this.retriveProducts();
     }
 
     ngOnInit() {
@@ -132,6 +55,78 @@ export class ViewProductComponent implements OnInit {
             map(value => this._filter(value || '', this.creatorUserOptions)),
         )
     }
+
+    retriveProducts(){
+        this.products = [];
+        this.dataService.getAllProductsByFilter({"status": 1})
+            .pipe(first())
+            .subscribe({
+                next: (products: any) => {
+                    this.products = products.findProductResponse?.products;
+                    console.log(this.products);
+                    this.getCards();
+                }
+            });
+    }
+
+    retriveProductsWithParams(product: ProductForSale){
+        let productFilter: any = {};
+        if (product.name && product.name != '')
+            productFilter['name'] = product.name;
+        if (product.price && product.price != '')
+            productFilter['price'] = product.price
+        if (product.establishment && product.establishment != '')
+            productFilter['establishment'] = product.establishment
+        if (product.applyDate && product.applyDate != '')
+            productFilter['applyDate'] = product.applyDate
+        if (product.creatorUser && product.creatorUser != '')
+            productFilter['creatorUser'] = product.creatorUser
+        this.products = [];
+        this.dataService.getAllProductsByFilter({"status": 1, ...productFilter})
+            .pipe(first())
+            .subscribe({
+                next: (products: any) => {
+                    this.products = products.findProductResponse?.products;
+                    console.log(this.products);
+                    this.getCards();
+                }
+            });
+    }
+
+    getCards(){
+        this.cards = [];
+        if (this.products){
+            for (let i=0; i < this.products!.length; i++){
+                let currProduct = this.products![i];
+                let currentCard = {
+                    title: currProduct.name,
+                    photo: currProduct.photo,
+                    descriptions : [
+                        {name:'Establecimiento:', value: currProduct.establishment},
+                        {name:'Precio:', value: currProduct.price},
+                        currProduct.pricePerDozen ? {name:'Precio Docena:', value: currProduct.pricePerDozen} : '',
+                        {name:'Fecha aplicacion:', value: currProduct.applyDate}
+                    ],
+                    buttons: [
+                        {title: 'Ver producto', value: 'visibility', link: '/products/view' + currProduct._id},
+                        {title: 'Editar producto', value: 'edit', link: '/products/edit' + currProduct._id},
+                        {title: 'Eliminar producto', value: 'delete', link: '/products/delete' + currProduct._id},
+                    ]
+                }
+                this.cards.push(currentCard);
+            }
+        }
+    }
+
+    getImage(imageId : any){
+        return this.dataService.getImageById(imageId)
+                    .pipe(first())
+                    .subscribe({
+                        next: (img: any) => {
+                            return img.getImageResponse.image.image;
+                        }
+                    });
+      }
 
     private _filter(value: string, options: string[]): string[] {
         const filterValue = value.toLowerCase();
@@ -154,6 +149,7 @@ export class ViewProductComponent implements OnInit {
     }
 
     filterProducts(){
+        this.retriveProductsWithParams(this.productForm.value);
         console.log('filterProducts...');
     }
 }

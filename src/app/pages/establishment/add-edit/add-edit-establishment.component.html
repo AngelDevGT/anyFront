@@ -1,12 +1,15 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Crear Establecimiento</mat-card-title>
+            <mat-card-title>{{title}}</mat-card-title>
             <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
         </mat-card-header>
         <mat-card-content>
             <br>
-            <form [formGroup]="establishmentForm" (ngSubmit)="onSaveForm()">
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading" [formGroup]="establishmentForm" (ngSubmit)="onSaveForm()">
                 <div class="container">
                     <div class="row justify-content-center">
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-start col-md-8 align-self-start">
@@ -48,9 +51,10 @@
                             </mat-form-field>
                         </div>
                         <div class="col-sm-12 text-center p-2">
-                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="establishmentForm.invalid"
+                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting || establishmentForm.invalid"
                                 class="btn btn-outline-success btn-lg">
-                                Crear Establecimiento
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                Guardar Establecimiento
                             </button>
                         </div>
                     </div>

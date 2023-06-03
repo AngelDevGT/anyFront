@@ -10,7 +10,6 @@ import { AccountService, AlertService } from '@app/services';
     styleUrls: ['add-edit.component.scss'] 
 })
 export class AddEditComponent implements OnInit {
-    form!: FormGroup;
     userForm!: FormGroup;
     id?: string;
     title!: string;
@@ -62,8 +61,6 @@ export class AddEditComponent implements OnInit {
     }
 
     onSubmit() {
-        console.log(this.userForm.value);
-
         // reset alerts on submit
         this.alertService.clear();
 
@@ -81,7 +78,7 @@ export class AddEditComponent implements OnInit {
                     this.alertService.error(errorResponse.AcknowledgementDescription);
                     this.submitting = false;
                 }
-            })
+            });
     }
 
     private saveUser() {

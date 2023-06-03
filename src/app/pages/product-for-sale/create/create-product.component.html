@@ -12,13 +12,13 @@
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-start col-md-8 align-self-start">
                             <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
                                 <mat-label>Nombre del producto</mat-label>
-                                <input id="nombre-form-crear-comunidad" type="text" formControlName="productName" matInput
-                                    [ngClass]="{ 'is-invalid': f['productName'].errors }" />
-                                <div class="invalid-feedback" *ngIf="f['productName'].errors">
-                                    <div *ngIf="f['productName'].hasError('required')">
+                                <input id="nombre-form-crear-comunidad" type="text" formControlName="name" matInput
+                                    [ngClass]="{ 'is-invalid': f['name'].errors }" />
+                                <div class="invalid-feedback" *ngIf="f['name'].errors">
+                                    <div *ngIf="f['name'].hasError('required')">
                                         Nombre requerido
                                     </div>
-                                    <div *ngIf="f['productName'].errors['maxlength']">
+                                    <div *ngIf="f['name'].errors['maxlength']">
                                         La descripcion debe tener maximo 50 caracteres
                                     </div>
                                 </div>
@@ -37,14 +37,10 @@
                             </mat-form-field>
                             <mat-form-field class="col-sm-12 col-md-8 custom-input align-self-start" appearance="outline">
                                 <mat-label>Establecimiento</mat-label>
-                                <input id="establishment-form-crear-comunidad" type="text" formControlName="establishment" matInput
-                                    [ngClass]="{ 'is-invalid': f['establishment'].errors }" 
-                                    [matAutocomplete]="auto"/>
-                                <mat-autocomplete autoActiveFirstOption #auto="matAutocomplete">
-                                    <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
-                                        {{option}}
-                                    </mat-option>
-                                </mat-autocomplete>
+                                <mat-select matInput disableOptionCentering formControlName="establishment"
+                                    [ngClass]="{ 'is-invalid': f['measure'].errors }" (change)="changeEstablishment($event)">
+                                    <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment.name}}">{{establishment.name}} ({{establishment.address}})</mat-option>
+                                </mat-select>
                                 <div class="invalid-feedback" *ngIf="f['establishment'].errors">
                                     <div *ngIf="f['establishment'].errors['required']">
                                         Establecimiento requerido
@@ -120,8 +116,9 @@
                             </div>
                         </div>
                         <div class="col-sm-12 text-center p-2">
-                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="productForm.invalid"
+                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||productForm.invalid"
                                 class="btn btn-outline-success btn-lg">
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                                 Crear producto
                             </button>
                         </div>

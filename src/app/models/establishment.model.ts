@@ -1,9 +1,10 @@
 export class Establishment {
-    id?: string;
+    _id?: string;
     name?: string;
     address?: string;
     description?: string;
     creationDate?: string; //sistema
     updateDate?: string; //sistema
     creatorUser?: string; //sistema
+    status?: number;
 }
