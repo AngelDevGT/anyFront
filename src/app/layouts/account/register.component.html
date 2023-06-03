@@ -7,31 +7,26 @@
                         <img width="100%" class="col-sm-10 my-3" src="assets/img/brand/embutidos_any_black.png"/>
                         <mat-form-field class="col-sm-10 custom-input" appearance="outline">
                             <mat-label>Nombre(s) y Apellido(s)</mat-label>
-                            <input id="completeName-form-crear-cuenta" type="text" formControlName="completeName" matInput
-                                [ngClass]="{ 'is-invalid': f['completeName'].errors }" />
-                            <div class="invalid-feedback" *ngIf="f['completeName'].errors">
-                                <div *ngIf="f['completeName'].hasError('required')">
+                            <input id="completeName-form-crear-cuenta" type="text" formControlName="name" matInput
+                                [ngClass]="{ 'is-invalid': f['name'].errors }" />
+                            <div class="invalid-feedback" *ngIf="f['name'].errors">
+                                <div *ngIf="f['name'].hasError('required')">
                                     Nombre(s) y Apellido(s) requeridos
                                 </div>
-                            </div>
-                        </mat-form-field>
-                        <mat-form-field class="col-sm-10 custom-input" appearance="outline">
-                            <mat-label>Nombre de Usuario</mat-label>
-                            <input id="completeName-form-crear-cuenta" type="text" formControlName="username" matInput
-                                [ngClass]="{ 'is-invalid': f['username'].errors }" />
-                            <div class="invalid-feedback" *ngIf="f['username'].errors">
-                                <div *ngIf="f['username'].hasError('required')">
-                                    Nombre de Usuario requerido
+                                <div *ngIf="f['name'].hasError('pattern')"><strong>El nombre no puede estar vacio</strong>
                                 </div>
                             </div>
                         </mat-form-field>
                         <mat-form-field class="col-sm-10 custom-input" appearance="outline">
                             <mat-label>Correo electronico</mat-label>
                             <input id="completeName-form-crear-cuenta" type="text" formControlName="email" matInput
-                                [ngClass]="{ 'is-invalid': f['email'].errors }" />
+                                [ngClass]="{ 'is-invalid': f['email'].errors }"/>
                             <div class="invalid-feedback" *ngIf="f['email'].errors">
                                 <div *ngIf="f['email'].hasError('required')">
                                     Correo electronico requerido
+                                </div>
+                                <div *ngIf="f['email'].hasError('pattern')">El correo debe contener
+                                    <strong>una estructura como example@email.com</strong>
                                 </div>
                             </div>
                         </mat-form-field>
@@ -43,9 +38,9 @@
                                 <div *ngIf="f['password'].hasError('required')">
                                     Contraseña requerida
                                 </div>
-                                <div *ngIf="f['password'].errors['pattern']">La contraseña debe contener
+                                <div *ngIf="f['password'].hasError('pattern')">La contraseña debe contener
                                     <strong>más de 6 caracteres, mínimo 1 letra mayúscula, mínimo 1 letra minúscula, 
-                                        mínimo 1 caracter especial</strong>
+                                        mínimo 1 caracter especial (@$!%*?&)</strong>
                                 </div>
                             </div>
                         </mat-form-field>

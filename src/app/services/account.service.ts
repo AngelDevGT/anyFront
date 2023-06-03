@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -26,8 +26,19 @@ export class AccountService {
     }
 
     login(email: string, password: string) {
-        return this.http.post<User>(`${environment.apiUrl}/users/authenticate`, { email, password })
+        let headers = new HttpHeaders({
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Methods': 'POST',
+            'Access-Control-Allow-Origin': '*',
+        });
+        let options = { headers: headers };
+        let loginUser = JSON.stringify({
+            loginUser: { 
+                "email": email, "password": password 
+            }});
+        return this.http.post<User>(`${environment.apiUrl}/LoginUser`, loginUser, options)
             .pipe(map(user => {
+                console.log("User", user);
                 // store user details and jwt token in local storage to keep user logged in between page refreshes
                 localStorage.setItem('user', JSON.stringify(user));
                 this.userSubject.next(user);
@@ -43,23 +54,52 @@ export class AccountService {
     }
 
     register(user: User) {
-        user.state = 'ACTIVE';
-        return this.http.post(`${environment.apiUrl}/users/register`, user);
+        let newUser = JSON.stringify({
+            newUser: { 
+                ...user
+            }});
+        // let newUser = { ...user };
+        console.log(newUser);
+        return this.http.post(`${environment.apiUrl}/newUser`, newUser);
     }
 
     getAll() {
-        return this.http.get<User[]>(`${environment.apiUrl}/users`);
+        // let headers = new HttpHeaders({
+        //     Authorization: 'Bearer ' + this.userValue?.token,
+        // });
+        // let options = { headers: headers };
+        let params = JSON.stringify({retrieveUsers: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveUsers`, params);
+    }
+
+
+    getAllByFilter(params: any) {
+        // let headers = new HttpHeaders({
+        //     Authorization: 'Bearer ' + this.userValue?.token,
+        // });
+        // let options = { headers: headers };
+        let parameters = JSON.stringify({
+            retrieveUsers: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveUsers`, parameters);
     }
 
     getById(id: string) {
-        return this.http.get<User>(`${environment.apiUrl}/users/${id}`);
+        let params = JSON.stringify({retrieveUsers: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/retrieveUsers`, params);
     }
 
     update(id: string, params: any) {
-        return this.http.put(`${environment.apiUrl}/users/${id}`, params)
+        let modifyUser = JSON.stringify({
+            updateUser: {
+                "_id": id,
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/ModifyUser`, modifyUser)
             .pipe(map(x => {
                 // update stored user if the logged in user updated their own record
-                if (id == this.userValue?.id) {
+                if (id == this.userValue?._id) {
                     // update local storage
                     const user = { ...this.userValue, ...params };
                     localStorage.setItem('user', JSON.stringify(user));
@@ -71,11 +111,15 @@ export class AccountService {
             }));
     }
 
-    delete(id: string) {
-        return this.http.delete(`${environment.apiUrl}/users/${id}`)
+    delete(params: any) {
+        let deleteUser = JSON.stringify({
+            updateUser: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/ModifyUser`, deleteUser)
             .pipe(map(x => {
                 // auto logout if the logged in user deleted their own record
-                if (id == this.userValue?.id) {
+                if (params._id == this.userValue?._id) {
                     this.logout();
                 }
                 return x;
@@ -83,8 +127,7 @@ export class AccountService {
     }
 
     isActiveUser(){
-        console.log(this.userValue);
-        return this.userValue?.state == 'ACTIVE';
+        return this.userValue?.status == 1;
     }
 
 

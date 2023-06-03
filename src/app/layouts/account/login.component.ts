@@ -44,17 +44,16 @@ export class LoginComponent implements OnInit {
         }
 
         this.loading = true;
-        console.log(this.loginForm.value);
         this.accountService.login(this.f['email'].value, this.f['password'].value)
             .pipe(first())
             .subscribe({
-                next: () => {
+                next: (user) => {
                     // get return url from query parameters or default to home page
                     const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
                     this.router.navigateByUrl(returnUrl);
                 },
                 error: error => {
-                    this.alertService.error(error);
+                    this.alertService.error(error.error.loginUserResponse.AcknowledgementDescription);
                     this.loading = false;
                 }
             });

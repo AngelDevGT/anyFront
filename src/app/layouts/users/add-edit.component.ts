@@ -5,14 +5,17 @@ import { first } from 'rxjs/operators';
 
 import { AccountService, AlertService } from '@app/services';
 
-@Component({ templateUrl: 'add-edit.component.html' })
+@Component({ 
+    templateUrl: 'add-edit.component.html',
+    styleUrls: ['add-edit.component.scss'] 
+})
 export class AddEditComponent implements OnInit {
     form!: FormGroup;
+    userForm!: FormGroup;
     id?: string;
     title!: string;
     loading = false;
     submitting = false;
-    submitted = false;
 
     constructor(
         private formBuilder: FormBuilder,
@@ -25,53 +28,57 @@ export class AddEditComponent implements OnInit {
     ngOnInit() {
         this.id = this.route.snapshot.params['id'];
 
-        // form with validation rules
-        this.form = this.formBuilder.group({
-            firstName: ['', Validators.required],
-            lastName: ['', Validators.required],
-            username: ['', Validators.required],
-            // password only required in add mode
-            password: ['', [Validators.minLength(6), ...(!this.id ? [Validators.required] : [])]]
+        this.userForm = this.formBuilder.group({
+            name: ['', [Validators.required, Validators.pattern(/^(?!\s*$).+/)]],
+            email: [{value: '', disabled: this.id}, [Validators.required, Validators.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)]],
+            password: ['', [...(!this.id ? [Validators.required] : []), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/)]],
+            role: ['', [Validators.required]],
         });
 
-        this.title = 'Add User';
+        this.title = 'Crear Usuario';
         if (this.id) {
             // edit mode
-            this.title = 'Edit User';
+            this.title = 'Editar Usuario';
             this.loading = true;
             this.accountService.getById(this.id)
                 .pipe(first())
-                .subscribe(x => {
-                    this.form.patchValue(x);
-                    this.loading = false;
+                .subscribe((usr: any) => {
+                    let user = usr.retrieveUsersResponse?.users;
+                    if (user){
+                        if ( user.length > 0){
+                            this.userForm.patchValue(user[0]);       
+                            this.loading = false;
+                        }
+                    }
                 });
         }
     }
 
     // convenience getter for easy access to form fields
-    get f() { return this.form.controls; }
+    get f() { return this.userForm.controls; }
+
+    get roleSelect() {
+        return this.userForm.get('role');
+    }
 
     onSubmit() {
-        this.submitted = true;
+        console.log(this.userForm.value);
 
         // reset alerts on submit
         this.alertService.clear();
-
-        // stop here if form is invalid
-        if (this.form.invalid) {
-            return;
-        }
 
         this.submitting = true;
         this.saveUser()
             .pipe(first())
             .subscribe({
                 next: () => {
-                    this.alertService.success('User saved', { keepAfterRouteChange: true });
+                    this.alertService.success('Usuario guardado', { keepAfterRouteChange: true });
                     this.router.navigateByUrl('/users');
                 },
                 error: error => {
-                    this.alertService.error(error);
+                    let errorResponse = error.error;
+                    errorResponse = errorResponse.newUserResponse ? errorResponse.newUserResponse : errorResponse.updateUserResponse ? errorResponse.updateUserResponse : 'Error, consulte con el administrador';
+                    this.alertService.error(errorResponse.AcknowledgementDescription);
                     this.submitting = false;
                 }
             })
@@ -80,7 +87,14 @@ export class AddEditComponent implements OnInit {
     private saveUser() {
         // create or update user based on id param
         return this.id
-            ? this.accountService.update(this.id!, this.form.value)
-            : this.accountService.register(this.form.value);
+            ? this.accountService.update(this.id!, this.userForm.value)
+            : this.accountService.register(this.userForm.value);
     }
+
+    changeRole(e: any){
+        this.roleSelect!.setValue(e.target.value, {
+        onlySelf: true
+        });
+    }
+
 }

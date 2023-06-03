@@ -16,23 +16,23 @@ import {MatAutocompleteModule} from '@angular/material/autocomplete';
 import {MatMenuModule} from '@angular/material/menu';
 
 import { AdminLayoutRoutes } from "./admin-layout.routing";
-// import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { HomeComponent } from "@app/home";
 import { ComponentsModule } from "@app/components";
-import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ViewProductComponent, CreateProductComponent, CreateEstablishmentComponent } from "@app/pages";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
-    imports: [
-      CommonModule,
-      RouterModule.forChild(AdminLayoutRoutes),
-      HttpClientModule,
-      ComponentsModule,
-      NgbModule,
-      ReactiveFormsModule,
-      FormsModule,
+  imports: [
+    CommonModule,
+    RouterModule.forChild(AdminLayoutRoutes),
+    HttpClientModule,
+    ComponentsModule,
+    NgbModule,
+    ReactiveFormsModule,
+    FormsModule,
+    // AlertModule,
       MatSelectModule,
       MatFormFieldModule,
       MatIconModule,
@@ -43,6 +43,7 @@ import { ViewProductComponent, CreateProductComponent, CreateEstablishmentCompon
       MatNativeDateModule,
       MatAutocompleteModule,
       MatMenuModule,
+      // AlertModule,
       // BrowserAnimationsModule
       // NgbModule,
     ],

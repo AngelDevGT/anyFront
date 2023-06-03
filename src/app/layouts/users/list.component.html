@@ -1,31 +1,56 @@
-<h1>Users</h1>
-<a routerLink="add" class="btn btn-sm btn-success mb-2">Add User</a>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th style="width: 30%">First Name</th>
-            <th style="width: 30%">Last Name</th>
-            <th style="width: 30%">Username</th>
-            <th style="width: 10%"></th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr *ngFor="let user of users">
-            <td>{{user.firstName}}</td>
-            <td>{{user.lastName}}</td>
-            <td>{{user.username}}</td>
-            <td style="white-space: nowrap">
-                <a routerLink="edit/{{user.id}}" class="btn btn-sm btn-primary me-1">Edit</a>
-                <button (click)="deleteUser(user.id)" class="btn btn-sm btn-danger btn-delete-user" [disabled]="user.isDeleting">
-                    <span *ngIf="user.isDeleting" class="spinner-border spinner-border-sm"></span>
-                    <span *ngIf="!user.isDeleting">Delete</span>
-                </button>
-            </td>
-        </tr>
-        <tr *ngIf="!users">
-            <td colspan="4" class="text-center">
-                <span class="spinner-border spinner-border-lg align-center"></span>
-            </td>
-        </tr>
-    </tbody>
-</table>
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-content>
+            <button
+                type="button"
+                routerLink="add"
+                class="btn btn-outline-success m-2"
+                > <!-- relative route "add" = "/users/add" -->
+                <div class="d-flex flex-row p-1">
+                    <i class="material-icons icon">add</i>
+                    <span>Crear</span>
+                </div>
+            </button>
+            <div class="table-responsive p-3">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%">Nombre</th>
+                            <th style="width: 30%">Correo</th>
+                            <th style="width: 30%">Rol</th>
+                            <th style="width: 10%">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let user of users | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
+                            <td>{{user.name}}</td>
+                            <td>{{user.email}}</td>
+                            <td>{{user.role==='64770b1eb9b8e55eec49cd1e'? 'admin':user.role}}</td>
+                            <td style="white-space: nowrap">
+                                <button
+                                    type="button" routerLink="edit/{{user._id}}"
+                                    class="btn btn-primary btn-sm pb-0 mx-1">
+                                        <i class="material-icons">edit</i>
+                                </button>
+                                <button
+                                    type="button" (click)="deleteUser(user)" [disabled]="user.isDeleting"
+                                    class="btn btn-danger btn-sm pb-0 mx-1">
+                                        <i *ngIf="!user.isDeleting" class="material-icons">delete</i>
+                                        <span *ngIf="user.isDeleting" class="spinner-border spinner-border-sm"></span>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="!users">
+                            <td colspan="4" class="text-center">
+                                <span class="spinner-border spinner-border-lg align-center"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center pt-3">
+                <ngb-pagination [pageSize] = "5" [collectionSize]="this.users?.length ? this.users!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

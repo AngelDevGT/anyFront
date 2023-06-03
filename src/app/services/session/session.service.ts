@@ -19,7 +19,7 @@ export class SessionService {
    *
    */
 
-  private userRoles: string[] = [];
+  private userRole: string = '';
 
   //Variables
   token: any;
@@ -107,25 +107,21 @@ export class SessionService {
   //Se asigna el tipo de usuario
   assignUserRolesWithSession(user: User) {
     if(user){
-      if (user.userRoles)
-        this.userRoles = user.userRoles;
+      if (user.role)
+        this.userRole = user.role;
     }
   }
 
   assignUserRolesWithoutSession() {
-    this.userRoles = [];
+    this.userRole = '';
   }
 
   getUserRoles(){
-    return this.userRoles;
+    return this.userRole;
   }
 
   userHasRole(role: string){
-    this.userRoles.forEach(usr_role => {
-      if (usr_role == role)
-        return true;
-      return false;
-    });
+    return this.userRole == role;
   }
 
   public getLogger() {

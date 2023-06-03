@@ -24,11 +24,14 @@ export class RegisterComponent implements OnInit {
 
     ngOnInit() {
         this.registerForm = this.formBuilder.group({
-            completeName: ['', Validators.required],
-            username: ['', Validators.required],
-            email: ['', Validators.required],
-            password: ['', [Validators.required, Validators.pattern(/^(?=.*[A-Z])(?=.*[\W])(?=.*[0-9])(?=.*[a-z]).{6,128}$/g)]]
+            name: ['', [Validators.required, Validators.pattern(/^(?!\s*$).+/)]],
+            email: ['', [Validators.required, Validators.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)]],
+            password: ['', [Validators.required, Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/)]]
         });
+    }
+
+    hasPatternError(errors: any): boolean {
+        return errors && errors.pattern;
     }
 
     // convenience getter for easy access to form fields
@@ -40,8 +43,6 @@ export class RegisterComponent implements OnInit {
         // reset alerts on submit
         this.alertService.clear();
 
-        console.log(this.registerForm.value);
-
         // stop here if form is invalid
         if (this.registerForm.invalid) {
             return;
@@ -51,12 +52,12 @@ export class RegisterComponent implements OnInit {
         this.accountService.register(this.registerForm.value)
             .pipe(first())
             .subscribe({
-                next: () => {
-                    this.alertService.success('Registration successful', { keepAfterRouteChange: true });
+                next: (user) => {
+                    this.alertService.success('Se ha registrado correctamente', { keepAfterRouteChange: true });
                     this.router.navigate(['../login'], { relativeTo: this.route });
                 },
-                error: error => {
-                    this.alertService.error(error);
+                error: (error) => {
+                    this.alertService.error(error.error.newUserResponse.AcknowledgementDescription);
                     this.loading = false;
                 }
             });

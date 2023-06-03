@@ -27,9 +27,10 @@ import { RegisterComponent } from './register.component';
         MatButtonModule,
         MatCardModule,
         MatInputModule,
+        // AlertModule
     ],
     declarations: [
-        AccountLayoutComponent,
+        // AccountLayoutComponent,
         LoginComponent,
         RegisterComponent
     ]

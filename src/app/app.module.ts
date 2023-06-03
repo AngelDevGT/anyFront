@@ -27,8 +27,8 @@ import { AppComponent } from '.';
 import { AlertComponent } from '@app/components';
 import { HomeComponent } from '@app/home';
 import { ComponentsModule } from './components/components.module';
-import { AdminLayoutComponent } from './layouts';
-import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { AccountLayoutComponent, AdminLayoutComponent } from './layouts';
+// import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { RouterModule } from '@angular/router';
 // import { UsersLayoutComponent } from './layouts/users/users-layout.component';
 
@@ -39,9 +39,10 @@ import { RouterModule } from '@angular/router';
       ReactiveFormsModule,
       HttpClientModule,
       ComponentsModule,
-      NgbModule,
       RouterModule,
       AppRoutingModule,
+      // NgbModule,
+      // AlertModule,
     //   MatToolbarModule,
     //   MatButtonModule,
     //   MatIconModule,
@@ -58,8 +59,9 @@ import { RouterModule } from '@angular/router';
   ],
   declarations: [
       AppComponent,
-      AlertComponent,
       AdminLayoutComponent,
+      AccountLayoutComponent,
+      AlertComponent,
       // HomeComponent,
     //   UsersLayoutComponent
   ],
@@ -68,7 +70,7 @@ import { RouterModule } from '@angular/router';
       { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
 
       // provider used to create fake backend
-      fakeBackendProvider
+      // fakeBackendProvider
   ],
   bootstrap: [AppComponent]
 })

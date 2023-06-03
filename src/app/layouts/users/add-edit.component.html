@@ -1,4 +1,4 @@
-<h1>{{title}}</h1>
+<!-- <h1>{{title}}</h1>
 <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="onSubmit()">
     <div class="row">
         <div class="mb-3 col">
@@ -43,7 +43,86 @@
         </button>
         <a routerLink="/users" class="btn btn-link">Cancel</a>
     </div>
-</form>
-<div *ngIf="loading" class="text-center m-5">
-    <span class="spinner-border spinner-border-lg align-center"></span>
+</form> -->
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>{{title}}</mat-card-title>
+            <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading" [formGroup]="userForm" (ngSubmit)="onSubmit()">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col col-lg-6">
+                            <div class="d-flex flex-wrap justify-content-center">
+                                <mat-form-field class="col-sm-10 custom-input" appearance="outline">
+                                    <mat-label>Nombre(s) y Apellido(s)</mat-label>
+                                    <input id="completeName-form-crear-cuenta" type="text" formControlName="name" matInput
+                                        [ngClass]="{ 'is-invalid': f['name'].errors }" />
+                                    <div class="invalid-feedback" *ngIf="f['name'].errors">
+                                        <div *ngIf="f['name'].hasError('required')">
+                                            Nombre(s) y Apellido(s) requeridos
+                                        </div>
+                                        <div *ngIf="f['name'].hasError('pattern')"><strong>El nombre no puede estar vacio</strong>
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                                <mat-form-field class="col-sm-10 custom-input align-self-start" appearance="outline">
+                                    <mat-label>Rol</mat-label>
+                                    <mat-select matInput disableOptionCentering formControlName="role"
+                                        [ngClass]="{ 'is-invalid': f['role'].errors }" (change)="changeRole($event)">
+                                        <mat-option value="64770b1eb9b8e55eec49cd1e">Administrador</mat-option>
+                                        <mat-option value="undefined">Indefinido</mat-option>
+                                    </mat-select>
+                                    <div class="invalid-feedback" *ngIf="f['role'].errors">
+                                        <div *ngIf="f['role'].errors['required']">
+                                            Rol requerido
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                                <mat-form-field class="col-sm-10 custom-input" appearance="outline">
+                                    <mat-label>Correo electronico</mat-label>
+                                    <input id="completeName-form-crear-cuenta" type="text" formControlName="email" matInput
+                                        [ngClass]="{ 'is-invalid': f['email'].errors }"/>
+                                    <div class="invalid-feedback" *ngIf="f['email'].errors">
+                                        <div *ngIf="f['email'].hasError('required')">
+                                            Correo electronico requerido
+                                        </div>
+                                        <div *ngIf="f['email'].hasError('pattern')">El correo debe contener
+                                            <strong>una estructura como example@email.com</strong>
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                                <mat-form-field *ngIf="!this.id" class="col-sm-10 custom-input" appearance="outline">
+                                    <mat-label>Contraseña</mat-label>
+                                    <input id="password-form-iniciar-sesion" type="password" formControlName="password" matInput
+                                        [ngClass]="{ 'is-invalid': f['password'].errors }" />
+                                    <div class="invalid-feedback" *ngIf="f['password'].errors">
+                                        <div *ngIf="f['password'].hasError('required')">
+                                            Contraseña requerida
+                                        </div>
+                                        <div *ngIf="f['password'].hasError('pattern')">La contraseña debe contener
+                                            <strong>más de 6 caracteres, mínimo 1 letra mayúscula, mínimo 1 letra minúscula, 
+                                                mínimo 1 caracter especial (@$!%*?&)</strong>
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                                <div class="col-md-8 col-sm-12 text-center">
+                                    <button [disabled]="submitting|| userForm.invalid" class="btn btn-outline-success btn-lg">
+                                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                        Guardar Usuario
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
 </div>
