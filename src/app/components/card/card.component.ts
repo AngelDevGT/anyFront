@@ -16,9 +16,9 @@ export class CardComponent implements OnInit {
     constructor(private router: Router, private dataService: DataService) { }
 
     ngOnInit() {
-        // if (this.cardElements['photo']){
-        //     this.getImage(this.cardElements['photo'])
-        // }
+        if (this.cardElements['photo']){
+            this.getImage(this.cardElements['photo'])
+        }
     }
 
     getImage(imageId : any){
