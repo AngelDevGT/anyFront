@@ -14,13 +14,22 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import {MatAutocompleteModule} from '@angular/material/autocomplete';
 import {MatMenuModule} from '@angular/material/menu';
+import {MatListModule} from '@angular/material/list';
 
 import { AdminLayoutRoutes } from "./admin-layout.routing";
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { HomeComponent } from "@app/home";
 import { ComponentsModule } from "@app/components";
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { ViewProductComponent, CreateProductComponent, ListEstablishmentComponent, AddEditEstablishmentComponent } from "@app/pages";
+import { 
+  ListProductComponent, 
+  AddEditProductComponent, 
+  ListEstablishmentComponent, 
+  AddEditEstablishmentComponent,
+  ListProviderComponent,
+  AddEditProviderComponent,
+  ViewProviderComponent,
+} from "@app/pages";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -32,30 +41,30 @@ import { ViewProductComponent, CreateProductComponent, ListEstablishmentComponen
     NgbModule,
     ReactiveFormsModule,
     FormsModule,
-    // AlertModule,
-      MatSelectModule,
-      MatFormFieldModule,
-      MatIconModule,
-      MatButtonModule,
-      MatCardModule,
-      MatInputModule,
-      MatDatepickerModule,
-      MatNativeDateModule,
-      MatAutocompleteModule,
-      MatMenuModule,
-      // AlertModule,
-      // BrowserAnimationsModule
-      // NgbModule,
-    ],
-    declarations: [
-        HomeComponent,
-        ViewProductComponent,
-        CreateProductComponent,
-        ListEstablishmentComponent,
-        AddEditEstablishmentComponent,
-        // UsersLayoutComponent
-    ]
-  })
+    MatSelectModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatButtonModule,
+    MatCardModule,
+    MatInputModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatAutocompleteModule,
+    MatMenuModule,
+    MatListModule,
+  ],
+  declarations: [
+      HomeComponent,
+      ListProductComponent,
+      AddEditProductComponent,
+      ListEstablishmentComponent,
+      AddEditEstablishmentComponent,
+      ListProviderComponent,
+      AddEditProviderComponent,
+      ViewProviderComponent,
+      // UsersLayoutComponent
+  ]
+})
 
   export class AdminLayouteModule {}
 

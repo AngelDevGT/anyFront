@@ -20,11 +20,11 @@ import { Establishment } from '@app/models/establishment.model';
 import { Router } from '@angular/router';
 
 @Component({ 
-    selector: 'page-create-product',
-    templateUrl: 'create-product.component.html',
-    styleUrls: ['create-product.component.scss']
+    selector: 'page-add-edit-product',
+    templateUrl: 'add-edit-product.component.html',
+    styleUrls: ['add-edit-product.component.scss']
 })
-export class CreateProductComponent implements OnInit{
+export class AddEditProductComponent implements OnInit{
 
     productForm!: FormGroup;
     fileList: FileList | null | undefined;

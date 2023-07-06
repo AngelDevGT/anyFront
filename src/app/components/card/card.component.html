@@ -3,7 +3,9 @@
     <div class="position-relative">
       <img *ngIf="cardPhoto" class="img-fluid card-img-top" 
       [src]="cardPhoto"/>
-      <div *ngIf="!cardPhoto" class="my-4" style="text-align: center;">
+      <img *ngIf="!cardPhoto" class="img-fluid card-img-top" 
+      src="assets/img/no-image-available.jpg"/>
+      <div *ngIf="loading" class="my-4" style="text-align: center;">
         <span class="spinner-border spinner-border-lg"></span>
       </div>
       <!-- <div class="photos">Photos</div> -->
@@ -24,9 +26,11 @@
         <ul class="social mb-0 list-inline mt-3">
           <li *ngFor="let button of cardElements['buttons']" class="list-inline-item">
             <a routerLink="{{button.link}}" class="social-link">
-              <i class="material-icons icon p-md-1 my-1 me-0" [title]="button.title">
+              <mat-icon class="material-icons-outlined" [title]="button.title">
                 {{button.value}}
-              </i>
+              </mat-icon>
+              <span class="px-1"></span>
+              {{button.title}}
             </a>
           </li>
         </ul>

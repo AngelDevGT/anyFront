@@ -1,6 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { Router } from '@angular/router';
-import {first, map, startWith} from 'rxjs/operators';
+import {first} from 'rxjs/operators';
 import { DataService } from '@app/services';
 
 @Component({
@@ -11,13 +11,17 @@ import { DataService } from '@app/services';
 
 export class CardComponent implements OnInit {
     @Input() cardElements: any;
-    cardPhoto = '';
+    loading = true;
+    cardPhoto = undefined;
 
     constructor(private router: Router, private dataService: DataService) { }
 
     ngOnInit() {
+        this.cardElements['photo'] = undefined;
         if (this.cardElements['photo']){
             this.getImage(this.cardElements['photo'])
+        } else {
+            this.loading = false;
         }
     }
 
@@ -27,6 +31,7 @@ export class CardComponent implements OnInit {
                 .subscribe({
                     next: (img: any) => {
                         this.cardPhoto = img.getImageResponse.image.image;
+                        this.loading = false;
                     }
                 });
     }

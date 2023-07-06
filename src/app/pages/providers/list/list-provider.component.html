@@ -1,0 +1,70 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>Proveedores</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+                <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
+                    <div>
+                        <button
+                            type="button"
+                            routerLink="create"
+                            class="btn btn-outline-success m-2"
+                            > <!-- relative route "add" = "/users/add" -->
+                            <div class="d-flex flex-row p-1">
+                                <i class="material-icons icon">add</i>
+                                <span>Crear Proveedor</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="select-filter mx-2">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Filtro</mat-label>
+                            <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)"/>
+                        </mat-form-field>
+                    </div>
+                </div>
+            <div class="table-responsive p-3">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%">Nombre</th>
+                            <th style="width: 15%">Teléfono</th>
+                            <th style="width: 15%">Empresa</th>
+                            <th style="width: 40%">Descripcion</th>
+                            <th style="width: 15%">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let provider of providers | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
+                            <td>{{provider.name}}</td>
+                            <td>{{provider.phoneNumber}}</td>
+                            <td>{{provider.company}}</td>
+                            <td>{{provider.description}}</td>
+                            <td style="white-space: nowrap">
+                                <button
+                                    type="button" routerLink="view/{{provider._id}}"
+                                    class="btn btn-success btn-sm pb-0 mx-1">
+                                        <i class="material-icons">visibility</i>
+                                </button>
+                                <button
+                                    type="button" routerLink="edit/{{provider._id}}"
+                                    class="btn btn-primary btn-sm pb-0 mx-1">
+                                        <i class="material-icons">edit</i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="!providers">
+                            <td colspan="4" class="text-center">
+                                <span class="spinner-border spinner-border-lg align-center"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center pt-3">
+                <ngb-pagination [pageSize] = "5" [collectionSize]="this.providers?.length ? this.providers!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

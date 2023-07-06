@@ -23,9 +23,97 @@ declare interface RouteInfo {
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent implements OnInit {
-  @Input() isMenuCollapsed = true;
 
-  public menuItems: any[] | undefined;
+  menuItems = [
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#administrar-lvl1",
+      button_aria_controls : "administrar-lvl1",
+      button_aria_expanded : "false",
+      button_icon_class : "material-icons icon",
+      button_icon : "tune",
+      button_name : "Administrar",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "administrar-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/users",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Usuarios",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/products",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Productos",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/establishments",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Establecimientos",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/providers",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Proveedores",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        }
+      ]
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_router_link : "/users",
+      is_tree : false,
+      button_icon_class : "material-icons icon",
+      button_icon : "tune",
+      button_name : "Opcion 1",
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_router_link : "/users",
+      is_tree : false,
+      button_icon_class : "material-icons icon",
+      button_icon : "tune",
+      button_name : "Opcion 2",
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_router_link : "/users",
+      is_tree : false,
+      button_icon_class : "material-icons icon",
+      button_icon : "tune",
+      button_name : "Opcion 3",
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_router_link : "/users",
+      is_tree : false,
+      button_icon_class : "material-icons icon",
+      button_icon : "tune",
+      button_name : "Opcion 4",
+    }
+  ];
 
   constructor(private router: Router) { }
 

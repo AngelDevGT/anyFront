@@ -15,11 +15,11 @@ import { Observable } from 'rxjs';
 import { ProductForSale } from '@app/models/producto-for-sale.model';
 
 @Component({ 
-    selector: 'page-view-product',
-    templateUrl: 'view-product.component.html',
-    styleUrls: ['view-product.component.scss']
+    selector: 'page-list-product',
+    templateUrl: 'list-product.component.html',
+    styleUrls: ['list-product.component.scss']
 })
-export class ViewProductComponent implements OnInit {
+export class ListProductComponent implements OnInit {
 
     products?: ProductForSale[];
     allProducts?: ProductForSale[];

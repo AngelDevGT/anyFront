@@ -1,128 +1,50 @@
-<nav
-[ngbCollapse]="isMenuCollapsed"
-id="sidebarMenu"
-class="collapse d-lg-block sidebar bg-white"
->
+<nav id="sidebarMenu" class="collapse d-lg-block sidebar bg-white">
   <div class="position-sticky">
     <div class="list-group list-group-flush mx-3 mt-4">
+      <div *ngFor="let subMenu of menuItems" class="list-group-item p-0">
         <button 
-          type="button"
-          class="list-group-item py-2"
-          data-toggle="collapse" 
-          data-bs-toggle="collapse" 
-          data-bs-target="#administrar-lvl1" 
-          aria-controls="administrar-lvl1" 
-          aria-expanded="false" 
-          >
+        *ngIf="!subMenu.is_tree"
+        type="{{subMenu.button_type}}"
+        class="{{subMenu.button_class}}"
+        routerLink="{{subMenu.button_router_link}}"
+        >
           <div class="d-flex flex-row sidebar-row">
-            <!-- <i class="material-icons icon">trolley</i> -->
-            <i class="material-icons icon">tune</i>
-            <span>Administrar</span>
-            <i class="material-icons icon">arrow_drop_down</i>
+            <i class="{{subMenu.button_icon_class}}">{{subMenu.button_icon}}</i>
+            <span>{{subMenu.button_name}}</span>
+          </div>
+      </button>
+        <button 
+        *ngIf="subMenu.is_tree"
+        type="{{subMenu.button_type}}"
+        class="{{subMenu.button_class}}"
+        [attr.data-bs-toggle] = "subMenu.button_data_bs_toggle" 
+        [attr.data-bs-target] = "subMenu.button_data_bs_target" 
+        [attr.aria-controls]= "subMenu.button_aria_controls" 
+        [attr.aria-expanded] = "subMenu.button_aria_expanded" 
+        >
+          <div class="d-flex flex-row sidebar-row">
+            <i class="{{subMenu.button_icon_class}}">{{subMenu.button_icon}}</i>
+            <span>{{subMenu.button_name}}</span>
+            <i class="{{subMenu.button_dropdown_icon_class}}">{{subMenu.button_dropdown_icon}}</i>
           </div>
         </button>
-        <div id="administrar-lvl1" class="panel-collapse collapse">
-          <div class="position-sticky">
-            <div class="list-group list-group-flush">
-              <a routerLink="/users" class="list-group-item py-2 ripple" aria-current="true">
+        <div *ngIf="subMenu.is_tree" id="{{subMenu.root_id}}" class="{{subMenu.root_class}}">
+          <div class="{{subMenu.sub_class}}">
+            <div *ngFor="let child of subMenu.childs" class="{{child.root_class}}">
+              <button 
+              routerLink="{{child.router_link}}" 
+              class="{{child.link_class}}"
+              type="button"
+              >
                 <div class="d-flex flex-row sidebar-row">
-                  <!-- <i class="material-icons icon">trolley</i> -->
-                  <i class="material-icons icon">arrow_right</i>
-                  <span>Usuarios</span>
+                  <i class="{{child.icon_class}}">{{child.icon_name}}</i>
+                  <span>{{child.link_name}}</span>
                 </div>
-              </a>
+              </button>
             </div>
-            <div class="list-group list-group-flush">
-              <a href="#" class="list-group-item py-2 ripple" aria-current="true">
-                <div class="d-flex flex-row sidebar-row">
-                  <!-- <i class="material-icons icon">trolley</i> -->
-                  <i class="material-icons icon">arrow_right</i>
-                  <span>Materia prima</span>
-                </div>
-              </a>
-            </div>
-            <div class="list-group list-group-flush">
-              <a routerLink="/products" class="list-group-item py-2 ripple" aria-current="true">
-                <div class="d-flex flex-row sidebar-row">
-                  <!-- <i class="material-icons icon">inventory_2</i> -->
-                  <i class="material-icons icon">arrow_right</i>
-                  <span>Productos</span>
-                </div>
-              </a>
-            </div>
-            <div class="list-group list-group-flush">
-              <a routerLink="/establishments" class="list-group-item py-2 ripple" aria-current="true">
-                <div class="d-flex flex-row sidebar-row">
-                  <!-- <i class="material-icons icon">inventory_2</i> -->
-                  <i class="material-icons icon">arrow_right</i>
-                  <span>Establecimientos</span>
-                </div>
-              </a>
-            </div>
-          </div>
-        </div>
-        <button 
-        type="button"
-        class="list-group-item py-2"
-        data-toggle="collapse" 
-        data-bs-toggle="collapse" 
-        data-bs-target="#fabrica-lvl1" 
-        aria-controls="fabrica-lvl1" 
-        aria-expanded="false" 
-        >
-        <div class="d-flex flex-row sidebar-row">
-          <i class="material-icons icon">trolley</i>
-          <!-- <i class="material-icons icon">inventory_2</i> -->
-          <span>Fabrica</span>
-          <i class="material-icons icon">arrow_drop_down</i>
-        </div>
-      </button>
-      <div id="fabrica-lvl1" class="panel-collapse collapse">
-        <div class="position-sticky">
-          <div class="list-group list-group-flush">
-            <a href="#" class="list-group-item py-2 ripple" aria-current="true">
-              <div class="d-flex flex-row sidebar-row">
-                <!-- <i class="material-icons icon">trolley</i> -->
-                <i class="material-icons icon">arrow_right</i>
-                <span>Materia prima</span>
-              </div>
-            </a>
-          </div>
-          <div class="list-group list-group-flush">
-            <a href="#" class="list-group-item py-2 ripple" aria-current="true">
-              <div class="d-flex flex-row sidebar-row">
-                <!-- <i class="material-icons icon">inventory_2</i> -->
-                <i class="material-icons icon">arrow_right</i>
-                <span>Productos</span>
-              </div>
-            </a>
           </div>
         </div>
       </div>
-      <a href="#" class="list-group-item py-2" aria-current="true">
-        <div class="d-flex flex-row sidebar-row">
-          <i class="material-icons icon">dashboard</i>
-          <span>Seccion 1</span>
-        </div>
-      </a>
-      <a href="#" class="list-group-item py-2" aria-current="true">
-        <div class="d-flex flex-row sidebar-row">
-          <i class="material-icons icon">dashboard</i>
-          <span>Seccion 2</span>
-        </div>
-      </a>
-      <a href="#" class="list-group-item py-2" aria-current="true">
-        <div class="d-flex flex-row sidebar-row">
-          <i class="material-icons icon">dashboard</i>
-          <span>Seccion 3</span>
-        </div>
-      </a>
-      <a href="#" class="list-group-item py-2" aria-current="true">
-        <div class="d-flex flex-row sidebar-row">
-          <i class="material-icons icon">dashboard</i>
-          <span>Seccion 4</span>
-        </div>
-      </a>
     </div>
   </div>
 </nav>

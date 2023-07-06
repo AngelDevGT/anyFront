@@ -36,7 +36,7 @@
   }
 }
 
-a{
+button {
   // background-color: #ffeebb;
   color: #555;
   border-radius: 7px;
@@ -56,10 +56,14 @@ a:hover{
   background: inherit;
 }
 
+.principal-bottom {
+  width: 100%;
+}
 
 
 button[type="button"] {
   color: #555;
+  border-width: 0;
 }
 
 

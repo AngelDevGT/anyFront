@@ -88,6 +88,53 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/updateStablishment`, deleteUser);
     }
 
+    /** PROVIDERS */
+
+    getAllProviders() {
+        let params = JSON.stringify({retrieveProvider: {}});
+        return this.http.post(`${environment.apiUrl}/retriveProviders`, params);
+    }
+
+
+    getAllProvidersByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveProvider: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retriveProviders`, parameters);
+    }
+
+    getProviderById(id: string) {
+        let params = JSON.stringify({getProvider: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getProvider`, params);
+    }
+
+    addProvider(establishment: Establishment){
+        let params = JSON.stringify({
+            addProvider: {
+                ...establishment,
+                "creatorUser": " ",
+            }});
+        return this.http.post(`${environment.apiUrl}/addProvider`, params);
+    }
+
+    updateProvider(id: string, establishment: Establishment){
+        let params = JSON.stringify({
+            updateProvider: {
+                "_id": id,
+                ...establishment
+            }});
+        return this.http.post(`${environment.apiUrl}/updateProvider`, params);
+    }
+
+    deleteProvider(params: any) {
+        let deleteUser = JSON.stringify({
+            updateProvider: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/updateProvider`, deleteUser);
+    }
+
 
     /** IMAGE */
 
@@ -96,5 +143,17 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/getImage`, params);
     }
 
+    /** STATUS */
+
+    getStatusByNumber(id: number){
+        return id == 0 ? "Inactivo" : id == 1 ? "Activo" : id == 2 ? "Eliminado" : "Sin definir";
+    }
+
+    /** DATE */
+    
+    getLocalDateFromUTCTime(utcTime: string){
+        let date = new Date(utcTime);
+        return date.toLocaleString();
+    }
 
 }
