@@ -65,8 +65,8 @@ export class ViewProviderComponent implements OnInit{
         this.elements.push({icon : "call", name : "Numero de teléfono", value : provider.phoneNumber});
         this.elements.push({icon : "feed", name : "Descripción", value : provider.description});
         this.elements.push({icon : "info", name : "Estado", value : this.dataService.getStatusByNumber(provider.status ? provider.status : -1)});
-        this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateFromUTCTime(provider.creationDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateFromUTCTime(provider.updateDate!.replaceAll("\"",""))});
+        this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(provider.creationDate!.replaceAll("\"",""))});
+        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(provider.updateDate!.replaceAll("\"",""))});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : "Pendiente..."});
     }
 

@@ -24,6 +24,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { 
   ListProductComponent, 
   AddEditProductComponent, 
+  ViewProductComponent,
   ListEstablishmentComponent, 
   AddEditEstablishmentComponent,
   ListProviderComponent,
@@ -57,6 +58,7 @@ import {
       HomeComponent,
       ListProductComponent,
       AddEditProductComponent,
+      ViewProductComponent,
       ListEstablishmentComponent,
       AddEditEstablishmentComponent,
       ListProviderComponent,

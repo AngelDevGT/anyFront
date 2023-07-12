@@ -1,5 +1,6 @@
 export * from './product-for-sale/list/list-product.component';
 export * from './product-for-sale/add-edit/add-edit-product.component';
+export * from './product-for-sale/view/view-product.component';
 export * from './establishment/list/list-establishment.component';
 export * from './establishment/add-edit/add-edit-establishment.component';
 export * from './providers/list/list-provider.component';

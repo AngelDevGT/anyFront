@@ -31,14 +31,44 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/retrieveProducts`, parameters);
     }
 
+    getProductById(id: string) {
+        let params = JSON.stringify({getProduct: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getProduct`, params);
+    }
+
     addProduct(product: ProductForSale, productImg: string){
+        product.photo = productImg;
+        if (productImg === ""){
+            delete product.photo;
+        }
+        console.log(product)
+        product.creatorUser = " ";
         let params = JSON.stringify({
             addProduct: {
                 ...product,
-                "creatorUser": " ",
-                "photo": productImg,
             }});
         return this.http.post(`${environment.apiUrl}/addProduct`, params);
+    }
+
+    updateProduct(id: string, product: ProductForSale, productImg: string){
+        if (productImg !== ""){
+            product.photo = productImg;
+        }
+        product._id = id;
+        product.creatorUser = " ";
+        let params = JSON.stringify({
+            updateProduct: {
+                ...product,
+            }});
+        return this.http.post(`${environment.apiUrl}/updateProduct`, params);
+    }
+
+    deleteProduct(params: any) {
+        let deleteUser = JSON.stringify({
+            updateProduct: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/updateProduct`, deleteUser);
     }
 
     /** ESTABLISHMENT */
@@ -60,6 +90,10 @@ export class DataService {
     getEstablishmentById(id: string) {
         let params = JSON.stringify({findEstablishment: { "_id": id}});
         return this.http.post(`${environment.apiUrl}/retrieveEstablishments`, params);
+    }
+
+    getShortEstablishmentInfo(establishment: Establishment){
+        return establishment.name + " (" + establishment.address + ")";
     }
 
     addEstablishment(establishment: Establishment){
@@ -135,6 +169,12 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/updateProvider`, deleteUser);
     }
 
+    /** PRICE */
+
+    getFormatedPrice(price: number){
+        return "Q. " + price.toFixed(2);
+    }
+
 
     /** IMAGE */
 
@@ -151,9 +191,24 @@ export class DataService {
 
     /** DATE */
     
-    getLocalDateFromUTCTime(utcTime: string){
-        let date = new Date(utcTime);
+    getLocalDateTimeFromUTCTime(utcTime: string){
+        let date = new Date(utcTime.replaceAll("\"",""));
         return date.toLocaleString();
+    }
+
+    getLocalDateFromUTCTime(utcTime: string){
+        let date = new Date(utcTime.replaceAll("\"",""));
+        return date.toJSON().slice(0, 10);
+    }
+
+    /** MEASURE */
+
+    getMeasureByName(measure: string){
+        if(measure == "unit")
+            return "Unidades"
+        if(measure == "onz")
+            return "Onzas"
+        return "Sin Definir"
     }
 
 }

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import {BehaviorSubject, Observable} from 'rxjs';
-import {first, map, startWith} from 'rxjs/operators';
+import {BehaviorSubject, Observable, of} from 'rxjs';
+import {concatMap, first, map, startWith} from 'rxjs/operators';
 import {
     DataUrl,
     DOC_ORIENTATION,
@@ -17,7 +17,7 @@ Validators,
 FormControl,
 } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({ 
     selector: 'page-add-edit-product',
@@ -29,7 +29,6 @@ export class AddEditProductComponent implements OnInit{
     productForm!: FormGroup;
     fileList: FileList | null | undefined;
     imagenCargada: string | ArrayBuffer | null | undefined;
-    options: string[] = ['La Democracia', 'La Esperanza', 'Los Altos'];
     filteredOptions?: Observable<string[]>;
     selectedMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     measureOptions: boolean[] = [false, false]; // 0: price, 1: pricePerDozen
@@ -37,28 +36,67 @@ export class AddEditProductComponent implements OnInit{
     establishmentOptions?: Establishment[];
     id?: string;
     title!: string;
-    loading = false;
+    loading = true;
     submitting = false;
     
     minDate: Date = new Date();
 
-    constructor(private dataService: DataService, public _builder: FormBuilder, 
+    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
         private router: Router) {
-        this.retriveOptions();
-        this.productForm = this.createFormGroup();
         this.selectedMeasureSubject.subscribe(value => {
             this.setMeasureOptions(value);
           });
-        // this.minDate.setDate(this.minDate.getDate() - 1);
     }
 
     ngOnInit(): void {
-        //this.buscarCursos();
-        this.filteredOptions = this.productForm.get('establishment')!.valueChanges.pipe(
-            startWith(''),
-            map(value => this._filter(value || '')),
-        );
+        this.retriveOptions();
+
+        this.id = this.route.snapshot.params['id'];
+
+        this.productForm = this.createFormGroup();
+        this.title = 'Crear Producto';
+
+        if (this.id){
+            this.title = 'Actualizar Producto';
+        }
+
+        this.dataService.getAllEstablishmentsByFilter({"status": 1})
+            .pipe(
+                concatMap((establishments: any) => {
+                    this.establishmentOptions = establishments.findEstablishmentResponse?.establishment;
+                    if (this.id){
+                        return this.dataService.getProductById(this.id);
+                    }
+                    return of(null);
+                }),
+                concatMap((prod: any) => {
+                    if(prod){
+                        let product = prod.getProductResponse?.product;
+                        if (product){
+                            this.productForm.patchValue(product);
+                            this.setMeasureOptions(product.measure);
+                            if (product.photo){
+                                return this.dataService.getImageById(product.photo);
+                            }
+                        }
+                    }
+                    this.loading = false;
+                    return of(null);
+                })
+            )
+            .subscribe((img: any) => {
+                if(img){
+                    console.log(img)
+                    let dataPhoto = img.getImageResponse.image.image;
+                    if (dataPhoto){
+                        this.imgResultAfterResizeMax = dataPhoto;
+                        this.productPhoto!.setValue(dataPhoto);
+                    }
+                }
+                this.loading = false;
+            });
+
     }
 
     retriveOptions(){
@@ -120,10 +158,10 @@ export class AddEditProductComponent implements OnInit{
 
     setMeasureOptions(measure: any){
         this.resetMeasureOptions();
-        if(measure == 'unidad'){
+        if(measure == 'unit'){
             this.measureOptions[0] = true;
             this.measureOptions[1] = true;
-        } else if (measure == 'peso'){
+        } else if (measure == 'onz'){
             this.measureOptions[0] = true;
         }
     }
@@ -141,7 +179,9 @@ export class AddEditProductComponent implements OnInit{
     }
 
     saveProduct(){
-        return this.dataService.addProduct(this.productForm.value, this.imgResultAfterResizeMax);
+        return this.id
+        ? this.dataService.updateProduct(this.id, this.productForm.value, this.imgResultAfterResizeMax)
+        : this.dataService.addProduct(this.productForm.value, this.imgResultAfterResizeMax);
     }
 
     createFormGroup() {
@@ -158,12 +198,6 @@ export class AddEditProductComponent implements OnInit{
           establishment: new FormControl('', [Validators.required]),
           applyDate: new FormControl('', [Validators.required])
         });
-    }
-
-    private _filter(value: string): string[] {
-        const filterValue = value.toLowerCase();
-
-        return this.options.filter(option => option.toLowerCase().includes(filterValue));
     }
 
     uploadAndReturnWithMaxSize() {

@@ -63,7 +63,6 @@ export class ListProductComponent implements OnInit {
             .subscribe({
                 next: (products: any) => {
                     this.products = products.findProductResponse?.products;
-                    console.log(this.products);
                     this.getCards();
                 }
             });
@@ -73,7 +72,7 @@ export class ListProductComponent implements OnInit {
         let productFilter: any = {};
         if (product.name && product.name != '')
             productFilter['name'] = product.name;
-        if (product.price && product.price != '')
+        if (product.price != 0)
             productFilter['price'] = product.price
         if (product.establishment && product.establishment != '')
             productFilter['establishment'] = product.establishment
@@ -108,8 +107,8 @@ export class ListProductComponent implements OnInit {
                         {name:'Fecha aplicacion:', value: currProduct.applyDate}
                     ],
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/products/view' + currProduct._id},
-                        {title: 'Editar', value: 'edit_note', link: '/products/edit' + currProduct._id},
+                        {title: 'Ver', value: 'visibility', link: '/products/view/' + currProduct._id},
+                        {title: 'Editar', value: 'edit_note', link: '/products/edit/' + currProduct._id},
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currProduct._id},
                     ]
                 }

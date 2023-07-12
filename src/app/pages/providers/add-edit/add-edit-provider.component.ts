@@ -51,10 +51,8 @@ export class AddEditProviderComponent implements OnInit{
                 .subscribe((prov: any) => {
                     let provider = prov.getProviderResponse?.provider;
                     if (provider){
-                        if (provider){
-                            this.providerForm.patchValue(provider);       
-                            this.loading = false;
-                        }
+                        this.providerForm.patchValue(provider);       
+                        this.loading = false;
                     }
                 });
         }

@@ -1,17 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import {first, map, startWith} from 'rxjs/operators';
+import { Component, OnInit} from '@angular/core';
+import { from, of } from 'rxjs';
+import { concatMap, first, last } from 'rxjs/operators';
 
-import { User } from '@app/models';
-import { AccountService } from '@app/services';
-import { DataService } from '@app/services';
-import {
-AbstractControl,
-FormBuilder,
-FormGroup,
-Validators,
-FormControl,
-} from '@angular/forms';
-import { Observable } from 'rxjs';
+import { AlertService, DataService } from '@app/services';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ProductForSale } from '@app/models/producto-for-sale.model';
 
 @Component({ 
@@ -19,137 +11,94 @@ import { ProductForSale } from '@app/models/producto-for-sale.model';
     templateUrl: 'view-product.component.html',
     styleUrls: ['view-product.component.scss']
 })
-export class ViewProductComponent implements OnInit {
+export class ViewProductComponent implements OnInit{
 
-    products?: ProductForSale[];
-    allProducts?: ProductForSale[];
-    productForm!: FormGroup;
-    pageSize = 5;
-    page = 1;
-    minDate: Date = new Date();
-    nameOptions: string[] = ['Longaniza', 'Chorizo', 'Posta'];
-    filteredNameOptions?: Observable<string[]>;
-    establishmentOptions: string[] = ['La Democracia', 'La Esperanza', 'Los Altos'];
-    filteredEstablishmentOptions?: Observable<string[]>;
-    creatorUserOptions: string[] = ['User10', 'User21', 'User43'];
-    filteredCreatorUserOptions?: Observable<string[]>;
+    id?: string;
+    product?: ProductForSale;
+    submitting = false;
+    loading = false;
+    elements: any = [];
+    cardPhoto = undefined;
 
-    cards?: any[];
-
-    constructor(private dataService: DataService, public _builder: FormBuilder) {
-        this.retriveProducts();
+    constructor(private dataService: DataService, private alertService: AlertService,
+        private route: ActivatedRoute, private router: Router) {
     }
 
-    ngOnInit() {
-        this.productForm = this.createFormGroup();
-        this.filteredNameOptions = this.productForm.get('name')!.valueChanges.pipe(
-            startWith(''),
-            map(value => this._filter(value || '', this.nameOptions)),
-        );
-        this.filteredEstablishmentOptions = this.productForm.get('establishment')!.valueChanges.pipe(
-            startWith(''),
-            map(value => this._filter(value || '', this.establishmentOptions)),
-        );
-        this.filteredCreatorUserOptions = this.productForm.get('creatorUser')!.valueChanges.pipe(
-            startWith(''),
-            map(value => this._filter(value || '', this.creatorUserOptions)),
-        )
-    }
+    ngOnInit(): void {
+        this.id = this.route.snapshot.params['id'];
 
-    retriveProducts(){
-        this.products = [];
-        this.dataService.getAllProductsByFilter({"status": 1})
-            .pipe(first())
-            .subscribe({
-                next: (products: any) => {
-                    this.products = products.findProductResponse?.products;
-                    console.log(this.products);
-                    this.getCards();
-                }
-            });
-    }
+        this.loading = true;
 
-    retriveProductsWithParams(product: ProductForSale){
-        let productFilter: any = {};
-        if (product.name && product.name != '')
-            productFilter['name'] = product.name;
-        if (product.price && product.price != '')
-            productFilter['price'] = product.price
-        if (product.establishment && product.establishment != '')
-            productFilter['establishment'] = product.establishment
-        if (product.applyDate && product.applyDate != '')
-            productFilter['applyDate'] = product.applyDate
-        if (product.creatorUser && product.creatorUser != '')
-            productFilter['creatorUser'] = product.creatorUser
-        this.products = [];
-        this.dataService.getAllProductsByFilter({"status": 1, ...productFilter})
-            .pipe(first())
-            .subscribe({
-                next: (products: any) => {
-                    this.products = products.findProductResponse?.products;
-                    console.log(this.products);
-                    this.getCards();
-                }
-            });
-    }
-
-    getCards(){
-        this.cards = [];
-        if (this.products){
-            for (let i=0; i < this.products!.length; i++){
-                let currProduct = this.products![i];
-                let currentCard = {
-                    title: currProduct.name,
-                    photo: currProduct.photo,
-                    descriptions : [
-                        {name:'Establecimiento:', value: currProduct.establishment},
-                        {name:'Precio:', value: currProduct.price},
-                        currProduct.pricePerDozen ? {name:'Precio Docena:', value: currProduct.pricePerDozen} : '',
-                        {name:'Fecha aplicacion:', value: currProduct.applyDate}
-                    ],
-                    buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/products/view' + currProduct._id},
-                        {title: 'Editar', value: 'edit_note', link: '/products/edit' + currProduct._id},
-                        // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currProduct._id},
-                    ]
-                }
-                this.cards.push(currentCard);
-            }
+        if (this.id){
+            this.dataService.getProductById(this.id).pipe(
+                concatMap((prod: any) => {
+                  let product = prod.getProductResponse?.product;
+                  if (product) {
+                    console.log(product)
+                    this.product = product;
+                    this.setProductElements(product);
+                    return this.dataService.getEstablishmentById(product.establishment).pipe(
+                        concatMap((establ: any) => {
+                            console.log(establ)
+                            let establishment_name = "No encontrado"
+                            if(establ){
+                                let establishment = establ.findEstablishmentResponse?.establishment;
+                                if (establishment){
+                                    if ( establishment.length > 0){
+                                        establishment_name = this.dataService.getShortEstablishmentInfo(establishment[0]);
+                                    }
+                                }
+                            }
+                            this.elements.unshift({icon : "storefront", name : "Establecimiento", value : establishment_name});
+                            if (product.photo){
+                                return this.dataService.getImageById(product.photo).pipe(
+                                    concatMap((img: any) => {
+                                        console.log(img);
+                                        this.cardPhoto = img.getImageResponse.image.image;
+                                        this.loading = false;
+                                        return of(null);
+                                    }));
+                            }
+                            this.loading = false;
+                            return of(null);
+                        })
+                        )
+                  }
+                  return of(null);
+                }),
+              ).subscribe(
+                msg => console.log(msg)
+              );
         }
     }
 
-    getImage(imageId : any){
-        return this.dataService.getImageById(imageId)
-                    .pipe(first())
-                    .subscribe({
-                        next: (img: any) => {
-                            return img.getImageResponse.image.image;
-                        }
-                    });
-      }
 
-    private _filter(value: string, options: string[]): string[] {
-        const filterValue = value.toLowerCase();
-
-        return options.filter(option => option.toLowerCase().includes(filterValue));
+    deleteProduct() {
+        this.submitting = true;
+        this.product!.status = 2;
+        this.dataService.deleteProduct(this.product)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                this.alertService.success('Producto eliminado', { keepAfterRouteChange: true });
+                this.router.navigateByUrl('/products');
+                },
+                error: error => {
+                    this.alertService.error('Error al eliminar el proveedor, contacte con Administracion');
+                }});
     }
 
-    enviar(values: any) {
-        console.log(values);
+    setProductElements(product: ProductForSale){
+        this.elements.push({icon : "scale", name : "Medida", value : this.dataService.getMeasureByName(product.measure!)});
+        this.elements.push({icon : "monetization_on", name : "Precio", value : this.dataService.getFormatedPrice(product.price!)});
+        if (product.pricePerDozen){
+            this.elements.push({icon : "payments", name : "Precio docena", value : this.dataService.getFormatedPrice(product.pricePerDozen)});
+        }
+        this.elements.push({icon : "info", name : "Estado", value : this.dataService.getStatusByNumber(product.status ? product.status : -1)});
+        this.elements.push({icon : "event_available", name : "Fecha de aplicación", value : this.dataService.getLocalDateFromUTCTime(product.applyDate!)});
+        this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(product.creationDate!)});
+        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(product.updateDate!)});
+        this.elements.push({icon : "badge", name : "Usuario Creador", value : "Pendiente..."});
     }
 
-    createFormGroup() {
-        return new FormGroup({
-            name: new FormControl('', [Validators.maxLength(45)]),
-            price: new FormControl('', [Validators.maxLength(45)]),
-            establishment: new FormControl('', [Validators.maxLength(45)]),
-            applyDate: new FormControl('', [Validators.maxLength(45)]),
-            creatorUser: new FormControl('', [Validators.maxLength(45)]),
-        });
-    }
-
-    filterProducts(){
-        this.retriveProductsWithParams(this.productForm.value);
-        console.log('filterProducts...');
-    }
 }

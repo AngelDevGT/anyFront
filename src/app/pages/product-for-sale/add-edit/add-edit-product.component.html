@@ -1,12 +1,15 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Crear Producto</mat-card-title>
+            <mat-card-title>{{title}}</mat-card-title>
             <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
         </mat-card-header>
         <mat-card-content>
             <br>
-            <form [formGroup]="productForm" (ngSubmit)="onSaveForm()">
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading" [formGroup]="productForm" (ngSubmit)="onSaveForm()">
                 <div class="container">
                     <div class="row justify-content-center">
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-start col-md-8 align-self-start">
@@ -39,7 +42,7 @@
                                 <mat-label>Establecimiento</mat-label>
                                 <mat-select matInput disableOptionCentering formControlName="establishment"
                                     [ngClass]="{ 'is-invalid': f['measure'].errors }" (change)="changeEstablishment($event)">
-                                    <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment.name}}">{{establishment.name}} ({{establishment.address}})</mat-option>
+                                    <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment._id}}">{{establishment.name}} ({{establishment.address}})</mat-option>
                                 </mat-select>
                                 <div class="invalid-feedback" *ngIf="f['establishment'].errors">
                                     <div *ngIf="f['establishment'].errors['required']">
@@ -51,8 +54,8 @@
                                 <mat-label>Medida</mat-label>
                                 <mat-select [value]="selectedMeasureSubject.value" matInput disableOptionCentering formControlName="measure"
                                     [ngClass]="{ 'is-invalid': f['measure'].errors }" (valueChange)="selectedMeasureSubject.next($event)" (change)="changeMeasure($event)">
-                                    <mat-option value="unidad">Unidad</mat-option>
-                                    <mat-option value="peso">Peso</mat-option>
+                                    <mat-option value="unit">Unidades</mat-option>
+                                    <mat-option value="onz">Onzas</mat-option>
                                 </mat-select>
                                 <div class="invalid-feedback" *ngIf="f['measure'].errors">
                                     <div *ngIf="f['measure'].errors['required']">
@@ -62,7 +65,7 @@
                             </mat-form-field>
                             <mat-form-field *ngIf="measureOptions[0]" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
                                 <mat-label>Precio</mat-label>
-                                <input id="price-form-crear-comunidad" type="number" min=0 formControlName="price" matInput
+                                <input id="price-form-crear-comunidad" type="number" name="myDecimal" ng-model="myDecimal | number : 2" min=0 formControlName="price" matInput
                                     [ngClass]="{ 'is-invalid': f['price'].errors }" />
                                 <span matTextPrefix>Q.&nbsp;</span>
                                 <div class="invalid-feedback" *ngIf="f['price'].errors">
@@ -119,7 +122,7 @@
                             <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||productForm.invalid"
                                 class="btn btn-outline-success btn-lg">
                                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                                Crear producto
+                                Guardar producto
                             </button>
                         </div>
                     </div>
