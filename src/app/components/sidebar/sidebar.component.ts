@@ -74,6 +74,22 @@ export class SidebarComponent implements OnInit {
           link_name : "Proveedores",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/rawMaterials",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Materia Prima",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/rawMaterialsByProvider",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Materia Prima por Proveedor",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
         }
       ]
     },

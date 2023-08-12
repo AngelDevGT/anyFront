@@ -62,8 +62,9 @@
                             <div class="d-flex flex-wrap justify-content-center">
                                 <mat-form-field class="col-sm-10 custom-input" appearance="outline">
                                     <mat-label>Nombre(s) y Apellido(s)</mat-label>
-                                    <input id="completeName-form-crear-cuenta" type="text" formControlName="name" matInput
+                                    <input id="completeName-form-add-edit-user" type="text" #name maxlength="{{listMaxLength['name']}}" formControlName="name" matInput
                                         [ngClass]="{ 'is-invalid': f['name'].errors }" />
+                                        <mat-hint align="end">{{name.value.length}} / {{listMaxLength['name']}}</mat-hint>
                                     <div class="invalid-feedback" *ngIf="f['name'].errors">
                                         <div *ngIf="f['name'].hasError('required')">
                                             Nombre(s) y Apellido(s) requeridos
@@ -72,12 +73,34 @@
                                         </div>
                                     </div>
                                 </mat-form-field>
+                                <mat-form-field class="col-sm-10 custom-input" appearance="outline">
+                                    <mat-label>Numero de telefono</mat-label>
+                                    <input id="phone-form-add-edit-user" type="text" #phone maxlength="{{listMaxLength['phone']}}" formControlName="phone" matInput
+                                        [ngClass]="{ 'is-invalid': f['phone'].errors }" />
+                                        <mat-hint align="end">{{phone.value.length}} / {{listMaxLength['phone']}}</mat-hint>
+                                    <div class="invalid-feedback" *ngIf="f['phone'].errors">
+                                        <div *ngIf="f['phone'].hasError('pattern')">
+                                            Debe contener unicamente numeros
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                                <mat-form-field class="col-sm-10 custom-input align-self-start" appearance="outline">
+                                    <mat-label>Estado</mat-label>
+                                    <mat-select matInput disableOptionCentering formControlName="status"
+                                        [ngClass]="{ 'is-invalid': f['status'].errors }" (valueChange)="selectedStatusSubject.next($event)">
+                                        <mat-option *ngFor="let status of statusOptions" value="{{status.id}}">{{status.identifier}}</mat-option>
+                                    </mat-select>
+                                    <div class="invalid-feedback" *ngIf="f['status'].errors">
+                                        <div *ngIf="f['status'].errors['required']">
+                                            Estado requerido
+                                        </div>
+                                    </div>
+                                </mat-form-field>
                                 <mat-form-field class="col-sm-10 custom-input align-self-start" appearance="outline">
                                     <mat-label>Rol</mat-label>
                                     <mat-select matInput disableOptionCentering formControlName="role"
-                                        [ngClass]="{ 'is-invalid': f['role'].errors }" (change)="changeRole($event)">
-                                        <mat-option value="64770b1eb9b8e55eec49cd1e">Administrador</mat-option>
-                                        <mat-option value="undefined">Indefinido</mat-option>
+                                        [ngClass]="{ 'is-invalid': f['role'].errors }" (valueChange)="selectedRoleSubject.next($event)">
+                                        <mat-option *ngFor="let role of roleOptions" value="{{role.id}}">{{role.identifier}}</mat-option>
                                     </mat-select>
                                     <div class="invalid-feedback" *ngIf="f['role'].errors">
                                         <div *ngIf="f['role'].errors['required']">
@@ -85,10 +108,11 @@
                                         </div>
                                     </div>
                                 </mat-form-field>
-                                <mat-form-field class="col-sm-10 custom-input" appearance="outline">
+                                <mat-form-field *ngIf="!id" class="col-sm-10 custom-input" appearance="outline">
                                     <mat-label>Correo electronico</mat-label>
-                                    <input id="completeName-form-crear-cuenta" type="text" formControlName="email" matInput
+                                    <input id="email-form-add-edit-user" type="text" #email maxlength="{{listMaxLength['email']}}" formControlName="email" matInput
                                         [ngClass]="{ 'is-invalid': f['email'].errors }"/>
+                                        <mat-hint align="end">{{email.value.length}} / {{listMaxLength['email']}}</mat-hint>
                                     <div class="invalid-feedback" *ngIf="f['email'].errors">
                                         <div *ngIf="f['email'].hasError('required')">
                                             Correo electronico requerido
@@ -100,8 +124,9 @@
                                 </mat-form-field>
                                 <mat-form-field *ngIf="!this.id" class="col-sm-10 custom-input" appearance="outline">
                                     <mat-label>Contraseña</mat-label>
-                                    <input id="password-form-iniciar-sesion" type="password" formControlName="password" matInput
+                                    <input id="password-form-add-edit-user" type="password" #password maxlength="{{listMaxLength['password']}}" formControlName="password" matInput
                                         [ngClass]="{ 'is-invalid': f['password'].errors }" />
+                                        <mat-hint align="end">{{password.value.length}} / {{listMaxLength['password']}}</mat-hint>
                                     <div class="invalid-feedback" *ngIf="f['password'].errors">
                                         <div *ngIf="f['password'].hasError('required')">
                                             Contraseña requerida

@@ -5,9 +5,30 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { environment } from '@environments/enviroment';
-import { User } from '@app/models';
+import { Role, User } from '@app/models';
 import { Establishment } from '@app/models/establishment.model';
 import { ProductForSale } from '@app/models/producto-for-sale.model';
+import { Provider } from '@app/models/system/provider.model';
+import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
+import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
+
+const activeStatus = {
+    status: {
+        "id": 2,
+        "status": 1,
+        "text": "1",
+        "identifier": "Activo"
+    }
+};
+
+const deleteStatus = {
+    status: {
+        "id": 3,
+        "status": 1,
+        "text": "2",
+        "identifier": "Eliminado"
+    }
+}
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
@@ -55,7 +76,6 @@ export class DataService {
             product.photo = productImg;
         }
         product._id = id;
-        product.creatorUser = " ";
         let params = JSON.stringify({
             updateProduct: {
                 ...product,
@@ -143,20 +163,21 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/getProvider`, params);
     }
 
-    addProvider(establishment: Establishment){
+    addProvider(provider: Provider){
         let params = JSON.stringify({
             addProvider: {
-                ...establishment,
+                ...provider,
+                ...activeStatus,
                 "creatorUser": " ",
             }});
         return this.http.post(`${environment.apiUrl}/addProvider`, params);
     }
 
-    updateProvider(id: string, establishment: Establishment){
+    updateProvider(id: string, provider: Provider){
         let params = JSON.stringify({
             updateProvider: {
                 "_id": id,
-                ...establishment
+                ...provider
             }});
         return this.http.post(`${environment.apiUrl}/updateProvider`, params);
     }
@@ -164,7 +185,8 @@ export class DataService {
     deleteProvider(params: any) {
         let deleteUser = JSON.stringify({
             updateProvider: {
-                ...params
+                ...params,
+                ...deleteStatus
             }});
         return this.http.post(`${environment.apiUrl}/updateProvider`, deleteUser);
     }
@@ -210,5 +232,135 @@ export class DataService {
             return "Onzas"
         return "Sin Definir"
     }
+
+    /** VALIDATION */
+
+    isAdmin(role: Role){
+        role.id === "1";
+    }
+
+    /** CONSTANTES */
+
+    getAllConstants() {
+        let params = JSON.stringify({retrieveCatalogGeneric: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveGenericCatalog`, params);
+    }
+
+
+    getAllConstantsByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveCatalogGeneric: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveGenericCatalog`, parameters);
+    }
+
+    /** RAW MATERIAL BASE */
+
+    getAllRawMaterials() {
+        let params = JSON.stringify({retrieveRawMaterial: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveRawMaterial`, params);
+    }
+
+
+    getAllRawMaterialsByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveRawMaterial: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveRawMaterial`, parameters);
+    }
+
+    getRawMaterialById(id: string) {
+        let params = JSON.stringify({getRawMaterial: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getRawMaterial`, params);
+    }
+
+    addRawMaterial(rawMaterial: RawMaterialBase, img: string){
+        rawMaterial.photo = img;
+        if (img === ""){
+            delete rawMaterial.photo;
+        }
+        let params = JSON.stringify({
+            addRawMaterial: {
+                ...rawMaterial,
+                ...activeStatus,
+                "creatorUser": " ",
+            }});
+        return this.http.post(`${environment.apiUrl}/addRawMaterial`, params);
+    }
+
+    updateRawMaterial(id: string, rawMaterial: RawMaterialBase, img: string){
+        if (img !== ""){
+            rawMaterial.photo = img;
+        }
+        let params = JSON.stringify({
+            updateRawMaterial: {
+                "_id": id,
+                ...rawMaterial
+            }});
+        console.log(params);
+        return this.http.post(`${environment.apiUrl}/UpdateRawMaterial`, params);
+    }
+
+    deleteRawMaterial(params: any) {
+        let deleteUser = JSON.stringify({
+            updateRawMaterial: {
+                ...params,
+                ...deleteStatus
+            }});
+        return this.http.post(`${environment.apiUrl}/UpdateRawMaterial`, deleteUser);
+    }
+
+    /** RAW MATERIAL BY PROVIDER */
+
+    getAllRawMaterialsByProvider() {
+        let params = JSON.stringify({retrieveRawMaterialByProvider: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveRawMaterialByProvider`, params);
+    }
+
+
+    getAllRawMaterialsByProviderByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveRawMaterialByProvider: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveRawMaterialByProvider`, parameters);
+    }
+
+    getRawMaterialByProviderById(id: string) {
+        let params = JSON.stringify({getRawMaterialByProvider: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getRawMaterialByProvider`, params);
+    }
+
+    addRawMaterialByProvider(rawMaterial: RawMaterialByProvider){
+        let params = JSON.stringify({
+            addRawMaterialByProvider: {
+                ...rawMaterial,
+                ...activeStatus,
+                "creatorUser": " ",
+            }});
+        return this.http.post(`${environment.apiUrl}/AddRawMaterialByProvider`, params);
+    }
+
+    updateRawMaterialByProvider(id: string, rawMaterial: RawMaterialByProvider){
+        let params = JSON.stringify({
+            updateRawMaterialByProvider: {
+                "_id": id,
+                ...rawMaterial
+            }});
+        console.log(params);
+        return this.http.post(`${environment.apiUrl}/updateRawMaterialByProvider`, params);
+    }
+
+    deleteRawMaterialByProvider(params: any) {
+        let deleteUser = JSON.stringify({
+            updateRawMaterialByProvider: {
+                ...params,
+                ...deleteStatus
+            }});
+        return this.http.post(`${environment.apiUrl}/updateRawMaterialByProvider`, deleteUser);
+    }
+    
 
 }

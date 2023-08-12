@@ -1,5 +1,6 @@
 export class Status {
-    _id?: string;
-    name?: string;
-    description?: string;
+    id?: string;
+    status?: string;
+    text?: string;
+    identifier?: string;
 }

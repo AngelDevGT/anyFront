@@ -5,62 +5,65 @@
             <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
         </mat-card-header>
         <mat-card-content>
-                <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
-                    <div>
-                        <button
-                            type="button"
-                            routerLink="create"
-                            class="btn btn-outline-success m-2"
-                            > <!-- relative route "add" = "/users/add" -->
-                            <div class="d-flex flex-row p-1">
-                                <i class="material-icons icon">add</i>
-                                <span>Crear Establecimiento</span>
-                            </div>
-                        </button>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
+                        <div>
+                            <button
+                                type="button"
+                                routerLink="create"
+                                class="btn btn-outline-success m-2"
+                                > <!-- relative route "add" = "/users/add" -->
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons icon">add</i>
+                                    <span>Crear Establecimiento</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="select-filter mx-2">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Filtro</mat-label>
+                                <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)"/>
+                            </mat-form-field>
+                        </div>
                     </div>
-                    <div class="select-filter mx-2">
-                        <mat-form-field appearance="outline">
-                            <mat-label>Filtro</mat-label>
-                            <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)"/>
-                        </mat-form-field>
+                    <div class="table-responsive p-3">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%">Nombre</th>
+                                    <th style="width: 30%">Direccion</th>
+                                    <th style="width: 30%">Descripcion</th>
+                                    <th style="width: 10%">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let establishment of establishments | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
+                                    <td>{{establishment.name}}</td>
+                                    <td>{{establishment.address}}</td>
+                                    <td>{{establishment.description}}</td>
+                                    <td style="white-space: nowrap">
+                                        <button
+                                            type="button" routerLink="view/{{establishment._id}}"
+                                            class="btn btn-success btn-sm pb-0 mx-1">
+                                                <i class="material-icons">visibility</i>
+                                        </button>
+                                        <button
+                                            type="button" routerLink="edit/{{establishment._id}}"
+                                            class="btn btn-primary btn-sm pb-0 mx-1">
+                                                <i class="material-icons">edit</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr *ngIf="!establishments">
+                                    <td colspan="4" class="text-center">
+                                        <span class="spinner-border spinner-border-lg align-center"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            <div class="table-responsive p-3">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 30%">Nombre</th>
-                            <th style="width: 30%">Direccion</th>
-                            <th style="width: 30%">Descripcion</th>
-                            <th style="width: 10%">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let establishment of establishments | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
-                            <td>{{establishment.name}}</td>
-                            <td>{{establishment.address}}</td>
-                            <td>{{establishment.description}}</td>
-                            <td style="white-space: nowrap">
-                                <button
-                                    type="button" routerLink="edit/{{establishment._id}}"
-                                    class="btn btn-primary btn-sm pb-0 mx-1">
-                                        <i class="material-icons">edit</i>
-                                </button>
-                                <button
-                                    type="button" (click)="deleteUser(establishment)" [disabled]="false"
-                                    class="btn btn-danger btn-sm pb-0 mx-1">
-                                        <i *ngIf="establishment.status!=1000" class="material-icons">delete</i>
-                                        <span *ngIf="establishment.status===1000" class="spinner-border spinner-border-sm"></span>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr *ngIf="!establishments">
-                            <td colspan="4" class="text-center">
-                                <span class="spinner-border spinner-border-lg align-center"></span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
             <div class="d-flex flex-wrap justify-content-center pt-3">
                 <ngb-pagination [pageSize] = "5" [collectionSize]="this.establishments?.length ? this.establishments!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>

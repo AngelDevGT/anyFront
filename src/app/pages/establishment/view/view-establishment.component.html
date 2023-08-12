@@ -1,0 +1,47 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <div *ngIf="loading" class="text-center m-5">
+            <span class="spinner-border spinner-border-lg align-center"></span>
+        </div>
+        <mat-card-header *ngIf="!loading" style="justify-content: center;">
+            <mat-card-title>{{establishment!.name}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content *ngIf="!loading">
+            <br>
+            <div class="d-flex flex-wrap justify-content-around">
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item" *ngFor="let element of elements">
+                            <div class="d-flex flex-row align-items-center">
+                                <i class="material-icons icon p-2 element-icon">{{element.icon}}</i>
+                                <div class="p-2">
+                                    <h5 class="mb-1 text-muted">{{element.name}}</h5>
+                                    <h3 class="mb-1">{{element.value}}</h3>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center">
+                <button
+                type="button" routerLink="/establishment/edit/{{establishment!._id}}" [disabled]="submitting"
+                class="btn btn-primary m-2">
+                <div class="d-flex flex-row p-1">
+                    <i class="material-icons icon">edit</i>
+                    <span class="px-1">EDITAR</span>
+                </div>
+                </button>
+                <button
+                type="button" (click)="deleteEstablishment()" [disabled]="submitting"
+                class="btn btn-danger m-2">
+                <div class="d-flex flex-row p-1">
+                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="material-icons icon">delete</i>
+                    <span class="px-1">ELIMINAR</span>
+                </div>
+                </button>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

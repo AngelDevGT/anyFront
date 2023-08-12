@@ -10,6 +10,7 @@ Validators,
 FormControl,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Provider } from '@app/models/system/provider.model';
 
 @Component({ 
     selector: 'page-add-edit-provider',
@@ -19,6 +20,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 export class AddEditProviderComponent implements OnInit{
 
     providerForm!: FormGroup;
+    currentProvider?: Provider;
     id?: string;
     title!: string;
     loading = false;
@@ -26,7 +28,7 @@ export class AddEditProviderComponent implements OnInit{
     listMaxLength = {
         name : 50,
         email : 25,
-        phoneNumber : 8,
+        phone : 8,
         description : 200,
         company : 50,
     };
@@ -51,7 +53,8 @@ export class AddEditProviderComponent implements OnInit{
                 .subscribe((prov: any) => {
                     let provider = prov.getProviderResponse?.provider;
                     if (provider){
-                        this.providerForm.patchValue(provider);       
+                        this.providerForm.patchValue(provider);
+                        this.currentProvider = provider;
                         this.loading = false;
                     }
                 });
@@ -84,10 +87,14 @@ export class AddEditProviderComponent implements OnInit{
     }
 
     private saveProvider() {
-        // create or update user based on id param
-        return this.id
-            ? this.dataService.updateProvider(this.id!, this.providerForm.value)
-            : this.dataService.addProvider(this.providerForm.value);
+        if (this.id){
+            let newProvider = {
+                ...this.currentProvider,
+                ...this.providerForm.value
+            };
+            return this.dataService.updateProvider(this.id, newProvider);
+        };
+        return this.dataService.addProvider(this.providerForm.value);
     }
 
     get f() {
@@ -101,10 +108,10 @@ export class AddEditProviderComponent implements OnInit{
             Validators.minLength(1),
             Validators.maxLength(this.listMaxLength["name"]),
             ]),
-            phoneNumber: new FormControl('', [
+            phone: new FormControl('', [
                 Validators.required,
                 Validators.minLength(1),
-                Validators.maxLength(this.listMaxLength["phoneNumber"]),
+                Validators.maxLength(this.listMaxLength["phone"]),
                 Validators.pattern(/\d+/),
                 ]),
             description: new FormControl('', [
@@ -117,7 +124,7 @@ export class AddEditProviderComponent implements OnInit{
                 Validators.maxLength(this.listMaxLength["company"]),
                 ]),
             email: new FormControl('', [
-            Validators.required,
+            this.id ? Validators.nullValidator : Validators.required,
             Validators.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
             ]),
         });

@@ -30,7 +30,15 @@ import {
   ListProviderComponent,
   AddEditProviderComponent,
   ViewProviderComponent,
+  AddEditRawMateriaByProviderOrderComponent,
+  ViewEstablishmentComponent,
 } from "@app/pages";
+import { ListRawMaterialComponent } from "@app/pages/raw-material-base/list/list-raw-material.component";
+import { AddEditRawMaterialComponent } from "@app/pages/raw-material-base/add-edit/add-edit-raw-material.component";
+import { ViewRawMaterialComponent } from "@app/pages/raw-material-base/view/view-raw-material.component";
+import { AddEditRawMateriaByProviderComponent } from "@app/pages/raw-material-by-provider/add-edit/add-edit-raw-material-provider.component";
+import { ListRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/list/list-raw-material-provider.component";
+import { ViewRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/view/view-raw-material-provider.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -61,9 +69,17 @@ import {
       ViewProductComponent,
       ListEstablishmentComponent,
       AddEditEstablishmentComponent,
+      ViewEstablishmentComponent,
       ListProviderComponent,
       AddEditProviderComponent,
       ViewProviderComponent,
+      ListRawMaterialComponent,
+      AddEditRawMaterialComponent,
+      ViewRawMaterialComponent,
+      AddEditRawMateriaByProviderComponent,
+      ListRawMaterialByProviderComponent,
+      ViewRawMaterialByProviderComponent,
+      AddEditRawMateriaByProviderOrderComponent
       // UsersLayoutComponent
   ]
 })

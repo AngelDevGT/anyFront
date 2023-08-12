@@ -92,6 +92,10 @@ export class NavbarComponent implements OnInit {
     this.accountService.logout();
   }
 
+  viewUser(){
+    this.router.navigate(['/users/view/', this.accountService.userValue.userID]);
+  }
+
 //   updateResultList() {
 //     if (this.selectedCategory == this.categoryList[0]) {
 //       var aux = new User();

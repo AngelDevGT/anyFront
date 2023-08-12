@@ -27,7 +27,7 @@
                                     </div>
                                 </div>
                             </mat-form-field>
-                            <mat-form-field class="col-sm-6 col-md-6 custom-input align-self-start" appearance="outline">
+                            <mat-form-field *ngIf="!id" class="col-sm-6 col-md-6 custom-input align-self-start" appearance="outline">
                                 <mat-label>Correo Electronico</mat-label>
                                 <input id="email-form-crear-comunidad" type="text" #email maxlength="{{listMaxLength['email']}}" formControlName="email" matInput
                                     [ngClass]="{ 'is-invalid': f['email'].errors }" />
@@ -57,14 +57,14 @@
                             </mat-form-field>
                             <mat-form-field class="col-sm-6 col-md-6 custom-input align-self-start" appearance="outline">
                                 <mat-label>Numero de telefono</mat-label>
-                                <input id="phoneNumber-form-crear-comunidad" type="text" #phoneNumber maxlength="{{listMaxLength['phoneNumber']}}" formControlName="phoneNumber" matInput
-                                    [ngClass]="{ 'is-invalid': f['phoneNumber'].errors }" />
-                                    <mat-hint align="end">{{phoneNumber.value.length}} / {{listMaxLength['phoneNumber']}}</mat-hint>
-                                <div class="invalid-feedback" *ngIf="f['phoneNumber'].errors">
-                                    <div *ngIf="f['phoneNumber'].hasError('required')">
+                                <input id="phone-form-crear-comunidad" type="text" #phone maxlength="{{listMaxLength['phone']}}" formControlName="phone" matInput
+                                    [ngClass]="{ 'is-invalid': f['phone'].errors }" />
+                                    <mat-hint align="end">{{phone.value.length}} / {{listMaxLength['phone']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['phone'].errors">
+                                    <div *ngIf="f['phone'].hasError('required')">
                                         Numero requerido
                                     </div>
-                                    <div *ngIf="f['phoneNumber'].hasError('pattern')">Debe contener unicamente numeros
+                                    <div *ngIf="f['phone'].hasError('pattern')">Debe contener unicamente numeros
                                     </div>
                                 </div>
                             </mat-form-field>

@@ -61,3 +61,10 @@
   .select-filter{
     padding: 0 5px;
 }
+
+.my-custom-scrollbar {
+  position: relative;
+  height: 200px;
+  overflow: auto;
+  display: block;
+  }

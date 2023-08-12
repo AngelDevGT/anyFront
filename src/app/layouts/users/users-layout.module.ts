@@ -18,8 +18,9 @@ import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
 
 import { UsersRoutingModule } from './users-layout.routing';
 import { UsersLayoutComponent } from './users-layout.component';
-import { ListComponent } from './list.component';
-import { AddEditComponent } from './add-edit.component';
+import { ListComponent } from './list/list.component';
+import { AddEditComponent } from './add-edit/add-edit.component';
+import { ViewUserComponent } from './view/view-user.component';
 
 @NgModule({
     imports: [
@@ -47,7 +48,8 @@ import { AddEditComponent } from './add-edit.component';
     declarations: [
         UsersLayoutComponent,
         ListComponent,
-        AddEditComponent
+        AddEditComponent,
+        ViewUserComponent
     ]
 })
 export class UsersModule { }

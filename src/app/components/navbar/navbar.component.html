@@ -60,7 +60,7 @@
             <i class="large material-icons mat-menu-icon">apps</i>
           </button>
           <mat-menu #menu="matMenu">
-            <button mat-menu-item>
+            <button type="button" (click)="viewUser()" mat-menu-item>
               <mat-icon>person</mat-icon>
               <span>Mi perfil</span>
             </button>

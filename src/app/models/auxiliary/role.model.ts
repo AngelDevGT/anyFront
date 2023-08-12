@@ -1,6 +1,6 @@
 export class Role {
-    _id?: string;
-    name?: string;
-    permission?: string;
-    description?: string;
+    id?: string;
+    status?: string;
+    text?: string;
+    identifier?: string;
 }

@@ -5,7 +5,6 @@ import {MatTableDataSource} from '@angular/material/table';
 
 import { AccountService, AlertService, DataService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Observable } from 'rxjs';
 import { Establishment } from '@app/models/establishment.model';
 
 @Component({ 
@@ -52,22 +51,6 @@ export class ListEstablishmentComponent implements OnInit {
                 return true;
             });
         }
-    }
-
-    deleteUser(estbl: any) {
-        let deleteEstablishment = Object.assign({}, estbl);
-        deleteEstablishment.status = 3;
-        estbl.status = 1000;
-        this.dataService.deleteEstablishment(deleteEstablishment)
-            .pipe(first())
-            .subscribe({
-                next: () => {
-                this.alertService.success('Establecimiento eliminado')
-                this.retriveEstablishments()
-                },
-                error: error => {
-                    this.alertService.error('Error al eliminar el establecmiento');
-                }});
     }
 
 

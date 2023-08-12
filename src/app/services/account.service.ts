@@ -3,15 +3,52 @@ import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import jwt_decode from 'jwt-decode';
 
 import { environment } from '@environments/enviroment';
 import { User } from '@app/models';
 
+const undefinedStatus = {
+    status: {
+        "id": 1,
+        "status": 1,
+        "text": "0",
+        "identifier": "Inactivo"
+    }
+};
+
+const activeStatus = {
+    status: {
+        "id": 2,
+        "status": 1,
+        "text": "1",
+        "identifier": "Activo"
+    }
+};
+
+const deleteStatus = {
+    status: {
+        "id": 3,
+        "status": 1,
+        "text": "2",
+        "identifier": "Eliminado"
+    }
+};
+
+const undefinedRole = {
+    role: {
+        "id": 6,
+        "status": 1,
+        "text": "6",
+        "identifier": "Indefinido"
+    }
+};
+
 @Injectable({ providedIn: 'root' })
 export class AccountService {
 
-    private userSubject: BehaviorSubject<User | null>;
-    public user: Observable<User | null>;
+    private userSubject: BehaviorSubject<any>;
+    public user: Observable<any>;
 
     constructor(
         private router: Router,
@@ -36,12 +73,13 @@ export class AccountService {
             loginUser: { 
                 "email": email, "password": password 
             }});
-        return this.http.post<User>(`${environment.apiUrl}/LoginUser`, loginUser, options)
-            .pipe(map(user => {
-                console.log("User", user);
+        return this.http.post(`${environment.apiUrl}/LoginUser`, loginUser, options)
+            .pipe(map((user: any) => {
+                let usr = user.loginUserResponse.token;
                 // store user details and jwt token in local storage to keep user logged in between page refreshes
-                localStorage.setItem('user', JSON.stringify(user));
-                this.userSubject.next(user);
+                localStorage.setItem('user', JSON.stringify(jwt_decode(usr)));
+                this.userSubject.next(jwt_decode(usr));
+                console.log(this.userSubject);
                 return user;
             }));
     }
@@ -54,6 +92,17 @@ export class AccountService {
     }
 
     register(user: User) {
+        let newUser = JSON.stringify({
+            newUser: { 
+                ...user,
+                ...undefinedStatus,
+                ...undefinedRole
+            }});
+        // let newUser = { ...user };
+        return this.http.post(`${environment.apiUrl}/newUser`, newUser);
+    }
+
+    create(user: User) {
         let newUser = JSON.stringify({
             newUser: { 
                 ...user
@@ -72,7 +121,7 @@ export class AccountService {
     }
 
 
-    getAllByFilter(params: any) {
+    getAllUsersByFilter(params: any) {
         // let headers = new HttpHeaders({
         //     Authorization: 'Bearer ' + this.userValue?.token,
         // });
@@ -84,7 +133,7 @@ export class AccountService {
         return this.http.post(`${environment.apiUrl}/retrieveUsers`, parameters);
     }
 
-    getById(id: string) {
+    getUserById(id: string) {
         let params = JSON.stringify({retrieveUsers: { "_id": id}});
         return this.http.post(`${environment.apiUrl}/retrieveUsers`, params);
     }
@@ -110,23 +159,32 @@ export class AccountService {
             }));
     }
 
-    delete(params: any) {
+    deleteUser(params: any) {
         let deleteUser = JSON.stringify({
             updateUser: {
-                ...params
+                ...params,
+                ...deleteStatus
             }});
         return this.http.post(`${environment.apiUrl}/ModifyUser`, deleteUser)
             .pipe(map(x => {
                 // auto logout if the logged in user deleted their own record
-                if (params._id == this.userValue?._id) {
-                    this.logout();
+                if (params._id === this.userValue?.userID) {
+                    return true;
                 }
-                return x;
+                return false;
             }));
     }
 
     isActiveUser(){
         return this.userValue?.status == 1;
+    }
+
+    isAdminUser(){
+        return this.userValue.role.id === 1;
+    }
+
+    isLoginUser(userId: string){
+        return this.userValue.userID === userId;
     }
 
 
