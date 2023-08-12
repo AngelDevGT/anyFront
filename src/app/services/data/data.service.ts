@@ -11,6 +11,7 @@ import { ProductForSale } from '@app/models/producto-for-sale.model';
 import { Provider } from '@app/models/system/provider.model';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
+import { FinishedProduct } from '@app/models/product/finished-product.model';
 
 const activeStatus = {
     status: {
@@ -360,6 +361,62 @@ export class DataService {
                 ...deleteStatus
             }});
         return this.http.post(`${environment.apiUrl}/updateRawMaterialByProvider`, deleteUser);
+    }
+
+    /** FINISHED PRODUCT */
+
+    getAllFinishedProduct() {
+        let params = JSON.stringify({retrieveFinishedProduct: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveFinishedProduct`, params);
+    }
+
+
+    getAllFinishedProductByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveFinishedProduct: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveFinishedProduct`, parameters);
+    }
+
+    getFinishedProductById(id: string) {
+        let params = JSON.stringify({getFinishedProduct: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getFinishedProduct`, params);
+    }
+
+    addFinishedProduct(product: FinishedProduct, img: string){
+        product.photo = img;
+        if (img === ""){
+            delete product.photo;
+        }
+        let params = JSON.stringify({
+            addFinishedProduct: {
+                ...product,
+                ...activeStatus,
+                "creatorUser": " ",
+            }});
+        return this.http.post(`${environment.apiUrl}/addFinishedProduct`, params);
+    }
+
+    updateFinishedProduct(id: string, product: FinishedProduct, img: string){
+        if (img !== ""){
+            product.photo = img;
+        }
+        let params = JSON.stringify({
+            updateFinishedProduct: {
+                "_id": id,
+                ...product
+            }});
+        return this.http.post(`${environment.apiUrl}/updateFinishedProduct`, params);
+    }
+
+    deleteFinishedProduct(params: any) {
+        let deleteUser = JSON.stringify({
+            updateFinishedProduct: {
+                ...params,
+                ...deleteStatus
+            }});
+        return this.http.post(`${environment.apiUrl}/updateFinishedProduct`, deleteUser);
     }
     
 

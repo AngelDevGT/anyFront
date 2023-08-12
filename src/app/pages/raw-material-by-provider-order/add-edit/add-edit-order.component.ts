@@ -78,13 +78,21 @@ export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
 
 
         this.dataService.getAllProvidersByFilter({"status": 1})
-            .pipe(first())
-            .subscribe({
-                next: (providers: any) => {
-                    this.providerOptions = providers.retrieveProviderResponse?.providers;
-                    this.loading = false;
-                }
-            });
+        .pipe(
+            concatMap((providers: any) => {
+                this.providerOptions = providers.retrieveProviderResponse?.providers;
+                return this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}});
+            })
+        )
+        .subscribe((rawMaterials: any) => {
+            this.rawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
+            this.allRawMaterials = this.rawMaterials;
+            if(this.id){
+                return this.dataService.getRawMaterialByProviderById(this.id);
+            }
+            this.loading = false;
+            return of(null);  
+        });
 
     }
 

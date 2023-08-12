@@ -11,6 +11,10 @@ ViewProductComponent,
 AddEditRawMateriaByProviderOrderComponent,
 ViewEstablishmentComponent} from "@app/pages";
 import { ListEstablishmentComponent } from "@app/pages/establishment/list/list-establishment.component";
+import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add-edit/add-edit-finished-product.component";
+import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
+import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
+import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-creation.component";
 import { AddEditRawMaterialComponent } from "@app/pages/raw-material-base/add-edit/add-edit-raw-material.component";
 import { ListRawMaterialComponent } from "@app/pages/raw-material-base/list/list-raw-material.component";
 import { ViewRawMaterialComponent } from "@app/pages/raw-material-base/view/view-raw-material.component";
@@ -28,6 +32,10 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'products/create', component: AddEditProductComponent },
     { path: 'products/edit/:id', component: AddEditProductComponent },
     { path: 'products/view/:id', component: ViewProductComponent},
+    { path: 'finishedProducts', component: ListFinishedProductComponent },
+    { path: 'finishedProducts/create', component: AddEditFinishedProductComponent },
+    { path: 'finishedProducts/edit/:id', component: AddEditFinishedProductComponent },
+    { path: 'finishedProducts/view/:id', component: ViewFinishedProductComponent},
     { path: 'establishments', component: ListEstablishmentComponent},
     { path: 'establishments/create', component: AddEditEstablishmentComponent},
     { path: 'establishments/edit/:id', component: AddEditEstablishmentComponent},
@@ -46,6 +54,7 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'rawMaterialsByProvider/create', component: AddEditRawMateriaByProviderComponent},
     { path: 'rawMaterialsByProvider/view/:id', component: ViewRawMaterialByProviderComponent},
     { path: 'rawMaterialsByProvider/edit/:id', component: AddEditRawMateriaByProviderComponent},
+    { path: 'productCreation', component: AddEditProductCreationComponent},
     { path: 'users', loadChildren: usersModule},
 
 ];

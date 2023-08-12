@@ -1,0 +1,95 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>{{title}}</mat-card-title>
+            <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading" [formGroup]="productForm" (ngSubmit)="onSaveForm()">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-start col-md-8 align-self-start">
+                            <mat-form-field class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>Nombre del producto</mat-label>
+                                <input id="nombre-form-crear-comunidad" type="text" #name maxlength="{{listMaxLength['name']}}" formControlName="name" matInput
+                                    [ngClass]="{ 'is-invalid': f['name'].errors }" />
+                                    <mat-hint align="end">{{name.value.length}} / {{listMaxLength['name']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['name'].errors">
+                                    <div *ngIf="f['name'].hasError('required')">
+                                        Nombre requerido
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>Medida</mat-label>
+                                <mat-select matInput disableOptionCentering formControlName="measure"
+                                    [ngClass]="{ 'is-invalid': f['measure'].errors }">
+                                    <mat-option value="Unidades">Unidades</mat-option>
+                                    <mat-option value="Onzas">Onzas</mat-option>
+                                </mat-select>
+                                <div class="invalid-feedback" *ngIf="f['measure'].errors">
+                                    <div *ngIf="f['measure'].errors['required']">
+                                        Medida requerida
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
+                                <mat-label>Descripcion</mat-label>
+                                <textarea id="nombre-form-crear-comunidad" type="text" #description maxlength="{{listMaxLength['description']}}" formControlName="description" matInput
+                                    [ngClass]="{ 'is-invalid': f['description'].errors }"></textarea>
+                                    <mat-hint align="end">{{description.value.length}} / {{listMaxLength['description']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['description'].errors">
+                                    <div *ngIf="f['description'].hasError('maxlength')">
+                                        La descripcion debe tener maximo 200 caracteres
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="container">
+                                <div class="row justify-content-center">
+                                    <!-- <p class="text-muted"><strong>Imagen del producto:</strong></p> -->
+
+                                    <div class="col-12 text-center" *ngIf="!imgResultAfterResizeMax">
+                                        <button type="button" class="btn btn-outline-secondary form-group w-100" (click)="uploadAndReturnWithMaxSize()">
+                                            Seleccionar imagen
+                                        </button>
+                                    </div>
+
+                                    <div class="col-8 text-start" *ngIf="imgResultAfterResizeMax">
+                                        <button type="button" class="btn btn-outline-secondary form-group" (click)="uploadAndReturnWithMaxSize()">
+                                            Cambiar imagen
+                                        </button>
+                                    </div>
+
+                                    <div *ngIf="imgResultAfterResizeMax" class="col-4 text-end">
+                                        <button type="button" class="btn btn-outline-danger form-group pb-0" (click)="removePhoto()">
+                                            <i class="material-icons icon">close</i>
+                                        </button>
+                                    </div>
+                                        <!-- <input class="col-12" (change)="cargarImagen($event)" type="file" id="" name=""
+                                            accept="image/png, image/jpeg" formControlName="photo" /> -->
+                    
+                                    <!--Previsualizacion de la imagen-->
+                                        <img class="responsive form-group" *ngIf="imgResultAfterResizeMax" [src]="imgResultAfterResizeMax" alt="" />
+                                        <!-- <img [src]="imagenCargada" alt="" /> -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-12 text-center p-2">
+                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||productForm.invalid"
+                                class="btn btn-outline-success btn-lg">
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                Guardar Producto Terminado
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

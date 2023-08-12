@@ -105,6 +105,7 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
                     let rawMaterial = rawMat.GetRawMaterialByProviderResponse.rawMaterialBase;
                     this.currentRawMaterial = rawMaterial;
                     this.priceValue?.patchValue(this.currentRawMaterial?.price);
+                    this.selectedRawMaterial = this.currentRawMaterial?.rawMaterialBase;
                 }
                 this.allRawMaterials = this.rawMaterials;
                 this.loading = false;
@@ -165,6 +166,7 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
 
     saveRawMaterial(){
         if(this.id){
+            delete this.currentRawMaterial?.price;
             let updatedRawMaterial = {
                 ...this.rawMaterialForm.value,
                 ...this.currentRawMaterial

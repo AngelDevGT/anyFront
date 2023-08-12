@@ -35,7 +35,7 @@ export class SidebarComponent implements OnInit {
       button_aria_expanded : "false",
       button_icon_class : "material-icons icon",
       button_icon : "tune",
-      button_name : "Administrar",
+      button_name : "Sistema",
       button_dropdown_icon_class : "material-icons icon",
       button_dropdown_icon : "arrow_drop_down",
       root_id : "administrar-lvl1",
@@ -48,14 +48,6 @@ export class SidebarComponent implements OnInit {
           router_link : "/users",
           link_class : "list-group-item py-2 ripple",
           link_name : "Usuarios",
-          icon_name : "arrow_right",
-          icon_class : "material-icons icon"
-        },
-        {
-          root_class : "list-group list-group-flush",
-          router_link : "/products",
-          link_class : "list-group-item py-2 ripple",
-          link_name : "Productos",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         },
@@ -74,12 +66,40 @@ export class SidebarComponent implements OnInit {
           link_name : "Proveedores",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
-        },
+        }
+      ]
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#bodega-lvl1",
+      button_aria_controls : "bodega-lvl1",
+      button_aria_expanded : "false",
+      button_icon_class : "material-icons icon",
+      button_icon : "trolley",
+      button_name : "Bodega",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "bodega-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
         {
           root_class : "list-group list-group-flush",
           router_link : "/rawMaterials",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Materia Prima",
+          link_name : "Materia Prima Base",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/rawMaterialByProvider/order/create",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Orden de Materia Prima",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         },
@@ -96,39 +116,83 @@ export class SidebarComponent implements OnInit {
     {
       button_type : "button",
       button_class : "list-group-item principal-bottom",
-      button_router_link : "/users",
-      is_tree : false,
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#fabrica-lvl1",
+      button_aria_controls : "fabrica-lvl1",
+      button_aria_expanded : "false",
       button_icon_class : "material-icons icon",
-      button_icon : "tune",
-      button_name : "Opcion 1",
+      button_icon : "factory",
+      button_name : "Fabrica",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "fabrica-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/products",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Productos para Venta",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/finishedProducts",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Producto Terminado",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/productCreation",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Crear Producto",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        }
+      ]
     },
-    {
-      button_type : "button",
-      button_class : "list-group-item principal-bottom",
-      button_router_link : "/users",
-      is_tree : false,
-      button_icon_class : "material-icons icon",
-      button_icon : "tune",
-      button_name : "Opcion 2",
-    },
-    {
-      button_type : "button",
-      button_class : "list-group-item principal-bottom",
-      button_router_link : "/users",
-      is_tree : false,
-      button_icon_class : "material-icons icon",
-      button_icon : "tune",
-      button_name : "Opcion 3",
-    },
-    {
-      button_type : "button",
-      button_class : "list-group-item principal-bottom",
-      button_router_link : "/users",
-      is_tree : false,
-      button_icon_class : "material-icons icon",
-      button_icon : "tune",
-      button_name : "Opcion 4",
-    }
+    // {
+    //   button_type : "button",
+    //   button_class : "list-group-item principal-bottom",
+    //   button_router_link : "/users",
+    //   is_tree : false,
+    //   button_icon_class : "material-icons icon",
+    //   button_icon : "tune",
+    //   button_name : "Opcion 1",
+    // },
+    // {
+    //   button_type : "button",
+    //   button_class : "list-group-item principal-bottom",
+    //   button_router_link : "/users",
+    //   is_tree : false,
+    //   button_icon_class : "material-icons icon",
+    //   button_icon : "tune",
+    //   button_name : "Opcion 2",
+    // },
+    // {
+    //   button_type : "button",
+    //   button_class : "list-group-item principal-bottom",
+    //   button_router_link : "/users",
+    //   is_tree : false,
+    //   button_icon_class : "material-icons icon",
+    //   button_icon : "tune",
+    //   button_name : "Opcion 3",
+    // },
+    // {
+    //   button_type : "button",
+    //   button_class : "list-group-item principal-bottom",
+    //   button_router_link : "/users",
+    //   is_tree : false,
+    //   button_icon_class : "material-icons icon",
+    //   button_icon : "tune",
+    //   button_name : "Opcion 4",
+    // }
   ];
 
   constructor(private router: Router) { }

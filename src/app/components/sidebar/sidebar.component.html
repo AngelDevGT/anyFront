@@ -2,7 +2,7 @@
   <div class="position-sticky">
     <div class="list-group list-group-flush mx-3 mt-4">
       <div *ngFor="let subMenu of menuItems" class="list-group-item p-0">
-        <button 
+        <!-- <button 
         *ngIf="!subMenu.is_tree"
         type="{{subMenu.button_type}}"
         class="{{subMenu.button_class}}"
@@ -12,7 +12,7 @@
             <i class="{{subMenu.button_icon_class}}">{{subMenu.button_icon}}</i>
             <span>{{subMenu.button_name}}</span>
           </div>
-      </button>
+      </button> -->
         <button 
         *ngIf="subMenu.is_tree"
         type="{{subMenu.button_type}}"

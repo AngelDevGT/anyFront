@@ -39,6 +39,10 @@ import { ViewRawMaterialComponent } from "@app/pages/raw-material-base/view/view
 import { AddEditRawMateriaByProviderComponent } from "@app/pages/raw-material-by-provider/add-edit/add-edit-raw-material-provider.component";
 import { ListRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/list/list-raw-material-provider.component";
 import { ViewRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/view/view-raw-material-provider.component";
+import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add-edit/add-edit-finished-product.component";
+import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
+import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
+import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-creation.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -79,7 +83,11 @@ import { ViewRawMaterialByProviderComponent } from "@app/pages/raw-material-by-p
       AddEditRawMateriaByProviderComponent,
       ListRawMaterialByProviderComponent,
       ViewRawMaterialByProviderComponent,
-      AddEditRawMateriaByProviderOrderComponent
+      AddEditRawMateriaByProviderOrderComponent,
+      AddEditFinishedProductComponent,
+      ListFinishedProductComponent,
+      ViewFinishedProductComponent,
+      AddEditProductCreationComponent,
       // UsersLayoutComponent
   ]
 })
