@@ -8,25 +8,7 @@
         </mat-card-header>
         <mat-card-content *ngIf="!loading">
             <br>
-            <div class="d-flex flex-wrap justify-content-around">
-                <div class="col-md-6">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item" *ngFor="let element of elements">
-                            <div class="d-flex flex-row align-items-center">
-                                <i class="material-icons icon element-icon" style="font-size: 30px;">{{element.icon}}</i>
-                                <div class="px-3">
-                                    <p class="element-title">{{element.name}}</p>
-                                    <p class="element-value">{{element.value}}</p>
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-                <div *ngIf="cardPhoto" class="col-lg-3 col-md-12">
-                    <!-- <p class="element-value">Imagen del producto</p> -->
-                    <img class="responsive form-group" [src]="cardPhoto" alt="" />
-                </div>
-            </div>
+            <view-object [objectElements]="elements" [imgIdentifier]="product?.photo"></view-object>
             <div class="d-flex flex-wrap justify-content-center">
                 <button
                 type="button" routerLink="/finishedProducts/edit/{{product!._id}}" [disabled]="submitting"

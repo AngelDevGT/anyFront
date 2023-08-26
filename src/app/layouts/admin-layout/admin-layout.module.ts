@@ -30,8 +30,9 @@ import {
   ListProviderComponent,
   AddEditProviderComponent,
   ViewProviderComponent,
-  AddEditRawMateriaByProviderOrderComponent,
+  AddEditRawMaterialByProviderOrderComponent,
   ViewEstablishmentComponent,
+  ListRawMaterialOrderComponent,
 } from "@app/pages";
 import { ListRawMaterialComponent } from "@app/pages/raw-material-base/list/list-raw-material.component";
 import { AddEditRawMaterialComponent } from "@app/pages/raw-material-base/add-edit/add-edit-raw-material.component";
@@ -43,6 +44,8 @@ import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add
 import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
 import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
 import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-creation.component";
+import { MatDialogModule } from "@angular/material/dialog";
+import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provider-order/view/view-raw-material-order.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -65,6 +68,7 @@ import { AddEditProductCreationComponent } from "@app/pages/product-creation/add
     MatAutocompleteModule,
     MatMenuModule,
     MatListModule,
+    MatDialogModule,
   ],
   declarations: [
       HomeComponent,
@@ -83,7 +87,9 @@ import { AddEditProductCreationComponent } from "@app/pages/product-creation/add
       AddEditRawMateriaByProviderComponent,
       ListRawMaterialByProviderComponent,
       ViewRawMaterialByProviderComponent,
-      AddEditRawMateriaByProviderOrderComponent,
+      AddEditRawMaterialByProviderOrderComponent,
+      ListRawMaterialOrderComponent,
+      ViewRawMaterialOrderComponent,
       AddEditFinishedProductComponent,
       ListFinishedProductComponent,
       ViewFinishedProductComponent,

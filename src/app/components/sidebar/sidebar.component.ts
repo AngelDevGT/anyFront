@@ -97,7 +97,7 @@ export class SidebarComponent implements OnInit {
         },
         {
           root_class : "list-group list-group-flush",
-          router_link : "/rawMaterialByProvider/order/create",
+          router_link : "/rawMaterialByProvider/order",
           link_class : "list-group-item py-2 ripple",
           link_name : "Orden de Materia Prima",
           icon_name : "arrow_right",

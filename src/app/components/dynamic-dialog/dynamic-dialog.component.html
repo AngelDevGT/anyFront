@@ -1,0 +1,27 @@
+<div class="modal-dialog">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h1 class="modal-title fs-5" id="staticBackdropLabel">Modal title</h1>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="dynamicForm">
+        <ng-container *ngFor="let field of dynamicForm.controls | keyvalue">
+          <mat-form-field appearance="outline">
+            <mat-label>{{ data.fields[field.key].label }}</mat-label>
+            <input matInput [formControlName]="field.key"/>
+            <!-- <div class="invalid-feedback" *ngIf="f[field.key].errors">
+              <div *ngIf="f[field.key].errors['required']">
+                  Medida requerida
+              </div>
+          </div> -->
+          </mat-form-field>
+        </ng-container>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" (click)="notificarCambio()" [disabled]="!dynamicForm.valid">Guardar</button>
+    </div>
+  </div>
+</div>

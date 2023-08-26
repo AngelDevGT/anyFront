@@ -12,6 +12,7 @@ import { Provider } from '@app/models/system/provider.model';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
 import { FinishedProduct } from '@app/models/product/finished-product.model';
+import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 
 const activeStatus = {
     status: {
@@ -28,6 +29,15 @@ const deleteStatus = {
         "status": 1,
         "text": "2",
         "identifier": "Eliminado"
+    }
+}
+
+const pendingPaymentStatus = {
+    paymentStatus: {
+        "id": 1,
+        "status": 1,
+        "text": "1",
+        "identifier": "Pendiente"
     }
 }
 
@@ -63,7 +73,6 @@ export class DataService {
         if (productImg === ""){
             delete product.photo;
         }
-        console.log(product)
         product.creatorUser = " ";
         let params = JSON.stringify({
             addProduct: {
@@ -201,9 +210,28 @@ export class DataService {
 
     /** IMAGE */
 
+    uploadImage(imageFile: File) {
+        const formData = new FormData();
+        formData.append('image', imageFile, imageFile.name);
+        formData.append('imageName', imageFile.name);
+    
+        const headers = new HttpHeaders({
+          'enctype': 'multipart/form-data'
+        });
+    
+        return this.http.post(`${environment.apiUrl}/ImageUpload`, formData, { headers });
+    }
+
     getImageById(id: string) {
         let params = JSON.stringify({getImage: { "_id": id}});
         return this.http.post(`${environment.apiUrl}/getImage`, params);
+    }
+
+    getImageWithURL(imgName: string) {
+        if(imgName !== ""){
+            return "https://storageembutidosany.blob.core.windows.net/image-container/" + imgName;
+        }
+        return undefined;
     }
 
     /** STATUS */
@@ -277,9 +305,9 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/getRawMaterial`, params);
     }
 
-    addRawMaterial(rawMaterial: RawMaterialBase, img: string){
+    addRawMaterial(rawMaterial: RawMaterialBase, img?: string){
         rawMaterial.photo = img;
-        if (img === ""){
+        if (!img){
             delete rawMaterial.photo;
         }
         let params = JSON.stringify({
@@ -291,16 +319,16 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/addRawMaterial`, params);
     }
 
-    updateRawMaterial(id: string, rawMaterial: RawMaterialBase, img: string){
-        if (img !== ""){
-            rawMaterial.photo = img;
+    updateRawMaterial(id: string, rawMaterial: RawMaterialBase, img?: string){
+        rawMaterial.photo = img;
+        if (!img){
+            rawMaterial.photo = "";
         }
         let params = JSON.stringify({
             updateRawMaterial: {
                 "_id": id,
                 ...rawMaterial
             }});
-        console.log(params);
         return this.http.post(`${environment.apiUrl}/UpdateRawMaterial`, params);
     }
 
@@ -350,7 +378,6 @@ export class DataService {
                 "_id": id,
                 ...rawMaterial
             }});
-        console.log(params);
         return this.http.post(`${environment.apiUrl}/updateRawMaterialByProvider`, params);
     }
 
@@ -411,6 +438,56 @@ export class DataService {
     }
 
     deleteFinishedProduct(params: any) {
+        let deleteUser = JSON.stringify({
+            updateFinishedProduct: {
+                ...params,
+                ...deleteStatus
+            }});
+        return this.http.post(`${environment.apiUrl}/updateFinishedProduct`, deleteUser);
+    }
+
+    /** RAW MATERIAL ORDER */
+
+    getAllRawMaterialOrder() {
+        let params = JSON.stringify({retrieveRawMaterialOrder: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveRawMaterialOrder`, params);
+    }
+
+
+    getAllRawMaterialOrderByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveRawMaterialOrder: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveRawMaterialOrder`, parameters);
+    }
+
+    getRawMaterialOrderById(id: string) {
+        let params = JSON.stringify({getRawMaterialOrder: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getRawMaterialOrder`, params);
+    }
+
+    addRawMaterialOrder(rmOrder: RawMaterialOrder){
+        let params = JSON.stringify({
+            addRawMaterialOrder: {
+                ...rmOrder,
+                ...pendingPaymentStatus,
+                ...activeStatus,
+                "creatorUser": " ",
+            }});
+        return this.http.post(`${environment.apiUrl}/addRawMaterialOrder`, params);
+    }
+
+    updateRawMaterialOrder(id: string, rmOrder: RawMaterialOrder){
+        let params = JSON.stringify({
+            updateRawMaterialOrder: {
+                "_id": id,
+                ...rmOrder
+            }});
+        return this.http.post(`${environment.apiUrl}/updateRawMaterialOrder`, params);
+    }
+
+    deleteRawMaterialOrder(params: any) {
         let deleteUser = JSON.stringify({
             updateFinishedProduct: {
                 ...params,

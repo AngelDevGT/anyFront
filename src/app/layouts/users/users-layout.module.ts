@@ -21,11 +21,13 @@ import { UsersLayoutComponent } from './users-layout.component';
 import { ListComponent } from './list/list.component';
 import { AddEditComponent } from './add-edit/add-edit.component';
 import { ViewUserComponent } from './view/view-user.component';
+import { ComponentsModule } from '@app/components';
 
 @NgModule({
     imports: [
         CommonModule,
         ReactiveFormsModule,
+        ComponentsModule,
         UsersRoutingModule,
         ReactiveFormsModule,
         NgbModule,

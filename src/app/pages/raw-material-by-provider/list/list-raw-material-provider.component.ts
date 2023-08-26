@@ -53,7 +53,6 @@ export class ListRawMaterialByProviderComponent implements OnInit {
                 next: (rawMaterials: any) => {
                     this.rawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
                     this.allRawMaterials = this.rawMaterials;
-                    console.log(this.rawMaterials);
                     this.getCards();
                 }
             });

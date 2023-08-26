@@ -1,0 +1,21 @@
+<div class="d-flex flex-wrap justify-content-center align-items-center">
+    <div class="col-lg-8 col-md-10 col-sm-12">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" *ngFor="let element of objectElements">
+                <div class="d-flex flex-row align-items-center">
+                    <i class="material-icons icon element-icon" style="font-size: 30px;">{{element.icon}}</i>
+                    <div class="px-3">
+                        <p class="element-title">{{element.name}}</p>
+                        <p class="element-value">{{element.value}}</p>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </div>
+    <div *ngIf="!loading&&cardPhoto" class="col-lg-3 col-md-8 col-sm-12 text-center">
+        <img class="responsive form-group" [src]="cardPhoto" alt="" />
+    </div>
+    <div *ngIf="loading" class="col-lg-3 col-md-12 text-center">
+        <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
+</div>

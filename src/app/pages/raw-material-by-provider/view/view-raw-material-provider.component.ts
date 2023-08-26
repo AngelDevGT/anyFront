@@ -32,25 +32,16 @@ export class ViewRawMaterialByProviderComponent implements OnInit{
 
         if (this.id){
             this.dataService.getRawMaterialByProviderById(this.id)
-                .pipe(
-                    concatMap((rawMat: any) => {
+            .pipe(first())
+            .subscribe({
+                next: (rawMat: any) => {
                         let rawMaterial = rawMat.GetRawMaterialByProviderResponse.rawMaterialBase;
                         if (rawMaterial){
                             this.rawMaterial = rawMaterial;
                             this.setRawMaterialElements(rawMaterial);
-                            if(rawMaterial.rawMaterialBase.photo){
-                                return this.dataService.getImageById(rawMaterial.rawMaterialBase.photo);
-                            }
                         }
                         this.loading = false;
-                        return of(null);
-                    })
-                )
-                .subscribe((img: any) => {
-                    if(img){
-                        this.cardPhoto = img.getImageResponse.image.image;
                     }
-                    this.loading = false;
                 });
         }
     }

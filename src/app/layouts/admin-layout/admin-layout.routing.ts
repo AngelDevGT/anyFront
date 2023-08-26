@@ -8,8 +8,9 @@ ListProviderComponent,
 AddEditProviderComponent,
 ViewProviderComponent,
 ViewProductComponent,
-AddEditRawMateriaByProviderOrderComponent,
-ViewEstablishmentComponent} from "@app/pages";
+AddEditRawMaterialByProviderOrderComponent,
+ViewEstablishmentComponent,
+ListRawMaterialOrderComponent} from "@app/pages";
 import { ListEstablishmentComponent } from "@app/pages/establishment/list/list-establishment.component";
 import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add-edit/add-edit-finished-product.component";
 import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
@@ -18,6 +19,7 @@ import { AddEditProductCreationComponent } from "@app/pages/product-creation/add
 import { AddEditRawMaterialComponent } from "@app/pages/raw-material-base/add-edit/add-edit-raw-material.component";
 import { ListRawMaterialComponent } from "@app/pages/raw-material-base/list/list-raw-material.component";
 import { ViewRawMaterialComponent } from "@app/pages/raw-material-base/view/view-raw-material.component";
+import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provider-order/view/view-raw-material-order.component";
 import { AddEditRawMateriaByProviderComponent } from "@app/pages/raw-material-by-provider/add-edit/add-edit-raw-material-provider.component";
 import { ListRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/list/list-raw-material-provider.component";
 import { ViewRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/view/view-raw-material-provider.component";
@@ -48,8 +50,10 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'rawMaterials/create', component: AddEditRawMaterialComponent},
     { path: 'rawMaterials/edit/:id', component: AddEditRawMaterialComponent},
     { path: 'rawMaterials/view/:id', component: ViewRawMaterialComponent},
-    { path: 'rawMaterialByProvider/order/create', component: AddEditRawMateriaByProviderOrderComponent},
-    { path: 'rawMaterialByProvider/order/edit/:id', component: AddEditRawMateriaByProviderOrderComponent},
+    { path: 'rawMaterialByProvider/order', component: ListRawMaterialOrderComponent},
+    { path: 'rawMaterialByProvider/order/create', component: AddEditRawMaterialByProviderOrderComponent},
+    { path: 'rawMaterialByProvider/order/view/:id', component: ViewRawMaterialOrderComponent},
+    { path: 'rawMaterialByProvider/order/edit/:id', component: AddEditRawMaterialByProviderOrderComponent},
     { path: 'rawMaterialsByProvider', component: ListRawMaterialByProviderComponent},
     { path: 'rawMaterialsByProvider/create', component: AddEditRawMateriaByProviderComponent},
     { path: 'rawMaterialsByProvider/view/:id', component: ViewRawMaterialByProviderComponent},

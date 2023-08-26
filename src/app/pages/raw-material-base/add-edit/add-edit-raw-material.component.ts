@@ -36,10 +36,13 @@ export class AddEditRawMaterialComponent implements OnInit{
     title!: string;
     loading = false;
     submitting = false;
+    maxFileSize = 10485760;
     listMaxLength = {
         name : 50,
         description : 200
     };
+    selectedImage?: string;
+    selectedFileImage?: File;
     
     minDate: Date = new Date();
 
@@ -61,30 +64,18 @@ export class AddEditRawMaterialComponent implements OnInit{
             this.loading = true;
 
             this.dataService.getRawMaterialById(this.id)
-                .pipe(
-                    concatMap((rawMat: any) => {
+                .pipe(first())
+                    .subscribe((rawMat: any) => {
                         let rawMaterial = rawMat.GetRawMaterialResponse.rawMaterial;
                         if (rawMaterial){
                             this.currentRawMaterial = rawMaterial;
                             this.rawMaterialForm.patchValue(rawMaterial);
                             if(rawMaterial.photo){
-                                return this.dataService.getImageById(rawMaterial.photo);
+                                this.selectedImage = this.dataService.getImageWithURL(rawMaterial.photo);
                             }
                         }
                         this.loading = false;
-                        return of(null);
-                    })
-                )
-                .subscribe((img: any) => {
-                    if(img){
-                        let dataPhoto = img.getImageResponse.image.image;
-                        if (dataPhoto){
-                            this.imgResultAfterResizeMax = dataPhoto;
-                            this.productPhoto!.setValue(dataPhoto);
-                        }
-                    }
-                    this.loading = false;
-                });
+                    });
         }
 
 
@@ -97,9 +88,14 @@ export class AddEditRawMaterialComponent implements OnInit{
     onSaveForm() {
         this.alertService.clear();
         this.submitting = true;
-        this.saveRawMaterial()
-            .pipe(first())
-            .subscribe({
+        if(this.selectedFileImage){
+            this.dataService.uploadImage(this.selectedFileImage)
+            .pipe(
+                concatMap((imgResponse: any) => {
+                    let imgName = imgResponse.name;
+                    return this.saveRawMaterial(imgName);
+                })
+            ).subscribe({
                 next: () => {
                     this.alertService.success('Materia prima guardada', { keepAfterRouteChange: true });
                     this.router.navigateByUrl('/rawMaterials');
@@ -111,6 +107,26 @@ export class AddEditRawMaterialComponent implements OnInit{
                     this.submitting = false;
                 }
             });
+        } else {
+            let imgName = undefined;
+            if(this.selectedImage && this.selectedImage !== ""){
+                imgName = this.currentRawMaterial?.photo;
+            }
+            this.saveRawMaterial(imgName)
+                .pipe(first())
+                .subscribe({
+                    next: () => {
+                        this.alertService.success('Materia prima guardada', { keepAfterRouteChange: true });
+                        this.router.navigateByUrl('/rawMaterials');
+                    },
+                    error: error => {
+                        let errorResponse = error.error;
+                        errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateRawMaterial ? errorResponse.updateRawMaterial : 'Error, consulte con el administrador';
+                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        this.submitting = false;
+                    }
+            });
+        }
     }
 
     get f() {
@@ -121,16 +137,15 @@ export class AddEditRawMaterialComponent implements OnInit{
         return this.rawMaterialForm.get('photo');
     }
 
-    saveRawMaterial(){
+    saveRawMaterial(imgName?: string){
         if(this.id){
             let newRawMaterial = {
                 ...this.currentRawMaterial,
                 ...this.rawMaterialForm.value
             };
-            console.log("update", newRawMaterial);
-            return this.dataService.updateRawMaterial(this.id, newRawMaterial, this.imgResultAfterResizeMax);
+            return this.dataService.updateRawMaterial(this.id, newRawMaterial, imgName);
         }
-        return this.dataService.addRawMaterial(this.rawMaterialForm.value, this.imgResultAfterResizeMax);
+        return this.dataService.addRawMaterial(this.rawMaterialForm.value, imgName);
     }
 
     createFormGroup() {
@@ -142,7 +157,7 @@ export class AddEditRawMaterialComponent implements OnInit{
           description: new FormControl('', [
             Validators.required
           ]),
-          photo: new FormControl('')
+        //   photo: new FormControl('')
         });
     }
 
@@ -163,9 +178,36 @@ export class AddEditRawMaterialComponent implements OnInit{
         );
     }
 
-    removePhoto(){
-        this.imgResultAfterResizeMax = '';
-        this.productPhoto!.setValue('');
+    removePhoto(imageInput: any){
+        // this.imgResultAfterResizeMax = '';
+        // this.productPhoto!.setValue('');
+        this.selectedImage = undefined;
+        this.selectedFileImage = undefined;
+        imageInput.value = '';
+    }
+
+    onFileSelected(event: any): void {
+        this.selectedFileImage = event.target.files[0];
+        console.log(this.selectedFileImage);
+        const reader = new FileReader();
+            reader.onload = (e: any) => {
+            this.selectedImage = e.target.result;
+            };
+        reader.readAsDataURL(this.selectedFileImage!);
+        // if (file) {
+        //     if (file.size > this.maxFileSize) {
+        //       console.log('El archivo es demasiado grande. Tamaño máximo permitido: 10MB');
+        //       // Puedes mostrar un mensaje de error al usuario si lo deseas.
+        //     } else {
+        //       // Cargar la imagen como URL de datos (data URL)
+        //       const reader = new FileReader();
+        //       reader.onload = (e: any) => {
+        //         this.selectedImage = e.target.result;
+        //       };
+        //       reader.readAsDataURL(file);
+        //     }
+        //   }
+        // this.imageUploadService.uploadImage(file);
     }
 
 }

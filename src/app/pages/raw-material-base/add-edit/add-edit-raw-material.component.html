@@ -39,10 +39,13 @@
                             </mat-form-field>
                             <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
                                 <mat-label>Descripcion</mat-label>
-                                <textarea id="nombre-form-crear-comunidad" type="text" #description maxlength="{{listMaxLength['description']}}" formControlName="description" matInput
+                                <textarea id="description-form-crear-comunidad" type="text" #description maxlength="{{listMaxLength['description']}}" formControlName="description" matInput
                                     [ngClass]="{ 'is-invalid': f['description'].errors }"></textarea>
                                     <mat-hint align="end">{{description.value.length}} / {{listMaxLength['description']}}</mat-hint>
                                 <div class="invalid-feedback" *ngIf="f['description'].errors">
+                                    <div *ngIf="f['description'].errors['required']">
+                                        Descripcion requerida
+                                    </div>
                                     <div *ngIf="f['description'].hasError('maxlength')">
                                         La descripcion debe tener maximo 200 caracteres
                                     </div>
@@ -54,20 +57,25 @@
                                 <div class="row justify-content-center">
                                     <!-- <p class="text-muted"><strong>Imagen del producto:</strong></p> -->
 
-                                    <div class="col-12 text-center" *ngIf="!imgResultAfterResizeMax">
-                                        <button type="button" class="btn btn-outline-secondary form-group w-100" (click)="uploadAndReturnWithMaxSize()">
+                                    <div class="col-10 text-center">
+                                        <!-- <button type="button" class="btn btn-outline-secondary form-group w-100" (click)="uploadAndReturnWithMaxSize()">
                                             Seleccionar imagen
-                                        </button>
+                                        </button> -->
+                                        <div class="mb-3">
+                                            <!-- <label for="formFile" class="form-label">Default file input example</label> -->
+                                            <input #imageInput class="form-control" type="file" id="formFile" (change)="onFileSelected($event)" accept="image/*" [attr.max]="maxFileSize">
+                                        </div>
+                                        <!-- <input type="file" class="btn btn-outline-primary" (change)="onFileSelected($event)" accept="image/*" [attr.max]="maxFileSize"> -->
                                     </div>
 
-                                    <div class="col-8 text-start" *ngIf="imgResultAfterResizeMax">
+                                    <!-- <div class="col-8 text-start" *ngIf="imgResultAfterResizeMax">
                                         <button type="button" class="btn btn-outline-secondary form-group" (click)="uploadAndReturnWithMaxSize()">
                                             Cambiar imagen
                                         </button>
-                                    </div>
+                                    </div> -->
 
-                                    <div *ngIf="imgResultAfterResizeMax" class="col-4 text-end">
-                                        <button type="button" class="btn btn-outline-danger form-group pb-0" (click)="removePhoto()">
+                                    <div *ngIf="selectedImage" class="col-2 text-end">
+                                        <button type="button" class="btn btn-outline-danger form-group pb-0" (click)="removePhoto(imageInput)">
                                             <i class="material-icons icon">close</i>
                                         </button>
                                     </div>
@@ -75,7 +83,8 @@
                                             accept="image/png, image/jpeg" formControlName="photo" /> -->
                     
                                     <!--Previsualizacion de la imagen-->
-                                        <img class="responsive form-group" *ngIf="imgResultAfterResizeMax" [src]="imgResultAfterResizeMax" alt="" />
+                                        <!-- <img class="responsive form-group" *ngIf="imgResultAfterResizeMax" [src]="imgResultAfterResizeMax" alt="" /> -->
+                                        <img class="responsive form-group" *ngIf="selectedImage" [src]="selectedImage" alt="" />
                                         <!-- <img [src]="imagenCargada" alt="" /> -->
                                 </div>
                             </div>

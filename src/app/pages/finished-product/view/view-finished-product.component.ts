@@ -32,25 +32,16 @@ export class ViewFinishedProductComponent implements OnInit{
 
         if (this.id){
             this.dataService.getFinishedProductById(this.id)
-                .pipe(
-                    concatMap((prod: any) => {
+            .pipe(first())
+            .subscribe({
+                next: (prod: any) => {
                         let product = prod.getFinishedProductResponse.FinishedProduct;
                         if (product){
                             this.product = product;
                             this.setProductElements(product);
-                            if(product.photo){
-                                return this.dataService.getImageById(product.photo);
-                            }
                         }
                         this.loading = false;
-                        return of(null);
-                    })
-                )
-                .subscribe((img: any) => {
-                    if(img){
-                        this.cardPhoto = img.getImageResponse.image.image;
                     }
-                    this.loading = false;
                 });
         }
     }

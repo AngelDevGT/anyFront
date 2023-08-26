@@ -26,9 +26,22 @@
 
 .my-custom-scrollbar {
     position: relative;
-    height: 200px;
+    // max-height: 250px;
     overflow: auto;
     display: block;
+    width: 100%;
+}
+
+.table-container {
+  position: relative;
+  max-height: 300px; /* ajusta esto según tus necesidades */
+  overflow: auto;
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+  /* otros estilos de tabla que puedas tener */
 }
 
 .subtotal-text{

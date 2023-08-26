@@ -1,6 +1,6 @@
 import { InventoryType } from "../auxiliary/inventory-type.model";
 import { Status } from "../auxiliary/status.model";
-import { Unit } from "../auxiliary/unit.model";
+import { Unit } from "../auxiliary/measure.model";
 import { User } from "../user.model";
 import { InventoryElement } from "./inventory-element.model";
 

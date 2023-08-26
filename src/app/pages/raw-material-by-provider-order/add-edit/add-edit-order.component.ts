@@ -23,21 +23,33 @@ import { InventoryElement } from '@app/models/inventory/inventory-element.model'
 import { RawMaterialOrderElement } from '@app/models/raw-material/raw-material-order-element.model';
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
 import { Constant } from '@app/models/auxiliary/constant.model';
+import { MatDialog } from '@angular/material/dialog';
+import { Measure, PaymentStatus, PaymentType } from '@app/models';
+import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
+// import { DynamicDialogComponent } from '@app/components/dynamic-dialog/dynamic-dialog.component';
 
 @Component({ 
     selector: 'page-add-edit-order',
     templateUrl: 'add-edit-order.component.html',
     styleUrls: ['add-edit-order.component.scss']
 })
-export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
+export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
     //Form
     orderForm!: FormGroup;
+    rawMaterialForm!: FormGroup;
+    rawMaterialOrder?: RawMaterialOrder;
+    selectedProvider?: Provider;
     selectedProviderSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    selectedMeasure?: Measure;
+    selectedPaymentType?: PaymentType;
+    selectedPaymentTypeSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    currentMeasurePrice?: number;
     providerOptions?: Provider[];
+    paymentTypeOptions?: PaymentType[];
     constantes?: Constant[];
     rawMaterials?: RawMaterialByProvider[];
-    allRawMaterials?: RawMaterialByProvider[];
+    filteredRawMaterials?: RawMaterialByProvider[];
     selectedRawMaterials?: InventoryElement[];
     rawMaterialOrderElements?: RawMaterialOrderElement[];
     totalDiscount = 0;
@@ -48,23 +60,33 @@ export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
     loading = true;
     submitting = false;
     hasErrors = false;
-    
-    minDate: Date = new Date();
+    displayStyle = false;
+    selectedRMP?: RawMaterialByProvider;
+    elements: any = [];
+    measureOptions?: Measure[];
+    filteredMeasureOptions?: Measure[];
+    rawMaterialIndexToRemove?: number;
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
-        private router: Router) {
+        private router: Router, private formBuilder: FormBuilder) {
 
         this.selectedProviderSubject.subscribe(value => {
             this.setProvider(value);
-        })
+        });
+
+        this.selectedPaymentTypeSubject.subscribe(value => {
+            this.setPaymentType(value);
+        });
     }
+
 
     ngOnInit(): void {
 
         this.id = this.route.snapshot.params['id'];
 
         this.orderForm = this.createFormGroup();
+        this.rawMaterialForm = this.createMaterialFormGroup();
         this.title = 'Crear Orden de Materia Prima';
 
         if (this.id){
@@ -72,7 +94,7 @@ export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
         }
 
         this.rawMaterials = [];
-        this.allRawMaterials = this.rawMaterials;
+        this.filteredRawMaterials = this.rawMaterials;
         this.selectedRawMaterials = [];
         this.rawMaterialOrderElements = [];
 
@@ -81,12 +103,21 @@ export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
         .pipe(
             concatMap((providers: any) => {
                 this.providerOptions = providers.retrieveProviderResponse?.providers;
+                return this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentType", enableElements: "true"});
+            }),
+            concatMap((paymentTypes: any) => {
+                this.paymentTypeOptions = paymentTypes.retrieveCatalogGenericResponse.elements;
+                return this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"});
+            }),
+            concatMap((measures: any) => {
+                this.measureOptions = measures.retrieveCatalogGenericResponse.elements;
+                this.filteredMeasureOptions = measures.retrieveCatalogGenericResponse.elements;
                 return this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}});
             })
         )
         .subscribe((rawMaterials: any) => {
             this.rawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
-            this.allRawMaterials = this.rawMaterials;
+            this.filteredRawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
             if(this.id){
                 return this.dataService.getRawMaterialByProviderById(this.id);
             }
@@ -100,40 +131,95 @@ export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
         this.orderForm.reset();
     }
 
+    onResetMaterialForm(){
+        this.rawMaterialForm.reset();
+        this.selectedRMP = undefined;
+        this.selectedMeasure = undefined;
+        this.currentMeasurePrice = 0;
+        this.elements = [];
+    }
+
     onSaveForm() {
         this.alertService.clear();
         this.submitting = true;
-        // this.saveProvider()
-        //     .pipe(first())
-        //     .subscribe({
-        //         next: () => {
-        //             this.alertService.success('Producto guardado', { keepAfterRouteChange: true });
-        //             this.router.navigateByUrl('/products');
-        //         },
-        //         error: error => {
-        //             let errorResponse = error.error;
-        //             errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateProductResponse ? errorResponse.updateProductResponse : 'Error, consulte con el administrador';
-        //             this.alertService.error(errorResponse.AcknowledgementDescription);
-        //             this.submitting = false;
-        //         }
-        //     });
+        this.rawMaterialOrder = {
+            ...this.orderForm.value,
+            paymentType: this.selectedPaymentType,
+            provider: this.selectedProvider,
+            rawMaterialOrderElements: this.rawMaterialOrderElements,
+            pendingAmount: this.total,
+            finalAmount: this.total
+        }
+        this.dataService.addRawMaterialOrder(this.rawMaterialOrder!)
+            .pipe(first())
+                .subscribe({
+                    next: () => {
+                        this.alertService.success('Orden de materia prima guardada', { keepAfterRouteChange: true });
+                        this.router.navigateByUrl('/rawMaterialByProvider/order');
+                    },
+                    error: error => {
+                        let errorResponse = error.error;
+                        errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateRawMaterial ? errorResponse.updateRawMaterial : 'Error, consulte con el administrador';
+                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        this.submitting = false;
+                    }
+                });
+    }
+
+    onSaveMaterialForm(){
+        let newOrderElement: RawMaterialOrderElement = {
+            rawMaterialByProvider: this.selectedRMP,
+            ...this.rawMaterialForm.value,
+            price: this.currentMeasurePrice,
+            measure: this.selectedMeasure
+        };
+        console.log(newOrderElement);
+        this.rawMaterialOrderElements?.push(newOrderElement);
+        this.onResetMaterialForm();
+        this.filteredRawMaterials?.splice(this.rawMaterialIndexToRemove!, 1);
+    }
+
+    selectMeasure(measureId?: string){
+        return this.measureOptions?.find(measure => String(measure.id) === measureId);
+    }
+
+    findProvider(providerId?: string){
+        return this.providerOptions?.find(provider => String(provider._id) === providerId);
+    }
+
+    findPaymentType(paymentId?: string){
+        return this.paymentTypeOptions?.find(payment => String(payment.id) === paymentId);
     }
 
     get f() {
         return this.orderForm.controls;
     }
 
+    get r() {
+        return this.rawMaterialForm.controls;
+    }
+
     get providertSelect(){
         return this.orderForm.get('provider');
     }
 
+    get measureSelect(){
+        return this.rawMaterialForm.get('measure');
+    }
+
     setProvider(provider: any){
+        this.rawMaterialOrderElements = [];
+        this.selectedProvider = this.findProvider(provider);
         this.filterByProvider(provider);
     }
 
+    setPaymentType(payment: any){
+        this.selectedPaymentType = this.findPaymentType(payment);
+    }
+
     filterByProvider(providerId: string){
-        if(this.allRawMaterials){
-            this.rawMaterials = this.allRawMaterials?.filter((val) => {
+        if(providerId){
+            this.filteredRawMaterials = this.rawMaterials?.filter((val) => {
                 return providerId === val.provider?._id;
             });
         }
@@ -146,28 +232,37 @@ export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
         });
     }
 
+    changeMeasure(measureId: any){
+        if(measureId){
+            if(this.selectedMeasure){
+                this.elements.pop();
+            }
+            this.selectedMeasure = this.selectMeasure(measureId);
+            this.currentMeasurePrice = Number(this.selectedRMP?.price) * Number(this.selectedMeasure?.unitBase?.quantity);
+            this.elements.push({icon : "payments", name : "Precio (" + this.selectedMeasure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(this.currentMeasurePrice))});
+        }
+    }
+
     selectRawMaterial(rawMaterial: RawMaterialByProvider, indexToRemove: number){
-        this.rawMaterials?.splice(indexToRemove, 1);
-        let newOrderElement: RawMaterialOrderElement = {
-            rawMaterialByProvider: rawMaterial,
-            price: rawMaterial.price,
-            discount: "0",
-            quantity: "1"
-        };
-        this.rawMaterialOrderElements?.push(newOrderElement);
+        // this.openPopup();
+        this.selectedRMP = rawMaterial;
+        this.elements = [];
+        this.setRawMaterialElements(this.selectedRMP!);
+        this.filteredMeasureOptions = this.measureOptions?.filter(item => this.selectedRMP?.rawMaterialBase?.measure?.includes(item.unitBase?.name!));
+        this.rawMaterialIndexToRemove = indexToRemove;
+        // let newOrderElement: RawMaterialOrderElement = {
+        //     rawMaterialByProvider: rawMaterial,
+        //     price: rawMaterial.price,
+        //     discount: "0",
+        //     quantity: "1"
+        // };
+        // this.rawMaterialOrderElements?.push(newOrderElement);
     }
 
     unselectRawMaterial(orderElement: RawMaterialOrderElement, indexToRemove: number){
-        console.log(orderElement);
         this.rawMaterialOrderElements?.splice(indexToRemove, 1);
-        this.rawMaterials?.push(orderElement.rawMaterialByProvider!);
+        this.filteredRawMaterials?.push(orderElement.rawMaterialByProvider!);
     }
-
-    // saveProvider(){
-    //     return this.id
-    //     ? this.dataService.updateProvider(this.id, this.providerForm.value)
-    //     : this.dataService.addProvider(this.providerForm.value);
-    // }
 
     calculateSubtotal() {
         let subtotal = 0;
@@ -208,33 +303,42 @@ export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
             Validators.maxLength(100),
             ]),
           provider: new FormControl('', [Validators.required]),
-          applyDate: new FormControl('', [Validators.required])
+          paymentType: new FormControl('', [Validators.required]),
+        //   applyDate: new FormControl('', [Validators.required])
         });
     }
 
-    onQuantityKeydown(event: KeyboardEvent) {
-        // Obtener el código de la tecla presionada
-        const key = event.key;
-    
-        // Permitir solo teclas numéricas y las teclas de navegación
-        if (!/^[0-9]$/.test(key) && key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Backspace' && key !== 'Delete') {
-            event.preventDefault();
-        }
+    createMaterialFormGroup() {
+        return new FormGroup({
+            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
+            discount: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            measure: new FormControl('', [Validators.required])
+        });
     }
 
-    onDiscountKeydown(event: KeyboardEvent) {
-        const key = event.key;
+    // onQuantityKeydown(event: KeyboardEvent) {
+    //     // Obtener el código de la tecla presionada
+    //     const key = event.key;
     
-        // Permitir solo teclas numéricas, punto decimal, teclas de navegación y eliminación
-        if (!/^[0-9.]$/.test(key) && key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Backspace' && key !== 'Delete') {
-            event.preventDefault();
-        }
+    //     // Permitir solo teclas numéricas y las teclas de navegación
+    //     if (!/^[0-9]$/.test(key) && key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Backspace' && key !== 'Delete') {
+    //         event.preventDefault();
+    //     }
+    // }
+
+    // onDiscountKeydown(event: KeyboardEvent) {
+    //     const key = event.key;
     
-        // Si ya hay un punto decimal en el input, no permitir otro
-        if (key === '.' && (event.target as HTMLInputElement).value.includes('.')) {
-            event.preventDefault();
-        }
-    }
+    //     // Permitir solo teclas numéricas, punto decimal, teclas de navegación y eliminación
+    //     if (!/^[0-9.]$/.test(key) && key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Backspace' && key !== 'Delete') {
+    //         event.preventDefault();
+    //     }
+    
+    //     // Si ya hay un punto decimal en el input, no permitir otro
+    //     if (key === '.' && (event.target as HTMLInputElement).value.includes('.')) {
+    //         event.preventDefault();
+    //     }
+    // }
 
     onDiscountInput(event: any, orderElement: RawMaterialOrderElement) {
         const input = event.target.value;
@@ -259,6 +363,16 @@ export class AddEditRawMateriaByProviderOrderComponent implements OnInit{
         }
         event.target.value = finalValue;
         orderElement.discount = finalValue;
+    }
+
+    setRawMaterialElements(rawMaterial: RawMaterialByProvider){
+        // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
+        this.elements.push({icon : "feed", name : "Descripción", value : rawMaterial.rawMaterialBase?.description});
+        this.elements.push({icon : "monetization_on", name : "Precio (" + rawMaterial.rawMaterialBase?.measure + ")", value : this.dataService.getFormatedPrice(Number(rawMaterial.price))});
+    }
+
+    closeRawMaterialDialog(){
+        this.onResetMaterialForm();
     }
 
 }

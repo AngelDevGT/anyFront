@@ -5,74 +5,37 @@
             <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
         </mat-card-header>
         <mat-card-content>
-                <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
-                    <div>
-                        <button
-                            type="button"
-                            routerLink="add"
-                            class="btn btn-outline-success m-2"
-                            > <!-- relative route "add" = "/users/add" -->
-                            <div class="d-flex flex-row p-1">
-                                <i class="material-icons icon">add</i>
-                                <span>Crear Usuario</span>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
+                        <div>
+                            <button type="button" routerLink="create" class="btn btn-outline-success m-2">
+                                <!-- relative route "add" = "/users/add" -->
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons icon">add</i>
+                                    <span>Crear Establecimiento</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
+                            <div class="select-filter mx-2">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Buscar</mat-label>
+                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
+                                </mat-form-field>
                             </div>
-                        </button>
+                            <mat-form-field class="col-lg-2 col-2" appearance="outline">
+                                <mat-select matInput disableOptionCentering [(value)]="pageSize">
+                                    <mat-option *ngFor="let entry of entries" [value]="entry">
+                                        {{ entry }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
                     </div>
-                    <div class="select-filter mx-2">
-                        <mat-form-field appearance="outline">
-                            <mat-label>Filtro</mat-label>
-                            <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)"/>
-                        </mat-form-field>
-                    </div>
+                    <responsive-table *ngIf="users" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <span *ngIf="!users" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
-            <div class="table-responsive p-3">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 30%">Nombre</th>
-                            <th style="width: 20%">Correo</th>
-                            <th style="width: 15%">Estado</th>
-                            <th style="width: 15%">Rol</th>
-                            <th style="width: 15%">Telefono</th>
-                            <th style="width: 15%">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let user of users | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
-                            <td>{{user.name}}</td>
-                            <td>{{user.email}}</td>
-                            <td>{{user.status!.identifier}}</td>
-                            <td>{{user.role!.identifier}}</td>
-                            <td>{{user.phone}}</td>
-                            <td style="white-space: nowrap">
-                                <button
-                                    type="button" routerLink="view/{{user._id}}"
-                                    class="btn btn-success btn-sm pb-0 mx-1">
-                                        <i class="material-icons">visibility</i>
-                                </button>
-                                <button
-                                    type="button" routerLink="edit/{{user._id}}"
-                                    class="btn btn-primary btn-sm pb-0 mx-1">
-                                        <i class="material-icons">edit</i>
-                                </button>
-                                <!-- <button
-                                    type="button" (click)="deleteUser(user)" [disabled]="user.isDeleting"
-                                    class="btn btn-danger btn-sm pb-0 mx-1">
-                                        <i *ngIf="!user.isDeleting" class="material-icons">delete</i>
-                                        <span *ngIf="user.isDeleting" class="spinner-border spinner-border-sm"></span>
-                                </button> -->
-                            </td>
-                        </tr>
-                        <tr *ngIf="!users">
-                            <td colspan="4" class="text-center">
-                                <span class="spinner-border spinner-border-lg align-center"></span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="d-flex flex-wrap justify-content-center pt-3">
-                <ngb-pagination [pageSize] = "5" [collectionSize]="this.users?.length ? this.users!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
             </div>
         </mat-card-content>
     </mat-card>

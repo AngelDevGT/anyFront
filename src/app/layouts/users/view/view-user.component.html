@@ -8,21 +8,7 @@
         </mat-card-header>
         <mat-card-content *ngIf="!loading">
             <br>
-            <div class="d-flex flex-wrap justify-content-around">
-                <div class="col-md-6">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item" *ngFor="let element of elements">
-                            <div class="d-flex flex-row align-items-center">
-                                <i class="material-icons icon p-2 element-icon">{{element.icon}}</i>
-                                <div class="p-2">
-                                    <h5 class="mb-1 text-muted">{{element.name}}</h5>
-                                    <h3 class="mb-1">{{element.value}}</h3>
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            <view-object [objectElements]="elements"></view-object>
             <div class="d-flex flex-wrap justify-content-center">
                 <button *ngIf="isAdmin() || isMine()"
                 type="button" routerLink="/users/edit/{{user!._id}}" [disabled]="submitting"

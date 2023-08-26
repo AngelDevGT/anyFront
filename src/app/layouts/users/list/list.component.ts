@@ -18,9 +18,34 @@ export class ListComponent implements OnInit {
     searchTerm?: string;
     pageSize = 5;
     page = 1;
-    dataSource!: MatTableDataSource<any>;
-    displayedColumns: string[] = ['name', 'email', 'role'];
-    isDeleting = false;
+    entries = [5, 10, 20, 50];
+    tableElementsValues?: any;
+    tableHeaders = [
+        {
+            style: "width: 20%",
+            name: "Nombre"
+        },
+        {
+            style: "width: 20%",
+            name: "Correo"
+        },
+        {
+            style: "width: 15%",
+            name: "Estado"
+        },
+        {
+            style: "width: 15%",
+            name: "Rol"
+        },
+        {
+            style: "width: 15%",
+            name: "Telefono"
+        },
+        {
+            style: "width: 25%",
+            name: "Acciones"
+        }
+    ];
 
     constructor(private accountService: AccountService, private alertService: AlertService) {}
 
@@ -37,7 +62,7 @@ export class ListComponent implements OnInit {
                 next: (users: any) => {
                     this.users = users.retrieveUsersResponse?.users;
                     this.allUsers = this.users;
-                    this.dataSource = new MatTableDataSource(this.users);
+                    this.setTableElements(this.users);
                 }
             });
     }
@@ -60,6 +85,7 @@ export class ListComponent implements OnInit {
             }
             return true;
         });
+        this.setTableElements(this.users);
     }
 
     // deleteUser(usr: any) {
@@ -78,10 +104,46 @@ export class ListComponent implements OnInit {
     //             }});
     // }
 
-
-    createFormGroup() {
-        return new FormGroup({
-            field: new FormControl(''),
+    setTableElements(elements?: User[]){
+        this.tableElementsValues = {
+            headers: this.tableHeaders,
+            rows: []
+        }
+        elements?.forEach((element) => {
+            const curr_row = {
+                row: [
+                    { type: "text", value: element.name, header_name: "Nombre" },
+                    { type: "text", value: element.email, header_name: "Correo" },
+                    { type: "text", value: element.status?.identifier, header_name: "Estado" },
+                    { type: "text", value: element.role?.identifier, header_name: "Rol" },
+                    { type: "text", value: element.phone, header_name: "Telefono" },
+                    {
+                        type: "button",
+                        style: "white-space: nowrap",
+                        button: [
+                            {
+                                type: "button",
+                                routerLink: "view/" + element._id,
+                                class: "btn btn-success btn-sm pb-0 mx-1",
+                                icon: {
+                                    class: "material-icons",
+                                    icon: "visibility"
+                                }
+                            },
+                            {
+                                type: "button",
+                                routerLink: "edit/" + element._id,
+                                class: "btn btn-primary btn-sm pb-0 mx-1",
+                                icon: {
+                                    class: "material-icons",
+                                    icon: "edit"
+                                }
+                            }
+                        ]
+                    }
+                  ],
+            }
+            this.tableElementsValues.rows.push(curr_row);
         });
     }
 

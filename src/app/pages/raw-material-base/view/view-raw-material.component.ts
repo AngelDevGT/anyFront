@@ -18,7 +18,6 @@ export class ViewRawMaterialComponent implements OnInit{
     submitting = false;
     loading = false;
     elements: any = [];
-    cardPhoto = undefined;
 
     constructor(private dataService: DataService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router) {
@@ -31,26 +30,17 @@ export class ViewRawMaterialComponent implements OnInit{
 
         if (this.id){
             this.dataService.getRawMaterialById(this.id)
-                .pipe(
-                    concatMap((rawMat: any) => {
+                .pipe(first())
+                .subscribe({
+                    next: (rawMat: any) => {
                         let rawMaterial = rawMat.GetRawMaterialResponse.rawMaterial;
                         if (rawMaterial){
                             this.rawMaterial = rawMaterial;
                             this.setRawMaterialElements(rawMaterial);
-                            if(rawMaterial.photo){
-                                return this.dataService.getImageById(rawMaterial.photo);
-                            }
                         }
                         this.loading = false;
-                        return of(null);
-                    })
-                )
-                .subscribe((img: any) => {
-                    if(img){
-                        this.cardPhoto = img.getImageResponse.image.image;
                     }
-                    this.loading = false;
-                });
+            });
         }
     }
 

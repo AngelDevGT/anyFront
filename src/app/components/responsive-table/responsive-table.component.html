@@ -1,0 +1,31 @@
+<div class="table-responsive p-3">
+  <table>
+        <thead>
+            <tr>
+                <th *ngFor="let header of headers" [style]="header.style">{{header.name}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr
+                *ngFor="let row of rows | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
+                <td *ngFor="let field of row.row">
+                  <p *ngIf="field.type === 'text'" class="row-value" [attr.data-label]="field.header_name">{{field.value}}</p>
+                  <div *ngIf="field.type === 'button'" class="row-value">
+                    <button *ngFor="let button_value of field.button" type="{{button_value.type}}" routerLink="{{button_value.routerLink}}"
+                          class="{{button_value.class}}">
+                          <i class="{{button_value.icon.class}}">{{button_value.icon.icon}}</i>
+                    </button>
+                  </div>
+                </td>
+            </tr>
+            <tr *ngIf="!rows">
+                <td colspan="4" class="text-center">
+                    <span class="spinner-border spinner-border-lg align-center"></span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="d-flex flex-wrap justify-content-center">
+    <ngb-pagination [pageSize] = "pageSize" [collectionSize]="this.rows?.length ? this.rows!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
+</div>
