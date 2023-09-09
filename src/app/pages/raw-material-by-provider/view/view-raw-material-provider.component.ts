@@ -63,8 +63,8 @@ export class ViewRawMaterialByProviderComponent implements OnInit{
 
     setRawMaterialElements(rawMaterial: RawMaterialByProvider){
         this.elements.push({icon : "person", name : "Proveedor", value : rawMaterial.provider?.name + " ( " + rawMaterial.provider?.email + " ) " });
-        this.elements.push({icon : "monetization_on", name : "Precio", value : rawMaterial.price});
-        this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
+        this.elements.push({icon : "monetization_on", name : "Precio", value : this.dataService.getFormatedPrice(Number(rawMaterial.price))});
+        this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure?.identifier});
         this.elements.push({icon : "feed", name : "Descripción", value : rawMaterial.rawMaterialBase?.description});
         this.elements.push({icon : "info", name : "Estado", value : rawMaterial.status?.identifier});
         this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(rawMaterial.creationDate!)});

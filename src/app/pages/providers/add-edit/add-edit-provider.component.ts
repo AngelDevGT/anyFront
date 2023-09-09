@@ -115,7 +115,7 @@ export class AddEditProviderComponent implements OnInit{
                 Validators.pattern(/\d+/),
                 ]),
             description: new FormControl('', [
-                Validators.required,
+                // Validators.required,
                 Validators.minLength(1),
                 Validators.maxLength(this.listMaxLength["description"]),
                 ]),

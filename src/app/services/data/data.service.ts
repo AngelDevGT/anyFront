@@ -14,7 +14,126 @@ import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-
 import { FinishedProduct } from '@app/models/product/finished-product.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 
-const activeStatus = {
+
+export const statusValues = {
+    inactivo: {
+        status: {
+            "id": 1,
+            "status": 1,
+            "text": "1",
+            "identifier": "Inactivo"
+        }
+    },
+    activo: {
+        status: {
+            "id": 2,
+            "status": 1,
+            "text": "2",
+            "identifier": "Activo"
+        }
+    },
+    eliminado: {
+        status: {
+            "id": 3,
+            "status": 1,
+            "text": "3",
+            "identifier": "Eliminado"
+        }
+    },
+    pendiente: {
+        status: {
+            "id": 3,
+            "status": 1,
+            "text": "3",
+            "identifier": "Eliminado"
+        }
+    },
+    en_curso: {
+        status: {
+            "id": 5,
+            "status": 1,
+            "text": "5",
+            "identifier": "En curso"
+        }
+    },
+    listo: {
+        status: {
+            "id": 6,
+            "status": 1,
+            "text": "6",
+            "identifier": "Listo"
+        }
+    },
+    recibido: {
+        status: {
+            "id": 7,
+            "status": 1,
+            "text": "7",
+            "identifier": "Recibido"
+        }
+    },
+    cancelado: {
+        status: {
+            "id": 8,
+            "status": 1,
+            "text": "8",
+            "identifier": "Cancelado"
+        }
+    },
+    entregado: {
+        status: {
+            "id": 9,
+            "status": 1,
+            "text": "9",
+            "identifier": "Entregado"
+        }
+    },
+    verificado: {
+        status: {
+            "id": 10,
+            "status": 1,
+            "text": "10",
+            "identifier": "Verificado"
+        }
+    },
+    devuelto: {
+        status: {
+            "id": 11,
+            "status": 1,
+            "text": "11",
+            "identifier": "Devuelto"
+        }
+    }
+}
+
+export const paymentStatusValues = {
+    pendiente: {
+        paymentStatus: {
+            "id": 1,
+            "status": 1,
+            "text": "1",
+            "identifier": "Pendiente"
+        }
+    },
+    abonado: {
+        paymentStatus: {
+            "id": 2,
+            "status": 1,
+            "text": "2",
+            "identifier": "Abonado"
+        }
+    },
+    pagado: {
+        paymentStatus: {
+            "id": 3,
+            "status": 1,
+            "text": "3",
+            "identifier": "Pagado"
+        }
+    },
+}
+
+export const activeStatus = {
     status: {
         "id": 2,
         "status": 1,
@@ -23,7 +142,7 @@ const activeStatus = {
     }
 };
 
-const deleteStatus = {
+export const deleteStatus = {
     status: {
         "id": 3,
         "status": 1,
@@ -32,7 +151,7 @@ const deleteStatus = {
     }
 }
 
-const pendingPaymentStatus = {
+export const pendingPaymentStatus = {
     paymentStatus: {
         "id": 1,
         "status": 1,
@@ -40,6 +159,25 @@ const pendingPaymentStatus = {
         "identifier": "Pendiente"
     }
 }
+
+export const abonadoPaymentStatus = {
+    paymentStatus: {
+        "id": 2,
+        "status": 1,
+        "text": "2",
+        "identifier": "Abonado"
+    }
+}
+
+export const paidPaymentStatus = {
+    paymentStatus: {
+        "id": 3,
+        "status": 1,
+        "text": "3",
+        "identifier": "Pagado"
+    }
+}
+
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
@@ -205,6 +343,10 @@ export class DataService {
 
     getFormatedPrice(price: number){
         return "Q. " + price.toFixed(2);
+    }
+
+    getDecimalFromText(num: string){
+        return (Number(num) || 0).toFixed(2);
     }
 
 
@@ -478,13 +620,20 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/addRawMaterialOrder`, params);
     }
 
-    updateRawMaterialOrder(id: string, rmOrder: RawMaterialOrder){
+    updateRawMaterialOrder(rmOrder: RawMaterialOrder){
         let params = JSON.stringify({
             updateRawMaterialOrder: {
-                "_id": id,
                 ...rmOrder
             }});
         return this.http.post(`${environment.apiUrl}/updateRawMaterialOrder`, params);
+    }
+
+    verifyRawMaterialOrder(orderId: string){
+        let params = JSON.stringify({
+            verifyRawMaterialOrder: {
+                rawMaterialOrderID: orderId,
+            }});
+        return this.http.post(`${environment.apiUrl}/verifyRawMaterialOrder`, params);
     }
 
     deleteRawMaterialOrder(params: any) {
@@ -494,6 +643,16 @@ export class DataService {
                 ...deleteStatus
             }});
         return this.http.post(`${environment.apiUrl}/updateFinishedProduct`, deleteUser);
+    }
+
+    /** INVENTORY */
+
+    getAllInventoryByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveInventory: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveInventory`, parameters);
     }
     
 

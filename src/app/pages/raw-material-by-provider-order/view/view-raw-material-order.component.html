@@ -12,8 +12,9 @@
                 <div class="col-12">
                     <view-object [objectElements]="elements"></view-object>
                 </div>
-                <div class="col-md-9 col-sm-12">
-                    <responsive-table *ngIf="this.rawMaterialOrder" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
+                    <responsive-table *ngIf="this.rawMaterialOrder" [tableElements]="tableElementsValues"
+                        [pageSize]="pageSize"></responsive-table>
                 </div>
                 <div class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
                     <div class="total">
@@ -28,23 +29,136 @@
             </div>
             <div class="d-flex flex-wrap justify-content-center">
                 <button
-                type="button" routerLink="/establishment/edit/{{rawMaterialOrder!._id}}" [disabled]="submitting"
-                class="btn btn-primary m-2">
-                <div class="d-flex flex-row p-1">
-                    <i class="material-icons icon">edit</i>
-                    <span class="px-1">EDITAR</span>
-                </div>
+                    *ngIf="rawMaterialOrder?.paymentStatus?.id == 1 || rawMaterialOrder?.paymentStatus?.id == 2 && rawMaterialOrder?.status?.id == 2"
+                    type="button" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#payModal"
+                    class="btn btn-warning m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">payments</i>
+                        <span class="px-1">PAGAR</span>
+                    </div>
                 </button>
-                <button
-                type="button" (click)="deleteEstablishment()" [disabled]="submitting"
-                class="btn btn-danger m-2">
-                <div class="d-flex flex-row p-1">
-                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="material-icons icon">delete</i>
-                    <span class="px-1">ELIMINAR</span>
-                </div>
+                <button *ngIf="rawMaterialOrder?.paymentStatus?.id == 3 && rawMaterialOrder?.status?.id == 2"
+                    type="button" (click)="receiveOrder()" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
+                    class="btn btn-success m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">receipt_long</i>
+                        <span class="px-1">RECIBIR PEDIDO</span>
+                    </div>
+                </button>
+                <button *ngIf="rawMaterialOrder?.paymentStatus?.id == 3 && rawMaterialOrder?.status?.id == 7"
+                    type="button" (click)="validateOrder()" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
+                    class="btn btn-success m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">done_outline</i>
+                        <span class="px-1">VALIDAR PEDIDO</span>
+                    </div>
+                </button>
+                <button type="button" (click)="generatePDF()" [disabled]="submitting" class="btn btn-secondary m-2">
+                    <div class="d-flex flex-row p-1">
+                        <i class="material-icons icon">download</i>
+                        <span class="px-1">PDF</span>
+                    </div>
+                </button>
+                <button type="button" routerLink="/establishment/edit/{{rawMaterialOrder!._id}}" [disabled]="submitting"
+                    class="btn btn-primary m-2">
+                    <div class="d-flex flex-row p-1">
+                        <i class="material-icons icon">edit</i>
+                        <span class="px-1">EDITAR</span>
+                    </div>
+                </button>
+                <button type="button" (click)="deleteEstablishment()" [disabled]="submitting"
+                    class="btn btn-danger m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">delete</i>
+                        <span class="px-1">ELIMINAR</span>
+                    </div>
                 </button>
             </div>
         </mat-card-content>
     </mat-card>
+</div>
+
+
+<div class="modal hide fade" id="payModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    role="dialog" aria-labelledby="payModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">Pagar pedido</h1>
+                <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form [formGroup]="payForm">
+                    <div class="d-flex flex-wrap justify-content-center">
+                        <div class="px-2">
+                            <mat-form-field class="custom-input align-self-start" appearance="outline">
+                                <mat-label>Monto (Quetzales)</mat-label>
+                                <input id="discount-modal-form" type="text" formControlName="pendingAmount" matInput
+                                    [ngClass]="{ 'is-invalid': f['pendingAmount'].errors }"
+                                    (input)="setAmountValue($event)" />
+                                <div class="invalid-feedback" *ngIf="f['pendingAmount'].errors">
+                                    <div *ngIf="f['pendingAmount'].hasError('required')">
+                                        Monto requerido
+                                    </div>
+                                    <div *ngIf="f['pendingAmount'].hasError('pattern')">
+                                        Debe contener unicamente numeros positivos con maximo dos decimales.
+                                        <strong>E.g. 15.50</strong>
+                                    </div>
+                                    <div *ngIf="f['pendingAmount'].hasError('maxAmountExceeded')">
+                                        El monto no puede ser mayor que {{ rawMaterialOrder?.pendingAmount |
+                                        currency:'Q':'symbol':'1.2-2' }}
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <button type="button" (click)="setTotalAmount()" class="btn btn-danger m-2">
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons icon">attach_money</i>
+                                    <span class="px-1">Total</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="row justify-content-center p-3">
+                            <div class="total">
+                                <p class="total-title">Monto total</p>
+                                <p class="total-amount">Q{{ rawMaterialOrder?.finalAmount | number: '1.2-2' }}</p>
+                            </div>
+                            <div class="total">
+                                <p class="total-title">Monto pendiente</p>
+                                <p class="total-amount">Q{{ rawMaterialOrder?.pendingAmount | number: '1.2-2' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()"
+                        data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-primary" (click)="onSaveForm()" [disabled]="!payForm.valid || submitting">Pagar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal hide fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">{{confirmDialogTitle}}</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{confirmDialogText}}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">CANCELAR</button>
+                <button type="button" [disabled]="submitting" (click)="onConfirmDialog()" data-bs-dismiss="modal" class="btn btn-primary">ACEPTAR</button>
+            </div>
+        </div>
+    </div>
 </div>

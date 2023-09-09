@@ -4,6 +4,10 @@ import { first } from 'rxjs/operators';
 import { AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Establishment } from '@app/models/establishment.model';
+import pdfMake from "pdfmake/build/pdfmake";  
+import pdfFonts from "pdfmake/build/vfs_fonts";  
+import { TDocumentDefinitions } from 'pdfmake/interfaces';
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({ 
     selector: 'page-establishment-provider',
@@ -67,5 +71,67 @@ export class ViewEstablishmentComponent implements OnInit{
         this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(establishment.updateDate!.replaceAll("\"",""))});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : "Pendiente..."});
     }
+
+    generatePDF() {  
+        let docDefinition:TDocumentDefinitions = {
+            header: 'C#Corner PDF Header',
+            content: [
+                {  
+                    columns: [ 
+                        [
+                            {
+                                qr: 'sdflkasdf', fit: 50
+                            }
+                        ]
+                    ]  
+                },  
+              {
+                text: 'Información del Establecimiento',
+                style: 'header',
+              },
+              {
+                text: `Nombre: ${this.establishment?.name || 'N/A'}`,
+                margin: [0, 10],
+              },
+              {
+                text: `Dirección: ${this.establishment?.address || 'N/A'}`,
+                margin: [0, 5],
+              },
+              {
+                text: `Descripción: ${this.establishment?.description || 'N/A'}`,
+                margin: [0, 5],
+              },
+              {
+                text: `Fecha de Creación: ${this.establishment?.creationDate || 'N/A'}`,
+                margin: [0, 5],
+              },
+              {
+                text: `Fecha de Actualización: ${this.establishment?.updateDate || 'N/A'}`,
+                margin: [0, 5],
+              },
+              {
+                text: `Creador del Usuario: ${this.establishment?.creatorUser || 'N/A'}`,
+                margin: [0, 5],
+              },
+              {
+                text: `Estado: ${this.establishment?.status || 'N/A'}`,
+                margin: [0, 10],
+              }
+            ],
+            styles: {
+              header: {
+                fontSize: 18,
+                bold: true,
+                margin: [0, 0, 0, 10],
+              },
+            },
+          };
+        // let docDefinition = {  
+        //     header: 'C#Corner PDF Header',  
+        //     content: 'Sample PDF generated with Angular and PDFMake for C#Corner Blog'  
+        // };  
+        
+        pdfMake.createPdf(docDefinition).open();  
+    }  
 
 }

@@ -46,6 +46,7 @@ import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/v
 import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-creation.component";
 import { MatDialogModule } from "@angular/material/dialog";
 import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provider-order/view/view-raw-material-order.component";
+import { ListInventoryRMProviderBodegaComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -94,6 +95,7 @@ import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provid
       ListFinishedProductComponent,
       ViewFinishedProductComponent,
       AddEditProductCreationComponent,
+      ListInventoryRMProviderBodegaComponent,
       // UsersLayoutComponent
   ]
 })

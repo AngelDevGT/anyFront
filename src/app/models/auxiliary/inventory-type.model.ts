@@ -1,5 +1,6 @@
 export class InventoryType {
-    _id?: string;
-    name?: string;
-    description?: string;
+    id?: number;
+    status?: number;
+    text?: string;
+    identifier?: string;
 }

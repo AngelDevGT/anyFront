@@ -66,7 +66,7 @@ export class ListRawMaterialComponent implements OnInit {
                     photo: element.photo,
                     descriptions: [
                         {name:'Descripcion:', value: element.description},
-                        {name:'Medida:', value: element.measure},
+                        {name:'Medida:', value: element.measure?.identifier},
                         {name:'Creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
                         {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!)},
                     ],
@@ -85,9 +85,9 @@ export class ListRawMaterialComponent implements OnInit {
         if (this.rawMaterials){
             this.rawMaterials = this.allRawMaterials?.filter((val) => {
                 if(this.searchTerm){
-                    const nameMatch = val.name!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const measureMatch = val.measure!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const descriptionMatch = val.description!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const nameMatch = val.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const measureMatch = val.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const descriptionMatch = val.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     return nameMatch || measureMatch || descriptionMatch;
                 }
                 return true;

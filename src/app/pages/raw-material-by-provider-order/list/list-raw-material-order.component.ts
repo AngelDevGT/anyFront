@@ -34,11 +34,15 @@ export class ListRawMaterialOrderComponent implements OnInit {
             name: "Proveedor"
         },
         {
-            style: "width: 15%",
+            style: "width: 10%",
+            name: "Estado del pedido"
+        },
+        {
+            style: "width: 10%",
             name: "Tipo de pago"
         },
         {
-            style: "width: 15%",
+            style: "width: 10%",
             name: "Estado de pago"
         },
         {
@@ -105,6 +109,7 @@ export class ListRawMaterialOrderComponent implements OnInit {
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: element.provider.name, header_name: "Proveedor" },
+                    { type: "text", value: element.status.identifier, header_name: "Estado del pedido" },
                     { type: "text", value: element.paymentType.identifier, header_name: "Tipo de pago" },
                     { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total" },

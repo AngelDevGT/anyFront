@@ -60,7 +60,7 @@ export class ViewRawMaterialComponent implements OnInit{
     }
 
     setRawMaterialElements(rawMaterial: RawMaterialBase){
-        this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.measure});
+        this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.measure?.identifier});
         this.elements.push({icon : "info", name : "Estado", value : rawMaterial.status?.identifier});
         this.elements.push({icon : "feed", name : "Descripción", value : rawMaterial.description});
         this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(rawMaterial.creationDate!)});

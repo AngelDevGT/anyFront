@@ -1,6 +1,6 @@
 export class Status {
-    id?: string;
-    status?: string;
+    id?: number;
+    status?: number;
     text?: string;
     identifier?: string;
 }

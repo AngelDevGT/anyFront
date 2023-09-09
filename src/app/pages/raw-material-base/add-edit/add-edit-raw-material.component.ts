@@ -19,6 +19,7 @@ FormControl,
 import { Establishment } from '@app/models/establishment.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
+import { Measure } from '@app/models';
 
 @Component({ 
     selector: 'page-add-edit-raw-material',
@@ -29,6 +30,9 @@ export class AddEditRawMaterialComponent implements OnInit{
 
     rawMaterialForm!: FormGroup;
     currentRawMaterial?: RawMaterialBase;
+    selectedMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    selectedMeasure?: Measure;
+    measureOptions?: Measure[];
     fileList: FileList | null | undefined;
     imagenCargada: string | ArrayBuffer | null | undefined;
     imgResultAfterResizeMax: DataUrl = '';
@@ -49,6 +53,10 @@ export class AddEditRawMaterialComponent implements OnInit{
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
         private router: Router) {
+            
+            this.selectedMeasureSubject.subscribe(value => {
+                this.setMeasure(String(value));
+            });
     }
 
     ngOnInit(): void {
@@ -59,25 +67,35 @@ export class AddEditRawMaterialComponent implements OnInit{
         this.title = 'Crear Materia Prima';
 
         if (this.id){
-            
             this.title = 'Actualizar Materia Prima';
-            this.loading = true;
-
-            this.dataService.getRawMaterialById(this.id)
-                .pipe(first())
-                    .subscribe((rawMat: any) => {
-                        let rawMaterial = rawMat.GetRawMaterialResponse.rawMaterial;
-                        if (rawMaterial){
-                            this.currentRawMaterial = rawMaterial;
-                            this.rawMaterialForm.patchValue(rawMaterial);
-                            if(rawMaterial.photo){
-                                this.selectedImage = this.dataService.getImageWithURL(rawMaterial.photo);
-                            }
-                        }
-                        this.loading = false;
-                    });
         }
 
+        this.loading = true;
+
+        this.dataService.getAllConstantsByFilter({fc_id_catalog: "unitBase", enableElements: "true"})
+            .pipe(
+                concatMap((measures: any) => {
+                    this.measureOptions = measures.retrieveCatalogGenericResponse.elements;
+                    if (this.id){
+                        return this.dataService.getRawMaterialById(this.id);
+                    }
+                    this.loading = false;
+                    return of(null);
+                })
+            )
+            .subscribe((rawMat: any) => {
+                if (rawMat){
+                    let rawMaterial = rawMat.GetRawMaterialResponse.rawMaterial;
+                    if (rawMaterial){
+                        this.currentRawMaterial = rawMaterial;
+                        this.rawMaterialForm.patchValue(rawMaterial);
+                        if(rawMaterial.photo){
+                            this.selectedImage = this.dataService.getImageWithURL(rawMaterial.photo);
+                        }
+                    }
+                }
+                this.loading = false;
+            });
 
     }
 
@@ -137,6 +155,12 @@ export class AddEditRawMaterialComponent implements OnInit{
         return this.rawMaterialForm.get('photo');
     }
 
+    setMeasure(measureId: string){
+        if(measureId){
+            this.selectedMeasure = this.measureOptions?.find(meas => String(meas.id) === measureId);
+        }
+    }
+    
     saveRawMaterial(imgName?: string){
         if(this.id){
             let newRawMaterial = {
@@ -145,7 +169,11 @@ export class AddEditRawMaterialComponent implements OnInit{
             };
             return this.dataService.updateRawMaterial(this.id, newRawMaterial, imgName);
         }
-        return this.dataService.addRawMaterial(this.rawMaterialForm.value, imgName);
+        let newRawMaterial = {
+            ...this.rawMaterialForm.value,
+            measure: this.selectedMeasure
+        }
+        return this.dataService.addRawMaterial(newRawMaterial, imgName);
     }
 
     createFormGroup() {
@@ -155,7 +183,7 @@ export class AddEditRawMaterialComponent implements OnInit{
           ]),
           measure: new FormControl('', [Validators.required]),
           description: new FormControl('', [
-            Validators.required
+            // Validators.required
           ]),
         //   photo: new FormControl('')
         });

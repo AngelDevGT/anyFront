@@ -8,5 +8,8 @@ export class RawMaterialOrderElement {
     quantity?: string;
     price?: string;
     discount?: string;
+    subtotalPrice?: string;
+    totalDiscount?: string;
+    totalPrice?: string;
     date?: string;
 }

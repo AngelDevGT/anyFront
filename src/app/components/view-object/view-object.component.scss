@@ -12,13 +12,28 @@
 
 .element-icon{
     color: #ff6e20;
+    // color: gray;
 }
 
 .element-title{
-    font-size: medium;
-    color: gray;
+    font-size: large;
+    // font-weight: bold;
+    // color: gray;
+    // color: black;
+    // font-size: large;
+    // font-weight: bold;
 }
 
 .element-value{
     font-size: large;
+    color: #5b5b5b;
+    // color: black;
+    // font-size: large;
+    // text-align: right;
 }
+
+.element-title-class{
+    display: flex;
+    justify-content: space-between; /* Alinea los elementos a la izquierda y derecha */
+    width: 100%;
+  }

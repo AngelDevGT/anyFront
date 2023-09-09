@@ -68,9 +68,10 @@ export class ListProviderComponent implements OnInit {
             this.providers = this.allProviders?.filter((val) => {
                 if(this.searchTerm){
                     const nameMatch = val.name!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const phoneMatch = val.phone?.toLocaleLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const companyMatch = val.company!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const descriptionMatch = val.description!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return nameMatch || companyMatch || descriptionMatch;
+                    return nameMatch || phoneMatch || companyMatch || descriptionMatch;
                 }
                 return true;
             });

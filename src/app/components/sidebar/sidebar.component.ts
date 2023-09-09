@@ -97,17 +97,25 @@ export class SidebarComponent implements OnInit {
         },
         {
           root_class : "list-group list-group-flush",
-          router_link : "/rawMaterialByProvider/order",
+          router_link : "/rawMaterialsByProvider",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Orden de Materia Prima",
+          link_name : "Materia Prima con Proveedor",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         },
         {
           root_class : "list-group list-group-flush",
-          router_link : "/rawMaterialsByProvider",
+          router_link : "/rawMaterialByProvider/order",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Materia Prima por Proveedor",
+          link_name : "Pedidos de Materia Prima",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/inventory/rawMaterialByProvider/bodega",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Inventario Materia Prima con Proveedor",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         }

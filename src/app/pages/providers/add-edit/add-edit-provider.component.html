@@ -70,7 +70,7 @@
                             </mat-form-field>
                             <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
                                 <mat-label>Descripcion</mat-label>
-                                <textarea id="nombre-form-crear-comunidad" type="text" #description maxlength="{{listMaxLength['description']}}" formControlName="description" matInput
+                                <textarea id="description-form-crear-comunidad" type="text" #description maxlength="{{listMaxLength['description']}}" formControlName="description" matInput
                                     [ngClass]="{ 'is-invalid': f['description'].errors }"></textarea>
                                     <mat-hint align="end">{{description.value.length}} / {{listMaxLength['description']}}</mat-hint>
                                 <div class="invalid-feedback" *ngIf="f['description'].errors">

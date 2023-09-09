@@ -14,7 +14,7 @@
                     <div class="row justify-content-center">
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
                             <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
-                                <mat-label>Nombre de la orden</mat-label>
+                                <mat-label>Nombre del pedido</mat-label>
                                 <input id="nombre-form-crear-comunidad" type="text" formControlName="name" matInput
                                     [ngClass]="{ 'is-invalid': f['name'].errors }" />
                                 <div class="invalid-feedback" *ngIf="f['name'].errors">
@@ -52,12 +52,12 @@
                                 </div>
                             </mat-form-field>
                             <mat-form-field class="col-sm-12 col-md-5 custom-input align-self-start" appearance="outline">
-                                <mat-label>Descripcion</mat-label>
+                                <mat-label>Notas</mat-label>
                                 <textarea id="nombre-form-crear-comunidad" type="text" formControlName="comment" matInput
                                     [ngClass]="{ 'is-invalid': f['comment'].errors }"></textarea>
                                 <div class="invalid-feedback" *ngIf="f['comment'].errors">
                                     <div *ngIf="f['comment'].errors['maxlength']">
-                                        La descripcion debe tener maximo 100 caracteres
+                                        Las notas deben tener maximo 100 caracteres
                                     </div>
                                 </div>
                             </mat-form-field>
@@ -79,8 +79,8 @@
                                             </thead>
                                             <tbody>
                                                 <tr *ngFor="let rawMaterial of filteredRawMaterials; let i = index">
-                                                    <td>{{rawMaterial.rawMaterialBase!.name}}</td>
-                                                    <td>{{rawMaterial.rawMaterialBase!.measure}}</td>
+                                                    <td>{{rawMaterial.rawMaterialBase?.name}}</td>
+                                                    <td>{{rawMaterial.rawMaterialBase?.measure?.identifier}}</td>
                                                     <td>Q{{rawMaterial.price}}</td>
                                                     <!-- <td>{{rawMaterial.status!.id}}</td> -->
                                                     <td style="white-space: nowrap">
@@ -108,20 +108,22 @@
                                             <thead>
                                                 <tr>
                                                     <th style="width: 30%">Nombre</th>
-                                                    <th style="width: 10%">Medida</th>
-                                                    <th style="width: 15%">Precio</th>
+                                                    <th style="width: 10%">Precio</th>
+                                                    <th style="width: 10%">Descuento</th>
                                                     <th style="width: 15%">Cantidad</th>
-                                                    <th style="width: 15%">Descuento</th>
+                                                    <th style="width: 10%">Medida</th>
+                                                    <th style="width: 10%">Total</th>
                                                     <th style="width: 15%">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr *ngFor="let orderElement of rawMaterialOrderElements; let i = index">
                                                     <td>{{orderElement.rawMaterialByProvider!.rawMaterialBase!.name}}</td>
-                                                    <td>{{orderElement.measure?.identifier}}</td>
                                                     <td>Q{{orderElement.price}}</td>
-                                                    <td>{{orderElement.quantity}}</td>
                                                     <td>Q{{orderElement.discount}}</td>
+                                                    <td>{{orderElement.quantity}}</td>
+                                                    <td>{{orderElement.measure?.identifier}}</td>
+                                                    <td>Q{{orderElement.totalPrice}}</td>
                                                     <!-- <td><input [(ngModel)]="orderElement.quantity" [ngModelOptions]="{ standalone: true }" (keydown)="onQuantityKeydown($event)"
                                                         style="width: 100%;" type="text" placeholder="Cantidad" aria-label="Cantidad" min="1"
                                                         type="number">
@@ -165,7 +167,7 @@
                             <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||orderForm.invalid||!rawMaterialOrderElements||rawMaterialOrderElements.length<=0"
                                 class="btn btn-outline-success btn-lg">
                                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                                Guardar producto
+                                Guardar pedido
                             </button>
                         </div>
                     </div>
@@ -176,55 +178,76 @@
 </div>
 
 <div class="modal fade" id="rawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="rawMaterialModalLabel" aria-hidden="true">
-<div class="modal-dialog">
-    <div class="modal-content">
-        <div *ngIf="selectedRMP" class="modal-header">
-            <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{this.selectedRMP.rawMaterialBase?.name}}</h1>
-            <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div *ngIf="selectedRMP" class="modal-body">
-            <form [formGroup]="rawMaterialForm">
-                <div class="d-flex flex-wrap justify-content-center">
-                    <div class="col-12">
-                        <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedRMP.rawMaterialBase?.photo"></view-object>
-                    </div>
-                    <div class="col-10 py-4">
-                        <select class="form-select" (ngModelChange)="changeMeasure($event)" formControlName="measure">
-                            <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
-                        </select>
-                    </div>
-                    <mat-form-field class="col-10 custom-input" appearance="outline">
-                        <mat-label>Cantidad</mat-label>
-                        <input id="quantity-form" type="text" formControlName="quantity" matInput
-                            [ngClass]="{ 'is-invalid': r['quantity'].errors }" />
-                        <div class="invalid-feedback" *ngIf="r['quantity'].errors">
-                            <div *ngIf="r['quantity'].hasError('required')">
-                                Descuento requerido
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div *ngIf="selectedRMP" class="modal-header">
+                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{this.selectedRMP.rawMaterialBase?.name}}</h1>
+                <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form [formGroup]="rawMaterialForm">
+                    <div class="d-flex flex-wrap justify-content-center">
+                        <!-- <div class="col-12"> -->
+                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedRMP?.rawMaterialBase?.photo"></view-object>
+                        <!-- </div> -->
+                        <div class="d-flex flex-wrap justify-content-center col-12 p-3">
+                            <div class="pb-4 col-6 col-lg-3">
+                                <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
+                                    <option disabled selected value="">Medida</option>
+                                    <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
+                                </select>
                             </div>
-                            <div *ngIf="r['quantity'].hasError('pattern')">
-                                Debe contener unicamente numeros positivos
+                            <div class="px-2">
+                                <mat-form-field class="custom-input" appearance="outline">
+                                    <mat-label>Cantidad</mat-label>
+                                    <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
+                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="setQuantityValue($event)" />
+                                    <div class="invalid-feedback" *ngIf="r['quantity'].errors">
+                                        <div *ngIf="r['quantity'].hasError('required')">
+                                            Cantidad requerida
+                                        </div>
+                                        <div *ngIf="r['quantity'].hasError('pattern')">
+                                            Debe contener unicamente numeros positivos
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                            </div>
+                            <div class="px-2">
+                                <mat-form-field class="custom-input align-self-start" appearance="outline">
+                                    <mat-label>Descuento (Quetzales)</mat-label>
+                                    <input id="discount-modal-form" type="text" formControlName="discount" matInput
+                                        [ngClass]="{ 'is-invalid': r['discount'].errors }" (input)="setDiscountValue($event)" />
+                                    <div class="invalid-feedback" *ngIf="r['discount'].errors">
+                                        <div *ngIf="r['discount'].hasError('required')">
+                                            Descuento requerido
+                                        </div>
+                                        <div *ngIf="r['discount'].hasError('pattern')">
+                                            Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                        </div>
+                                    </div>
+                                </mat-form-field>
                             </div>
                         </div>
-                    </mat-form-field>
-                    <mat-form-field class="col-10 custom-input align-self-start" appearance="outline">
-                        <mat-label>Descuento (Quetzales)</mat-label>
-                        <input id="price-form" type="text" formControlName="discount" matInput
-                            [ngClass]="{ 'is-invalid': r['discount'].errors }" />
-                        <div class="invalid-feedback" *ngIf="r['discount'].errors">
-                            <div *ngIf="r['discount'].hasError('required')">
-                                Descuento requerido
+                        <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                            <div class="subtotal">
+                                <p class="subtotal-title">Subtotal</p>
+                                <p class="subtotal-amount">{{ modalSubtotalText }}</p>
                             </div>
-                            <div *ngIf="r['discount'].hasError('pattern')">
-                                Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                            <div class="descuento">
+                                <p class="subtotal-title">Descuento</p>
+                                <p class="subtotal-amount">{{ modalTotalDiscountText }}</p>
+                            </div>
+                            <div class="total">
+                                <p class="total-title">Total</p>
+                                <p class="total-amount">{{ modalTotalText }}</p>
                             </div>
                         </div>
-                    </mat-form-field>
-                </div>
-            </form>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">Guardar</button>
+                <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">Agregar</button>
             </div>
         </div>
     </div>

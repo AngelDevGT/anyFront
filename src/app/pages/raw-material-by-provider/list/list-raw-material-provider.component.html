@@ -1,7 +1,7 @@
 <div class="genericCard">
     <mat-card>
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Materia Prima Por Proveedor</mat-card-title>
+            <mat-card-title>Materia Prima Con Proveedor</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div class="container">
@@ -21,7 +21,7 @@
                         </div>
                         <div class="select-filter mx-2">
                             <mat-form-field appearance="outline">
-                                <mat-label>Filtro</mat-label>
+                                <mat-label>Buscar</mat-label>
                                 <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)"/>
                             </mat-form-field>
                         </div>

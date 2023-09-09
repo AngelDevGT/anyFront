@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {BehaviorSubject, Observable, of} from 'rxjs';
+import {BehaviorSubject, Observable, forkJoin, of} from 'rxjs';
 import {concatMap, first, map, startWith} from 'rxjs/operators';
 import {
     DataUrl,
@@ -55,6 +55,14 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
     totalDiscount = 0;
     subtotal = 0;
     total = 0;
+    modalQuantity = 0;
+    modalDiscount = 0;
+    modalTotalDiscount = 0;
+    modalSubtotal = 0;
+    modalTotal = 0;
+    modalTotalDiscountText?: string;
+    modalSubtotalText?: string;
+    modalTotalText?: string;
     id?: string;
     title!: string;
     loading = true;
@@ -87,7 +95,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
         this.orderForm = this.createFormGroup();
         this.rawMaterialForm = this.createMaterialFormGroup();
-        this.title = 'Crear Orden de Materia Prima';
+        this.title = 'Crear Pedido de Materia Prima';
 
         if (this.id){
             this.title = 'Actualizar Orden';
@@ -98,32 +106,53 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
         this.selectedRawMaterials = [];
         this.rawMaterialOrderElements = [];
 
+        const providerRequest = this.dataService.getAllProvidersByFilter({"status": 1});
+        const paymentTypeRequest = this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentType", enableElements: "true"});
+        const measureRequest = this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"});
+        const rawMaterialByProviderRequest = this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}});
 
-        this.dataService.getAllProvidersByFilter({"status": 1})
-        .pipe(
-            concatMap((providers: any) => {
-                this.providerOptions = providers.retrieveProviderResponse?.providers;
-                return this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentType", enableElements: "true"});
-            }),
-            concatMap((paymentTypes: any) => {
-                this.paymentTypeOptions = paymentTypes.retrieveCatalogGenericResponse.elements;
-                return this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"});
-            }),
-            concatMap((measures: any) => {
-                this.measureOptions = measures.retrieveCatalogGenericResponse.elements;
-                this.filteredMeasureOptions = measures.retrieveCatalogGenericResponse.elements;
-                return this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}});
-            })
-        )
-        .subscribe((rawMaterials: any) => {
-            this.rawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
-            this.filteredRawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
-            if(this.id){
-                return this.dataService.getRawMaterialByProviderById(this.id);
+        forkJoin([providerRequest, paymentTypeRequest, measureRequest, rawMaterialByProviderRequest]).subscribe({
+            next: (result: any) => { 
+                this.providerOptions = result[0].retrieveProviderResponse?.providers;
+                this.paymentTypeOptions = result[1].retrieveCatalogGenericResponse.elements;
+                this.measureOptions = result[2].retrieveCatalogGenericResponse.elements;
+                this.filteredMeasureOptions = result[2].retrieveCatalogGenericResponse.elements;
+                this.rawMaterials = result[3].retrieveRawMaterialByProviderResponse?.rawMaterial;
+                this.filteredRawMaterials = result[3].retrieveRawMaterialByProviderResponse?.rawMaterial;
+                // console.log(respuestaPeticion1, respuestaPeticion2, respuestaPeticion3);
+            },
+            error: (e) =>  console.error('Error en una de las peticiones', e),
+            complete: () => {
+                // console.log('complete')
+                this.loading = false;
             }
-            this.loading = false;
-            return of(null);  
         });
+
+        // this.dataService.getAllProvidersByFilter({"status": 1})
+        // .pipe(
+        //     concatMap((providers: any) => {
+        //         this.providerOptions = providers.retrieveProviderResponse?.providers;
+        //         return this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentType", enableElements: "true"});
+        //     }),
+        //     concatMap((paymentTypes: any) => {
+        //         this.paymentTypeOptions = paymentTypes.retrieveCatalogGenericResponse.elements;
+        //         return this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"});
+        //     }),
+        //     concatMap((measures: any) => {
+        //         this.measureOptions = measures.retrieveCatalogGenericResponse.elements;
+        //         this.filteredMeasureOptions = measures.retrieveCatalogGenericResponse.elements;
+        //         return this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}});
+        //     })
+        // )
+        // .subscribe((rawMaterials: any) => {
+        //     this.rawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
+        //     this.filteredRawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
+        //     if(this.id){
+        //         return this.dataService.getRawMaterialByProviderById(this.id);
+        //     }
+        //     this.loading = false;
+        //     return of(null);  
+        // });
 
     }
 
@@ -136,6 +165,8 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
         this.selectedRMP = undefined;
         this.selectedMeasure = undefined;
         this.currentMeasurePrice = 0;
+        this.modalDiscount = 0;
+        this.modalQuantity = 0;
         this.elements = [];
     }
 
@@ -171,7 +202,10 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
             rawMaterialByProvider: this.selectedRMP,
             ...this.rawMaterialForm.value,
             price: this.currentMeasurePrice,
-            measure: this.selectedMeasure
+            measure: this.selectedMeasure,
+            subtotalPrice: this.modalSubtotal,
+            totalDiscount: this.modalTotalDiscount,
+            totalPrice: this.modalTotal,
         };
         console.log(newOrderElement);
         this.rawMaterialOrderElements?.push(newOrderElement);
@@ -205,6 +239,10 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
     get measureSelect(){
         return this.rawMaterialForm.get('measure');
+    }
+
+    get discountInput(){
+        return this.rawMaterialForm.get('discount');
     }
 
     setProvider(provider: any){
@@ -241,6 +279,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
             this.currentMeasurePrice = Number(this.selectedRMP?.price) * Number(this.selectedMeasure?.unitBase?.quantity);
             this.elements.push({icon : "payments", name : "Precio (" + this.selectedMeasure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(this.currentMeasurePrice))});
         }
+        this.calculateModalTotals();
     }
 
     selectRawMaterial(rawMaterial: RawMaterialByProvider, indexToRemove: number){
@@ -248,7 +287,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
         this.selectedRMP = rawMaterial;
         this.elements = [];
         this.setRawMaterialElements(this.selectedRMP!);
-        this.filteredMeasureOptions = this.measureOptions?.filter(item => this.selectedRMP?.rawMaterialBase?.measure?.includes(item.unitBase?.name!));
+        this.filteredMeasureOptions = this.measureOptions?.filter(item => this.selectedRMP?.rawMaterialBase?.measure?.identifier?.includes(item.unitBase?.name!));
         this.rawMaterialIndexToRemove = indexToRemove;
         // let newOrderElement: RawMaterialOrderElement = {
         //     rawMaterialByProvider: rawMaterial,
@@ -289,6 +328,65 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
     calculateTotal(){
         this.total = this.subtotal - this.totalDiscount;
         return this.total;
+    }
+
+    calculateModalSubtotal() {
+        let subtotal = 0;
+        if (this.rawMaterialOrderElements){
+            for(const orderElement of this.rawMaterialOrderElements){
+                subtotal += Number(orderElement.price)*Number(orderElement.quantity) || 0;
+            }
+        }
+        this.subtotal = subtotal;
+        return subtotal;
+    }
+
+    calculateModalTotalDiscount() {
+        let totalDiscount = 0;
+        if (this.rawMaterialOrderElements){
+            for (const orderElement of this.rawMaterialOrderElements) {
+                totalDiscount += Number(orderElement.discount)*Number(orderElement.quantity) || 0;
+            }
+        }
+        this.totalDiscount = totalDiscount;
+        return totalDiscount;
+    }
+
+    calculateModalTotal(){
+        this.total = this.subtotal - this.totalDiscount;
+        return this.total;
+    }
+
+    setQuantityValue(event: Event){
+        if (event.target instanceof HTMLInputElement) {
+            this.modalQuantity = Number(event.target.value) || 0;
+        }
+        this.calculateModalTotals();
+    }
+
+    setDiscountValue(event: Event){
+        if (event.target instanceof HTMLInputElement) {
+            this.modalDiscount =  Number(event.target.value) || 0;
+        }
+        this.calculateModalTotals();
+    }
+
+    calculateModalTotals() {
+        let subtotal = Number(this.modalQuantity)*Number(this.currentMeasurePrice) || 0;
+        let totalDiscount = Number(this.modalDiscount)*Number(this.modalQuantity) || 0;
+        let total = subtotal - totalDiscount || 0;
+        if(total < 0){
+            this.discountInput?.setValue('0');
+            this.modalDiscount = 0;
+            totalDiscount = 0;
+            total = subtotal - totalDiscount || 0;
+        }
+        this.modalSubtotal = subtotal;
+        this.modalTotalDiscount = totalDiscount;
+        this.modalTotal = total;
+        this.modalSubtotalText = this.dataService.getFormatedPrice(subtotal);
+        this.modalTotalDiscountText = this.dataService.getFormatedPrice(totalDiscount);
+        this.modalTotalText = this.dataService.getFormatedPrice(total);
     }
 
     createFormGroup() {
@@ -368,7 +466,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
     setRawMaterialElements(rawMaterial: RawMaterialByProvider){
         // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
         this.elements.push({icon : "feed", name : "Descripción", value : rawMaterial.rawMaterialBase?.description});
-        this.elements.push({icon : "monetization_on", name : "Precio (" + rawMaterial.rawMaterialBase?.measure + ")", value : this.dataService.getFormatedPrice(Number(rawMaterial.price))});
+        this.elements.push({icon : "monetization_on", name : "Precio (" + rawMaterial.rawMaterialBase?.measure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(rawMaterial.price))});
     }
 
     closeRawMaterialDialog(){

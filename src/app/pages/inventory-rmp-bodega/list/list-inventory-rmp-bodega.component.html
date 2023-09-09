@@ -1,21 +1,19 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Usuarios</mat-card-title>
-            <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
+            <mat-card-title>Inventario de Materia Prima con Proveedor</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
                         <div>
-                            <button type="button" routerLink="add" class="btn btn-outline-success m-2">
-                                <!-- relative route "add" = "/users/add" -->
+                            <!-- <button type="button" routerLink="create" class="btn btn-outline-success m-2">
                                 <div class="d-flex flex-row p-1">
                                     <i class="material-icons icon">add</i>
-                                    <span>Crear Usuario</span>
+                                    <span>Crear Pedido</span>
                                 </div>
-                            </button>
+                            </button> -->
                         </div>
                         <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
                             <div class="select-filter mx-2">
@@ -33,8 +31,8 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="users" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
-                    <span *ngIf="!users" class="spinner-border spinner-border-lg align-center"></span>
+                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>
         </mat-card-content>

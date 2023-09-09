@@ -75,10 +75,10 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
         this.loading = true;
 
         this.rawMaterialForm = this.createFormGroup();
-        this.title = 'Crear Materia Prima por Proveedor';
+        this.title = 'Crear Materia Prima con Proveedor';
 
         if (this.id){
-            this.title = 'Actualizar Materia Prima por Proveedor';
+            this.title = 'Actualizar Materia Prima con Proveedor';
         }
 
         this.rawMaterials = [];
@@ -153,9 +153,9 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
     selectRawMaterial(rawMaterial: RawMaterialBase){
         this.selectedRawMaterial = rawMaterial;
         this.setRawMaterialElements(rawMaterial);
-        if(this.selectedRawMaterial.photo && this.selectedRawMaterial.photo !== ""){
-            this.getImage(this.selectedRawMaterial.photo);
-        }
+        // if(this.selectedRawMaterial.photo && this.selectedRawMaterial.photo !== ""){
+        //     this.getImage(this.selectedRawMaterial.photo);
+        // }
     }
 
     unselectRawMaterial(){
@@ -193,20 +193,20 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
 
     setRawMaterialElements(rawMaterial: RawMaterialBase){
         this.elements.push({icon : "inventory_2", name : "Nombre", value : rawMaterial.name});
-        this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.measure});
+        this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.measure?.identifier});
         this.elements.push({icon : "feed", name : "Descripción", value : rawMaterial.description});
     }
 
-    getImage(imageId : any){
-        this.loadingPhoto = true;
-        return this.dataService.getImageById(imageId)
-            .pipe(first())
-            .subscribe({
-                next: (img: any) => {
-                    this.cardPhoto = img.getImageResponse.image.image;
-                    this.loadingPhoto = false;
-                }
-            });
-        }
+    // getImage(imageId : any){
+    //     this.loadingPhoto = true;
+    //     return this.dataService.getImageById(imageId)
+    //         .pipe(first())
+    //         .subscribe({
+    //             next: (img: any) => {
+    //                 this.cardPhoto = img.getImageResponse.image.image;
+    //                 this.loadingPhoto = false;
+    //             }
+    //         });
+    //     }
 
 }

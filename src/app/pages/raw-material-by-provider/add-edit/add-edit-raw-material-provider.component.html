@@ -28,7 +28,7 @@
                                         <tr *ngFor="let rawMaterial of rawMaterials; let i = index">
                                             <td>{{rawMaterial.name}}</td>
                                             <td>{{rawMaterial.description}}</td>
-                                            <td>{{rawMaterial.measure}}</td>
+                                            <td>{{rawMaterial.measure?.identifier}}</td>
                                             <td style="white-space: nowrap">
                                                 <button
                                                     type="button" (click)="selectRawMaterial(rawMaterial)"
@@ -48,24 +48,7 @@
                         </div>
                         <div *ngIf="selectedRawMaterial && !this.id" class="d-flex flex-wrap justify-content-center col-md-12 p-3">
                             <div class="col-md-8">
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item" *ngFor="let element of elements">
-                                        <div class="d-flex flex-row align-items-center">
-                                            <i class="material-icons icon element-icon" style="font-size: 30px;">{{element.icon}}</i>
-                                            <div class="px-3">
-                                                <p class="element-title">{{element.name}}</p>
-                                                <p class="element-value">{{element.value}}</p>
-                                            </div>
-                                        </div>
-                                    </li>
-                                </ul>
-                                <div *ngIf="loadingPhoto" class="my-4" style="text-align: center;">
-                                    <span class="spinner-border spinner-border-lg"></span>
-                                </div>
-                                <div *ngIf="cardPhoto" class="col-lg-4 col-md-8 col-sm-12" style="text-align: center;">
-                                    <!-- <p class="element-value">Imagen del producto</p> -->
-                                    <img class="responsive form-group" [src]="cardPhoto" alt="" />
-                                </div>
+                                <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedRawMaterial.photo"></view-object>
                                 <div class="col-sm-12 text-center p-2">
                                     <button id="boton-form-unselect-raw-material" type="button" (click)="unselectRawMaterial()"
                                         class="btn btn-outline-primary">

@@ -67,8 +67,8 @@ export class ListRawMaterialByProviderComponent implements OnInit {
                     photo: element.rawMaterialBase?.photo,
                     descriptions: [
                         {name:'Proveedor:', value: element.provider?.name},
-                        {name:'Precio:', value: element.price},
-                        {name:'Medida:', value: element.rawMaterialBase?.measure},
+                        {name:'Precio:', value: this.dataService.getFormatedPrice(Number(element.price))},
+                        {name:'Medida:', value: element.rawMaterialBase?.measure?.identifier},
                         {name:'Descripcion:', value: element.rawMaterialBase?.description},
                         {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!)},
                     ],
@@ -88,7 +88,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
             this.rawMaterials = this.allRawMaterials?.filter((val) => {
                 if(this.searchTerm){
                     const nameMatch = val.rawMaterialBase?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const measureMatch = val.rawMaterialBase?.measure?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const measureMatch = val.rawMaterialBase?.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const descriptionMatch = val.rawMaterialBase?.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const priceMatch = val.price?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const providerMatch = val.provider?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());

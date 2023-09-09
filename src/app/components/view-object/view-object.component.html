@@ -2,11 +2,19 @@
     <div class="col-lg-8 col-md-10 col-sm-12">
         <ul class="list-group list-group-flush">
             <li class="list-group-item" *ngFor="let element of objectElements">
-                <div class="d-flex flex-row align-items-center">
-                    <i class="material-icons icon element-icon" style="font-size: 30px;">{{element.icon}}</i>
-                    <div class="px-3">
-                        <p class="element-title">{{element.name}}</p>
-                        <p class="element-value">{{element.value}}</p>
+                <div class="d-flex justify-content-start">
+                    <div class="px-2">
+                        <i class="material-icons icon element-icon" style="font-size: 30px;">{{element.icon}}</i>
+                    </div>
+                    <div class="container">
+                        <div class="row justify-content-between">
+                            <div class="col-md-4">
+                                <p class="element-title">{{element.name}}</p>
+                            </div>
+                            <div class="col-md-8">
+                                <p class="element-value">{{element.value}}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </li>

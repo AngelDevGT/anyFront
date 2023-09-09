@@ -24,12 +24,11 @@
                                     </div>
                                 </div>
                             </mat-form-field>
-                            <mat-form-field class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                            <mat-form-field *ngIf="!id" class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
                                 <mat-label>Medida</mat-label>
                                 <mat-select matInput disableOptionCentering formControlName="measure"
-                                    [ngClass]="{ 'is-invalid': f['measure'].errors }">
-                                    <mat-option value="Unidades">Unidades</mat-option>
-                                    <mat-option value="Onzas">Onzas</mat-option>
+                                    [ngClass]="{ 'is-invalid': f['measure'].errors }" (valueChange)="selectedMeasureSubject.next($event)">
+                                    <mat-option *ngFor="let measure of measureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
                                 </mat-select>
                                 <div class="invalid-feedback" *ngIf="f['measure'].errors">
                                     <div *ngIf="f['measure'].errors['required']">

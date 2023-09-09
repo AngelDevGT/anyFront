@@ -28,7 +28,7 @@
                             </mat-form-field>
                             <mat-form-field class="col-sm-6 col-md-6 custom-input align-self-start" appearance="outline">
                                 <mat-label>Direccion</mat-label>
-                                <input id="nombre-form-crear-comunidad" type="text" formControlName="address" matInput
+                                <input id="address-form-crear-comunidad" type="text" formControlName="address" matInput
                                     [ngClass]="{ 'is-invalid': f['address'].errors }" />
                                 <div class="invalid-feedback" *ngIf="f['address'].errors">
                                     <div *ngIf="f['address'].hasError('required')">
@@ -41,7 +41,7 @@
                             </mat-form-field>
                             <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
                                 <mat-label>Descripcion</mat-label>
-                                <textarea id="nombre-form-crear-comunidad" type="text" formControlName="description" matInput
+                                <textarea id="description-form-crear-comunidad" type="text" formControlName="description" matInput
                                     [ngClass]="{ 'is-invalid': f['description'].errors }"></textarea>
                                 <div class="invalid-feedback" *ngIf="f['description'].errors">
                                     <div *ngIf="f['description'].errors['maxlength']">
