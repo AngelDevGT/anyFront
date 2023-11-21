@@ -24,12 +24,11 @@
                                     </div>
                                 </div>
                             </mat-form-field>
-                            <mat-form-field class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                            <mat-form-field *ngIf="!id" class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
                                 <mat-label>Medida</mat-label>
                                 <mat-select matInput disableOptionCentering formControlName="measure"
-                                    [ngClass]="{ 'is-invalid': f['measure'].errors }">
-                                    <mat-option value="Unidades">Unidades</mat-option>
-                                    <mat-option value="Onzas">Onzas</mat-option>
+                                    [ngClass]="{ 'is-invalid': f['measure'].errors }" (valueChange)="selectedMeasureSubject.next($event)">
+                                    <mat-option *ngFor="let measure of measureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
                                 </mat-select>
                                 <div class="invalid-feedback" *ngIf="f['measure'].errors">
                                     <div *ngIf="f['measure'].errors['required']">
@@ -52,31 +51,17 @@
                         <div class="col-md-4">
                             <div class="container">
                                 <div class="row justify-content-center">
-                                    <!-- <p class="text-muted"><strong>Imagen del producto:</strong></p> -->
-
-                                    <div class="col-12 text-center" *ngIf="!imgResultAfterResizeMax">
-                                        <button type="button" class="btn btn-outline-secondary form-group w-100" (click)="uploadAndReturnWithMaxSize()">
-                                            Seleccionar imagen
-                                        </button>
+                                    <div class="col-10 text-center">
+                                        <div class="mb-3">
+                                            <input #imageInput class="form-control" type="file" id="formFile" (change)="onFileSelected($event)" accept="image/*" [attr.max]="maxFileSize">
+                                        </div>
                                     </div>
-
-                                    <div class="col-8 text-start" *ngIf="imgResultAfterResizeMax">
-                                        <button type="button" class="btn btn-outline-secondary form-group" (click)="uploadAndReturnWithMaxSize()">
-                                            Cambiar imagen
-                                        </button>
-                                    </div>
-
-                                    <div *ngIf="imgResultAfterResizeMax" class="col-4 text-end">
-                                        <button type="button" class="btn btn-outline-danger form-group pb-0" (click)="removePhoto()">
+                                    <div *ngIf="selectedImage" class="col-2 text-end">
+                                        <button type="button" class="btn btn-outline-danger form-group pb-0" (click)="removePhoto(imageInput)">
                                             <i class="material-icons icon">close</i>
                                         </button>
                                     </div>
-                                        <!-- <input class="col-12" (change)="cargarImagen($event)" type="file" id="" name=""
-                                            accept="image/png, image/jpeg" formControlName="photo" /> -->
-                    
-                                    <!--Previsualizacion de la imagen-->
-                                        <img class="responsive form-group" *ngIf="imgResultAfterResizeMax" [src]="imgResultAfterResizeMax" alt="" />
-                                        <!-- <img [src]="imagenCargada" alt="" /> -->
+                                        <img class="responsive form-group" *ngIf="selectedImage" [src]="selectedImage" alt="" />
                                 </div>
                             </div>
                         </div>

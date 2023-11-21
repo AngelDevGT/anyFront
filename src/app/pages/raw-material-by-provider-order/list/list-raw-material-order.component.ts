@@ -3,7 +3,7 @@ import { first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, DataService} from '@app/services';
+import { AccountService, AlertService, DataService, paymentStatusValues, statusValues} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -97,50 +97,64 @@ export class ListRawMaterialOrderComponent implements OnInit {
         this.setTableElements(this.rawMaterialOrders);
     }
 
-    setTableElements(elements: any){
+    setTableElements(elements?: RawMaterialOrder[]){
         this.tableElementsValues = {
             headers: this.tableHeaders,
             rows: []
         }
-        elements?.forEach((element: any) => {
+        elements?.forEach((element: RawMaterialOrder) => {
             const curr_row = {
                 row: [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate), header_name: "Fecha" },
+                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha" },
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
-                    { type: "text", value: element.provider.name, header_name: "Proveedor" },
-                    { type: "text", value: element.status.identifier, header_name: "Estado del pedido" },
-                    { type: "text", value: element.paymentType.identifier, header_name: "Tipo de pago" },
-                    { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
+                    { type: "text", value: element.provider?.name, header_name: "Proveedor" },
+                    { type: "text", value: element.status?.identifier, header_name: "Estado del pedido" },
+                    { type: "text", value: element.paymentType?.identifier, header_name: "Tipo de pago" },
+                    { type: "text", value: element.paymentStatus?.identifier, header_name: "Estado de pago" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total" },
-                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
-                    {
-                        type: "button",
-                        style: "white-space: nowrap",
-                        button: [
-                            {
-                                type: "button",
-                                routerLink: "view/" + element._id,
-                                class: "btn btn-success btn-sm pb-0 mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "visibility"
-                                }
-                            },
-                            {
-                                type: "button",
-                                // routerLink: "edit/" + element._id,
-                                routerLink: "view/" + element._id,
-                                class: "btn btn-primary btn-sm pb-0 mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "edit"
-                                }
-                            }
-                        ]
-                    }
+                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" }
                   ],
             }
+            let actionsButtons = [
+                {
+                    type: "button",
+                    routerLink: "view/" + element._id,
+                    class: "btn btn-success btn-sm pb-0 mx-1",
+                    icon: {
+                        class: "material-icons",
+                        icon: "visibility"
+                    }
+                }
+            ];
+
+            // if (element.paymentStatus?.id != paymentStatusValues.pagado.paymentStatus.id && 
+            //     (element.status?.id == statusValues.activo.status.id ||
+            //         element.status?.id == statusValues.en_curso.status.id ||
+            //         element.status?.id == statusValues.pendiente.status.id)){
+            //     actionsButtons.push({
+            //         type: "button",
+            //         routerLink: "edit/" + element._id,
+            //         class: "btn btn-primary btn-sm pb-0 mx-1",
+            //         icon: {
+            //             class: "material-icons",
+            //             icon: "edit"
+            //         }
+            //     })
+            // }
+
+            let rowButtons = {
+                type: "button",
+                style: "white-space: nowrap",
+                value: undefined,
+                header_name: "Acciones",
+                button: [
+                    ...actionsButtons
+                ]
+            }
+
+            curr_row.row.push(rowButtons)
+
             this.tableElementsValues.rows.push(curr_row);
         });
     }

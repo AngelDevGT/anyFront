@@ -17,11 +17,12 @@ import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store
 import { Router } from '@angular/router';
 
 @Component({ 
-    templateUrl: 'list-inventory-rmp-bodega.component.html',
-    styleUrls: ['list-inventory-rmp-bodega.component.scss']
+    templateUrl: 'list-factory-inventory-rm.component.html',
+    styleUrls: ['list-factory-inventory-rm.component.scss']
 })
-export class ListWarehouseInventoryRMPComponent implements OnInit {
+export class ListFactoryInventoryRMComponent implements OnInit {
 
+    submitting = false;
     inventory?: Inventory;
     inventoryElements?: InventoryElement[];
     allInventoryElements?: InventoryElement[];
@@ -48,10 +49,6 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
             name: "Producto"
         },
         {
-            style: "width: 20%",
-            name: "Proveedor"
-        },
-        {
             style: "width: 10%",
             name: "Medida"
         },
@@ -59,18 +56,10 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
             style: "width: 10%",
             name: "Cantidad"
         },
-        // {
-        //     style: "width: 15%",
-        //     name: "Precio"
-        // },
         {
             style: "width: 15%",
             name: "Estado"
         },
-        // {
-        //     style: "width: 10%",
-        //     name: "Monto pendiente"
-        // },
         {
             style: "width: 10%",
             name: "Acciones"
@@ -83,7 +72,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getAllInventoryByFilter({ status: { id: 2 }, inventoryType: { id: 2 }}));
+        requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "64d7240f838808573bd7e9ee"}));
         requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
 
         forkJoin(requestArray).subscribe({
@@ -95,13 +84,13 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
             complete: () => {
                 // console.log('complete')
                 if (this.inventory){
+                    console.log(this.inventory);
                     this.inventoryElements = this.inventory?.inventoryElements;
                     this.allInventoryElements = this.inventoryElements;
                     this.setTableElements(this.inventoryElements);
                 }
             }
         });
-
         this.rawMaterialForm = this.createMaterialFormGroup();
     }
 
@@ -109,14 +98,10 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         if (this.allInventoryElements){
             this.inventoryElements = this.allInventoryElements?.filter((val) => {
                 if(this.searchTerm){
-                    const nameMatch = val.rawMaterialByProvider?.rawMaterialBase?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const commentMatch = val.comment?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const providerMatch = val.rawMaterialByProvider?.provider?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const paymentTypeMatch = val.paymentType?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const paymentStatusMatch = val.paymentStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const finalAmountMatch = val.finalAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const pendingAmountMatch = val.pendingAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return nameMatch || providerMatch;
+                    const nameMatch = val.rawMaterialBase?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const measureMatch = val.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+
+                    return nameMatch || measureMatch;
                 }
                 return true;
             });
@@ -132,13 +117,11 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         elements?.forEach((element: InventoryElement) => {
             const curr_row = {
                 row: [
-                    { type: "text", value: element.rawMaterialByProvider?.rawMaterialBase?.name, header_name: "Producto" },
-                    { type: "text", value: element.rawMaterialByProvider?.provider?.name, header_name: "Proveedor" },
-                    // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
+                    { type: "text", value: element.rawMaterialBase?.name, header_name: "Producto" },
                     { type: "text", value: element.measure?.identifier, header_name: "Medida" },
                     { type: "text", value: element.quantity, header_name: "Cantidad" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
-                    { type: "text", value: element.status?.identifier, header_name: "Estado" },
+                    { type: "text", value: "Activo", header_name: "Estado" },
                     // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
                     {
@@ -167,7 +150,6 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
                         ]
                     }
                   ],
-                id: element.rawMaterialByProvider?._id
             }
             this.tableElementsValues.rows.push(curr_row);
         });
@@ -220,15 +202,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     }
 
     onMoveMaterialForm(){
-        this.tableElementsValues.rows.forEach((curr_row: any) => {
-            if(curr_row.id === this.selectedInventoryElement?.rawMaterialByProvider?._id){
-                let buttons = curr_row.row[5].button;
-                buttons[0].submitting = true;
-                buttons.forEach((btn: any) => {
-                    btn.disabled = true;
-                });
-            }
-        });
+        this.submitting = true;
         let newMoveStoreToFactory: MovementWarehouseToFactory = {
             rawMaterialByProviderID: this.selectedInventoryElement?.rawMaterialByProvider?._id,
             factoryInventoryID: "64d7240f838808573bd7e9ee",
@@ -239,10 +213,9 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         .pipe(first())
             .subscribe({
                 next: () => {
-                    this.router.navigateByUrl('/').then(() => {
-                        this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                        this.router.navigate(['/inventory/warehouse/rawMaterialByProvider']); 
-                    });},
+                    this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
+                    this.router.navigateByUrl('/inventory/warehouse/rawMaterialByProvider');
+                },
                 error: error => {
                     this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
             }});

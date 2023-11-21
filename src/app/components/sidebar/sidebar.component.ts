@@ -113,9 +113,9 @@ export class SidebarComponent implements OnInit {
         },
         {
           root_class : "list-group list-group-flush",
-          router_link : "/inventory/rawMaterialByProvider/bodega",
+          router_link : "/inventory/warehouse/rawMaterialByProvider",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Inventario Materia Prima con Proveedor",
+          link_name : "Inventario de Materia Prima con Proveedor",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         }
@@ -157,9 +157,25 @@ export class SidebarComponent implements OnInit {
         },
         {
           root_class : "list-group list-group-flush",
+          router_link : "/inventory/factory/rawMaterial",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Inventario de Materia Prima",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
           router_link : "/productCreation",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Crear Producto",
+          link_name : "Registrar Producto en Inventario",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/inventory/factory/finishedProduct",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Inventario de Producto Terminado",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         }

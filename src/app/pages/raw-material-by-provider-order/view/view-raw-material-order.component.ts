@@ -1,7 +1,7 @@
 import { Component, OnInit} from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 
-import { AlertService, DataService, statusValues, paymentStatusValues } from '@app/services';
+import { AlertService, DataService, PdfService, statusValues, paymentStatusValues } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import pdfMake from "pdfmake/build/pdfmake";  
@@ -9,6 +9,7 @@ import pdfFonts from "pdfmake/build/vfs_fonts";
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { PaymentStatus, Status } from '@app/models';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({ 
@@ -27,6 +28,11 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     pageSize = 5;
     tableElementsValues?: any;
     payAmount = 0;
+    paymentOption = false;
+    receiveOption = false;
+    validateOption = false;
+    editOption = false;
+    deleteOption = false;
     payForm!: FormGroup;
     confirmDialogTitle = '...';
     confirmDialogText = '...';
@@ -75,7 +81,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     ];
 
     constructor(private dataService: DataService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router) {
+        private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
     }
 
     ngOnInit(): void {
@@ -91,12 +97,47 @@ export class ViewRawMaterialOrderComponent implements OnInit{
                 .pipe(first())
                 .subscribe((rmOrder: any) =>{
                     let rawMaterialOrder = rmOrder.GetRawMaterialOrderResponse?.rawMaterial;
+                    console.log(rawMaterialOrder);
                     if (rawMaterialOrder){
                         this.rawMaterialOrder = rawMaterialOrder;
                         this.setElements(this.rawMaterialOrder!);
                         this.loading = false;
                     }
                 });
+        }
+    }
+
+    setElementOptions(elemStatus?: Status, elemPayment?: PaymentStatus){
+        // Payment option
+        if (elemStatus && elemPayment){
+            if ((elemStatus.id == statusValues.activo.status.id 
+                || elemStatus.id == statusValues.recibido.status.id) && 
+                (elemPayment.id == paymentStatusValues.pendiente.paymentStatus.id
+                    || elemPayment.id == paymentStatusValues.abonado.paymentStatus.id)){
+                        this.paymentOption = true;
+                    }
+    
+            // Receive order option
+            if (elemStatus.id == statusValues.activo.status.id 
+                // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id
+                ){
+                    this.receiveOption = true;
+                }
+    
+            // Validate order option
+            if (elemStatus.id == statusValues.recibido.status.id && 
+                elemPayment.id == paymentStatusValues.pagado.paymentStatus.id){
+                    this.validateOption = true;
+                }
+    
+            // Edit option and Delete option
+            if (elemPayment.id != paymentStatusValues.pagado.paymentStatus.id && 
+                (elemStatus.id == statusValues.activo.status.id ||
+                    elemStatus.id == statusValues.en_curso.status.id ||
+                    elemStatus.id == statusValues.pendiente.status.id)){
+                        this.editOption = true;
+                        this.deleteOption = true;
+                    }
         }
     }
 
@@ -182,10 +223,12 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     onSaveForm() {
         if(this.payAmount <= Number(this.rawMaterialOrder?.pendingAmount)){
             this.submitting = true;
-            let newPendingAmount = Number(this.rawMaterialOrder?.pendingAmount) - this.payAmount;
+            let newPaidAmount = Number(this.payAmount) + Number(this.rawMaterialOrder?.paidAmount);
+            let newPendingAmount = Number(this.rawMaterialOrder?.pendingAmount) - Number(this.payAmount);
             let newPaymentStatus = newPendingAmount == 0 ? paymentStatusValues.pagado : paymentStatusValues.abonado;
             let newOrder: RawMaterialOrder = {
                 ...this.rawMaterialOrder,
+                paidAmount: String(newPaidAmount),
                 pendingAmount: String(newPendingAmount),
                 ...newPaymentStatus
             }
@@ -202,10 +245,23 @@ export class ViewRawMaterialOrderComponent implements OnInit{
         }
     }
 
-    receiveOrder(){
-        this.confirmDialogTitle = 'Recibir Pedido';
-        this.confirmDialogText = '¿Deseas marcar el pedido como recibido?';
-        this.confirmDialogId = 1;
+    receiveOrder(_id?: string){
+        // this.confirmDialogTitle = 'Recibir Pedido';
+        // this.confirmDialogText = '¿Deseas marcar el pedido como recibido?';
+        // this.confirmDialogId = 1;
+        this.router.navigate(['/rawMaterialByProvider/order/edit/' + _id], {
+            queryParams: {
+                opt: 'receive'
+            }
+        })
+    }
+
+    editOrder(_id?: string){
+        this.router.navigate(['/rawMaterialByProvider/order/edit/' + _id], {
+            queryParams: {
+                opt: 'edit'
+            }
+        })
     }
 
     validateOrder(){
@@ -214,7 +270,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
         this.confirmDialogId = 2;
     }
 
-    deleteEstablishment() {
+    deleteOrder() {
         this.submitting = true;
         this.dataService.deleteRawMaterialOrder(this.rawMaterialOrder)
             .pipe(first())
@@ -229,6 +285,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     }
 
     setElements(rmOrder: RawMaterialOrder){
+        this.setElementOptions(rmOrder.status, rmOrder.paymentStatus);
         this.elements.push({icon : "receipt_long", name : "Notas", value : rmOrder.comment});
         this.elements.push({icon : "person", name : "Proveedor", value : rmOrder.provider?.name + " (" + rmOrder.provider?.email + ")"});
         this.elements.push({icon : "info", name : "Estado del pedido", value : rmOrder.status?.identifier});
@@ -269,147 +326,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
 
 
     generatePDF() {  
-        let docDefinition:TDocumentDefinitions = {
-            content: [
-                // {  
-                //     image: 'assets/img/brand/embutidos_any_900x150_white.png',
-                //     width: 100,
-                //     height: 100,
-                //     alignment: 'right',
-                // },
-                {  
-                  text: 'Pedido de Materia Prima',  
-                  fontSize: 16,  
-                  alignment: 'center',  
-                  color: 'grey'
-                },
-                {  
-                  text: this.rawMaterialOrder?.name!,
-                  fontSize: 20,  
-                  bold: true,  
-                  alignment: 'center',  
-                  decoration: 'underline',  
-                  color: '#ec5300'  
-                },
-                {  
-                    text: 'Proveedor',  
-                    style: 'sectionHeader'  
-                },
-                {  
-                    columns: [  
-                        [  
-                            {  
-                                text: "Nombre: " + this.rawMaterialOrder?.provider?.name!,
-                                bold: true
-                            },  
-                            { text: "Empresa: " + this.rawMaterialOrder?.provider?.company! },  
-                            { text: "Correo Electronico: " + this.rawMaterialOrder?.provider?.email! },  
-                            { text: "Telefono (+502): " + this.rawMaterialOrder?.provider?.phone! }  
-                        ],  
-                        [  
-                            {  
-                                text: `Fecha: ${new Date().toLocaleString()}`,  
-                                alignment: 'right'  
-                            },
-                            // {  
-                            //     text: `Pedido: ${this.rawMaterialOrder?._id}`,  
-                            //     alignment: 'right'  
-                            // }  
-                        ]
-                    ]  
-                },
-                {  
-                    text: 'Materia Prima',  
-                    style: 'sectionHeader'  
-                },
-                {  
-                    table: {
-                        headerRows: 1,  
-                        widths: ['15%', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],  
-                        body: [
-                            [
-                                { text: 'Nombre', style: 'tableHeader' },
-                                { text: 'Precio (Q)', style: 'tableHeader' },
-                                { text: 'Descuento (Q)', style: 'tableHeader' },
-                                { text: 'Cantidad', style: 'tableHeader' },
-                                { text: 'Medida', style: 'tableHeader' },
-                                { text: 'Subtotal (Q)', style: 'tableHeader' },
-                                { text: 'Descuento Total (Q)', style: 'tableHeader' },
-                                { text: 'Total (Q)', style: 'tableHeader' }
-                            ],
-                            ...this.rawMaterialOrder!.rawMaterialOrderElements!.map(
-                                p => (
-                                    [
-                                        p.rawMaterialByProvider?.rawMaterialBase?.name!,
-                                        this.dataService.getDecimalFromText(p.price!),
-                                        this.dataService.getDecimalFromText(p.discount!),
-                                        p.quantity!,
-                                        p.measure?.identifier!,
-                                        this.dataService.getDecimalFromText(p.subtotalPrice!),
-                                        this.dataService.getDecimalFromText(p.totalDiscount!),
-                                        this.dataService.getDecimalFromText(p.totalPrice!)
-                                        // (p.price * p.qty).toFixed(2)
-                                    ])),
-                            [{ text: 'Total (Q)', colSpan: 5 }, {}, {}, {}, {}, this.rawMaterialOrder!.rawMaterialOrderElements!.reduce((sum, p) => sum + Number(p.subtotalPrice), 0).toFixed(2), this.rawMaterialOrder!.rawMaterialOrderElements!.reduce((sum, p) => sum + Number(p.totalDiscount), 0).toFixed(2), Number(this.rawMaterialOrder?.finalAmount!).toFixed(2)]
-                        ]
-                    }  
-                },
-                {  
-                    text: "Monto Total: " + this.dataService.getFormatedPrice(Number(this.rawMaterialOrder?.finalAmount)),
-                    bold: true,
-                    marginTop: 10
-                },  
-                {  
-                    text: "Monto Pendiente: " + this.dataService.getFormatedPrice(Number(this.rawMaterialOrder?.pendingAmount)),
-                    bold: true
-                },  
-                {
-                    text: 'Detalles del pedido',
-                    style: 'sectionHeader'
-                },
-                {
-                    text: "Estado del pedido: " + this.rawMaterialOrder?.status?.identifier!,
-                    bold: true
-                }, 
-                { text: "Tipo de pago: " + this.rawMaterialOrder?.paymentType?.identifier! }, 
-                { text: "Estado de pago: " + this.rawMaterialOrder?.paymentStatus?.identifier! }, 
-                { text: "Creado: " + this.dataService.getLocalDateTimeFromUTCTime(this.rawMaterialOrder?.creationDate!) }, 
-                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(this.rawMaterialOrder?.updateDate!) }, 
-                {
-                    text: 'Notas del pedido',
-                    style: 'sectionHeader'
-                },
-                {
-                      text: this.rawMaterialOrder?.comment!,
-                      margin: [0, 0 ,0, 15]
-                },
-                {  
-                    columns: [  
-                        [{ qr: `${this.rawMaterialOrder?._id!}`, fit: 50 }],  
-                        [{ text: "Identificador del pedidio: " + this.rawMaterialOrder?._id!, alignment: 'right', italics: true }],
-                    ]
-                },
-            ],
-            styles: {  
-                sectionHeader: {  
-                    bold: true,  
-                    decoration: 'underline',  
-                    fontSize: 14,  
-                    margin: [0, 15, 0, 15]  
-                },
-                tableHeader: {
-                    bold: true,
-                    fontSize: 12,
-                    fillColor: '#ffefd2'
-                }
-            }
-        };
-        // let docDefinition = {  
-        //     header: 'C#Corner PDF Header',  
-        //     content: 'Sample PDF generated with Angular and PDFMake for C#Corner Blog'  
-        // };  
-        
-        pdfMake.createPdf(docDefinition).open();  
+        this.pdfService.generateRawMaterialOrderPDF(this.rawMaterialOrder!);
     }  
 
 }

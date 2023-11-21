@@ -60,16 +60,16 @@ export class ListFinishedProductComponent implements OnInit {
     getCards(){
         this.cards = [];
         if (this.products){
-            for (let i=0; i < this.products!.length; i++){
-                let currProduct = this.products![i];
+            for (let i=0; i < this.products?.length; i++){
+                let currProduct = this.products[i];
                 let currentCard = {
                     title: currProduct.name,
                     photo: currProduct.photo,
                     descriptions : [
                         {name:'Descripcion:', value: currProduct.description},
-                        {name:'Medida:', value: currProduct.measure},
-                        {name:'Fecha creacion:', value: currProduct.creationDate},
-                        {name:'Fecha actualizacion:', value: currProduct.updateDate}
+                        {name:'Medida:', value: currProduct.measure?.identifier},
+                        {name:'Fecha creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.creationDate!)},
+                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.updateDate!)}
                     ],
                     buttons: [
                         {title: 'Ver', value: 'visibility', link: '/finishedProducts/view/' + currProduct._id},
@@ -96,9 +96,9 @@ export class ListFinishedProductComponent implements OnInit {
         if (this.products){
             this.products = this.allProducts?.filter((val) => {
                 if(this.searchTerm){
-                    const nameMatch = val.name!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const measureMatch = val.measure!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const descriptionMatch = val.description!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const nameMatch = val.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const measureMatch = val.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const descriptionMatch = val.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     return nameMatch || measureMatch || descriptionMatch;
                 }
                 return true;

@@ -1,7 +1,7 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Inventario de Materia Prima con Proveedor (Bodega)</mat-card-title>
+            <mat-card-title>Inventario de Producto Terminado (Fabrica)</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div class="container">
@@ -40,12 +40,12 @@
 </div>
 
 
-<div class="modal fade" id="moveInventoryRawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="moveInventoryRawMaterialModalLabel" aria-hidden="true">
+<!-- <div class="modal fade" id="moveInventoryRawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="moveInventoryRawMaterialModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h1 class="modal-title fs-5" id="moveInventoryRawMaterialModalLabel">MOVER materia prima de BODEGA a inventario de FABRICA</h1>
-                <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button [disabled]="submitting" type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form [formGroup]="rawMaterialForm">
@@ -90,8 +90,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" (click)="onMoveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">
+                <button [disabled]="submitting" type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
+                <button [disabled]="submitting" type="button" class="btn btn-primary" (click)="onMoveMaterialForm()" [disabled]="!rawMaterialForm.valid">
+                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                     Mover a Fabrica
                 </button>
             </div>
@@ -155,4 +156,4 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
