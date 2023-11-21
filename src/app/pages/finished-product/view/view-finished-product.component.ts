@@ -62,7 +62,7 @@ export class ViewFinishedProductComponent implements OnInit{
     }
 
     setProductElements(product: FinishedProduct){
-        this.elements.push({icon : "scale", name : "Medida", value : product.measure});
+        this.elements.push({icon : "scale", name : "Medida", value : product.measure?.identifier});
         this.elements.push({icon : "feed", name : "Descripción", value : product.description});
         this.elements.push({icon : "info", name : "Estado", value : product.status?.identifier});
         this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(product.creationDate!)});

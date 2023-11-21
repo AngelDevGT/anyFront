@@ -10,10 +10,17 @@
                 *ngFor="let row of rows | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
                 <td *ngFor="let field of row.row">
                   <p *ngIf="field.type === 'text'" class="row-value" [attr.data-label]="field.header_name">{{field.value}}</p>
-                  <div *ngIf="field.type === 'button'" class="row-value">
+                  <div *ngIf="field.type === 'button'" class="d-flex justify-content-lg-center row-value">
                     <button *ngFor="let button_value of field.button" type="{{button_value.type}}" routerLink="{{button_value.routerLink}}"
                           class="{{button_value.class}}">
                           <i class="{{button_value.icon.class}}">{{button_value.icon.icon}}</i>
+                    </button>
+                  </div>
+                  <div *ngIf="field.type === 'modal_button'" class="d-flex justify-content-lg-center row-value">
+                    <button *ngFor="let button_value of field.button" (click)="sendData(field.data)" type="{{button_value.type}}"
+                    data-bs-toggle="modal" [attr.data-bs-target]="button_value.data_bs_target" class="{{button_value.class}}" [disabled]="button_value.disabled">
+                          <i class="{{button_value.icon.class}}">{{button_value.icon.icon}}</i>
+                          <span *ngIf="button_value.submitting" class="spinner-border spinner-border-sm mx-1"></span>
                     </button>
                   </div>
                 </td>

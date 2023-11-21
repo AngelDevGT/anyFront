@@ -15,6 +15,7 @@ export class RawMaterialOrder {
     paymentStatus?: PaymentStatus;
     paymentType?: PaymentType;
     finalAmount?: string;
+    paidAmount?: string;
     pendingAmount?: string;
     creatorUser?: User;
     creationDate?: string;

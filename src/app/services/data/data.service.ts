@@ -13,6 +13,8 @@ import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.mode
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
 import { FinishedProduct } from '@app/models/product/finished-product.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
+import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
+import { FinishedProductCreation } from '@app/models/product/finished-product-creation.model';
 
 
 export const statusValues = {
@@ -42,10 +44,10 @@ export const statusValues = {
     },
     pendiente: {
         status: {
-            "id": 3,
+            "id": 4,
             "status": 1,
-            "text": "3",
-            "identifier": "Eliminado"
+            "text": "4",
+            "identifier": "Pendiente"
         }
     },
     en_curso: {
@@ -345,7 +347,7 @@ export class DataService {
         return "Q. " + price.toFixed(2);
     }
 
-    getDecimalFromText(num: string){
+    getDecimalFromText(num?: string){
         return (Number(num) || 0).toFixed(2);
     }
 
@@ -553,7 +555,7 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/getFinishedProduct`, params);
     }
 
-    addFinishedProduct(product: FinishedProduct, img: string){
+    addFinishedProduct(product: FinishedProduct, img?: string){
         product.photo = img;
         if (img === ""){
             delete product.photo;
@@ -567,9 +569,10 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/addFinishedProduct`, params);
     }
 
-    updateFinishedProduct(id: string, product: FinishedProduct, img: string){
-        if (img !== ""){
-            product.photo = img;
+    updateFinishedProduct(id: string, product: FinishedProduct, img?: string){
+        product.photo = img;
+        if(!img){
+            product.photo = "";
         }
         let params = JSON.stringify({
             updateFinishedProduct: {
@@ -637,12 +640,22 @@ export class DataService {
     }
 
     deleteRawMaterialOrder(params: any) {
-        let deleteUser = JSON.stringify({
-            updateFinishedProduct: {
+        let deleteOrder = JSON.stringify({
+            updateRawMaterialOrder: {
                 ...params,
                 ...deleteStatus
             }});
-        return this.http.post(`${environment.apiUrl}/updateFinishedProduct`, deleteUser);
+        return this.http.post(`${environment.apiUrl}/updateRawMaterialOrder`, deleteOrder);
+    }
+
+    /** MOVEMENT */
+    
+    moveStoreToFactory(movement: MovementWarehouseToFactory){
+        let params = JSON.stringify({
+            moveStoreToFactory: {
+                ...movement
+            }});
+        return this.http.post(`${environment.apiUrl}/MoveStoreToFactory`, params);
     }
 
     /** INVENTORY */
@@ -654,6 +667,23 @@ export class DataService {
             }});
         return this.http.post(`${environment.apiUrl}/retrieveInventory`, parameters);
     }
+
+    getInventory(params: any) {
+        let parameters = JSON.stringify({
+            getInventory: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/getInventory`, parameters);
+    }
+
+    /** PRODUCT CREATION */
     
+    registerFinishedProductCreation(fpCreation: FinishedProductCreation){
+        let params = JSON.stringify({
+            registerFinishedProductCreation: {
+                ...fpCreation
+            }});
+        return this.http.post(`${environment.apiUrl}/registerFinishedProductCreation`, params);
+    }
 
 }

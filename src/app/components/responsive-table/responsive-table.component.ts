@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, Input, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { DataService } from '@app/services';
 
@@ -11,6 +11,7 @@ import { DataService } from '@app/services';
 export class ResponsiveTableComponent implements OnInit, OnChanges {
     @Input() tableElements: any;
     @Input() pageSize: number = 0;
+    @Output() sentData = new EventEmitter<any>();
     
     page = 1;
 
@@ -23,12 +24,6 @@ export class ResponsiveTableComponent implements OnInit, OnChanges {
 
     ngOnInit() {
         this.updateTableElements();
-        // this.cardElements['photo'] = undefined;
-        // if (this.cardElements['photo']){
-        //     this.getImage(this.cardElements['photo'])
-        // } else {
-        //     this.loading = false;
-        // }
     }
 
     ngOnChanges(changes: SimpleChanges) {
@@ -37,20 +32,13 @@ export class ResponsiveTableComponent implements OnInit, OnChanges {
         }
     }
 
-    // getImage(imageId : any){
-    // return this.dataService.getImageById(imageId)
-    //             .pipe(first())
-    //             .subscribe({
-    //                 next: (img: any) => {
-    //                     this.cardPhoto = img.getImageResponse.image.image;
-    //                     this.loading = false;
-    //                 }
-    //             });
-    // }
-
     updateTableElements(){
         this.rows = this.tableElements.rows;
         this.headers = this.tableElements.headers;
+    }
+
+    sendData(data: any){
+        this.sentData.emit(data);
     }
 
 }

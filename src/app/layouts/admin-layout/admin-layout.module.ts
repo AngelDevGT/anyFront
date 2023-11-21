@@ -33,6 +33,8 @@ import {
   AddEditRawMaterialByProviderOrderComponent,
   ViewEstablishmentComponent,
   ListRawMaterialOrderComponent,
+  ListFactoryInventoryRMComponent,
+  ListFactoryInventoryFPComponent,
 } from "@app/pages";
 import { ListRawMaterialComponent } from "@app/pages/raw-material-base/list/list-raw-material.component";
 import { AddEditRawMaterialComponent } from "@app/pages/raw-material-base/add-edit/add-edit-raw-material.component";
@@ -43,10 +45,10 @@ import { ViewRawMaterialByProviderComponent } from "@app/pages/raw-material-by-p
 import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add-edit/add-edit-finished-product.component";
 import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
 import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
-import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-creation.component";
+import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-product-creation.component";
 import { MatDialogModule } from "@angular/material/dialog";
 import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provider-order/view/view-raw-material-order.component";
-import { ListInventoryRMProviderBodegaComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
+import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -95,7 +97,9 @@ import { ListInventoryRMProviderBodegaComponent } from "@app/pages/inventory-rmp
       ListFinishedProductComponent,
       ViewFinishedProductComponent,
       AddEditProductCreationComponent,
-      ListInventoryRMProviderBodegaComponent,
+      ListWarehouseInventoryRMPComponent,
+      ListFactoryInventoryRMComponent,
+      ListFactoryInventoryFPComponent,
       // UsersLayoutComponent
   ]
 })

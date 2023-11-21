@@ -10,3 +10,5 @@ export * from './providers/view/view-provider.component';
 export * from './raw-material-base/list/list-raw-material.component';
 export * from './raw-material-by-provider-order/add-edit/add-edit-order.component';
 export * from './raw-material-by-provider-order/list/list-raw-material-order.component';
+export * from './factory-inventory-rm/list/list-factory-inventory-rm.component';
+export * from './factory-inventory-fp/list/list-factory-inventory-fp.component';

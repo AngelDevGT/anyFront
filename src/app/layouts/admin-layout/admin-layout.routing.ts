@@ -10,13 +10,15 @@ ViewProviderComponent,
 ViewProductComponent,
 AddEditRawMaterialByProviderOrderComponent,
 ViewEstablishmentComponent,
-ListRawMaterialOrderComponent} from "@app/pages";
+ListRawMaterialOrderComponent,
+ListFactoryInventoryRMComponent,
+ListFactoryInventoryFPComponent} from "@app/pages";
 import { ListEstablishmentComponent } from "@app/pages/establishment/list/list-establishment.component";
 import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add-edit/add-edit-finished-product.component";
 import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
 import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
-import { ListInventoryRMProviderBodegaComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
-import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-creation.component";
+import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
+import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-product-creation.component";
 import { AddEditRawMaterialComponent } from "@app/pages/raw-material-base/add-edit/add-edit-raw-material.component";
 import { ListRawMaterialComponent } from "@app/pages/raw-material-base/list/list-raw-material.component";
 import { ViewRawMaterialComponent } from "@app/pages/raw-material-base/view/view-raw-material.component";
@@ -59,7 +61,9 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'rawMaterialsByProvider/create', component: AddEditRawMateriaByProviderComponent},
     { path: 'rawMaterialsByProvider/view/:id', component: ViewRawMaterialByProviderComponent},
     { path: 'rawMaterialsByProvider/edit/:id', component: AddEditRawMateriaByProviderComponent},
-    { path: 'inventory/rawMaterialByProvider/bodega', component: ListInventoryRMProviderBodegaComponent},
+    { path: 'inventory/warehouse/rawMaterialByProvider', component: ListWarehouseInventoryRMPComponent},
+    { path: 'inventory/factory/rawMaterial', component: ListFactoryInventoryRMComponent},
+    { path: 'inventory/factory/finishedProduct', component: ListFactoryInventoryFPComponent},
     { path: 'productCreation', component: AddEditProductCreationComponent},
     { path: 'users', loadChildren: usersModule},
 

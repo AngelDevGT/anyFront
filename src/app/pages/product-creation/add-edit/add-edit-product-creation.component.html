@@ -12,58 +12,82 @@
             <form *ngIf="!loading" [formGroup]="orderForm" (ngSubmit)="onSaveForm()">
                 <div class="container">
                     <div class="row justify-content-center">
+                        <div *ngIf="!selectedFinishedProduct && !this.id" class="row justify-content-center col-12">
+                            <div class="table-responsive p-3 col-sm-12 col-md-8">
+                                <h3 class="text-center">Materia Prima Base</h3>
+                                <table class="table table-striped my-custom-scrollbar">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%">Nombre</th>
+                                            <th style="width: 50%">Descripcion</th>
+                                            <th style="width: 15%">Medida</th>
+                                            <th style="width: 15%">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let finishedProduct of finishedProducts; let i = index">
+                                            <td>{{finishedProduct.name}}</td>
+                                            <td>{{finishedProduct.description}}</td>
+                                            <td>{{finishedProduct.measure?.identifier}}</td>
+                                            <td style="white-space: nowrap">
+                                                <button
+                                                    type="button" (click)="selectFinishedProduct(finishedProduct)"
+                                                    class="btn btn-success btn-sm pb-0 mx-1">
+                                                        <i class="material-icons">open_in_new</i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr *ngIf="!finishedProducts">
+                                            <td colspan="4" class="text-center">
+                                                <span class="spinner-border spinner-border-lg align-center"></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div *ngIf="selectedFinishedProduct && !this.id" class="d-flex flex-wrap justify-content-center col-md-12 p-3">
+                            <div class="col-md-8">
+                                <view-object class="align-self-start" [objectElements]="finishedProductsElements" [imgIdentifier]="this.selectedFinishedProduct.photo"></view-object>
+                                <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                                    <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                        <mat-label>Medida</mat-label>
+                                        <mat-select matInput disableOptionCentering formControlName="measure"
+                                            [ngClass]="{ 'is-invalid': f['measure'].errors }" (valueChange)="selectedMeasureSubject.next($event)">
+                                            <mat-option *ngFor="let measure of filteredFinishedProductMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
+                                        </mat-select>
+                                        <div class="invalid-feedback" *ngIf="f['measure'].errors">
+                                            <div *ngIf="f['measure'].errors['required']">
+                                                Medida requerida
+                                            </div>
+                                        </div>
+                                    </mat-form-field>
+                                    <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                        <mat-label>Cantidad</mat-label>
+                                        <input id="quantity-form" type="text" formControlName="quantity" matInput
+                                            [ngClass]="{ 'is-invalid': f['quantity'].errors }" (input)="setQuantityValue($event)" />
+                                        <div class="invalid-feedback" *ngIf="r['quantity'].errors">
+                                            <div *ngIf="f['quantity'].hasError('required')">
+                                                Cantidad requerida
+                                            </div>
+                                            <div *ngIf="f['quantity'].hasError('pattern')">
+                                                Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                            </div>
+                                        </div>
+                                    </mat-form-field>
+                                </div>
+                                <div class="col-sm-12 text-center p-2">
+                                    <button id="boton-form-unselect-raw-material" type="button" (click)="unselectFinishedProduct()"
+                                        class="btn btn-outline-primary">
+                                        Cambiar Materia Prima
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
-                            <mat-form-field *ngIf="!isReceiveOption" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
-                                <mat-label>Nombre del pedido</mat-label>
-                                <input id="nombre-form-crear-comunidad" type="text" formControlName="name" matInput
-                                    [ngClass]="{ 'is-invalid': f['name'].errors }" />
-                                <div class="invalid-feedback" *ngIf="f['name'].errors">
-                                    <div *ngIf="f['name'].hasError('required')">
-                                        Nombre requerido
-                                    </div>
-                                    <div *ngIf="f['name'].errors['maxlength']">
-                                        La descripcion debe tener maximo 50 caracteres
-                                    </div>
-                                </div>
-                            </mat-form-field>
-                            <mat-form-field *ngIf="!id" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
-                                <mat-label>Proveedor</mat-label>
-                                <mat-select matInput disableOptionCentering formControlName="provider"
-                                    [ngClass]="{ 'is-invalid': f['provider'].errors }" (valueChange)="selectedProviderSubject.next($event)">
-                                    <mat-option *ngFor="let provider of providerOptions" value="{{provider._id}}">{{provider.name}} ({{provider.email}})</mat-option>
-                                </mat-select>
-                                <div class="invalid-feedback" *ngIf="f['provider'].errors">
-                                    <div *ngIf="f['provider'].errors['required']">
-                                        Proveedor requerido
-                                    </div>
-                                </div>
-                            </mat-form-field>
-                            <div class="col-12"></div>
-                            <mat-form-field *ngIf="!isReceiveOption" class="col-sm-12 col-md-3 custom-input align-self-start" appearance="outline">
-                                <mat-label>Tipo de pago</mat-label>
-                                <mat-select matInput disableOptionCentering formControlName="paymentType"
-                                    [ngClass]="{ 'is-invalid': f['paymentType'].errors }" (valueChange)="selectedPaymentTypeSubject.next($event)">
-                                    <mat-option *ngFor="let paymentType of paymentTypeOptions" value="{{paymentType.id}}">{{paymentType.identifier}}</mat-option>
-                                </mat-select>
-                                <div class="invalid-feedback" *ngIf="f['paymentType'].errors">
-                                    <div *ngIf="f['paymentType'].errors['required']">
-                                        Tipo de pago requerido requerido
-                                    </div>
-                                </div>
-                            </mat-form-field>
-                            <mat-form-field class="col-sm-12 col-md-5 custom-input align-self-start" appearance="outline">
-                                <mat-label>Notas</mat-label>
-                                <textarea id="nombre-form-crear-comunidad" type="text" formControlName="comment" matInput
-                                    [ngClass]="{ 'is-invalid': f['comment'].errors }"></textarea>
-                                <div class="invalid-feedback" *ngIf="f['comment'].errors">
-                                    <div *ngIf="f['comment'].errors['maxlength']">
-                                        Las notas deben tener maximo 100 caracteres
-                                    </div>
-                                </div>
-                            </mat-form-field>
                             <!-- *ngIf="selectedProviderSubject.value" -->
                             <!-- <div *ngIf="selectedProviderSubject.value" class="row justify-content-center col-12"> -->
-                            <div *ngIf="!isEditOption && selectedProviderSubject.value" class="row justify-content-center col-12">
+                            <div *ngIf="!isEditOption" class="row justify-content-center col-12">
                                 <div class="p-3 col-sm-12 col-md-6">
                                     <h2 class="text-center text-muted">Materia prima disponible</h2>
                                     <div class="table-container my-custom-scrollbar">
@@ -72,27 +96,27 @@
                                                 <tr>
                                                     <th style="width: 40%">Nombre</th>
                                                     <th style="width: 20%">Medida</th>
-                                                    <th style="width: 20%">Precio</th>
+                                                    <th style="width: 20%">Cantidad</th>
                                                     <!-- <th style="width: 10%">Estado</th> -->
                                                     <th style="width: 20%">Agregar</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr *ngFor="let rawMaterial of filteredRawMaterials; let i = index">
-                                                    <td>{{rawMaterial.rawMaterialBase?.name}}</td>
-                                                    <td>{{rawMaterial.rawMaterialBase?.measure?.identifier}}</td>
-                                                    <td>Q{{rawMaterial.price}}</td>
+                                                <tr *ngFor="let invElement of inventoryElements; let i = index">
+                                                    <td>{{invElement.rawMaterialBase?.name}}</td>
+                                                    <td>{{invElement.measure?.identifier}}</td>
+                                                    <td>{{invElement.quantity}}</td>
                                                     <!-- <td>{{rawMaterial.status!.id}}</td> -->
                                                     <td style="white-space: nowrap">
                                                         <button
-                                                            type="button" (click)="selectRawMaterial(rawMaterial, i)"
+                                                            type="button" (click)="selectInventoryElement(invElement, i)"
                                                             class="btn btn-success btn-sm pb-0 mx-1"
                                                             data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
                                                                 <i class="material-icons">add_circle</i>
                                                         </button>
                                                     </td>
                                                 </tr>
-                                                <tr *ngIf="!filteredRawMaterials">
+                                                <tr *ngIf="!inventoryElements">
                                                     <td colspan="4" class="text-center">
                                                         <span class="spinner-border spinner-border-lg align-center"></span>
                                                     </td>
@@ -107,36 +131,20 @@
                                         <table class="table table-striped">
                                             <thead>
                                                 <tr>
-                                                    <th style="width: 30%">Nombre</th>
-                                                    <th style="width: 10%">Precio</th>
-                                                    <th style="width: 10%">Descuento</th>
-                                                    <th style="width: 15%">Cantidad</th>
-                                                    <th style="width: 10%">Medida</th>
-                                                    <th style="width: 10%">Total</th>
-                                                    <th style="width: 15%">Acciones</th>
+                                                    <th style="width: 40%">Nombre</th>
+                                                    <th style="width: 20%">Medida</th>
+                                                    <th style="width: 20%">Cantidad</th>
+                                                    <th style="width: 20%">Agregar</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr *ngFor="let orderElement of rawMaterialOrderElements; let i = index">
-                                                    <td>{{orderElement.rawMaterialByProvider!.rawMaterialBase!.name}}</td>
-                                                    <td>Q{{orderElement.price}}</td>
-                                                    <td>Q{{orderElement.discount}}</td>
-                                                    <td>{{orderElement.quantity}}</td>
-                                                    <td>{{orderElement.measure?.identifier}}</td>
-                                                    <td>Q{{orderElement.totalPrice}}</td>
-                                                    <!-- <td><input [(ngModel)]="orderElement.quantity" [ngModelOptions]="{ standalone: true }" (keydown)="onQuantityKeydown($event)"
-                                                        style="width: 100%;" type="text" placeholder="Cantidad" aria-label="Cantidad" min="1"
-                                                        type="number">
-                                                    </td>
-                                                    <td>
-                                                        <div class="input-with-text">
-                                                            <span class="input-text">Q</span><input (keydown)="onDiscountKeydown($event)" (input)="onDiscountInput($event, orderElement)"
-                                                            style="width: 100%;" type="text" placeholder="Descuento" aria-label="Descuento" min="0">
-                                                        </div>
-                                                    </td> -->
+                                                <tr *ngFor="let fpcElement of finishedProductCreationElements; let i = index">
+                                                    <td>{{fpcElement?.rawMaterialName}}</td>
+                                                    <td>{{fpcElement.measure?.identifier}}</td>
+                                                    <td>{{fpcElement.quantity}}</td>
                                                     <td style="white-space: nowrap">
                                                         <button
-                                                            type="button" (click)="unselectRawMaterial(orderElement, i)"
+                                                            type="button" (click)="unselectInventoryElement(fpcElement, i)"
                                                             class="btn btn-danger btn-sm pb-0 mx-1">
                                                                 <i class="material-icons">cancel</i>
                                                         </button>
@@ -148,7 +156,7 @@
                                 </div>
                                 <mat-divider></mat-divider>
                             </div>
-                            <div *ngIf="!isEditOption" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                            <!-- <div *ngIf="!isEditOption" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
                                 <div class="subtotal">
                                     <p class="subtotal-title">Subtotal</p>
                                     <p class="subtotal-amount">Q{{ calculateSubtotal() | number: '1.2-2' }}</p>
@@ -169,22 +177,22 @@
                                     <p class="total-title">Monto Pendiente</p>
                                     <p class="total-amount">Q{{ calculatePendingAmount() | number: '1.2-2' }}</p>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
                         <div class="col-sm-12 text-center p-2">
-                            <button *ngIf="!isReceiveOption" id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||orderForm.invalid||!rawMaterialOrderElements||rawMaterialOrderElements.length<=0"
+                            <button *ngIf="!isReceiveOption" id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||orderForm.invalid||!finishedProductCreationElements||finishedProductCreationElements.length<=0"
                                 class="btn btn-outline-success btn-lg">
                                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                                 Guardar Pedido
                             </button>
-                            <button *ngIf="isReceiveOption" (click)="onReceiveDialog()" type="button" [disabled]="submitting||orderForm.invalid||!rawMaterialOrderElements||rawMaterialOrderElements.length<=0" 
+                            <!-- <button *ngIf="isReceiveOption" (click)="onReceiveDialog()" type="button" [disabled]="submitting||orderForm.invalid||!rawMaterialOrderElements||rawMaterialOrderElements.length<=0" 
                             data-bs-toggle="modal" data-bs-target="#confirmModal" class="btn btn-outline-success">
                                 <div class="d-flex flex-row p-1">
                                     <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                                     <i class="material-icons icon">receipt_long</i>
                                     <span class="px-1">RECIBIR PEDIDO</span>
                                 </div>
-                            </button>
+                            </button> -->
                         </div>
                     </div>
                 </div>
@@ -203,9 +211,9 @@
             <div class="modal-body">
                 <form [formGroup]="rawMaterialForm">
                     <div class="d-flex flex-wrap justify-content-center">
-                        <!-- <div class="col-12"> -->
-                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedRMP?.rawMaterialBase?.photo"></view-object>
-                        <!-- </div> -->
+                        <div class="col-12 p-3">
+                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedIE?.rawMaterialBase?.photo"></view-object>
+                        </div>
                         <div class="d-flex flex-wrap justify-content-center col-12 p-3">
                             <div class="pb-4 col-6 col-lg-3">
                                 <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
@@ -217,45 +225,26 @@
                                 <mat-form-field class="custom-input" appearance="outline">
                                     <mat-label>Cantidad</mat-label>
                                     <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
-                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="setQuantityValue($event)" />
+                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="setModalQuantityValue($event)" />
                                     <div class="invalid-feedback" *ngIf="r['quantity'].errors">
                                         <div *ngIf="r['quantity'].hasError('required')">
                                             Cantidad requerida
                                         </div>
                                         <div *ngIf="r['quantity'].hasError('pattern')">
-                                            Debe contener unicamente numeros positivos
-                                        </div>
-                                    </div>
-                                </mat-form-field>
-                            </div>
-                            <div class="px-2">
-                                <mat-form-field class="custom-input align-self-start" appearance="outline">
-                                    <mat-label>Descuento (Quetzales)</mat-label>
-                                    <input id="discount-modal-form" type="text" formControlName="discount" matInput
-                                        [ngClass]="{ 'is-invalid': r['discount'].errors }" (input)="setDiscountValue($event)" />
-                                    <div class="invalid-feedback" *ngIf="r['discount'].errors">
-                                        <div *ngIf="r['discount'].hasError('required')">
-                                            Descuento requerido
-                                        </div>
-                                        <div *ngIf="r['discount'].hasError('pattern')">
                                             Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
                                         </div>
                                     </div>
                                 </mat-form-field>
                             </div>
                         </div>
-                        <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                        <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                             <div class="subtotal">
-                                <p class="subtotal-title">Subtotal</p>
-                                <p class="subtotal-amount">{{ modalSubtotalText }}</p>
-                            </div>
-                            <div class="descuento">
-                                <p class="subtotal-title">Descuento</p>
-                                <p class="subtotal-amount">{{ modalTotalDiscountText }}</p>
+                                <p class="subtotal-title">Cantidad Disponible ({{ selectedIE?.measure?.identifier }})</p>
+                                <p class="subtotal-amount">{{ this.selectedIE?.quantity }}</p>
                             </div>
                             <div class="total">
-                                <p class="total-title">Total</p>
-                                <p class="total-amount">{{ modalTotalText }}</p>
+                                <p class="total-title">Cantidad Seleccionada ({{ selectedIE?.measure?.identifier }})</p>
+                                <p class="total-amount">{{ modalSelectedQuantity }}</p>
                             </div>
                         </div>
                     </div>
