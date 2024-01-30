@@ -4,10 +4,12 @@ import { Status } from "../auxiliary/status.model";
 import { Provider } from "../system/provider.model";
 import { User } from "../user.model";
 import { RawMaterialOrderElement } from "./raw-material-order-element.model";
+import { RawMaterialOrderPayment } from "./raw-material-order-payment.model";
 
 export class RawMaterialOrder {
     _id?: string;
     rawMaterialOrderElements?: RawMaterialOrderElement[];
+    rawMaterialOrderPayments?: RawMaterialOrderPayment[];
     name?: string;
     comment?: string;
     provider?: Provider;

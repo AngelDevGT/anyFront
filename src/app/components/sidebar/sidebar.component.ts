@@ -141,17 +141,17 @@ export class SidebarComponent implements OnInit {
       childs : [
         {
           root_class : "list-group list-group-flush",
-          router_link : "/products",
+          router_link : "/finishedProducts",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Productos para Venta",
+          link_name : "Producto Terminado",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         },
         {
           root_class : "list-group list-group-flush",
-          router_link : "/finishedProducts",
+          router_link : "/productsForSale",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Producto Terminado",
+          link_name : "Productos para Venta",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         },

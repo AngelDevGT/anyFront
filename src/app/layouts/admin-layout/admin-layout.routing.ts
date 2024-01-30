@@ -1,13 +1,10 @@
 import { Routes } from "@angular/router";
 import { HomeComponent } from "@app/home";
 import { 
-ListProductComponent, 
-AddEditProductComponent, 
 AddEditEstablishmentComponent, 
 ListProviderComponent,
 AddEditProviderComponent,
 ViewProviderComponent,
-ViewProductComponent,
 AddEditRawMaterialByProviderOrderComponent,
 ViewEstablishmentComponent,
 ListRawMaterialOrderComponent,
@@ -19,6 +16,9 @@ import { ListFinishedProductComponent } from "@app/pages/finished-product/list/l
 import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
 import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
 import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-product-creation.component";
+import { AddEditProductoForSaleComponent } from "@app/pages/product-for-sale/add-edit/add-edit-product-for-sale.component";
+import { ListProductForSaleComponent } from "@app/pages/product-for-sale/list/list-product-for-sale.component";
+import { ViewProductForSaleComponent } from "@app/pages/product-for-sale/view/view-product-for-sale.component";
 import { AddEditRawMaterialComponent } from "@app/pages/raw-material-base/add-edit/add-edit-raw-material.component";
 import { ListRawMaterialComponent } from "@app/pages/raw-material-base/list/list-raw-material.component";
 import { ViewRawMaterialComponent } from "@app/pages/raw-material-base/view/view-raw-material.component";
@@ -33,14 +33,14 @@ export const AdminLayoutRoutes: Routes = [
     
     // {path: 'users', loadChildren: usersModule}
     { path: 'home', component: HomeComponent },
-    { path: 'products', component: ListProductComponent },
-    { path: 'products/create', component: AddEditProductComponent },
-    { path: 'products/edit/:id', component: AddEditProductComponent },
-    { path: 'products/view/:id', component: ViewProductComponent},
     { path: 'finishedProducts', component: ListFinishedProductComponent },
     { path: 'finishedProducts/create', component: AddEditFinishedProductComponent },
     { path: 'finishedProducts/edit/:id', component: AddEditFinishedProductComponent },
     { path: 'finishedProducts/view/:id', component: ViewFinishedProductComponent},
+    { path: 'productsForSale/create', component: AddEditProductoForSaleComponent },
+    { path: 'productsForSale/edit/:id', component: AddEditProductoForSaleComponent },
+    { path: 'productsForSale', component: ListProductForSaleComponent },
+    { path: 'productsForSale/view/:id', component: ViewProductForSaleComponent },
     { path: 'establishments', component: ListEstablishmentComponent},
     { path: 'establishments/create', component: AddEditEstablishmentComponent},
     { path: 'establishments/edit/:id', component: AddEditEstablishmentComponent},

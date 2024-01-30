@@ -7,7 +7,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '@environments/enviroment';
 import { Role, User } from '@app/models';
 import { Establishment } from '@app/models/establishment.model';
-import { ProductForSale } from '@app/models/producto-for-sale.model';
+import { ProductForSale } from '@app/models/product/producto-for-sale.model';
 import { Provider } from '@app/models/system/provider.model';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
@@ -208,30 +208,30 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/getProduct`, params);
     }
 
-    addProduct(product: ProductForSale, productImg: string){
-        product.photo = productImg;
-        if (productImg === ""){
-            delete product.photo;
-        }
-        product.creatorUser = " ";
-        let params = JSON.stringify({
-            addProduct: {
-                ...product,
-            }});
-        return this.http.post(`${environment.apiUrl}/addProduct`, params);
-    }
+    // addProduct(product: ProductForSale, productImg: string){
+    //     product.photo = productImg;
+    //     if (productImg === ""){
+    //         delete product.photo;
+    //     }
+    //     product.creatorUser = " ";
+    //     let params = JSON.stringify({
+    //         addProduct: {
+    //             ...product,
+    //         }});
+    //     return this.http.post(`${environment.apiUrl}/addProduct`, params);
+    // }
 
-    updateProduct(id: string, product: ProductForSale, productImg: string){
-        if (productImg !== ""){
-            product.photo = productImg;
-        }
-        product._id = id;
-        let params = JSON.stringify({
-            updateProduct: {
-                ...product,
-            }});
-        return this.http.post(`${environment.apiUrl}/updateProduct`, params);
-    }
+    // updateProduct(id: string, product: ProductForSale, productImg: string){
+    //     if (productImg !== ""){
+    //         product.photo = productImg;
+    //     }
+    //     product._id = id;
+    //     let params = JSON.stringify({
+    //         updateProduct: {
+    //             ...product,
+    //         }});
+    //     return this.http.post(`${environment.apiUrl}/updateProduct`, params);
+    // }
 
     deleteProduct(params: any) {
         let deleteUser = JSON.stringify({
@@ -244,21 +244,21 @@ export class DataService {
     /** ESTABLISHMENT */
 
     getAllEstablishments() {
-        let params = JSON.stringify({findEstablishment: {}});
+        let params = JSON.stringify({findProduct: {}});
         return this.http.post(`${environment.apiUrl}/retrieveEstablishments`, params);
     }
 
 
     getAllEstablishmentsByFilter(params: any) {
         let parameters = JSON.stringify({
-            findEstablishment: {
+            findProduct: {
                 ...params
             }});
         return this.http.post(`${environment.apiUrl}/retrieveEstablishments`, parameters);
     }
 
     getEstablishmentById(id: string) {
-        let params = JSON.stringify({findEstablishment: { "_id": id}});
+        let params = JSON.stringify({findProduct: { "_id": id}});
         return this.http.post(`${environment.apiUrl}/retrieveEstablishments`, params);
     }
 
@@ -684,6 +684,54 @@ export class DataService {
                 ...fpCreation
             }});
         return this.http.post(`${environment.apiUrl}/registerFinishedProductCreation`, params);
+    }
+
+    /** PRODUCT FOR SALE */
+    getAllProductForSale() {
+        let params = JSON.stringify({getProductForSale: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveProductsForSale`, params);
+    }
+
+
+    getAllProductForSaleByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveProductForSale: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveProductsForSale`, parameters);
+    }
+
+    getProductForSaleById(id: string) {
+        let params = JSON.stringify({getProductForSale: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getProductForSale`, params);
+    }
+
+    addProductForSale(product: ProductForSale){
+        let params = JSON.stringify({
+            addProductForSale: {
+                ...product,
+                ...activeStatus,
+                "creatorUser": " ",
+            }});
+        return this.http.post(`${environment.apiUrl}/AddProductForSale`, params);
+    }
+
+    updateProductForSale(id: string, product: ProductForSale){
+        let params = JSON.stringify({
+            updateProductForSale: {
+                "_id": id,
+                ...product
+            }});
+        return this.http.post(`${environment.apiUrl}/updateProductForSale`, params);
+    }
+
+    deleteProductForSale(params: any) {
+        let deleteUser = JSON.stringify({
+            updateProductForSale: {
+                ...params,
+                ...deleteStatus
+            }});
+        return this.http.post(`${environment.apiUrl}/updateProductForSale`, deleteUser);
     }
 
 }

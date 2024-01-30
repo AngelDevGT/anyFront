@@ -12,7 +12,6 @@ Validators,
 FormControl,
 } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { ProductForSale } from '@app/models/producto-for-sale.model';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
 
 @Component({ 

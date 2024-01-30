@@ -1,0 +1,43 @@
+<div class="genericCard">
+    <mat-card>
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>Producto para Venta</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
+                        <div>
+                            <button
+                                type="button"
+                                routerLink="create"
+                                class="btn btn-outline-success m-2"
+                                > <!-- relative route "add" = "/users/add" -->
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons icon">add</i>
+                                    <span>Crear Producto para Venta</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="select-filter mx-2">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Buscar</mat-label>
+                                <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)"/>
+                            </mat-form-field>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center">
+                <span *ngIf="!cards" class="spinner-border spinner-border-lg me-1"></span>
+                <div *ngFor="let cardElements of cards | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize" class="p-2">
+                    <app-card [cardElements]="cardElements">
+                    </app-card>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center pt-3">
+                <ngb-pagination [pageSize] = "5" [collectionSize]="this.cards?.length ? this.cards!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

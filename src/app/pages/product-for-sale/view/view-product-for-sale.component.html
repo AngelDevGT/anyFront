@@ -4,14 +4,14 @@
             <span class="spinner-border spinner-border-lg align-center"></span>
         </div>
         <mat-card-header *ngIf="!loading" style="justify-content: center;">
-            <mat-card-title>{{establishment!.name}}</mat-card-title>
+            <mat-card-title>{{productForSale?.finishedProduct?.name}}</mat-card-title>
         </mat-card-header>
         <mat-card-content *ngIf="!loading">
             <br>
-            <view-object [objectElements]="elements"></view-object>
+            <view-object [objectElements]="elements" [imgIdentifier]="productForSale?.finishedProduct?.photo"></view-object>
             <div class="d-flex flex-wrap justify-content-center">
                 <button
-                type="button" routerLink="/establishments/edit/{{establishment!._id}}" [disabled]="submitting"
+                type="button" routerLink="/productsForSale/edit/{{productForSale!._id}}" [disabled]="submitting"
                 class="btn btn-primary m-2">
                 <div class="d-flex flex-row p-1">
                     <i class="material-icons icon">edit</i>
@@ -19,7 +19,7 @@
                 </div>
                 </button>
                 <button
-                type="button" (click)="deleteEstablishment()" [disabled]="submitting"
+                type="button" (click)="deleteProductForSale()" [disabled]="submitting"
                 class="btn btn-danger m-2">
                 <div class="d-flex flex-row p-1">
                     <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
@@ -27,7 +27,6 @@
                     <span class="px-1">ELIMINAR</span>
                 </div>
                 </button>
-                <!-- <button (click)="generatePDF()">Generate PDF</button> -->
             </div>
         </mat-card-content>
     </mat-card>

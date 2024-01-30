@@ -1,0 +1,101 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>{{title}}</mat-card-title>
+            <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading" [formGroup]="productoForSaleForm" (ngSubmit)="onSaveForm()">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div *ngIf="!selectedFinishedProduct && !this.id" class="row justify-content-center col-12">
+                            <div class="table-responsive p-3 col-sm-12 col-md-8">
+                                <h3 class="text-center">Producto Terminado</h3>
+                                <table class="table table-striped my-custom-scrollbar">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%">Nombre</th>
+                                            <th style="width: 50%">Descripcion</th>
+                                            <th style="width: 15%">Medida</th>
+                                            <th style="width: 15%">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let finishedProduct of finishedProducts; let i = index">
+                                            <td>{{finishedProduct.name}}</td>
+                                            <td>{{finishedProduct.description}}</td>
+                                            <td>{{finishedProduct.measure?.identifier}}</td>
+                                            <td style="white-space: nowrap">
+                                                <button
+                                                    type="button" (click)="selectFinishedProduct(finishedProduct)"
+                                                    class="btn btn-success btn-sm pb-0 mx-1">
+                                                        <i class="material-icons">open_in_new</i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr *ngIf="!finishedProducts">
+                                            <td colspan="4" class="text-center">
+                                                <span class="spinner-border spinner-border-lg align-center"></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div *ngIf="selectedFinishedProduct && !this.id" class="d-flex flex-wrap justify-content-center col-md-12 p-3">
+                            <div class="col-md-8">
+                                <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedFinishedProduct.photo"></view-object>
+                                <div class="col-sm-12 text-center p-2">
+                                    <button id="boton-form-unselect-raw-material" type="button" (click)="unselectFinishedProduct()"
+                                        class="btn btn-outline-primary">
+                                        Cambiar Producto Terminado
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                            <mat-form-field *ngIf="!this.id" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                <mat-label>Establecimiento</mat-label>
+                                <mat-select matInput disableOptionCentering formControlName="establishment"
+                                    [ngClass]="{ 'is-invalid': f['establishment'].errors }" (valueChange)="selectedEstablishmentSubject.next($event)">
+                                    <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment._id}}">{{establishment.name}} ({{establishment.address}})</mat-option>
+                                </mat-select>
+                                <div class="invalid-feedback" *ngIf="f['establishment'].errors">
+                                    <div *ngIf="f['establishment'].errors['required']">
+                                        Establecimiento requerido
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                <mat-label>Precio (Quetzales)</mat-label>
+                                <input id="nombre-form-crear-comunidad" type="text" #price maxlength="{{listMaxLength['price']}}" formControlName="price" matInput
+                                    [ngClass]="{ 'is-invalid': f['price'].errors }" />
+                                    <mat-hint align="end">{{price.value.length}} / {{listMaxLength['price']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['price'].errors">
+                                    <div *ngIf="f['price'].hasError('required')">
+                                        Precio requerido
+                                    </div>
+                                    <div *ngIf="f['price'].hasError('pattern')">
+                                        Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <!-- *ngIf="selectedEstablishmentSubject.value" -->
+                        </div>
+                        <div class="col-sm-12 text-center p-2">
+                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||productoForSaleForm.invalid||!selectedFinishedProduct"
+                                class="btn btn-outline-success btn-lg">
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                Guardar Producto para Venta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

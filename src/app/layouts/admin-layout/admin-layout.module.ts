@@ -22,9 +22,6 @@ import { HomeComponent } from "@app/home";
 import { ComponentsModule } from "@app/components";
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { 
-  ListProductComponent, 
-  AddEditProductComponent, 
-  ViewProductComponent,
   ListEstablishmentComponent, 
   AddEditEstablishmentComponent,
   ListProviderComponent,
@@ -49,6 +46,9 @@ import { AddEditProductCreationComponent } from "@app/pages/product-creation/add
 import { MatDialogModule } from "@angular/material/dialog";
 import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provider-order/view/view-raw-material-order.component";
 import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
+import { AddEditProductoForSaleComponent } from "@app/pages/product-for-sale/add-edit/add-edit-product-for-sale.component";
+import { ListProductForSaleComponent } from "@app/pages/product-for-sale/list/list-product-for-sale.component";
+import { ViewProductForSaleComponent } from "@app/pages/product-for-sale/view/view-product-for-sale.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -75,9 +75,6 @@ import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bod
   ],
   declarations: [
       HomeComponent,
-      ListProductComponent,
-      AddEditProductComponent,
-      ViewProductComponent,
       ListEstablishmentComponent,
       AddEditEstablishmentComponent,
       ViewEstablishmentComponent,
@@ -100,6 +97,9 @@ import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bod
       ListWarehouseInventoryRMPComponent,
       ListFactoryInventoryRMComponent,
       ListFactoryInventoryFPComponent,
+      AddEditProductoForSaleComponent,
+      ListProductForSaleComponent,
+      ViewProductForSaleComponent,
       // UsersLayoutComponent
   ]
 })

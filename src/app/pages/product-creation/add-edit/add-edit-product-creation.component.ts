@@ -30,8 +30,9 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { FinishedProduct } from '@app/models/product/finished-product.model';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
 import { Inventory } from '@app/models/inventory/inventory.model';
-import { FinishedProductCreationElement } from '@app/models/product/finished-product-creation-element.model';
+import { FinishedProductCreationConsumedElement } from '@app/models/product/fp-creation-consumed-element.model';
 import { FinishedProductCreation } from '@app/models/product/finished-product-creation.model';
+import { FinishedProductCreationProducedElement } from '@app/models/product/fp-creation-produced-element.model';
 
 @Component({ 
     selector: 'page-add-edit-product-creation',
@@ -42,6 +43,7 @@ export class AddEditProductCreationComponent implements OnInit{
 
     //Form
     orderForm!: FormGroup;
+    finishedProductForm!: FormGroup;
     rawMaterialForm!: FormGroup;
     rawMaterialOrder?: RawMaterialOrder;
     selectedMeasure?: Measure;
@@ -93,13 +95,19 @@ export class AddEditProductCreationComponent implements OnInit{
     filteredFinishedProductMeasureOptions?: Measure[];
     selectedFinishedProduct?: FinishedProduct;
     finishedProducts?: FinishedProduct[];
-    finishedProductsElements?: any;
+    modalFinishedProductsElements?: any;
     finishedProductQuantity = 0;
     inventoryElements?: InventoryElement[];
-    finishedProductCreationElements?: FinishedProductCreationElement[];
+    finishedProductCreationConsumedElements?: FinishedProductCreationConsumedElement[];
+    finishedProductCreationProducedElements?: FinishedProductCreationProducedElement[];
+    finishedProductElements?: FinishedProduct[];
+    unselectedFinishedProductElements?: FinishedProduct[];
     currentMeasureQuantity = 0;
     modalSelectedQuantity = 0;
     unselectedInventoryElements?: InventoryElement[];
+    modalFinishedProductQuantity = 0;
+    finishedProductMeasureQuantity = 0;
+    modalFinishedProductSelectedMeasure?: Measure;
 
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
@@ -124,6 +132,7 @@ export class AddEditProductCreationComponent implements OnInit{
 
         this.orderForm = this.createFormGroup();
         this.rawMaterialForm = this.createMaterialFormGroup();
+        this.finishedProductForm = this.createFinishedProductFormGroup();
 
         this.rawMaterials = [];
         this.finishedProducts = [];
@@ -131,8 +140,11 @@ export class AddEditProductCreationComponent implements OnInit{
         this.unselectedRawMaterials = [];
         this.selectedRawMaterials = [];
         this.rawMaterialOrderElements = [];
-        this.finishedProductCreationElements = [];
+        this.finishedProductCreationConsumedElements = [];
+        this.finishedProductCreationProducedElements = [];
+        this.finishedProductElements = [];
         this.unselectedInventoryElements = [];
+        this.unselectedFinishedProductElements = [];
 
         let requestArray = [];
 
@@ -207,24 +219,32 @@ export class AddEditProductCreationComponent implements OnInit{
         this.elements = [];
     }
 
+    onResetFinishedProductForm(){
+        this.finishedProductForm.reset();
+        this.selectedFinishedProduct = undefined;
+        this.modalFinishedProductSelectedMeasure = undefined;
+        this.modalFinishedProductQuantity = 0;
+        this.finishedProductMeasureQuantity = 0;
+        this.modalFinishedProductsElements = [];
+    }
+
     onSaveForm() {
         this.alertService.clear();
         this.submitting = true;
         let finishedProductCreation: FinishedProductCreation = {
             destinyFinishedProductInventoryID: "64d7dae896457636c3f181e9",
             originRawMaterialInventoryID: "64d7240f838808573bd7e9ee",
-            finishedProductCreatedID: this.selectedFinishedProduct?._id,
-            quantity: String(this.finishedProductQuantity),
-            measure: this.selectedMeasure
+            finishedProductList: this.finishedProductCreationProducedElements,
+            rawMaterialList: this.finishedProductCreationConsumedElements
         }
-        finishedProductCreation.rawMaterialList = this.finishedProductCreationElements;
+        // finishedProductCreation.rawMaterialList = this.finishedProductCreationConsumedElements;
         console.log(finishedProductCreation);
-        // this.saveOrder()
+        this.saveOrder()
         this.dataService.registerFinishedProductCreation(finishedProductCreation)
             .pipe(first())
                 .subscribe({
                     next: () => {
-                        this.alertService.success('Producto registrado en inventario correctamente', { keepAfterRouteChange: true });
+                        this.alertService.success('Producto(s) registrado(s) en inventario correctamente', { keepAfterRouteChange: true });
                         this.router.navigateByUrl('/inventory/factory/finishedProduct');
                     },
                     error: error => {
@@ -276,18 +296,33 @@ export class AddEditProductCreationComponent implements OnInit{
 
     onSaveMaterialForm(){
         console.log(this.selectedIE);
-        let newFinishedProductCreationElement: FinishedProductCreationElement = {
+        let newFinishedProductCreationConsumedElement: FinishedProductCreationConsumedElement = {
             rawMaterialID: this.selectedIE?.rawMaterialBase?._id,
             rawMaterialName: this.selectedIE?.rawMaterialBase?.name,
             measure: this.modalSelectedMeasure,
             quantity: String(this.modalQuantity)
         }
-        console.log(newFinishedProductCreationElement);
-        this.finishedProductCreationElements?.push(newFinishedProductCreationElement);
-        console.log(this.finishedProductCreationElements);
+        console.log(newFinishedProductCreationConsumedElement);
+        this.finishedProductCreationConsumedElements?.push(newFinishedProductCreationConsumedElement);
+        console.log(this.finishedProductCreationConsumedElements);
         this.findAndMoveInventoryElementById(true, this.selectedIE?.rawMaterialBase?._id);
         console.log(this.unselectedInventoryElements);
         this.onResetMaterialForm();
+    }
+
+    onSaveFinishedProductForm(){
+        console.log("selectedFinishedProduct: " + this.selectedFinishedProduct);
+        let newFinishedProductCreationProducedElement: FinishedProductCreationProducedElement = {
+            finishedProductID: this.selectedFinishedProduct?._id,
+            finishedProductName: this.selectedFinishedProduct?.name,
+            measure: this.modalFinishedProductSelectedMeasure,
+            quantity: String(this.modalFinishedProductQuantity)
+        }
+        this.finishedProductCreationProducedElements?.push(newFinishedProductCreationProducedElement);
+        console.log(this.finishedProductCreationProducedElements);
+        this.findAndMoveFinishedProductById(true, this.selectedFinishedProduct?._id);
+        console.log(this.unselectedFinishedProductElements);
+        this.onResetFinishedProductForm();
     }
 
     setMeasure(measureId: string){
@@ -359,6 +394,22 @@ export class AddEditProductCreationComponent implements OnInit{
         }
     }
 
+    findAndMoveFinishedProductById(isSelect: boolean, finishedProductId?: string){
+        if(isSelect){
+            let finishedProductResult = this.finishedProducts?.find(fpElement => fpElement?._id === finishedProductId);
+            if(finishedProductResult){
+                this.finishedProducts = this.finishedProducts?.filter(fpElement => fpElement?._id !== finishedProductId);
+                this.unselectedFinishedProductElements?.push(finishedProductResult);
+            }
+        } else {
+            let finishedProductResult = this.unselectedFinishedProductElements?.find(fpElement => fpElement?._id === finishedProductId);
+            if(finishedProductResult){
+                this.unselectedFinishedProductElements = this.unselectedFinishedProductElements?.filter(fpElement => fpElement?._id !== finishedProductId);
+                this.finishedProducts?.push(finishedProductResult);
+            }
+        }
+    }
+
     get f() {
         return this.orderForm.controls;
     }
@@ -367,8 +418,16 @@ export class AddEditProductCreationComponent implements OnInit{
         return this.rawMaterialForm.controls;
     }
 
+    get fp() {
+        return this.finishedProductForm.controls;
+    }
+
     get modalMeasureSelect(){
         return this.rawMaterialForm.get('measure');
+    }
+
+    get modalFinishedProductMeasureSelect(){
+        return this.finishedProductForm.get('measure');
     }
 
     get measureSelect(){
@@ -399,6 +458,17 @@ export class AddEditProductCreationComponent implements OnInit{
         this.calculateModalQuantity();
     }
 
+    changeFinishedProductMeasure(measureId: any){
+        if(measureId){
+            if(this.modalFinishedProductSelectedMeasure){
+                this.modalFinishedProductsElements.pop();
+            }
+            this.modalFinishedProductSelectedMeasure = this.selectMeasure(measureId);
+            this.finishedProductMeasureQuantity = Number(this.modalFinishedProductSelectedMeasure?.unitBase?.quantity);
+            this.modalFinishedProductsElements.push({icon : "inbox", name : "Cantidad (" + this.selectedFinishedProduct?.measure?.identifier + ")", value : this.finishedProductMeasureQuantity});
+        }
+    }
+
     selectInventoryElement(invElement: InventoryElement, indexToRemove: number){
         // this.selectedRMP = rawMaterial;
         this.selectedIE = invElement;
@@ -416,10 +486,10 @@ export class AddEditProductCreationComponent implements OnInit{
         // this.rawMaterialOrderElements?.push(newOrderElement);
     }
 
-    unselectInventoryElement(fpcElement: FinishedProductCreationElement, indexToRemove: number){
-        this.finishedProductCreationElements?.splice(indexToRemove, 1);
+    unselectInventoryElement(fpcElement: FinishedProductCreationConsumedElement, indexToRemove: number){
+        this.finishedProductCreationConsumedElements?.splice(indexToRemove, 1);
         this.findAndMoveInventoryElementById(false, fpcElement.rawMaterialID);
-        console.log(this.finishedProductCreationElements);
+        console.log(this.finishedProductCreationConsumedElements);
         console.log(this.unselectedInventoryElements);
     }
 
@@ -431,18 +501,17 @@ export class AddEditProductCreationComponent implements OnInit{
 
     selectFinishedProduct(finishedProduct: FinishedProduct){
         this.selectedFinishedProduct = finishedProduct;
-        this.finishedProductsElements = [];
+        this.modalFinishedProductsElements = [];
         this.setFinishedProductsElements(finishedProduct);
         this.filteredFinishedProductMeasureOptions = this.finishedProductMeasureOptions?.filter(item => this.selectedFinishedProduct?.measure?.identifier?.includes(item.unitBase?.name!));
+        this.modalFinishedProductMeasureSelect?.setValue('');
     }
 
-    unselectFinishedProduct(){
-        this.measureSelect?.setValue('');
-        this.quantityInput?.setValue('');
-        this.selectedMeasure = undefined;
-        this.selectedFinishedProduct = undefined;
-        this.elements = [];
-        this.cardPhoto = undefined;
+    unselectFinishedProduct(fppElement: FinishedProductCreationProducedElement, indexToRemove: number){
+        this.finishedProductCreationProducedElements?.splice(indexToRemove, 1);
+        this.findAndMoveFinishedProductById(false, fppElement.finishedProductID);
+        console.log(this.finishedProductCreationProducedElements);
+        console.log(this.unselectedFinishedProductElements);
     }
 
     calculateSubtotal() {
@@ -522,6 +591,12 @@ export class AddEditProductCreationComponent implements OnInit{
         this.calculateModalQuantity();
     }
 
+    setFinishedProductModalQuantityValue(event: Event){
+        if (event.target instanceof HTMLInputElement) {
+            this.modalFinishedProductQuantity = Number(event.target.value) || 0;
+        }
+    }
+
     calculateModalQuantity() {
         let totalQuantity = Number(this.modalQuantity)*Number(this.currentMeasureQuantity) || 0;
         let unitBaseTotalQuantity = Number(this.selectedIE?.measure?.unitBase?.quantity) * Number(this.selectedIE?.quantity);
@@ -547,6 +622,13 @@ export class AddEditProductCreationComponent implements OnInit{
         });
     }
 
+    createFinishedProductFormGroup() {
+        return new FormGroup({
+            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            measure: new FormControl('', [Validators.required])
+        });
+    }
+
     setInventoryElementElements(invElement: InventoryElement){
         // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
         this.elements.push({icon : "format_size", name : "Nombre", value : invElement?.rawMaterialBase?.name});
@@ -555,13 +637,17 @@ export class AddEditProductCreationComponent implements OnInit{
     }
 
     setFinishedProductsElements(finishedProduct: FinishedProduct){
-        this.finishedProductsElements.push({icon : "inventory_2", name : "Nombre", value : finishedProduct.name});
-        this.finishedProductsElements.push({icon : "scale", name : "Medida", value : finishedProduct.measure?.identifier});
-        this.finishedProductsElements.push({icon : "feed", name : "Descripción", value : finishedProduct.description});
+        this.modalFinishedProductsElements.push({icon : "inventory_2", name : "Nombre", value : finishedProduct.name});
+        this.modalFinishedProductsElements.push({icon : "scale", name : "Medida", value : finishedProduct.measure?.identifier});
+        this.modalFinishedProductsElements.push({icon : "feed", name : "Descripción", value : finishedProduct.description});
     }
 
     closeRawMaterialDialog(){
         this.onResetMaterialForm();
+    }
+
+    closeFinishedProductoDialog(){
+        this.onResetFinishedProductForm();
     }
 
 }

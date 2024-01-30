@@ -1,11 +1,10 @@
 import { Measure } from "../auxiliary/measure.model";
-import { FinishedProductCreationElement } from "./finished-product-creation-element.model";
+import { FinishedProductCreationConsumedElement } from "./fp-creation-consumed-element.model";
+import { FinishedProductCreationProducedElement } from "./fp-creation-produced-element.model";
 
 export class FinishedProductCreation {
     destinyFinishedProductInventoryID?: string;
     originRawMaterialInventoryID?: string;
-    finishedProductCreatedID?: string;
-    measure?: Measure;
-    quantity?: string;
-    rawMaterialList?: FinishedProductCreationElement[];
+    rawMaterialList?: FinishedProductCreationConsumedElement[];
+    finishedProductList?: FinishedProductCreationProducedElement[];
 }
