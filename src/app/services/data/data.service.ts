@@ -135,6 +135,57 @@ export const paymentStatusValues = {
     },
 }
 
+export const storeOrderStatus = {
+    pendiente: {
+      "text": "1",
+      "identifier": "Pendiente",
+      "id": 1,
+      "status": 1
+    },
+    en_camino:{
+      "id": 2,
+      "status": 1,
+      "text": "2",
+      "identifier": "En camino"
+    },
+    recibido: {
+      "id": 3,
+      "status": 1,
+      "text": "3",
+      "identifier": "Recibido"
+    },
+    cancelado: {
+      "id": 4,
+      "status": 1,
+      "text": "4",
+      "identifier": "Cancelado"
+    },
+    eliminado: {
+      "id": 5,
+      "status": 1,
+      "text": "5",
+      "identifier": "Eliminado"
+    },
+    devuelto: {
+      "id": 6,
+      "status": 1,
+      "text": "6",
+      "identifier": "Devuelto"
+    },
+    listo: {
+      "id": 7,
+      "status": 1,
+      "text": "7",
+      "identifier": "Listo"
+    },
+    entregado: {
+      "id": 8,
+      "status": 1,
+      "text": "8",
+      "identifier": "Entregado"
+    }
+}
+
 export const activeStatus = {
     status: {
         "id": 2,
@@ -177,6 +228,24 @@ export const paidPaymentStatus = {
         "status": 1,
         "text": "3",
         "identifier": "Pagado"
+    }
+}
+
+export const pendingStoreStatus = {
+    "storeStatus": {
+        "text": "1",
+        "identifier": "Pendiente",
+        "id": 1,
+        "status": 1
+    }
+}
+
+export const pendingFactoryStatus = {
+    "factoryStatus": {
+        "text": "1",
+        "identifier": "Pendiente",
+        "id": 1,
+        "status": 1
     }
 }
 
@@ -732,6 +801,64 @@ export class DataService {
                 ...deleteStatus
             }});
         return this.http.post(`${environment.apiUrl}/updateProductForSale`, deleteUser);
+    }
+
+    /** PRODUCT FOR SALE ORDER */
+
+    getAllProducForSaleOrder() {
+        let params = JSON.stringify({retrieveProductForSaleStoreOrder: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveProductForSaleStoreOrder`, params);
+    }
+
+
+    getAllProductForSaleOrderByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveProductForSaleStoreOrder: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveProductForSaleStoreOrder`, parameters);
+    }
+
+    getProductForSaleOrderById(id: string) {
+        let params = JSON.stringify({getProductForSaleStoreOrder: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getProductForSaleStoreOrder`, params);
+    }
+
+    addProductForSaleOrder(pfsOrder: ProductForSale){
+        let params = JSON.stringify({
+            addProductForSaleStoreOrder: {
+                ...pfsOrder,
+                ...pendingStoreStatus,
+                ...pendingFactoryStatus,
+                "creatorUser": " ",
+            }});
+        return this.http.post(`${environment.apiUrl}/addProductForSaleStoreOrder`, params);
+    }
+
+    updateProductForSaleOrder(pfsOrder: ProductForSale){
+        let params = JSON.stringify({
+            updateProductForSaleStoreOrder: {
+                ...pfsOrder
+            }});
+        return this.http.post(`${environment.apiUrl}/updateProductForSaleStoreOrder`, params);
+    }
+
+    verifyProductForSaleOrder(orderId: string){
+        let params = JSON.stringify({
+            verifyRawMaterialOrder: {
+                rawMaterialOrderID: orderId,
+            }});
+        return this.http.post(`${environment.apiUrl}/verifyRawMaterialOrder`, params);
+    }
+
+    deleteProductForSaleOrder(params: any) {
+        let deleteOrder = JSON.stringify({
+            updateProductForSaleStoreOrder: {
+                ...params,
+                storeStatus: storeOrderStatus.eliminado,
+                factoryStatus: storeOrderStatus.eliminado,
+            }});
+        return this.http.post(`${environment.apiUrl}/updateProductForSaleStoreOrder`, deleteOrder);
     }
 
 }

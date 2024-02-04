@@ -24,7 +24,7 @@ declare interface RouteInfo {
 })
 export class SidebarComponent implements OnInit {
 
-  menuItems = [
+  menuItems: any = [
     {
       button_type : "button",
       button_class : "list-group-item principal-bottom",
@@ -34,8 +34,8 @@ export class SidebarComponent implements OnInit {
       button_aria_controls : "administrar-lvl1",
       button_aria_expanded : "false",
       button_icon_class : "material-icons icon",
-      button_icon : "tune",
-      button_name : "Sistema",
+      button_icon : "admin_panel_settings",
+      button_name : "Admin",
       button_dropdown_icon_class : "material-icons icon",
       button_dropdown_icon : "arrow_drop_down",
       root_id : "administrar-lvl1",
@@ -64,6 +64,14 @@ export class SidebarComponent implements OnInit {
           router_link : "/providers",
           link_class : "list-group-item py-2 ripple",
           link_name : "Proveedores",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/summary/rawMaterialByProvider/order",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Resumen (fabrica) Inventario Materia Prima",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         }
@@ -178,6 +186,44 @@ export class SidebarComponent implements OnInit {
           link_name : "Inventario de Producto Terminado",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/productsForSale/order",
+          query_params: {opt: 'factory'},
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Pedidos de Producto Terminado",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        }
+      ]
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#store-lvl1",
+      button_aria_controls : "store-lvl1",
+      button_aria_expanded : "false",
+      button_icon_class : "material-icons icon",
+      button_icon : "storefront",
+      button_name : "Tienda",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "store-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/productsForSale/order",
+          query_params: {opt: 'store'},
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Pedidos de Producto para Venta",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
         }
       ]
     },
@@ -226,5 +272,13 @@ export class SidebarComponent implements OnInit {
   //   this.router.events.subscribe((event) => {
   //     this.isCollapsed = true;
   //  });
+  }
+
+  navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }){
+    if(queryParams){
+      this.router.navigate([routerLink], { queryParams: queryParams, queryParamsHandling: 'merge' });
+    } else {
+      this.router.navigate([routerLink]);
+    }
   }
 }

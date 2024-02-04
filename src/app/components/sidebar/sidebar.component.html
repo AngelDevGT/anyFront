@@ -31,8 +31,13 @@
         <div *ngIf="subMenu.is_tree" id="{{subMenu.root_id}}" class="{{subMenu.root_class}}">
           <div class="{{subMenu.sub_class}}">
             <div *ngFor="let child of subMenu.childs" class="{{child.root_class}}">
-              <button 
+              <!-- <button 
               routerLink="{{child.router_link}}" 
+              class="{{child.link_class}}"
+              type="button"
+              > -->
+              <button 
+              (click)="navigateWithParams(child.router_link, child.query_params)"
               class="{{child.link_class}}"
               type="button"
               >

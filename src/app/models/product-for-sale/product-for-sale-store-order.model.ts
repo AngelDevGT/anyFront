@@ -8,7 +8,8 @@ export class ProductForSaleStoreOrder {
     productForSaleStoreOrderElements?: ProductForSaleStoreOrderElement[];
     name?: string;
     comment?: string;
-    establishment?: Establishment;
+    establishmentID?: string;
+    inventoryID?: string;
     storeStatus?: Status; // Pendiente, En Camino, Recibido,  Cancelado, Eliminado
     factoryStatus?: Status; // Pendiente, Listo, Entregado, Cancelado, Devuelto, Eliminado
     finalAmount?: string;

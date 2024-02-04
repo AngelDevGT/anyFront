@@ -1,14 +1,14 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Pedidos de Materia Prima</mat-card-title>
+            <mat-card-title>{{pageTitle}}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
                         <div>
-                            <button type="button" routerLink="create" class="btn btn-outline-success m-2">
+                            <button *ngIf="viewOption != 'factory'" type="button" (click)="navigateWithParams()" class="btn btn-outline-success m-2">
                                 <!-- relative route "add" = "/users/add" -->
                                 <div class="d-flex flex-row p-1">
                                     <i class="material-icons icon">add</i>
@@ -39,8 +39,8 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.rawMaterialOrders" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
-                    <span *ngIf="!rawMaterialOrders" class="spinner-border spinner-border-lg align-center"></span>
+                    <responsive-table *ngIf="this.productForSaleOrdes" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <span *ngIf="!productForSaleOrdes" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>
         </mat-card-content>

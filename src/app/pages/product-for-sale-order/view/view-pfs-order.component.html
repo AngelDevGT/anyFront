@@ -1,0 +1,108 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <div *ngIf="loading" class="text-center m-5">
+            <span class="spinner-border spinner-border-lg align-center"></span>
+        </div>
+        <mat-card-header *ngIf="!loading" style="justify-content: center;">
+            <mat-card-title>{{productForSaleOrder!.name}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content *ngIf="!loading">
+            <br>
+            <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                <div class="col-12">
+                    <view-object [objectElements]="elements"></view-object>
+                </div>
+                <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
+                    <responsive-table *ngIf="this.productForSaleOrder" [tableElements]="tableElementsValues"
+                        [pageSize]="pageSize"></responsive-table>
+                </div>
+                <div *ngIf="!isFactory" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                    <div class="total">
+                        <p class="total-title">Monto total</p>
+                        <p class="total-amount">Q{{ productForSaleOrder?.finalAmount | number: '1.2-2' }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center">
+                <button *ngIf="receiveOption"
+                    type="button" (click)="actionOrder(1)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
+                    class="btn btn-success m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">archive</i>
+                        <span class="px-1">RECIBIR PEDIDO</span>
+                    </div>
+                </button>
+                <button *ngIf="readyOption"
+                    type="button" (click)="actionOrder(2)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
+                    class="btn btn-success m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">done_outline</i>
+                        <span class="px-1">LISTO</span>
+                    </div>
+                </button>
+                <button *ngIf="comingOption"
+                    type="button" (click)="actionOrder(3)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
+                    class="btn btn-warning m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">local_shipping</i>
+                        <span class="px-1">EN CAMINO</span>
+                    </div>
+                </button>
+                <button *ngIf="returnOption"
+                    type="button" (click)="actionOrder(4)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
+                    class="btn btn-danger m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">cancel</i>
+                        <span class="px-1">DEVOLVER</span>
+                    </div>
+                </button>
+                <button type="button" (click)="generatePDF()" [disabled]="submitting" class="btn btn-secondary m-2">
+                    <div class="d-flex flex-row p-1">
+                        <i class="material-icons icon">download</i>
+                        <span class="px-1">PDF</span>
+                    </div>
+                </button>
+                <button *ngIf="editOption"
+                    type="button" (click)="editOrder(productForSaleOrder?._id)" [disabled]="submitting"
+                    class="btn btn-primary m-2">
+                    <div class="d-flex flex-row p-1">
+                        <i class="material-icons icon">edit</i>
+                        <span class="px-1">EDITAR</span>
+                    </div>
+                </button>
+                <button *ngIf="deleteOption"
+                    type="button" (click)="deleteOrder()" [disabled]="submitting"
+                    class="btn btn-danger m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">delete</i>
+                        <span class="px-1">ELIMINAR</span>
+                    </div>
+                </button>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>
+
+<div class="modal hide fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">{{confirmDialogTitle}}</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{confirmDialogText}}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">CANCELAR</button>
+                <button type="button" [disabled]="submitting" (click)="onConfirmDialog()" data-bs-dismiss="modal" class="btn btn-primary">ACEPTAR</button>
+            </div>
+        </div>
+    </div>
+</div>

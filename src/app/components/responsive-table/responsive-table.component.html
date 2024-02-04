@@ -11,7 +11,11 @@
                 <td *ngFor="let field of row.row">
                   <p *ngIf="field.type === 'text'" class="row-value" [attr.data-label]="field.header_name">{{field.value}}</p>
                   <div *ngIf="field.type === 'button'" class="d-flex justify-content-lg-center row-value">
-                    <button *ngFor="let button_value of field.button" type="{{button_value.type}}" routerLink="{{button_value.routerLink}}"
+                    <!-- <button *ngFor="let button_value of field.button" type="{{button_value.type}}" routerLink="{{button_value.routerLink}}"
+                          class="{{button_value.class}}">
+                          <i class="{{button_value.icon.class}}">{{button_value.icon.icon}}</i>
+                    </button> -->
+                    <button *ngFor="let button_value of field.button" type="{{button_value.type}}" (click)="navigateWithParams(button_value.routerLink, button_value.query_params)"
                           class="{{button_value.class}}">
                           <i class="{{button_value.icon.class}}">{{button_value.icon.icon}}</i>
                     </button>

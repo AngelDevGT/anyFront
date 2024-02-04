@@ -10,12 +10,16 @@ ViewEstablishmentComponent,
 ListRawMaterialOrderComponent,
 ListFactoryInventoryRMComponent,
 ListFactoryInventoryFPComponent} from "@app/pages";
+import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/list/summary-raw-material-order.component";
 import { ListEstablishmentComponent } from "@app/pages/establishment/list/list-establishment.component";
 import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add-edit/add-edit-finished-product.component";
 import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
 import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
 import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
 import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-product-creation.component";
+import { AddEditProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/add-edit/add-edit-pfs-order.component";
+import { ListProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/list/list-pfs-store-order.component";
+import { ViewProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/view/view-pfs-order.component";
 import { AddEditProductoForSaleComponent } from "@app/pages/product-for-sale/add-edit/add-edit-product-for-sale.component";
 import { ListProductForSaleComponent } from "@app/pages/product-for-sale/list/list-product-for-sale.component";
 import { ViewProductForSaleComponent } from "@app/pages/product-for-sale/view/view-product-for-sale.component";
@@ -37,6 +41,10 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'finishedProducts/create', component: AddEditFinishedProductComponent },
     { path: 'finishedProducts/edit/:id', component: AddEditFinishedProductComponent },
     { path: 'finishedProducts/view/:id', component: ViewFinishedProductComponent},
+    { path: 'productsForSale/order', component: ListProductForSaleOrderComponent },
+    { path: 'productsForSale/order/create', component: AddEditProductForSaleOrderComponent },
+    { path: 'productsForSale/order/edit/:id', component: AddEditProductForSaleOrderComponent },
+    { path: 'productsForSale/order/view/:id', component: ViewProductForSaleOrderComponent },
     { path: 'productsForSale/create', component: AddEditProductoForSaleComponent },
     { path: 'productsForSale/edit/:id', component: AddEditProductoForSaleComponent },
     { path: 'productsForSale', component: ListProductForSaleComponent },
@@ -66,5 +74,6 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'inventory/factory/finishedProduct', component: ListFactoryInventoryFPComponent},
     { path: 'productCreation', component: AddEditProductCreationComponent},
     { path: 'users', loadChildren: usersModule},
+    { path: 'summary/rawMaterialByProvider/order', component: SummaryRawMaterialOrderComponent}
 
 ];

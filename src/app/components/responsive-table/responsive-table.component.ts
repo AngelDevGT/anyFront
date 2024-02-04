@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DataService } from '@app/services';
 
 @Component({
@@ -19,7 +19,7 @@ export class ResponsiveTableComponent implements OnInit, OnChanges {
     headers?: any[];
 
 
-    constructor(private router: Router, private dataService: DataService) {
+    constructor(private router: Router) {
     }
 
     ngOnInit() {
@@ -39,6 +39,16 @@ export class ResponsiveTableComponent implements OnInit, OnChanges {
 
     sendData(data: any){
         this.sentData.emit(data);
+    }
+
+    navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }){
+        const pathActual = this.router.url.split('?')[0];
+        const newPath = `${pathActual}/${routerLink}`;
+        if(queryParams){
+          this.router.navigate([newPath], { queryParams: queryParams, queryParamsHandling: 'merge' });
+        } else {
+          this.router.navigate([newPath]);
+        }
     }
 
 }
