@@ -108,12 +108,20 @@
                                 </div>
                             </button>
                         </div> -->
-                        <div>
+                        <div class="d-flex flex-wrap justify-content-md-start justify-content-center pb-0">
                             <div class="select-filter mx-2">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Buscar</mat-label>
                                     <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
                                 </mat-form-field>
+                            </div>
+                            <div *ngIf="this.rawMaterialOrders" class="select-filter mx-2">
+                                <button type="button" (click)="exportDataToCsv()" class="btn btn-success m-2">
+                                    <div class="d-flex flex-row p-1">
+                                        <i class="material-icons">file_download</i>
+                                        <span>Exportar</span>
+                                    </div>
+                                </button>
                             </div>
                         </div>
                         <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">

@@ -52,7 +52,7 @@ import { ViewProductForSaleComponent } from "@app/pages/product-for-sale/view/vi
 import { AddEditProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/add-edit/add-edit-pfs-order.component";
 import { ListProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/list/list-pfs-store-order.component";
 import { ViewProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/view/view-pfs-order.component";
-import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/list/summary-raw-material-order.component";
+import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/raw-material-order/summary-raw-material-order.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({

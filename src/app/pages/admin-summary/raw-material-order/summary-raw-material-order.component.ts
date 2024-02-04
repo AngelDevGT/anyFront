@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { filter, first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
+import { ngxCsv } from 'ngx-csv';
 
 import { AccountService, AlertService, DataService, paymentStatusValues, statusValues} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
@@ -174,29 +175,6 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" }
                   ],
             }
-            let actionsButtons = [
-                {
-                    type: "button",
-                    routerLink: "view/" + element._id,
-                    class: "btn btn-success btn-sm pb-0 mx-1",
-                    icon: {
-                        class: "material-icons",
-                        icon: "visibility"
-                    }
-                }
-            ];
-
-            // let rowButtons = {
-            //     type: "button",
-            //     style: "white-space: nowrap",
-            //     value: undefined,
-            //     header_name: "Acciones",
-            //     button: [
-            //         ...actionsButtons
-            //     ]
-            // }
-
-            // curr_row.row.push(rowButtons)
 
             this.tableElementsValues.rows.push(curr_row);
         });
@@ -235,8 +213,33 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
             });
         }
         this.setTableElements(this.rawMaterialOrders);
-        console.log(filters);
-        console.log(this.rawMaterialOrders);
+    }
+
+    exportDataToCsv(){
+        const finalRawMaterialOrders = this.rawMaterialOrders?.map(rmOrd => {
+            return {
+                Nombre: rmOrd.name,
+                Comentario: rmOrd.comment,
+                Proveedor: rmOrd.provider?.name,
+                "Fecha Modificacion": this.dataService.getLocalDateTimeFromUTCTime(rmOrd.updateDate!),
+                "Fecha Creacion": this.dataService.getLocalDateTimeFromUTCTime(rmOrd.creationDate!),
+                "Estado del pedido": rmOrd.status?.identifier,
+                "Tipo de pago": rmOrd.paymentType?.identifier,
+                "Estado de pago": rmOrd.paymentStatus?.identifier,
+                "Monto total": this.dataService.getFormatedPrice(Number(rmOrd.finalAmount)),
+                "Monto pendiente": this.dataService.getFormatedPrice(Number(rmOrd.pendingAmount)),
+                "Usuario Creador": rmOrd.creatorUser?.name,
+                ID: rmOrd._id
+            };
+        });
+        const csvOptions = {
+            fieldSeparator: ',',
+            quoteStrings: '"',
+            decimalseparator: '.',
+            showLabels: true,
+            headers: [ "ID", "Fecha Modificacion", "Fecha Creacion", "Usuario Creador", "Nombre Pedido", "Comentario", "Proveedor", "Estado del pedido", "Tipo de pago", "Estado de pago", "Monto total", "Monto pendiente"]
+        }
+        new ngxCsv(finalRawMaterialOrders, "Resumen_pedidos_de_materia_prima_fabrica_" + this.maxDate.getTime(), csvOptions);
     }
 
 }

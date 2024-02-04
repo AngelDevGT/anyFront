@@ -10,7 +10,7 @@ ViewEstablishmentComponent,
 ListRawMaterialOrderComponent,
 ListFactoryInventoryRMComponent,
 ListFactoryInventoryFPComponent} from "@app/pages";
-import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/list/summary-raw-material-order.component";
+import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/raw-material-order/summary-raw-material-order.component";
 import { ListEstablishmentComponent } from "@app/pages/establishment/list/list-establishment.component";
 import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add-edit/add-edit-finished-product.component";
 import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
