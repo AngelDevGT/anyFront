@@ -53,6 +53,10 @@ import { AddEditProductForSaleOrderComponent } from "@app/pages/product-for-sale
 import { ListProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/list/list-pfs-store-order.component";
 import { ViewProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/view/view-pfs-order.component";
 import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/raw-material-order/summary-raw-material-order.component";
+import { SummaryRawMaterialByProviderInventoryBodegaComponent } from "@app/pages/admin-summary/rmp-inventory-bodega/summary-rmp-inventory-bodega.component";
+import { SummaryRawMaterialByProviderInventoryFactoryComponent } from "@app/pages/admin-summary/rm-inventory-factory/summary-rm-inventory-factory.component";
+import { SummaryFinishedProductInventoryFactoryComponent } from "@app/pages/admin-summary/fp-inventory-factory/summary-fp-inventory-factory.component";
+import { ListStoreInventoryPFSComponent } from "@app/pages/store-inventory-pfs/list/list-store-inventory-pfs.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -108,6 +112,10 @@ import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/raw-m
       ListProductForSaleOrderComponent,
       ViewProductForSaleOrderComponent,
       SummaryRawMaterialOrderComponent,
+      SummaryRawMaterialByProviderInventoryBodegaComponent,
+      SummaryRawMaterialByProviderInventoryFactoryComponent,
+      SummaryFinishedProductInventoryFactoryComponent,
+      ListStoreInventoryPFSComponent,
       // UsersLayoutComponent
   ]
 })

@@ -113,8 +113,6 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
         requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "status", enableElements: "true"})); 
         requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentType", enableElements: "true"})); 
         requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentStatus", enableElements: "true"})); 
-        requestArray.push(this.dataService.getInventory({ _id: "64d7dae896457636c3f181e9"}));
-        requestArray.push(this.dataService.getAllProductForSaleByFilter({"status": { "id": 2}})); //rawMaterialByProviderRequest
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
@@ -209,7 +207,7 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
                 const statusMatch = filters.orderStatus !== "" ? String(val.status?.id) === filters.orderStatus : true;
                 const paymentTypeMatch = filters.paymentType !== "" ? String(val.paymentType?.id) === filters.paymentType : true;
                 const paymentStatusMatch = filters.paymentStatus !== "" ? String(val.paymentStatus?.id) === filters.paymentStatus : true;
-                return providerMatch && statusMatch && providerMatch && paymentTypeMatch && paymentStatusMatch && initialDateMatch;
+                return providerMatch && statusMatch && paymentTypeMatch && paymentStatusMatch && initialDateMatch;
             });
         }
         this.setTableElements(this.rawMaterialOrders);
@@ -237,9 +235,9 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
             quoteStrings: '"',
             decimalseparator: '.',
             showLabels: true,
-            headers: [ "ID", "Fecha Modificacion", "Fecha Creacion", "Usuario Creador", "Nombre Pedido", "Comentario", "Proveedor", "Estado del pedido", "Tipo de pago", "Estado de pago", "Monto total", "Monto pendiente"]
+            headers: [ "Nombre Pedido", "Comentario", "Proveedor", "Fecha Modificacion", "Fecha Creacion", "Estado del pedido", "Tipo de pago", "Estado de pago", "Monto total", "Monto pendiente", "Usuario Creador", "ID"]
         }
-        new ngxCsv(finalRawMaterialOrders, "Resumen_pedidos_de_materia_prima_fabrica_" + this.maxDate.getTime(), csvOptions);
+        new ngxCsv(finalRawMaterialOrders, "Resumen_pedidos_de_materia_prima_bodega_" + this.maxDate.getTime(), csvOptions);
     }
 
 }

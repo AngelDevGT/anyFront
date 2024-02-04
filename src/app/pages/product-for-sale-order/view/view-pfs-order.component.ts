@@ -12,6 +12,7 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { PaymentStatus, Status } from '@app/models';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
 import { ProductForSaleStoreOrderElement } from '@app/models/product-for-sale/product-for-sale-store-order-element.model';
+import { ManageProductForSaleStoreOrderElement } from '@app/models/product-for-sale/manage-product-for-sale-store-order.model copy';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({ 
@@ -168,12 +169,11 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     onConfirmDialog(){
         this.submitting = true;
         if(this.confirmDialogId == 1){
-            let newOrder: ProductForSaleStoreOrder = {
-                ...this.productForSaleOrder,
-                storeStatus: storeOrderStatus.recibido,
-                factoryStatus: storeOrderStatus.entregado
+            let newOrder: ManageProductForSaleStoreOrderElement = {
+                ProductForSaleStoreOrderID: this.productForSaleOrder?._id,
+                DestinyInventoryID: "65bf467e008f7e88678d3927"
             }
-            this.dataService.updateProductForSaleOrder(newOrder)
+            this.dataService.manageProductForSaleOrderStateReceived(newOrder)
             .pipe(first())
             .subscribe({
                 next: () => {
@@ -184,16 +184,15 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                     this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
             }});
         } else if (this.confirmDialogId == 2){
-            let newOrder: ProductForSaleStoreOrder = {
-                ...this.productForSaleOrder,
-                storeStatus: storeOrderStatus.listo,
-                factoryStatus: storeOrderStatus.listo
+            let newOrder: ManageProductForSaleStoreOrderElement = {
+                ProductForSaleStoreOrderID: this.productForSaleOrder?._id,
+                DestinyInventoryID: "65bf467e008f7e88678d3927"
             }
-            this.dataService.updateProductForSaleOrder(newOrder)
+            this.dataService.manageProductForSaleOrderStateReady(newOrder)
             .pipe(first())
             .subscribe({
                 next: () => {
-                    this.alertService.success('Pedido recibido', { keepAfterRouteChange: true });
+                    this.alertService.success('Pedido marcado como listo', { keepAfterRouteChange: true });
                     this.navigateWithParams();
                 },
                 error: error => {
@@ -209,23 +208,22 @@ export class ViewProductForSaleOrderComponent implements OnInit{
             .pipe(first())
             .subscribe({
                 next: () => {
-                    this.alertService.success('Pedido recibido', { keepAfterRouteChange: true });
+                    this.alertService.success('Pedido actualizado', { keepAfterRouteChange: true });
                     this.navigateWithParams();
                 },
                 error: error => {
                     this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
             }});
-        } else if (this.confirmDialogId == 2){
-            let newOrder: ProductForSaleStoreOrder = {
-                ...this.productForSaleOrder,
-                storeStatus: storeOrderStatus.devuelto,
-                factoryStatus: storeOrderStatus.devuelto
+        } else if (this.confirmDialogId == 4){
+            let newOrder: ManageProductForSaleStoreOrderElement = {
+                ProductForSaleStoreOrderID: this.productForSaleOrder?._id,
+                DestinyInventoryID: "65bf467e008f7e88678d3927"
             }
-            this.dataService.updateProductForSaleOrder(newOrder)
+            this.dataService.manageProductForSaleOrderStateReturned(newOrder)
             .pipe(first())
             .subscribe({
                 next: () => {
-                    this.alertService.success('Pedido recibido', { keepAfterRouteChange: true });
+                    this.alertService.success('Pedido devuelto', { keepAfterRouteChange: true });
                     this.navigateWithParams();
                 },
                 error: error => {

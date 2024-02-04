@@ -35,9 +35,9 @@ export class AddEditEstablishmentComponent implements OnInit{
 
         this.establishmentForm = this.createFormGroup();
 
-        this.title = 'Crear Establecimiento';
+        this.title = 'Crear Tienda';
         if (this.id){
-            this.title = 'Editar Establecimiento';
+            this.title = 'Editar Tienda';
             this.loading = true;
             this.dataService.getEstablishmentById(this.id)
                 .pipe(first())

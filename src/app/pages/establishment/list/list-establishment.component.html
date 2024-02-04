@@ -1,18 +1,18 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Establecimientos</mat-card-title>
+            <mat-card-title>{{title}}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
-                        <div>
+                        <div *ngIf="!isInventory">
                             <button type="button" routerLink="create" class="btn btn-outline-success m-2">
                                 <!-- relative route "add" = "/users/add" -->
                                 <div class="d-flex flex-row p-1">
                                     <i class="material-icons icon">add</i>
-                                    <span>Crear Establecimiento</span>
+                                    <span>Crear Tienda</span>
                                 </div>
                             </button>
                         </div>

@@ -15,6 +15,7 @@ import { FinishedProduct } from '@app/models/product/finished-product.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
 import { FinishedProductCreation } from '@app/models/product/finished-product-creation.model';
+import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
 
 
 export const statusValues = {
@@ -824,7 +825,7 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/getProductForSaleStoreOrder`, params);
     }
 
-    addProductForSaleOrder(pfsOrder: ProductForSale){
+    addProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
         let params = JSON.stringify({
             addProductForSaleStoreOrder: {
                 ...pfsOrder,
@@ -835,12 +836,42 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/addProductForSaleStoreOrder`, params);
     }
 
-    updateProductForSaleOrder(pfsOrder: ProductForSale){
+    updateProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
         let params = JSON.stringify({
             updateProductForSaleStoreOrder: {
                 ...pfsOrder
             }});
         return this.http.post(`${environment.apiUrl}/updateProductForSaleStoreOrder`, params);
+    }
+
+    manageProductForSaleOrderStateReady(pfsOrder: ProductForSaleStoreOrder){
+        let params = JSON.stringify({
+            manageProductForSaleStoreOrder: {
+                ...pfsOrder,
+                storeStatus: storeOrderStatus.listo,
+                factoryStatus: storeOrderStatus.listo
+            }});
+        return this.http.post(`${environment.apiUrl}/manageProductForSaleStoreOrder`, params);
+    }
+
+    manageProductForSaleOrderStateReceived(pfsOrder: ProductForSaleStoreOrder){
+        let params = JSON.stringify({
+            manageProductForSaleStoreOrder: {
+                ...pfsOrder,
+                storeStatus: storeOrderStatus.recibido,
+                factoryStatus: storeOrderStatus.entregado
+            }});
+        return this.http.post(`${environment.apiUrl}/manageProductForSaleStoreOrder`, params);
+    }
+
+    manageProductForSaleOrderStateReturned(pfsOrder: ProductForSaleStoreOrder){
+        let params = JSON.stringify({
+            manageProductForSaleStoreOrder: {
+                ...pfsOrder,
+                storeStatus: storeOrderStatus.devuelto,
+                factoryStatus: storeOrderStatus.devuelto
+            }});
+        return this.http.post(`${environment.apiUrl}/manageProductForSaleStoreOrder`, params);
     }
 
     verifyProductForSaleOrder(orderId: string){

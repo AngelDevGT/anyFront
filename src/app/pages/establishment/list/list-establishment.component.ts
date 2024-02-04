@@ -6,6 +6,7 @@ import {MatTableDataSource} from '@angular/material/table';
 import { AccountService, AlertService, DataService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({ 
     templateUrl: 'list-establishment.component.html',
@@ -18,6 +19,9 @@ export class ListEstablishmentComponent implements OnInit {
     entries = [5, 10, 20, 50];
     pageSize = 5;
     page = 1;
+    title = '';
+    viewOption = '';
+    isInventory = false;
     tableElementsValues?: any;
     tableHeaders = [
         {
@@ -38,9 +42,19 @@ export class ListEstablishmentComponent implements OnInit {
         }
     ];
 
-    constructor(private dataService: DataService, private alertService: AlertService) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute,private alertService: AlertService) {}
 
     ngOnInit() {
+        this.route.queryParams.subscribe(params => {
+            this.viewOption = params['opt'];
+        });
+
+        this.title = 'Tiendas';
+  
+        if (this.viewOption && this.viewOption === "inventory"){
+            this.isInventory = true;
+            this.title = 'Inventarios de Tiendas'
+        }
         this.retriveEstablishments();
     }
 
@@ -78,35 +92,66 @@ export class ListEstablishmentComponent implements OnInit {
             rows: []
         }
         elements?.forEach((element: any) => {
+            let buttonsRow = {
+                type: "button",
+                style: "white-space: nowrap",
+                button: [
+                    {
+                        type: "button",
+                        routerLink: "view/" + element._id,
+                        query_params: {opt: this.viewOption},
+                        class: "btn btn-success btn-sm pb-0 mx-1",
+                        icon: {
+                            class: "material-icons",
+                            icon: "visibility"
+                        }
+                    },
+                    {
+                        type: "button",
+                        routerLink: "edit/" + element._id,
+                        query_params: {opt: this.viewOption},
+                        class: "btn btn-primary btn-sm pb-0 mx-1",
+                        icon: {
+                            class: "material-icons",
+                            icon: "edit"
+                        }
+                    }
+                ]
+            };
+            if(this.isInventory){
+                buttonsRow = {
+                    type: "button",
+                    style: "white-space: nowrap",
+                    button: [
+                        {
+                            type: "button",
+                            routerLink: "inventory/" + element._id,
+                            query_params: {opt: element.name},
+                            class: "btn btn-primary btn-sm pb-0 mx-1",
+                            icon: {
+                                class: "material-icons",
+                                icon: "inventory_2"
+                            }
+                        },
+                        {
+                            type: "button",
+                            routerLink: "sales/" + element._id,
+                            query_params: {opt: this.viewOption},
+                            class: "btn btn-warning btn-sm pb-0 mx-1",
+                            icon: {
+                                class: "material-icons",
+                                icon: "local_grocery_store"
+                            }
+                        }
+                    ]
+                };
+            };
             const curr_row = {
                 row: [
                     { type: "text", value: element.name, header_name: "Nombre" },
                     { type: "text", value: element.address, header_name: "Direccion" },
                     { type: "text", value: element.description, header_name: "Descripcion" },
-                    {
-                        type: "button",
-                        style: "white-space: nowrap",
-                        button: [
-                            {
-                                type: "button",
-                                routerLink: "view/" + element._id,
-                                class: "btn btn-success btn-sm pb-0 mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "visibility"
-                                }
-                            },
-                            {
-                                type: "button",
-                                routerLink: "edit/" + element._id,
-                                class: "btn btn-primary btn-sm pb-0 mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "edit"
-                                }
-                            }
-                        ]
-                    }
+                    buttonsRow
                   ],
             }
             this.tableElementsValues.rows.push(curr_row);

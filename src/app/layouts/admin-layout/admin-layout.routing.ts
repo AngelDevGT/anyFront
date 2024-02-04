@@ -11,6 +11,8 @@ ListRawMaterialOrderComponent,
 ListFactoryInventoryRMComponent,
 ListFactoryInventoryFPComponent} from "@app/pages";
 import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/raw-material-order/summary-raw-material-order.component";
+import { SummaryRawMaterialByProviderInventoryBodegaComponent } from "@app/pages/admin-summary/rmp-inventory-bodega/summary-rmp-inventory-bodega.component";
+import { SummaryRawMaterialByProviderInventoryFactoryComponent } from "@app/pages/admin-summary/rm-inventory-factory/summary-rm-inventory-factory.component";
 import { ListEstablishmentComponent } from "@app/pages/establishment/list/list-establishment.component";
 import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add-edit/add-edit-finished-product.component";
 import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
@@ -30,6 +32,8 @@ import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provid
 import { AddEditRawMateriaByProviderComponent } from "@app/pages/raw-material-by-provider/add-edit/add-edit-raw-material-provider.component";
 import { ListRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/list/list-raw-material-provider.component";
 import { ViewRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/view/view-raw-material-provider.component";
+import { SummaryFinishedProductInventoryFactoryComponent } from "@app/pages/admin-summary/fp-inventory-factory/summary-fp-inventory-factory.component";
+import { ListStoreInventoryPFSComponent } from "@app/pages/store-inventory-pfs/list/list-store-inventory-pfs.component";
 
 const usersModule = () => import('@app/layouts/users/users-layout.module').then(x => x.UsersModule);
 
@@ -72,8 +76,12 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'inventory/warehouse/rawMaterialByProvider', component: ListWarehouseInventoryRMPComponent},
     { path: 'inventory/factory/rawMaterial', component: ListFactoryInventoryRMComponent},
     { path: 'inventory/factory/finishedProduct', component: ListFactoryInventoryFPComponent},
+    { path: 'establishments/inventory/:id', component: ListStoreInventoryPFSComponent},
     { path: 'productCreation', component: AddEditProductCreationComponent},
     { path: 'users', loadChildren: usersModule},
-    { path: 'summary/rawMaterialByProvider/order', component: SummaryRawMaterialOrderComponent}
+    { path: 'summary/rawMaterialByProvider/order', component: SummaryRawMaterialOrderComponent},
+    { path: 'summary/inventory/warehouse/rawMaterialByProvider', component: SummaryRawMaterialByProviderInventoryBodegaComponent},
+    { path: 'summary/inventory/factory/rawMaterial', component: SummaryRawMaterialByProviderInventoryFactoryComponent},
+    { path: 'summary/inventory/factory/finishedProduct', component: SummaryFinishedProductInventoryFactoryComponent},
 
 ];
