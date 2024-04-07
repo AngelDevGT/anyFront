@@ -1,0 +1,148 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <div *ngIf="loading" class="text-center m-5">
+            <span class="spinner-border spinner-border-lg align-center"></span>
+        </div>
+        <mat-card-header *ngIf="!loading" style="justify-content: center;" class="my-4">
+            <mat-card-title>Cierre de caja</mat-card-title>
+        </mat-card-header>
+        <mat-card-content *ngIf="!loading">
+            <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                <div class="col-12">
+                    <view-object [objectElements]="elements"></view-object>
+                </div>
+                <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-lg-10">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <h2 class="font-weight-bold text-muted mt-4 col-6 text-center">Inventario</h2>
+                        </div>
+                        <div class="row justify-content-center">
+                            <h2 *ngIf="tableInventoryCapture.length == 0" class="font-weight text-danger col-6 text-center">Sin Productos</h2>
+                            <div *ngIf="tableInventoryCapture.length > 0" class="col-xl-11 col-lg-12 col-md-12 col-sm-12">
+                                <responsive-table [tableElements]="tableInventoryCapture"
+                                    [pageSize]="pageSize"></responsive-table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <h2 class="font-weight-bold text-muted mt-4 col-6 text-center">Acciones de inventario</h2>
+                        </div>
+                        <div class="row justify-content-center">
+                            <h2 *ngIf="tableActivityLogs.length == 0" class="font-weight text-danger col-6 text-center">Sin Acciones</h2>
+                            <div *ngIf="tableActivityLogs.length > 0" class="col-xl-11 col-lg-12 col-md-12 col-sm-12">
+                                <responsive-table [tableElements]="tableActivityLogs"
+                                    [pageSize]="pageSize"></responsive-table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <h2 class="font-weight-bold text-muted mt-4 col-6 text-center">Pedidos</h2>
+                        </div>
+                        <div class="row justify-content-center">                               
+                            <h2 *ngIf="tableSaleStoreOrders.length == 0" class="font-weight text-danger col-6 text-center">Sin Pedidos</h2>
+                            <mat-accordion *ngIf="tableSaleStoreOrders.length > 0" class="col-xl-11">
+                                <mat-expansion-panel *ngFor="let tableStoreOrder of tableSaleStoreOrders">
+                                  <mat-expansion-panel-header>
+                                    <mat-panel-title>
+                                      {{tableStoreOrder.accordion_name}}
+                                    </mat-panel-title>
+                                  </mat-expansion-panel-header>
+                                    <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                                        <div class="col-12">
+                                            <view-object [objectElements]="tableStoreOrder.elements"></view-object>
+                                        </div>
+                                        <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
+                                            <responsive-table [tableElements]="tableStoreOrder.table_elements_values"
+                                                [pageSize]="pageSize"></responsive-table>
+                                        </div>
+                                    </div>
+                                </mat-expansion-panel>
+                            </mat-accordion>
+                        </div>
+                    </div>
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <h2 class="font-weight-bold text-muted mt-4 col-6 text-center">Ventas</h2>
+                        </div>
+                        <div class="row justify-content-center">
+                            <h2 *ngIf="tableShopResumes.length == 0" class="font-weight text-danger col-6 text-center">Sin Ventas</h2>
+                            <mat-accordion *ngIf="tableShopResumes.length > 0" class="col-xl-11">
+                                <mat-expansion-panel *ngFor="let shopResume of tableShopResumes">
+                                  <mat-expansion-panel-header>
+                                    <mat-panel-title>
+                                      Venta: {{shopResume.accordion_name}}
+                                    </mat-panel-title>
+                                  </mat-expansion-panel-header>
+                                    <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                                        <div class="col-12">
+                                            <view-object [objectElements]="shopResume.elements"></view-object>
+                                        </div>
+                                        <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
+                                            <responsive-table [tableElements]="shopResume.table_elements_values"
+                                                [pageSize]="pageSize"></responsive-table>
+                                        </div>
+                                    </div>
+                                </mat-expansion-panel>
+                            </mat-accordion>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center my-4">
+                <!-- <button type="button" class="btn btn-secondary m-2">
+                    <div class="d-flex flex-row p-1">
+                        <i class="material-icons icon">download</i>
+                        <span class="px-1">PDF</span>
+                    </div>
+                </button> -->
+                <button *ngIf="activeOption"
+                    type="button" (click)="actionOrder(2)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
+                    class="btn btn-success m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">done_outline</i>
+                        <span class="px-1">VERIFICAR</span>
+                    </div>
+                </button>
+                <button *ngIf="!deleteOption && activeOption"
+                type="button" (click)="actionOrder(1)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
+                class="btn btn-danger m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">delete</i>
+                        <span class="px-1">ELIMINAR</span>
+                    </div>
+                </button>
+                <button *ngIf="!deleteOption && activeOption"
+                type="button" (click)="editCashClosing()" [disabled]="submitting"
+                class="btn btn-primary m-2">
+                <div class="d-flex flex-row p-1">
+                    <i class="material-icons icon">edit</i>
+                    <span class="px-1">EDITAR</span>
+                </div>
+                </button>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>
+
+<div class="modal hide fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">{{confirmDialogTitle}}</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{confirmDialogText}}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">CANCELAR</button>
+                <button type="button" [disabled]="submitting" (click)="onConfirmDialog()" data-bs-dismiss="modal" class="btn btn-primary">ACEPTAR</button>
+            </div>
+        </div>
+    </div>
+</div>

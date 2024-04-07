@@ -1,5 +1,5 @@
 import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
-import { first } from 'rxjs/operators';
+import { concatMap, first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
@@ -15,6 +15,8 @@ import { UnitBase } from '@app/models/auxiliary/unit-base.model';
 import { forkJoin } from 'rxjs';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
 import { ActivatedRoute, Router } from '@angular/router';
+import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
+import { ActivityLog } from '@app/models/system/activity-log';
 
 @Component({ 
     templateUrl: 'list-store-inventory-pfs.component.html',
@@ -22,14 +24,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 })
 export class ListStoreInventoryPFSComponent implements OnInit {
 
-    id?: string;
+    establishment?: Establishment;
     submitting = false;
     storeName?: string;
     inventory?: Inventory;
     inventoryElements?: InventoryElement[];
     allInventoryElements?: InventoryElement[];
     selectedInventoryElement?: InventoryElement;
-    rawMaterialForm!: FormGroup;
+    productForSaleForm!: FormGroup;
     selectedMeasure?: Measure;
     elements: any = [];
     measureOptions?: Measure[];
@@ -39,65 +41,47 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     selectedQuantity = 0;
     formQuantity = 0;
     modalSelectedQuantity = 0;
+    modalFinalQuantity = 0;
     modalUnitBaseTotalQuantity = 0;
     searchTerm?: string;
     entries = [5, 10, 20, 50];
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
-    tableHeaders = [
-        {
-            style: "width: 20%",
-            name: "Producto"
-        },
-        {
-            style: "width: 10%",
-            name: "Medida"
-        },
-        {
-            style: "width: 10%",
-            name: "Cantidad"
-        },
-        {
-            style: "width: 15%",
-            name: "Estado"
-        },
-        {
-            style: "width: 10%",
-            name: "Acciones"
-        }
-    ];
+    activityLogName = "Acciones de Producto para Venta en tienda";
 
     constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router) {}
 
     ngOnInit() {
-        this.id = this.route.snapshot.params['id'];
-        this.route.queryParams.subscribe(params => {
-            this.storeName = params['opt'];
-        });
+        let establishmentId = this.route.snapshot.params['id'];
         this.inventory = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "65bf467e008f7e88678d3927"}));
+        requestArray.push(this.dataService.getInventory({ _id: "65bf467e008f7e88678d3927"}));
         requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
+        requestArray.push(this.dataService.getEstablishmentById(establishmentId));
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
+                this.inventory = result[0].getInventoryResponse.Inventory;
                 this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
+                this.establishment = result[2].getEstablishmentResponse.establishment;
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
                 // console.log('complete')
                 if (this.inventory){
                     this.inventoryElements = this.inventory?.inventoryElements;
-                    this.inventoryElements = this.inventoryElements?.filter(invElem =>invElem.establishment?._id === String(this.id));
+                    console.log(this.inventoryElements);
+                    this.inventoryElements = this.inventoryElements?.filter(invElem =>invElem.establishment?._id === String(establishmentId));
                     this.allInventoryElements = this.inventoryElements;
                     this.setTableElements(this.inventoryElements);
+                    this.storeName = this.establishment?.name;
+                    this.activityLogName = this.activityLogName + "|||" + this.establishment?._id;
                 }
             }
         });
-        this.rawMaterialForm = this.createMaterialFormGroup();
+        this.productForSaleForm = this.createProductForSaleFormGroup();
     }
 
     search(value: any): void {
@@ -116,60 +100,67 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     }
 
     setTableElements(elements?: InventoryElement[]){
-        this.tableElementsValues = {
-            headers: this.tableHeaders,
-            rows: []
-        }
+        console.log(elements);
+        this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
-            const curr_row = {
-                row: [
-                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto" },
-                    { type: "text", value: element.measure?.identifier, header_name: "Medida" },
-                    { type: "text", value: element.quantity, header_name: "Cantidad" },
-                    // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
-                    { type: "text", value: element.status?.identifier, header_name: "Estado" },
-                    // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
-                    // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
+            const curr_row = [
+                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                    { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
+                    { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
                     {
                         type: "modal_button",
-                        style: "white-space: nowrap",
+                        style: "white-space: nowrap width: 30%",
+                        header_name: "Acciones",
                         data: element,
                         button: [
                             {
                                 type: "button",
-                                data_bs_target: "#removeInventoryRawMaterialModal",
-                                class: "btn btn-danger btn-sm pb-0 mx-1",
+                                data_bs_target: "#addInventoryRawMaterialModal",
+                                class: "btn btn-success mx-1",
                                 icon: {
                                     class: "material-icons",
-                                    icon: "delete_sweep"
-                                }
+                                    icon: "add_circle"
+                                },
+                                text: "Agregar"
+                            },
+                            {
+                                type: "button",
+                                data_bs_target: "#removeInventoryRawMaterialModal",
+                                class: "btn btn-danger mx-1",
+                                icon: {
+                                    class: "material-icons",
+                                    icon: "remove_circle"
+                                },
+                                text: "Eliminar"
                             }
                         ]
                     }
-                  ],
-            }
-            this.tableElementsValues.rows.push(curr_row);
+            ];
+            this.tableElementsValues.push(curr_row);
         });
     }
 
     get r() {
-        return this.rawMaterialForm.controls;
+        return this.productForSaleForm.controls;
     }
 
-    selectMeasure(measureId?: string){
-        return this.measureOptions?.find(measure => String(measure.id) === measureId);
-    }
-
-    changeMeasure(measureId: any){
-        if(measureId){
-            if(this.selectedMeasure){
-                this.elements.pop();
-            }
-            this.selectedMeasure = this.selectMeasure(measureId);
-            this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
-            this.elements.push({icon : "inbox", name : "Cantidad (" + this.inventoryUnitBase?.name + ")", value : this.currentMeasureQuantity});
+    restQuantityValue(event: Event){
+        if (event.target instanceof HTMLInputElement) {
+            this.formQuantity = Number(event.target.value) || 0;
         }
-        this.calculateModalQuantity();
+        this.selectedMeasure = this.selectedInventoryElement?.measure;
+        this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
+        this.calculateModalQuantity('rest');
+    }
+
+    sumQuantityValue(event: Event){
+        if (event.target instanceof HTMLInputElement) {
+            this.formQuantity = Number(event.target.value) || 0;
+        }
+        this.selectedMeasure = this.selectedInventoryElement?.measure;
+        this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
+        this.calculateModalQuantity('sum');
     }
 
     setQuantityValue(event: Event){
@@ -180,46 +171,119 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     }
 
     get quantityInput(){
-        return this.rawMaterialForm.get('quantity');
+        return this.productForSaleForm.get('quantity');
     }
 
-    get measureSelect(){
-        return this.rawMaterialForm.get('measure');
-    }
-
-    calculateModalQuantity() {
+    calculateModalQuantity(actionType?: string) {
+        this.setInventoryElementElements();
         let totalQuantity = Number(this.formQuantity)*Number(this.currentMeasureQuantity) || 0;
         this.modalUnitBaseTotalQuantity = Number(this.inventoryUnitBase?.quantity) * Number(this.selectedInventoryElement?.quantity);
-        if(totalQuantity > this.modalUnitBaseTotalQuantity){
-            this.quantityInput?.setValue('0');
-            this.formQuantity = 0;
-            totalQuantity = 0;
+        if(actionType === 'rest'){
+            if(totalQuantity > this.modalUnitBaseTotalQuantity){
+                this.quantityInput?.setValue('0');
+                this.formQuantity = 0;
+                totalQuantity = 0;
+            }
+            this.modalFinalQuantity = this.modalUnitBaseTotalQuantity - totalQuantity;
+
+        } else if(actionType === 'sum'){
+            this.modalFinalQuantity = this.modalUnitBaseTotalQuantity + totalQuantity;
         }
         this.modalSelectedQuantity = totalQuantity;
     }
 
-    onMoveMaterialForm(){
-        this.submitting = true;
-        let newMoveStoreToFactory: MovementWarehouseToFactory = {
-            rawMaterialByProviderID: this.selectedInventoryElement?.rawMaterialByProvider?._id,
-            factoryInventoryID: "64d7240f838808573bd7e9ee",
-            quantity: String(this.formQuantity),
-            measure: this.selectedMeasure
+    onAddMaterialForm(){
+        this.tableElementsValues.forEach((curr_row: any) => {
+            if(curr_row[0].id === this.selectedInventoryElement?.productForSale?._id){
+                let buttons = curr_row[4].button;
+                buttons[0].submitting = true;
+                buttons.forEach((btn: any) => {
+                    btn.disabled = true;
+                });
+            }
+        });
+        let addToInventory: UpdateInventoryElement = {
+            inventoryID: "65bf467e008f7e88678d3927",
+            inventoryTypeID: "4",
+            elementID: this.selectedInventoryElement?.productForSale?._id,
+            newQuantity: String(this.modalFinalQuantity),
         }
-        this.dataService.moveStoreToFactory(newMoveStoreToFactory)
-        .pipe(first())
-            .subscribe({
-                next: () => {
-                    this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/inventory/warehouse/rawMaterialByProvider');
-                },
-                error: error => {
-                    this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
-            }});
+        let activityLog: ActivityLog = {
+            action: "add",
+            section: this.activityLogName,
+            description: "Adicion del producto para venta '" + this.selectedInventoryElement?.productForSale?.finishedProduct?.name + "' al inventario de tienda",
+            extra: {
+                inventoryElement: this.selectedInventoryElement,
+                reason: this.operationReasonInput?.value
+            },
+            request: addToInventory
+        }
+        this.dataService.updateInventoryElement(addToInventory)
+        .pipe(concatMap((result: any) => {
+            activityLog.response = result;
+            activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
+            return this.dataService.addActivityLog(activityLog);
+        }))
+        .subscribe({
+            next: () => {
+                this.router.navigateByUrl('/').then(() => {
+                    this.alertService.success('Accion de inventario realizado correctamente', { keepAfterRouteChange: true });
+                    this.router.navigate(['/establishments/inventory/' + this.establishment?._id]); 
+                });},
+            error: error => {
+                this.alertService.error('Error en accion de inventario, contacte con Administracion');
+        }});    
     }
 
     onDeleteMaterialForm(){
+        this.tableElementsValues.forEach((curr_row: any) => {
+            if(curr_row[0].id === this.selectedInventoryElement?.productForSale?._id){
+                let buttons = curr_row[4].button;
+                buttons[1].submitting = true;
+                buttons.forEach((btn: any) => {
+                    btn.disabled = true;
+                });
+            }
+        });
+        let deleteFromInventory: UpdateInventoryElement = {
+            inventoryID: "65bf467e008f7e88678d3927",
+            inventoryTypeID: "4",
+            elementID: this.selectedInventoryElement?.productForSale?._id,
+            newQuantity: String(this.modalFinalQuantity),
+        }
+        let activityLog: ActivityLog = {
+            action: "remove",
+            section: this.activityLogName,
+            description: "Retiro de Producto para Venta '" + this.selectedInventoryElement?.productForSale?.finishedProduct?.name + "' del inventario de tienda",
+            extra: {
+                inventoryElement: this.selectedInventoryElement,
+                reason: this.operationReasonInput?.value
+            },
+            request: deleteFromInventory
+        }
+        this.dataService.updateInventoryElement(deleteFromInventory)
+        .pipe(concatMap((result: any) => {
+            activityLog.response = result;
+            activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
+            return this.dataService.addActivityLog(activityLog);
+        }))
+        .subscribe({
+            next: () => {
+                this.router.navigateByUrl('/').then(() => {
+                    this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
+                    this.router.navigate(['/establishments/inventory/' + this.establishment?._id]); 
+                });},
+            error: error => {
+                this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
+        }});
+    }
 
+    goToActionsHistory(){
+        this.router.navigate(['/activityLog/view'], { queryParams: { sec: this.activityLogName } });
+    }
+
+    get operationReasonInput(){
+        return this.productForSaleForm.get('reason');
     }
 
     receiveData(data: any){
@@ -227,23 +291,25 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.inventoryUnitBase = this.selectedInventoryElement?.measure?.unitBase;
         this.elements = [];
         this.setInventoryElementElements();
-        this.filteredMeasureOptions = this.measureOptions?.filter(item => this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.measure?.identifier?.includes(item.unitBase?.name!));
-        this.measureSelect?.setValue('');
     }
 
     setInventoryElementElements(){
+        this.elements = [];
         // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
-        this.elements.push({icon : "format_size", name : "Nombre", value : this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.name});
-        this.elements.push({icon : "feed", name : "Descripción", value : this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.description});
+        this.elements.push({icon : "format_size", name : "Nombre", value : this.selectedInventoryElement?.productForSale?.finishedProduct?.name});
+        this.elements.push({icon : "feed", name : "Descripción", value : this.selectedInventoryElement?.productForSale?.finishedProduct?.description});
+        if(this.currentMeasureQuantity){
+            this.elements.push({icon : "inbox", name : "Cantidad (" + this.inventoryUnitBase?.name + ")", value : this.currentMeasureQuantity});
+        }
         // this.elements.push({icon : "shelves", name : "Disponible (" + this.inventoryElementMeasure?.unitBase?.name + ")", value : Number(this.inventoryElementMeasure?.unitBase?.quantity) * Number(this.selectedInventoryElement?.quantity) });
     }
 
-    closeRawMaterialDialog(){
-        this.onResetMaterialForm();
+    closeProductForSaleDialog(){
+        this.onResetProductForSalelForm();
     }
 
-    onResetMaterialForm(){
-        this.rawMaterialForm.reset();
+    onResetProductForSalelForm(){
+        this.productForSaleForm.reset();
         this.selectedInventoryElement = undefined;
         this.selectedMeasure = undefined;
         this.currentMeasureQuantity = 0;
@@ -253,10 +319,10 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.elements = [];
     }
 
-    createMaterialFormGroup() {
+    createProductForSaleFormGroup() {
         return new FormGroup({
             quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
-            measure: new FormControl('', [Validators.required])
+            reason: new FormControl('', [Validators.required, Validators.maxLength(50)])
         });
     }
 

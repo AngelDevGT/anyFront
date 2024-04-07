@@ -33,44 +33,6 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
-    tableHeaders = [
-        {
-            style: "width: 10%",
-            name: "Fecha"
-        },
-        {
-            style: "width: 15%",
-            name: "Nombre"
-        },
-        {
-            style: "width: 15%",
-            name: "Proveedor"
-        },
-        {
-            style: "width: 10%",
-            name: "Estado del pedido"
-        },
-        {
-            style: "width: 10%",
-            name: "Tipo de pago"
-        },
-        {
-            style: "width: 10%",
-            name: "Estado de pago"
-        },
-        {
-            style: "width: 10%",
-            name: "Monto total"
-        },
-        {
-            style: "width: 10%",
-            name: "Monto pendiente"
-        },
-        // {
-        //     style: "width: 10%",
-        //     name: "Acciones"
-        // }
-    ];
 
     constructor(private dataService: DataService, private alertService: AlertService) {
         // this.selectedSortOptSubject.subscribe(value => {
@@ -155,13 +117,9 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
     }
 
     setTableElements(elements?: RawMaterialOrder[]){
-        this.tableElementsValues = {
-            headers: this.tableHeaders,
-            rows: []
-        }
+        this.tableElementsValues = [];
         elements?.forEach((element: RawMaterialOrder) => {
-            const curr_row = {
-                row: [
+            const curr_row = [
                     { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha" },
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
@@ -171,10 +129,8 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
                     { type: "text", value: element.paymentStatus?.identifier, header_name: "Estado de pago" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" }
-                  ],
-            }
-
-            this.tableElementsValues.rows.push(curr_row);
+            ];
+            this.tableElementsValues.push(curr_row);
         });
     }
 

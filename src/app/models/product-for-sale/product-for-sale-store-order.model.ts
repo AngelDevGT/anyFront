@@ -1,6 +1,6 @@
 import { Status } from "../auxiliary/status.model";
 import { Establishment } from "../establishment.model";
-import { User } from "../user.model";
+import { User } from "../system/user.model";
 import { ProductForSaleStoreOrderElement } from "./product-for-sale-store-order-element.model";
 
 export class ProductForSaleStoreOrder {

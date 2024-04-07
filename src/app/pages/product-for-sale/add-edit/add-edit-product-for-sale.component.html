@@ -59,14 +59,14 @@
                         </div>
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
                             <mat-form-field *ngIf="!this.id" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
-                                <mat-label>Establecimiento</mat-label>
+                                <mat-label>Tienda</mat-label>
                                 <mat-select matInput disableOptionCentering formControlName="establishment"
                                     [ngClass]="{ 'is-invalid': f['establishment'].errors }" (valueChange)="selectedEstablishmentSubject.next($event)">
                                     <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment._id}}">{{establishment.name}} ({{establishment.address}})</mat-option>
                                 </mat-select>
                                 <div class="invalid-feedback" *ngIf="f['establishment'].errors">
                                     <div *ngIf="f['establishment'].errors['required']">
-                                        Establecimiento requerido
+                                        Tienda requerida
                                     </div>
                                 </div>
                             </mat-form-field>

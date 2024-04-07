@@ -1,19 +1,19 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title><strong *ngIf="storeName">{{storeName}}</strong>: Inventario de Producto Para Venta</mat-card-title>
+            <mat-card-title><strong *ngIf="storeName">{{storeName}}</strong>: Ventas de Tienda</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div class="container">
                 <div class="row justify-content-center">
-                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
+                    <div *ngIf="shopResumes" class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
                         <div>
-                            <!-- <button type="button" routerLink="create" class="btn btn-outline-success m-2">
+                            <button type="button" (click)="saveSale()" class="btn btn-outline-success m-2">
                                 <div class="d-flex flex-row p-1">
                                     <i class="material-icons icon">add</i>
-                                    <span>Crear Pedido</span>
+                                    <span>Registrar venta</span>
                                 </div>
-                            </button> -->
+                            </button>
                         </div>
                         <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
                             <div class="select-filter mx-2">
@@ -31,8 +31,8 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize" (sentData)="receiveData($event)"></responsive-table>
-                    <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span>
+                    <responsive-table *ngIf="this.shopResumes" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <span *ngIf="!shopResumes" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>
         </mat-card-content>

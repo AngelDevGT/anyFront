@@ -1,0 +1,101 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-content class="custom-mat-card-content">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="d-lg-none col-md-2 d-flex align-items-center justify-content-center">
+                        <div class="inbtn">
+                            <button
+                            type="button"
+                            data-toggle="collapse" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#filter-options" 
+                            aria-controls="filter-options" 
+                            aria-expanded="false" 
+                            class="btn btn-outline-primary">
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons">filter_alt</i>
+                                    <span>Filtros</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="filter-options" class="panel-collapse collapse col-md-12 d-lg-block px-2">
+                            <form [formGroup]="logForm" (ngSubmit)="filterElements()">
+                                <div class="d-flex flex-wrap justify-content-center pt-3">
+                                    <div class="col-md-2 select-filter">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Usuario</mat-label>
+                                            <mat-select matInput disableOptionCentering formControlName="user">
+                                                <mat-option *ngFor="let user of userOptions" value="{{user._id}}">{{user.name}}</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                    </div>
+                                    <div class="col-md-3 col-sm-12 select-filter">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Rango de fechas</mat-label>
+                                            <mat-date-range-input appearance="outline" [rangePicker]="picker" [max]="maxDate">
+                                                <input matStartDate id="applyStartDate-form-productos" formControlName="startDate" matInput>
+                                                <input matEndDate id="applyEndDate-form-productos" formControlName="endDate" matInput>
+                                            </mat-date-range-input>
+                                            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                                            <mat-date-range-picker touchUi #picker disabled="false"></mat-date-range-picker>
+                                        </mat-form-field>
+                                    </div>
+                                    <div class="col-md-1 col-sm-12 select-filter pb-4 align-self-center">
+                                        <button
+                                        type="submit"
+                                        class="btn btn-outline-secondary waves-effect pb-0">
+                                            <i class="material-icons">search</i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>{{title}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
+                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
+                            <div class="select-filter mx-2">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Buscar</mat-label>
+                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
+                                </mat-form-field>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span> -->
+                    <div *ngFor="let cardElement of cardElements" class="card border-{{cardElement[0].value}} m-3" style="max-width: 30rem; padding: 0;">
+                        <div class="card-header py-3 text-{{cardElement[0].value}} bg-transparent border-{{cardElement[0].value}}">
+                          <strong>{{cardElement[1].value}}</strong>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li *ngFor="let element of cardElement.slice(2)" class="list-group-item"><strong>{{element.title}}: </strong>{{element.value}}</li>
+                              <!-- <li class="list-group-item"><strong>Accion: </strong>{{element.description}}</li>
+                              <li class="list-group-item"><strong>Fecha: </strong>{{element.actionDate}}</li>
+                              <li class="list-group-item"><strong>Elemento: </strong>{{element.objectName}}</li>
+                              <li class="list-group-item"><strong>Cantidad original en inventario: </strong>{{element.originalObjectQuantity}} ({{element.originalObjectMeasure}})</li>
+                              <li class="list-group-item"><strong>Cantidad modificada: </strong>{{element.actionObjectQuantity}} ({{element.actionObjectMeasure}})</li>
+                              <li class="list-group-item"><strong>Usuario: </strong>{{element.user}}</li> -->
+                            </ul>
+                        </div>
+                    </div>
+                    <span *ngIf="!activityLogs" class="spinner-border spinner-border-lg align-center"></span>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

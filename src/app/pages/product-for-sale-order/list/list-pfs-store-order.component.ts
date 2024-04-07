@@ -24,37 +24,17 @@ export class ListProductForSaleOrderComponent implements OnInit {
     sortOpts = ['Desc', 'Asc'];
     selectedSortOpt = this.sortOpts[0];
     viewOption = '';
+    storeOption = '';
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
-    tableHeaders = [
-        {
-            style: "width: 10%",
-            name: "Fecha"
-        },
-        {
-            style: "width: 15%",
-            name: "Nombre"
-        },
-        {
-            style: "width: 15%",
-            name: "Tienda"
-        },
-        {
-            style: "width: 10%",
-            name: "Estado del pedido"
-        },
-        {
-            style: "width: 10%",
-            name: "Acciones"
-        }
-    ];
 
     constructor(private dataService: DataService, private alertService: AlertService, private route: ActivatedRoute, private router: Router) {}
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
+            this.storeOption = params['store'];
         });
         this.pageTitle = 'Pedidos de Producto para Venta (Tienda)';
         if(this.viewOption && this.viewOption === "factory"){
@@ -85,7 +65,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
 
     retrieveProductForSaleStoreOrders(){
         this.productForSaleOrdes = undefined;
-        this.dataService.getAllProducForSaleOrder()
+        if(this.storeOption){
+            this.dataService.getAllProductForSaleOrderByFilter({ establishmentID: this.storeOption})
             .pipe(first())
             .subscribe({
                 next: (pfsOrders: any) => {
@@ -94,6 +75,18 @@ export class ListProductForSaleOrderComponent implements OnInit {
                     this.sortDataByDate(this.sortOpts[0]);
                 }
             });
+            return;
+        } else {
+            this.dataService.getAllProducForSaleOrder()
+            .pipe(first())
+            .subscribe({
+                next: (pfsOrders: any) => {
+                    this.productForSaleOrdes = pfsOrders.retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
+                    this.allProductForSaleOrdes = this.productForSaleOrdes;
+                    this.sortDataByDate(this.sortOpts[0]);
+                }
+            });
+        }
     }
 
     search(value: any): void {
@@ -117,7 +110,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
         if(this.viewOption){
             this.router.navigate(['/productsForSale/order/create'], {
                 queryParams: {
-                    opt: this.viewOption
+                    opt: this.viewOption,
+                    store: this.storeOption
                 }
             });
         } else {
@@ -126,21 +120,16 @@ export class ListProductForSaleOrderComponent implements OnInit {
     }
 
     setTableElements(elements?: ProductForSaleStoreOrder[]){
-        this.tableElementsValues = {
-            headers: this.tableHeaders,
-            rows: []
-        }
+        this.tableElementsValues = [];
         elements?.forEach((element: ProductForSaleStoreOrder) => {
-            let curr_row = {
-                row: [
+            let curr_row = [
                     { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha" },
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name, header_name: "Tienda" },
-                    this.viewOption === "factory" ? { type: "text", value: element.factoryStatus?.identifier, header_name: "Estado del pedido en fabrica" } : { type: "text", value: element.storeStatus?.identifier, header_name: "Estado del pedido en tienda" },
+                    this.viewOption === "factory" ? { type: "text", value: element.factoryStatus?.identifier, header_name: "Estado del pedido en fabrica", style: "width: 20%" } : { type: "text", value: element.storeStatus?.identifier, header_name: "Estado del pedido en tienda", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total" }
-                  ],
-            }
+                  ]
             let actionsButtons = [
                 {
                     type: "button",
@@ -164,9 +153,9 @@ export class ListProductForSaleOrderComponent implements OnInit {
                 ]
             }
 
-            curr_row.row.push(rowButtons)
+            curr_row.push(rowButtons)
 
-            this.tableElementsValues.rows.push(curr_row);
+            this.tableElementsValues.push(curr_row);
         });
     }
 

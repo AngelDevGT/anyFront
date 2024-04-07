@@ -83,6 +83,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     filteredMeasureOptions?: Measure[];
     productForSaleIndexToRemove?: number;
     viewOption = '';
+    storeOption = '';
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
@@ -101,6 +102,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
+            this.storeOption = params['store'];
         });
 
         this.orderForm = this.createFormGroup();
@@ -115,7 +117,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         this.unselectedInventoryElements = [];
         this.inventoryElements = [];
 
-        requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status": 1})); // providerRequest
+        requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status": {id: 1}})); // providerRequest
         requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
         requestArray.push(this.dataService.getInventory({ _id: "64d7dae896457636c3f181e9"}));
         requestArray.push(this.dataService.getAllProductForSaleByFilter({"status": { "id": 2}})); //rawMaterialByProviderRequest
@@ -134,7 +136,9 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                 this.filteredMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
                 inventory = result[2].getInventoryResponse?.Inventory;
                 this.productsForSale = result[3].retrieveProductForSaleResponse?.productsForSale;
+                this.productsForSale = this.productsForSale?.filter(pfs => pfs.establishment?._id === String(this.storeOption));
                 this.filteredProductsForSale = result[3].retrieveProductForSaleResponse?.productsForSale;
+                this.filteredProductsForSale = this.filteredProductsForSale?.filter(pfs => pfs.establishment?._id === String(this.storeOption));
                 if (this.id){
                     this.productForSaleOrder= result[4].getProductForSaleStoreOrderResponse?.saleStoreOrder;
                 }
@@ -142,6 +146,9 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
+                this.selectedEstablishment = this.findEstablishemtnById(this.storeOption);
+                this.filterByEstablishment(this.storeOption);
+
                 this.inventoryElementsSource = inventory.inventoryElements;
                 this.loadProductsForSaleFromInventory();
                 if (this.productForSaleOrder){
@@ -202,7 +209,8 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                         if(this.viewOption){
                             this.router.navigate(['/productsForSale/order'], {
                                 queryParams: {
-                                    opt: this.viewOption
+                                    opt: this.viewOption,
+                                    store: this.storeOption
                                 }
                             });
                         } else {
@@ -354,9 +362,11 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
     filterByEstablishment(establishmentId: string){
         if(establishmentId){
+            console.log(establishmentId);
             this.filteredProductsForSale = this.productsForSale?.filter((val) => {
                 return establishmentId === val.establishment?._id;
             });
+            console.log(this.filteredProductsForSale);
         }
     }
 
@@ -456,7 +466,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             Validators.minLength(1),
             Validators.maxLength(100),
             ]),
-          establishment: new FormControl('', [this.id ? Validators.nullValidator : Validators.required]),
+        //   establishment: new FormControl('', [this.id ? Validators.nullValidator : Validators.required]),
         });
     }
 

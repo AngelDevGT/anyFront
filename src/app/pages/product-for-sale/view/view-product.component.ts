@@ -42,10 +42,10 @@ export class ViewProductComponent implements OnInit{
                             console.log(establ)
                             let establishment_name = "No encontrado"
                             if(establ){
-                                let establishment = establ.findEstablishmentResponse?.establishment;
+                                let establishment = establ.getEstablishmentResponse.establishment;
                                 if (establishment){
                                     if ( establishment.length > 0){
-                                        establishment_name = this.dataService.getShortEstablishmentInfo(establishment[0]);
+                                        establishment_name = this.dataService.getShortEstablishmentInfo(establishment);
                                     }
                                 }
                             }

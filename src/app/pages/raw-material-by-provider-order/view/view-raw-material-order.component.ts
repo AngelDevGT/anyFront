@@ -10,6 +10,7 @@ import { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { PaymentStatus, Status } from '@app/models';
+import { AddRawMaterialOrderPaymentHistory } from '@app/models/raw-material/add-raw-material-order-payment-history.model';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({ 
@@ -27,6 +28,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     entries = [5, 10, 20, 50];
     pageSize = 5;
     tableElementsValues?: any;
+    orderPayments?: any;
     payAmount = 0;
     paymentOption = false;
     receiveOption = false;
@@ -37,48 +39,6 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     confirmDialogTitle = '...';
     confirmDialogText = '...';
     confirmDialogId = 0;
-    tableHeaders = [
-        {
-            style: "width: 15%",
-            name: "Nombre"
-        },
-        {
-            style: "width: 10%",
-            name: "Precio"
-        },
-        {
-            style: "width: 10%",
-            name: "Descuento"
-        },
-        {
-            style: "width: 10%",
-            name: "Cantidad"
-        },
-        {
-            style: "width: 10%",
-            name: "Medida"
-        },
-        {
-            style: "width: 15%",
-            name: "Subtotal"
-        },
-        {
-            style: "width: 15%",
-            name: "Descuento Total"
-        },
-        {
-            style: "width: 15%",
-            name: "Total"
-        },
-        // {
-        //     style: "width: 10%",
-        //     name: "Medida Base"
-        // },
-        // {
-        //     style: "width: 10%",
-        //     name: "Cantidad Base"
-        // }
-    ];
 
     constructor(private dataService: DataService, private alertService: AlertService,
         private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
@@ -100,6 +60,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
                     console.log(rawMaterialOrder);
                     if (rawMaterialOrder){
                         this.rawMaterialOrder = rawMaterialOrder;
+                        console.log(this.rawMaterialOrder);
                         this.setElements(this.rawMaterialOrder!);
                         this.loading = false;
                     }
@@ -226,15 +187,26 @@ export class ViewRawMaterialOrderComponent implements OnInit{
             let newPaidAmount = Number(this.payAmount) + Number(this.rawMaterialOrder?.paidAmount);
             let newPendingAmount = Number(this.rawMaterialOrder?.pendingAmount) - Number(this.payAmount);
             let newPaymentStatus = newPendingAmount == 0 ? paymentStatusValues.pagado : paymentStatusValues.abonado;
+            let newAddRawMaterialOrderPaymentHistory: AddRawMaterialOrderPaymentHistory = {
+                _id: this.rawMaterialOrder?._id,
+                rawMaterialOrderPayments: [{
+                    amount: String(this.payAmount),
+                    paymentType: this.rawMaterialOrder?.paymentType?.identifier
+                }]
+            }
             let newOrder: RawMaterialOrder = {
                 ...this.rawMaterialOrder,
                 paidAmount: String(newPaidAmount),
                 pendingAmount: String(newPendingAmount),
                 ...newPaymentStatus
             }
-            this.dataService.updateRawMaterialOrder(newOrder)
-            .pipe(first())
-            .subscribe({
+            this.dataService.addRawMaterialOrderPaymentHistory(newAddRawMaterialOrderPaymentHistory)
+            .pipe(
+                concatMap((result: any) => {
+                    delete newOrder.rawMaterialOrderPayments;
+                    return this.dataService.updateRawMaterialOrder(newOrder);
+                })
+            ).subscribe({
                 next: () => {
                     this.alertService.success('Pedido actualizado', { keepAfterRouteChange: true });
                     this.router.navigateByUrl('/rawMaterialByProvider/order');
@@ -295,18 +267,15 @@ export class ViewRawMaterialOrderComponent implements OnInit{
         // this.elements.push({icon : "production_quantity_limits", name : "Monto pendiente", value : this.dataService.getFormatedPrice(Number(rmOrder.pendingAmount))});
         this.elements.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(rmOrder.creationDate!)});
         this.elements.push({icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(rmOrder.updateDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "badge", name : "Creado por", value : "Pendiente..."});
+        this.elements.push({icon : "badge", name : "Creado por", value : rmOrder.creatorUser?.name ? rmOrder.creatorUser.name : 'N/A'});
         this.setTableElements(rmOrder.rawMaterialOrderElements);
+        this.setTablePayments(rmOrder.rawMaterialOrderPayments);
     }
 
     setTableElements(elements: any){
-        this.tableElementsValues = {
-            headers: this.tableHeaders,
-            rows: []
-        }
+        this.tableElementsValues = [];
         elements?.forEach((element: any) => {
-            const curr_row = {
-                row: [
+            const curr_row = [
                     { type: "text", value: element.rawMaterialByProvider.rawMaterialBase.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.price)), header_name: "Precio" },
@@ -318,9 +287,20 @@ export class ViewRawMaterialOrderComponent implements OnInit{
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.totalPrice)), header_name: "Total" },
                     // { type: "text", value: element.measure.unitBase.name, header_name: "Medida Base" },
                     // { type: "text", value: element.measure.unitBase.quantity, header_name: "Cantidad Base" },
-                  ],
-            }
-            this.tableElementsValues.rows.push(curr_row);
+            ];
+            this.tableElementsValues.push(curr_row);
+        });
+    }
+
+    setTablePayments(payments: any){
+        this.orderPayments = [];
+        payments?.forEach((payment: any) => {
+            const curr_row = [
+                { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(payment.date), header_name: "Fecha" },
+                { type: "text", value: this.dataService.getFormatedPrice(Number(payment.amount)), header_name: "Monto" },
+                { type: "text", value: payment.paymentType, header_name: "Tipo de Pago" }
+            ];
+            this.orderPayments.push(curr_row);
         });
     }
 

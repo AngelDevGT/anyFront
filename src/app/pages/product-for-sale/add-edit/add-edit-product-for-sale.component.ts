@@ -76,10 +76,11 @@ export class AddEditProductoForSaleComponent implements OnInit{
         this.finishedProducts = [];
         this.allFinishedProducts = this.finishedProducts;
 
-        this.dataService.getAllEstablishmentsByFilter({"status": { "id": 2}})
+        this.dataService.getAllEstablishments()
             .pipe(
                 concatMap((establishments: any) => {
                     this.establishmentOptions = establishments.findEstablishmentResponse?.establishment;
+                    this.establishmentOptions = this.establishmentOptions?.filter(est => est.status?.id === 2);
                     return this.dataService.getAllFinishedProductByFilter({"status": { "id": 2}});
                 }),
                 concatMap((products: any) => {

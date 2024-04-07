@@ -1,5 +1,5 @@
 import { Status } from "../auxiliary/status.model";
-import { User } from "../user.model";
+import { User } from "./user.model";
 
 export class Provider {
     _id?: string;

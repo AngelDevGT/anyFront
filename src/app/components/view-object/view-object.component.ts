@@ -32,6 +32,8 @@ export class ViewObjectComponent implements OnInit, OnChanges{
         if (changes['imgIdentifier']) {
             if (this.imgIdentifier){
                 this.loadImage();
+            } else {
+                this.cardPhoto = undefined;
             }
         }
     }

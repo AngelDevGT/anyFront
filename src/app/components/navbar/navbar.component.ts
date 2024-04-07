@@ -4,7 +4,7 @@ import { AccountService } from '@app/services';
 import { FormControl, FormGroup } from '@angular/forms';
 import { startWith, map } from 'rxjs/operators';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { User } from '@app/models';
+import { User } from '@app/models/system/user.model';
 import { OrdinaryObject } from '@app/models';
 import { Router } from '@angular/router';
 

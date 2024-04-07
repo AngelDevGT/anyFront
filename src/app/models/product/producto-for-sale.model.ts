@@ -1,6 +1,6 @@
 import { Status } from "../auxiliary/status.model";
 import { Establishment } from "../establishment.model";
-import { User } from "../user.model";
+import { User } from "../system/user.model";
 import { FinishedProduct } from "./finished-product.model";
 
 export class ProductForSale {

@@ -1,0 +1,347 @@
+import { Component, OnInit} from '@angular/core';
+import { concatMap, first } from 'rxjs/operators';
+
+import { AlertService, DataService, PdfService, statusValues, paymentStatusValues } from '@app/services';
+import { ActivatedRoute, Router } from '@angular/router';
+import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
+import pdfMake from "pdfmake/build/pdfmake";  
+import pdfFonts from "pdfmake/build/vfs_fonts";  
+import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { PaymentStatus, Status } from '@app/models';
+import { AddRawMaterialOrderPaymentHistory } from '@app/models/raw-material/add-raw-material-order-payment-history.model';
+import { CashClosing } from '@app/models/store/cash-closing.model';
+import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
+import { ProductForSaleStoreOrderElement } from '@app/models/product-for-sale/product-for-sale-store-order-element.model';
+import { InventoryElement } from '@app/models/inventory/inventory-element.model';
+import { ShopResume } from '@app/models/store/shop-resume.model';
+import { ItemsList } from '@app/models/store/item-list.model';
+import { forkJoin } from 'rxjs';
+import { ActivityLog } from '@app/models/system/activity-log';
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+@Component({ 
+    selector: 'page-cash-closing',
+    templateUrl: 'add-edit-cash-closing.component.html',
+    styleUrls: ['add-edit-cash-closing.component.scss']
+})
+export class AddEditCashClosingComponent implements OnInit{
+
+    id?: string;
+    title?: string;
+    cashClosings?: CashClosing[];
+    cashClosing?: CashClosing;
+    newCashClosing: CashClosing = {};
+    activityLogFilter: any = {};
+    operationRawMaterialForm!: FormGroup;
+    loading = false;
+    elements: any = [];
+    entries = [5, 10, 20, 50];
+    pageSize = 5;
+    tableShopResumes?: any = [];
+    tableSaleStoreOrders?: any = [];
+    tableInventoryCapture?: any = [];
+    activityLogs?: any = [];
+    tableActivityLogs?: any = [];
+    orderPayments?: any;
+    payAmount = 0;
+    payForm!: FormGroup;
+    panelOpenState = false;
+    submitting = false;
+    establishmentId = '';
+    maxDate: Date = new Date();
+    currDate: Date = new Date();
+    isUpdate = false;
+
+    constructor(private dataService: DataService, private alertService: AlertService,
+        private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
+    }
+
+    ngOnInit(): void {
+
+        this.id = this.route.snapshot.params['id'];
+        this.title = 'Crear cierre de caja';
+
+        if(this.id === "0"){
+            this.id = '65e58138e22499ab7172cb48';
+        } else {
+            this.isUpdate = true;
+            this.title = 'Actualizar cierre de caja';
+        }
+
+        this.route.queryParams.subscribe(params => {
+            this.establishmentId = params['store'];
+        });
+
+        this.loading = true;
+
+        if (this.id){
+            if(!this.isUpdate){
+                this.cashClosings = [];
+                this.dataService.getAllCashClosing()
+                .pipe(first())
+                .subscribe({
+                    next: (cashClosings: any) => {
+                        this.cashClosings = cashClosings.retrieveStoreCashClosingResponse?.StoreCashClosing;
+                        this.loadNewCashClosing();
+                    }
+                });
+                
+            } else {
+                this.dataService.getCashClosingById(this.id)
+                    .pipe(first())
+                    .subscribe((cashCls: any) =>{
+                        let cashClosing = cashCls.getStoreCashClosingResponse?.rawMaterial;
+                        if (cashClosing){
+                            this.cashClosing = cashClosing;
+                            // this.setElements(this.cashClosing!);
+                            this.operationRawMaterialForm.patchValue(cashClosing);
+                            this.loading = false;
+                        }
+                    });
+            }
+        }
+
+        this.operationRawMaterialForm = this.createOperationMaterialFormGroup();
+
+    }
+
+    loadNewCashClosing(isFromForm?: boolean){
+        if(isFromForm && !this.or['initialDate'].errors){
+            this.currDate = new Date(this.operationRawMaterialForm.controls['initialDate'].value);
+            this.getNewCashClosing();
+        } else {
+            this.setLastCashClosingDate();
+            this.getNewCashClosing();
+        }
+    }
+
+    getNewCashClosing(){
+        let requestArray = [];
+        this.loading = true;
+        let queryParams = {
+            validation: true
+        }
+        this.newCashClosing = {
+            note: 'validation',
+            initialDate: `${this.currDate.getFullYear()}/${this.currDate.getMonth() + 1}/${this.currDate.getDate()}`,
+            storeID: this.establishmentId
+        };
+
+        this.activityLogFilter = {};
+        const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
+        const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
+        this.activityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
+        this.activityLogFilter.initialDate = startDateOnly;
+        this.activityLogFilter.finalDate = endDateOnly;
+
+        requestArray.push(this.dataService.addCashClosing(this.newCashClosing, queryParams));
+        requestArray.push(this.dataService.getAllActivityLogsByFilter(this.activityLogFilter));
+
+        forkJoin(requestArray).subscribe({
+            next: (result: any) => {
+                let cashClosing = result[0].addStoreCashClosingResponse?.data;
+                if (cashClosing){
+                    this.cashClosing = cashClosing;
+                }
+                this.activityLogs = result[1].retrieveActivityLogResponse?.activityLogs;
+            },
+            error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
+            complete: () => {
+                this.setTableElements(this.cashClosing!, this.activityLogs);
+                this.loading = false;
+            }
+        });
+    }
+
+    setLastCashClosingDate(){
+        if(this.cashClosings && this.cashClosings.length > 0){
+            this.cashClosings = this.cashClosings?.sort((a,b) => {
+                const fechaA = new Date(a.creationDate!);
+                const fechaB = new Date(b.creationDate!);
+                return fechaB.getTime() - fechaA.getTime();
+            });
+            let lastCashClosing = this.cashClosings[0];
+            this.currDate = new Date(lastCashClosing.creationDate!);
+        } else {
+            this.currDate = new Date();
+        }
+        this.operationRawMaterialForm.controls['initialDate'].setValue(this.currDate);
+    }
+
+    closeRawMaterialDialog(){
+        this.onResetMaterialForm();
+    }
+
+    onResetMaterialForm(){
+        this.payForm.reset();
+    }
+
+    setElements(cashClosing: CashClosing){
+        this.elements.push({icon : "receipt_long", name : "Notas", value : cashClosing.note});
+        this.elements.push({icon : "info", name : "Estado", value : cashClosing.status?.identifier});
+        this.elements.push({icon : "person", name : "Persona a cargo", value : cashClosing.userRequest?.name + " (" + cashClosing.userRequest?.email + ")"});
+        this.elements.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(cashClosing.creationDate!)});
+        this.setTableElements(cashClosing);
+    }
+
+    setTableElements(cashClosing: CashClosing, activityLogs?: ActivityLog[]){
+        this.tableSaleStoreOrders = [];
+        this.tableInventoryCapture = [];
+        this.tableShopResumes = [];
+        this.tableActivityLogs = [];
+        cashClosing.saleStoreOrders?.forEach((element: ProductForSaleStoreOrder) => {
+            const curr_row =
+            { 
+                accordion_name: element.name,
+                table_elements_values: 
+                    element.productForSaleStoreOrderElements?.map((elem: ProductForSaleStoreOrderElement) => {
+                        return [
+                            { type: "text", value: elem.productForSale?.finishedProduct?.name, header_name: "Producto" },
+                            { type: "text", value: this.dataService.getFormatedPrice(Number(elem.price)), header_name: "Precio" },
+                            { type: "text", value: elem.quantity, header_name: "Cantidad" },
+                            { type: "text", value: elem.measure?.identifier, header_name: "Medida" },
+                            { type: "text", value: this.dataService.getFormatedPrice(Number(elem.totalPrice)), header_name: "Total" },
+                        ];
+                    }),
+                elements: [
+                    {icon : "receipt_long", name : "Notas", value : element.comment},
+                    {icon : "person", name : "Establecimiento", value : element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name},
+                    {icon : "info", name : "Estado del pedido", value : element.storeStatus?.identifier},
+                    {icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
+                    {icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!.replaceAll("\"",""))},
+                    {icon : "badge", name : "Creado por", value : element.creatorUser?.name}
+                ]
+            };
+            this.tableSaleStoreOrders.push(curr_row);
+        });
+        cashClosing.inventoryCapture?.forEach((element: InventoryElement) => {
+            const curr_row = [
+                { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
+                { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
+                { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
+            ];
+            this.tableInventoryCapture.push(curr_row);
+        });
+        activityLogs?.forEach((element: ActivityLog) => {
+            const curr_row = [
+                { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.creationDate!), header_name: "Fecha" },
+                { type: "text", value: element.action === "movement" ? "Movimiento" : element.action === "remove" ? "Retiro" : "Ingreso", header_name: "Accion" },
+                // { type: "text", value: element.description, header_name: "Descripcion" },
+                { type: "text", value: element.extra?.reason, header_name: "Motivo" },
+                { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
+                { type: "text", value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad original" },
+                { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
+            ];
+            this.tableActivityLogs.push(curr_row);
+        });
+        cashClosing.shopResumes?.forEach((element: ShopResume) => {
+            const curr_row =
+            { 
+                accordion_name: this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"","")),
+                table_elements_values: 
+                    element.itemsList?.map((elem: ItemsList) => {
+                        return [
+                            { type: "text", value: elem.productForSale?.finishedProduct?.name, header_name: "Nombre" },
+                            { type: "text", value: this.dataService.getFormatedPrice(Number(elem.productForSale?.price)), header_name: "Precio" },
+                            { type: "text", value: elem.quantity, header_name: "Cantidad" },
+                            { type: "text", value: elem.measure?.identifier, header_name: "Medida" },
+                            { type: "text", value: this.dataService.getFormatedPrice(Number(elem.totalDiscount)), header_name: "Descuento Total" },
+                            { type: "text", value: this.dataService.getFormatedPrice(Number(elem.total)), header_name: "Total" },
+                        ];
+                    }),
+                elements: [
+                    {icon : "person", name : "Cliente", value : element?.nameClient},
+                    {icon : "tag", name : "NIT", value : element?.nitClient},
+                    {icon : "feed", name : "Notas", value : element?.nota},
+                    {icon : "info", name : "Estado", value : element?.status?.identifier},
+                    {icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(element!.creationDate!.replaceAll("\"",""))},
+                    {icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"",""))},
+                ]
+            };
+            this.tableShopResumes.push(curr_row);
+        });
+    }
+
+    setTablePayments(payments: any){
+        this.orderPayments = [];
+        payments?.forEach((payment: any) => {
+            const curr_row = [
+                { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(payment.date), header_name: "Fecha" },
+                { type: "text", value: this.dataService.getFormatedPrice(Number(payment.amount)), header_name: "Monto" },
+                { type: "text", value: payment.paymentType, header_name: "Tipo de Pago" }
+            ];
+            this.orderPayments.push(curr_row);
+        });
+    }
+
+    // generatePDF() {  
+    //     this.pdfService.generateRawMaterialOrderPDF(this.rawMaterialOrder!);
+    // }  
+
+    createOperationMaterialFormGroup() {
+        return new FormGroup({
+            note: new FormControl('', [Validators.required, Validators.maxLength(100)]),
+            initialDate: new FormControl('', [this.isUpdate ? Validators.nullValidator : Validators.required, Validators.maxLength(45)])
+        });
+    }
+
+    get or() {
+        return this.operationRawMaterialForm.controls;
+    }
+
+    onSaveForm() {
+        // reset alerts on submit
+        this.alertService.clear();
+
+        this.currDate = new Date(this.operationRawMaterialForm.controls['initialDate'].value);
+
+        this.newCashClosing = {
+            ...this.operationRawMaterialForm.value,
+            activityLogs: this.activityLogs,
+            initialDate: `${this.currDate.getFullYear()}/${this.currDate.getMonth() + 1}/${this.currDate.getDate()}`,
+            storeID: this.establishmentId
+        };
+
+        let queryParams = {
+            validation: false
+        }
+
+        this.submitting = true;
+        if(this.isUpdate){
+            let newCashClosing = {
+                ...this.cashClosing,
+                ...this.operationRawMaterialForm.value
+            };
+            this.dataService.updateCashClosing(this.cashClosing!._id!, newCashClosing)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                this.alertService.success('Cierre de caja eliminado', { keepAfterRouteChange: true });
+                this.router.navigateByUrl('/cashClosing/' + this.establishmentId);
+                },
+                error: error => {
+                    this.alertService.error('Error al eliminar el cierre de caja, contacte con Administracion');
+            }});
+        } else {
+            this.dataService.addCashClosing(this.newCashClosing, queryParams)
+                .pipe(first())
+                .subscribe({
+                    next: () => {
+                        this.alertService.success('Cierre de Caja guardada', { keepAfterRouteChange: true });
+                        this.router.navigateByUrl('/cashClosing/' + this.establishmentId);
+                    },
+                    error: error => {
+                        let errorResponse = error.error;
+                        errorResponse = errorResponse.addEstablishmentResponse ? errorResponse.addEstablishmentResponse : errorResponse.updateEstablishmentResponse ? errorResponse.updateEstablishmentResponse : 'Error, consulte con el administrador';
+                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        this.submitting = false;
+                    }
+                });
+
+        }
+    }
+
+}

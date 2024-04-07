@@ -26,7 +26,7 @@
                                     </div>
                                 </div>
                             </mat-form-field>
-                            <mat-form-field *ngIf="!id" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                            <!-- <mat-form-field *ngIf="!id" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
                                 <mat-label>Establecimiento</mat-label>
                                 <mat-select matInput disableOptionCentering formControlName="establishment"
                                     [ngClass]="{ 'is-invalid': f['establishment'].errors }" (valueChange)="selectedEstablishmentSubject.next($event)">
@@ -37,8 +37,8 @@
                                         Establecimiento requerido
                                     </div>
                                 </div>
-                            </mat-form-field>
-                            <mat-form-field class="col-sm-12 col-md-8 custom-input align-self-start" appearance="outline">
+                            </mat-form-field> -->
+                            <mat-form-field class="col-sm-12 col-md-8 col-lg-6 custom-input align-self-start" appearance="outline">
                                 <mat-label>Notas</mat-label>
                                 <textarea id="nombre-form-crear-comunidad" type="text" formControlName="comment" matInput
                                     [ngClass]="{ 'is-invalid': f['comment'].errors }"></textarea>
@@ -53,7 +53,8 @@
                             </mat-form-field>
                             <!-- *ngIf="selectedProviderSubject.value" -->
                             <!-- <div *ngIf="selectedProviderSubject.value" class="row justify-content-center col-12"> -->
-                            <div *ngIf="!id && selectedEstablishmentSubject.value" class="row justify-content-center col-12">
+                                <!-- <div *ngIf="!id && selectedEstablishmentSubject.value" class="row justify-content-center col-12"> -->
+                            <div *ngIf="!id && selectedEstablishment" class="row justify-content-center col-12">
                                 <div class="row justify-content-center col-12">
                                     <div class="p-3 col-sm-12 col-md-6">
                                         <h2 class="text-center text-muted">Producto para Venta disponible</h2>

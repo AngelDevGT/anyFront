@@ -6,7 +6,7 @@ import { map } from 'rxjs/operators';
 import jwt_decode from 'jwt-decode';
 
 import { environment } from '@environments/enviroment';
-import { User } from '@app/models';
+import { User } from '@app/models/system/user.model';
 
 const undefinedStatus = {
     status: {
@@ -62,6 +62,16 @@ export class AccountService {
         return this.userSubject.value;
     }
 
+    public get userValueFixed(){
+        let userValue = this.userSubject.value;
+        let logedUser: User = {
+            name: userValue?.name,
+            email: userValue?.correo,
+            _id: userValue?.userID,
+        };
+        return logedUser;
+    }
+
     login(email: string, password: string) {
         let headers = new HttpHeaders({
             'Access-Control-Allow-Headers': 'Content-Type',
@@ -77,9 +87,16 @@ export class AccountService {
             .pipe(map((user: any) => {
                 let usr = user.loginUserResponse.token;
                 // store user details and jwt token in local storage to keep user logged in between page refreshes
+                let jwd_decoded_usr: any = jwt_decode(usr);
+                let logedUser: User = { 
+                    ...jwd_decoded_usr,
+                    name: jwd_decoded_usr.name,
+                    email: jwd_decoded_usr.correo,
+                    _id: jwd_decoded_usr.userID,
+                };
+                console.log(logedUser);
                 localStorage.setItem('user', JSON.stringify(jwt_decode(usr)));
-                this.userSubject.next(jwt_decode(usr));
-                console.log(this.userSubject);
+                this.userSubject.next(logedUser);
                 return user;
             }));
     }

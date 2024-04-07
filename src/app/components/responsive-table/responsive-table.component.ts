@@ -33,17 +33,22 @@ export class ResponsiveTableComponent implements OnInit, OnChanges {
     }
 
     updateTableElements(){
-        this.rows = this.tableElements.rows;
-        this.headers = this.tableElements.headers;
+        this.rows = this.tableElements;
+        this.headers = this.tableElements[0];
     }
 
     sendData(data: any){
         this.sentData.emit(data);
     }
 
-    navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }){
+    navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }, isAbsolute?: boolean){
+        console.log(isAbsolute, routerLink)
         const pathActual = this.router.url.split('?')[0];
-        const newPath = `${pathActual}/${routerLink}`;
+        let newPath = `${pathActual}/${routerLink}`;
+        if(isAbsolute){
+            newPath = routerLink;
+        }
+        console.log(newPath)
         if(queryParams){
           this.router.navigate([newPath], { queryParams: queryParams, queryParamsHandling: 'merge' });
         } else {

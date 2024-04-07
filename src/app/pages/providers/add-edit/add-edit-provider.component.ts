@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
-
-import { User } from '@app/models';
 import { AlertService, DataService } from '@app/services';
 import {
 FormBuilder,

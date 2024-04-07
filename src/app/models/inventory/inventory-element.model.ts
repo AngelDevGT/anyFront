@@ -5,7 +5,7 @@ import { FinishedProduct } from "../product/finished-product.model";
 import { ProductForSale } from "../product/producto-for-sale.model";
 import { RawMaterialBase } from "../raw-material/raw-material-base.model";
 import { RawMaterialByProvider } from "../raw-material/raw-material-by-provider.model";
-import { User } from "../user.model";
+import { User } from "../system/user.model";
 
 export class InventoryElement {
     _id?: string;

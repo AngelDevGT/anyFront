@@ -1,0 +1,108 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-content class="custom-mat-card-content">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="d-lg-none col-md-2 d-flex align-items-center justify-content-center">
+                        <div class="inbtn">
+                            <button
+                            type="button"
+                            data-toggle="collapse" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#filter-options" 
+                            aria-controls="filter-options" 
+                            aria-expanded="false" 
+                            class="btn btn-outline-primary">
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons">filter_alt</i>
+                                    <span>Filtros</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="filter-options" class="panel-collapse collapse col-md-12 d-lg-block px-2">
+                            <form [formGroup]="productForm" (ngSubmit)="filterElements()">
+                                <div class="d-flex flex-wrap justify-content-center pt-3">
+                                    <div class="col-md-2 select-filter">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Tienda</mat-label>
+                                            <mat-select matInput disableOptionCentering formControlName="establishment">
+                                                <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment._id}}">{{establishment.name}} ({{establishment.address}})</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                    </div>
+                                    <div class="col-md-2 select-filter">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Estado Pedido</mat-label>
+                                            <mat-select matInput disableOptionCentering formControlName="orderStatus">
+                                                <mat-option *ngFor="let status of statusOptions" value="{{status.id}}">{{status.identifier}}</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                    </div>
+                                    <div class="col-md-1 select-filter pb-4 align-self-center">
+                                        <button
+                                        type="submit"
+                                        class="btn btn-outline-secondary waves-effect pb-0">
+                                            <i class="material-icons">search</i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>Inventarios de Productos para Venta (Tiendas)</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
+                        <!-- <div>
+                            <button type="button" routerLink="create" class="btn btn-outline-success m-2">
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons icon">add</i>
+                                    <span>Crear Pedido</span>
+                                </div>
+                            </button>
+                        </div> -->
+                        <div class="d-flex flex-wrap justify-content-md-start justify-content-center pb-0">
+                            <div class="select-filter mx-2">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Buscar</mat-label>
+                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
+                                </mat-form-field>
+                            </div>
+                            <div *ngIf="this.inventoryElements" class="select-filter mx-2">
+                                <button type="button" (click)="exportDataToCsv()" class="btn btn-success m-2">
+                                    <div class="d-flex flex-row p-1">
+                                        <i class="material-icons">file_download</i>
+                                        <span>Exportar</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
+                            <div class="select-filter mx-2 col-md-4 col-sm-12">
+                                <mat-form-field appearance="outline">
+                                    <mat-select matInput disableOptionCentering [(value)]="pageSize">
+                                        <mat-option *ngFor="let entry of entries" [value]="entry">
+                                            {{ entry }}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+                        </div>
+                    </div>
+                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

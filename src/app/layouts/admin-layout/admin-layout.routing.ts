@@ -34,6 +34,15 @@ import { ListRawMaterialByProviderComponent } from "@app/pages/raw-material-by-p
 import { ViewRawMaterialByProviderComponent } from "@app/pages/raw-material-by-provider/view/view-raw-material-provider.component";
 import { SummaryFinishedProductInventoryFactoryComponent } from "@app/pages/admin-summary/fp-inventory-factory/summary-fp-inventory-factory.component";
 import { ListStoreInventoryPFSComponent } from "@app/pages/store-inventory-pfs/list/list-store-inventory-pfs.component";
+import { ListStoreSalesPFSComponent } from "@app/pages/store-sales/list/list-store-sales-pfs.component";
+import { ViewStoreSalesPFSComponent } from "@app/pages/store-sales/view/view-store-sales-pfs.component";
+import { AddEditSaleComponent } from "@app/pages/store-sales/add-edit/add-edit-sale.component";
+import { SummaryProductForSaleOrderComponent } from "@app/pages/admin-summary/fp-order-factory/summary-pfs-store-order.component";
+import { SummaryProductForSaleInventoryFactoryComponent } from "@app/pages/admin-summary/pfs-inventory-store/summary-pfs-inventory-store.component";
+import { ViewActivityLogComponent } from "@app/pages/activity-log/view/view-activity-log.component";
+import { ListCashClosingComponent } from "@app/pages/cash-closing/list/list-cash-closing.component";
+import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash-closing.component";
+import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 
 const usersModule = () => import('@app/layouts/users/users-layout.module').then(x => x.UsersModule);
 
@@ -83,5 +92,15 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'summary/inventory/warehouse/rawMaterialByProvider', component: SummaryRawMaterialByProviderInventoryBodegaComponent},
     { path: 'summary/inventory/factory/rawMaterial', component: SummaryRawMaterialByProviderInventoryFactoryComponent},
     { path: 'summary/inventory/factory/finishedProduct', component: SummaryFinishedProductInventoryFactoryComponent},
-
+    { path: 'summary/productForSale/store/order', component: SummaryProductForSaleOrderComponent},
+    { path: 'summary/inventory/store/productForSale', component: SummaryProductForSaleInventoryFactoryComponent},
+    { path: 'store/sales/history/:id', component: ListStoreSalesPFSComponent},
+    { path: 'store/sales/history/view/:id', component: ViewStoreSalesPFSComponent},
+    { path: 'store/sales/create', component: AddEditSaleComponent},
+    { path: 'store/sales/history/edit/:id', component: AddEditSaleComponent},
+    { path: 'activityLog/view', component: ViewActivityLogComponent},
+    { path: 'cashClosing/:id', component: ListCashClosingComponent},
+    { path: 'cashClosing/view/:id', component: ViewCashClosingComponent},
+    { path: 'cashClosing/create/:id', component: AddEditCashClosingComponent},
+    { path: 'cashClosing/edit/:id', component: AddEditCashClosingComponent},
 ];

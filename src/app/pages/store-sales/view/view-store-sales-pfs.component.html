@@ -1,0 +1,62 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <div *ngIf="loading" class="text-center m-5">
+            <span class="spinner-border spinner-border-lg align-center"></span>
+        </div>
+        <mat-card-header *ngIf="!loading" style="justify-content: center;">
+            <mat-card-title>{{shopResume?.establecimiento?.name}}</mat-card-title>
+        </mat-card-header>
+        <br>
+        <mat-card-content *ngIf="!loading">
+            <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                <div class="col-12">
+                    <view-object [objectElements]="elements"></view-object>
+                </div>
+                <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
+                    <responsive-table *ngIf="this.shopResume" [tableElements]="tableElementsValues"
+                        [pageSize]="pageSize"></responsive-table>
+                </div>
+                <div class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                    <div class="descuento">
+                        <p class="subtotal-title">Subtotal</p>
+                        <p class="subtotal-amount">Q{{ getSubTotal() | number: '1.2-2' }}</p>
+                    </div>
+                    <div class="descuento">
+                        <p class="subtotal-title">Descuento</p>
+                        <p class="subtotal-amount">Q{{ shopResume?.totalDiscount| number: '1.2-2' }}</p>
+                    </div>
+                    <div class="descuento">
+                        <p class="subtotal-title">Costo envio</p>
+                        <p class="subtotal-amount">Q{{ shopResume?.delivery| number: '1.2-2' }}</p>
+                    </div>
+                    <div class="total col-md-8 col-sm-12">
+                        <p class="total-title">Monto total</p>
+                        <p class="total-amount">Q{{ shopResume?.total | number: '1.2-2' }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="d-flex flex-wrap justify-content-center">
+                <button *ngIf="!deleteOption"
+                type="button" (click)="deleteSale()" [disabled]="submitting"
+                class="btn btn-danger m-2">
+                <div class="d-flex flex-row p-1">
+                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="material-icons icon">delete</i>
+                    <span class="px-1">ELIMINAR</span>
+                </div>
+                </button>
+            </div> -->
+            <div class="d-flex flex-wrap justify-content-center">
+                <button
+                type="button" (click)="editSale()" [disabled]="submitting"
+                class="btn btn-primary m-2">
+                <div class="d-flex flex-row p-1">
+                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="material-icons icon">edit</i>
+                    <span class="px-1">EDITAR</span>
+                </div>
+                </button>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

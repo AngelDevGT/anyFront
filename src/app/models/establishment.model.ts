@@ -1,3 +1,6 @@
+import { Status } from "./auxiliary/status.model";
+import { User } from "./system/user.model";
+
 export class Establishment {
     _id?: string;
     name?: string;
@@ -5,6 +8,6 @@ export class Establishment {
     description?: string;
     creationDate?: string; //sistema
     updateDate?: string; //sistema
-    creatorUser?: string; //sistema
-    status?: number;
+    creatorUser?: User; //sistema
+    status?: Status;
 }

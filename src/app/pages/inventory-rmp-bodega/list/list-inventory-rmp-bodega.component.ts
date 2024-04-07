@@ -1,5 +1,5 @@
 import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
-import { first } from 'rxjs/operators';
+import { concatMap, first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
@@ -15,6 +15,8 @@ import { UnitBase } from '@app/models/auxiliary/unit-base.model';
 import { forkJoin } from 'rxjs';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
 import { Router } from '@angular/router';
+import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
+import { ActivityLog } from '@app/models/system/activity-log';
 
 @Component({ 
     templateUrl: 'list-inventory-rmp-bodega.component.html',
@@ -27,6 +29,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     allInventoryElements?: InventoryElement[];
     selectedInventoryElement?: InventoryElement;
     rawMaterialForm!: FormGroup;
+    operationRawMaterialForm!: FormGroup;
     selectedMeasure?: Measure;
     elements: any = [];
     measureOptions?: Measure[];
@@ -36,46 +39,14 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     selectedQuantity = 0;
     formQuantity = 0;
     modalSelectedQuantity = 0;
+    modalFinalQuantity = 0;
     modalUnitBaseTotalQuantity = 0;
     searchTerm?: string;
     entries = [5, 10, 20, 50];
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
-    tableHeaders = [
-        {
-            style: "width: 20%",
-            name: "Producto"
-        },
-        {
-            style: "width: 20%",
-            name: "Proveedor"
-        },
-        {
-            style: "width: 10%",
-            name: "Medida"
-        },
-        {
-            style: "width: 10%",
-            name: "Cantidad"
-        },
-        // {
-        //     style: "width: 15%",
-        //     name: "Precio"
-        // },
-        {
-            style: "width: 15%",
-            name: "Estado"
-        },
-        // {
-        //     style: "width: 10%",
-        //     name: "Monto pendiente"
-        // },
-        {
-            style: "width: 10%",
-            name: "Acciones"
-        }
-    ];
+    activityLogName = "Acciones de Materia Prima por Proveedor en Inventario de Bodega";
 
     constructor(private dataService: DataService, private alertService: AlertService, private router: Router) {}
 
@@ -83,12 +54,12 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getAllInventoryByFilter({ status: { id: 2 }, inventoryType: { id: 2 }}));
+        requestArray.push(this.dataService.getInventory({ _id: "64d7b118440275e2da6384c5"}));
         requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
+                this.inventory = result[0].getInventoryResponse?.Inventory;
                 this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -103,6 +74,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         });
 
         this.rawMaterialForm = this.createMaterialFormGroup();
+        this.operationRawMaterialForm = this.createOperationMaterialFormGroup();
     }
 
     search(value: any): void {
@@ -125,56 +97,64 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     }
 
     setTableElements(elements?: InventoryElement[]){
-        this.tableElementsValues = {
-            headers: this.tableHeaders,
-            rows: []
-        }
+        this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
-            const curr_row = {
-                row: [
-                    { type: "text", value: element.rawMaterialByProvider?.rawMaterialBase?.name, header_name: "Producto" },
-                    { type: "text", value: element.rawMaterialByProvider?.provider?.name, header_name: "Proveedor" },
-                    // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
-                    { type: "text", value: element.measure?.identifier, header_name: "Medida" },
-                    { type: "text", value: element.quantity, header_name: "Cantidad" },
-                    // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
-                    { type: "text", value: element.status?.identifier, header_name: "Estado" },
-                    // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
-                    // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
+            const curr_row = [
+                    { type: "text", value: element.rawMaterialByProvider?.rawMaterialBase?.name, header_name: "Producto", style: "width: 25%", id: element.rawMaterialByProvider?._id },
+                    { type: "text", value: element.rawMaterialByProvider?.provider?.name, header_name: "Proveedor", style: "width: 15%" },
+                    { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
+                    { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
+                    // { type: "text", value: element.status?.identifier, header_name: "Estado", style: "width: 15%" },
                     {
                         type: "modal_button",
                         style: "white-space: nowrap",
+                        header_name: "Acciones",
                         data: element,
                         button: [
                             {
                                 type: "button",
                                 data_bs_target: "#moveInventoryRawMaterialModal",
-                                class: "btn btn-primary btn-sm pb-0 mx-1",
+                                class: "btn btn-primary mx-1",
                                 icon: {
                                     class: "material-icons",
                                     icon: "content_paste_go"
-                                }
+                                },
+                                text: "Mover"
+                            },
+                            {
+                                type: "button",
+                                data_bs_target: "#addInventoryRawMaterialModal",
+                                class: "btn btn-success mx-1",
+                                icon: {
+                                    class: "material-icons",
+                                    icon: "add_circle"
+                                },
+                                text: "Agregar"
                             },
                             {
                                 type: "button",
                                 data_bs_target: "#removeInventoryRawMaterialModal",
-                                class: "btn btn-danger btn-sm pb-0 mx-1",
+                                class: "btn btn-danger mx-1",
                                 icon: {
                                     class: "material-icons",
-                                    icon: "delete_sweep"
-                                }
+                                    icon: "remove_circle"
+                                },
+                                text: "Eliminar"
                             }
                         ]
                     }
-                  ],
-                id: element.rawMaterialByProvider?._id
-            }
-            this.tableElementsValues.rows.push(curr_row);
+            ];
+                // id: element.rawMaterialByProvider?._id
+            this.tableElementsValues.push(curr_row);
         });
     }
 
     get r() {
         return this.rawMaterialForm.controls;
+    }
+
+    get or() {
+        return this.operationRawMaterialForm.controls;
     }
 
     selectMeasure(measureId?: string){
@@ -188,16 +168,33 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
             }
             this.selectedMeasure = this.selectMeasure(measureId);
             this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
-            this.elements.push({icon : "inbox", name : "Cantidad (" + this.inventoryUnitBase?.name + ")", value : this.currentMeasureQuantity});
         }
-        this.calculateModalQuantity();
+        this.calculateModalQuantity('rest');
     }
 
     setQuantityValue(event: Event){
         if (event.target instanceof HTMLInputElement) {
             this.formQuantity = Number(event.target.value) || 0;
         }
-        this.calculateModalQuantity();
+        this.calculateModalQuantity('rest');
+    }
+
+    restQuantityValue(event: Event){
+        if (event.target instanceof HTMLInputElement) {
+            this.formQuantity = Number(event.target.value) || 0;
+        }
+        this.selectedMeasure = this.selectedInventoryElement?.measure;
+        this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
+        this.calculateModalQuantity('rest');
+    }
+
+    sumQuantityValue(event: Event){
+        if (event.target instanceof HTMLInputElement) {
+            this.formQuantity = Number(event.target.value) || 0;
+        }
+        this.selectedMeasure = this.selectedInventoryElement?.measure;
+        this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
+        this.calculateModalQuantity('sum');
     }
 
     get quantityInput(){
@@ -208,21 +205,37 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         return this.rawMaterialForm.get('measure');
     }
 
-    calculateModalQuantity() {
+    get operationQuantityInput(){
+        return this.operationRawMaterialForm.get('quantity');
+    }
+
+    get operationReasonInput(){
+        return this.operationRawMaterialForm.get('reason');
+    }
+
+    calculateModalQuantity(actionType?: string) {
+        this.setInventoryElementElements();
         let totalQuantity = Number(this.formQuantity)*Number(this.currentMeasureQuantity) || 0;
         this.modalUnitBaseTotalQuantity = Number(this.inventoryUnitBase?.quantity) * Number(this.selectedInventoryElement?.quantity);
-        if(totalQuantity > this.modalUnitBaseTotalQuantity){
-            this.quantityInput?.setValue('0');
-            this.formQuantity = 0;
-            totalQuantity = 0;
+        if(actionType === 'rest'){
+            if(totalQuantity > this.modalUnitBaseTotalQuantity){
+                this.quantityInput?.setValue('0');
+                this.operationQuantityInput?.setValue('0');
+                this.formQuantity = 0;
+                totalQuantity = 0;
+            }
+            this.modalFinalQuantity = this.modalUnitBaseTotalQuantity - totalQuantity;
+
+        } else if(actionType === 'sum'){
+            this.modalFinalQuantity = this.modalUnitBaseTotalQuantity + totalQuantity;
         }
         this.modalSelectedQuantity = totalQuantity;
     }
 
     onMoveMaterialForm(){
-        this.tableElementsValues.rows.forEach((curr_row: any) => {
-            if(curr_row.id === this.selectedInventoryElement?.rawMaterialByProvider?._id){
-                let buttons = curr_row.row[5].button;
+        this.tableElementsValues.forEach((curr_row: any) => {
+            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?._id){
+                let buttons = curr_row[4].button;
                 buttons[0].submitting = true;
                 buttons.forEach((btn: any) => {
                     btn.disabled = true;
@@ -235,21 +248,117 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
             quantity: String(this.formQuantity),
             measure: this.selectedMeasure
         }
+        let activityLog: ActivityLog = {
+            action: "movement",
+            section: this.activityLogName,
+            description: "Movimiento de Materia Prima por Proveedor '" + this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.name + "' de inventario de bodega a inventario de fabrica",
+            extra: {
+                inventoryElement: this.selectedInventoryElement
+            },
+            request: newMoveStoreToFactory
+        }
         this.dataService.moveStoreToFactory(newMoveStoreToFactory)
-        .pipe(first())
-            .subscribe({
-                next: () => {
-                    this.router.navigateByUrl('/').then(() => {
-                        this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                        this.router.navigate(['/inventory/warehouse/rawMaterialByProvider']); 
-                    });},
-                error: error => {
-                    this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
-            }});
+        .pipe(concatMap((result: any) => {
+            activityLog.response = result;
+            activityLog.status = result.moveStoreToFactoryResponse.AcknowledgementIndicator;
+            return this.dataService.addActivityLog(activityLog);
+        }))
+        .subscribe({
+            next: () => {
+                this.router.navigateByUrl('/').then(() => {
+                    this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
+                    this.router.navigate(['/inventory/warehouse/rawMaterialByProvider']); 
+                });},
+            error: error => {
+                this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
+        }});
     }
 
     onDeleteMaterialForm(){
+        this.tableElementsValues.forEach((curr_row: any) => {
+            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?._id){
+                let buttons = curr_row[4].button;
+                buttons[2].submitting = true;
+                buttons.forEach((btn: any) => {
+                    btn.disabled = true;
+                });
+            }
+        });
+        let deleteFromInventory: UpdateInventoryElement = {
+            inventoryID: "64d7b118440275e2da6384c5",
+            inventoryTypeID: "2",
+            elementID: this.selectedInventoryElement?.rawMaterialByProvider?._id,
+            newQuantity: String(this.modalFinalQuantity),
+        }
+        let activityLog: ActivityLog = {
+            action: "remove",
+            section: this.activityLogName,
+            description: "Retiro de Materia Prima por Proveedor '" + this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.name + "' del inventario de bodega",
+            extra: {
+                inventoryElement: this.selectedInventoryElement,
+                reason: this.operationReasonInput?.value
+            },
+            request: deleteFromInventory
+        }
 
+        this.dataService.updateInventoryElement(deleteFromInventory)
+        .pipe(concatMap((result: any) => {
+            activityLog.response = result;
+            activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
+            return this.dataService.addActivityLog(activityLog);
+        }))
+        .subscribe({
+            next: () => {
+                this.router.navigateByUrl('/').then(() => {
+                    this.alertService.success('Resta de inventario realizado correctamente', { keepAfterRouteChange: true });
+                    this.router.navigate(['/inventory/warehouse/rawMaterialByProvider']); 
+                });},
+            error: error => {
+                this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
+        }});
+    }
+
+    onAddMaterialForm(){
+        this.tableElementsValues.forEach((curr_row: any) => {
+            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?._id){
+                let buttons = curr_row[4].button;
+                buttons[1].submitting = true;
+                buttons.forEach((btn: any) => {
+                    btn.disabled = true;
+                });
+            }
+        });
+        let addToInventory: UpdateInventoryElement = {
+            inventoryID: "64d7b118440275e2da6384c5",
+            inventoryTypeID: "2",
+            elementID: this.selectedInventoryElement?.rawMaterialByProvider?._id,
+            newQuantity: String(this.modalFinalQuantity),
+        }
+        let activityLog: ActivityLog = {
+            action: "add",
+            section: this.activityLogName,
+            description: "Adicion de Materia Prima por Proveedor " + this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.name + " al inventario de bodega.",
+            extra: {
+                inventoryElement: this.selectedInventoryElement,
+                reason: this.operationReasonInput?.value
+            },
+            request: addToInventory
+        }
+        this.dataService.updateInventoryElement(addToInventory)
+        .pipe(concatMap((result: any) => {
+            activityLog.response = result;
+            activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
+            return this.dataService.addActivityLog(activityLog);
+        }))
+        .subscribe({
+            next: () => {
+                this.router.navigateByUrl('/').then(() => {
+                    this.alertService.success('Adicion de inventario realizado correctamente', { keepAfterRouteChange: true });
+                    this.router.navigate(['/inventory/warehouse/rawMaterialByProvider']); 
+                });},
+            error: error => {
+                this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
+        }});    
     }
 
     receiveData(data: any){
@@ -262,14 +371,28 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     }
 
     setInventoryElementElements(){
+        this.elements = [];
         // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
         this.elements.push({icon : "format_size", name : "Nombre", value : this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.name});
         this.elements.push({icon : "feed", name : "Descripción", value : this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.description});
+        if(this.currentMeasureQuantity){
+            this.elements.push({icon : "inbox", name : "Cantidad (" + this.inventoryUnitBase?.name + ")", value : this.currentMeasureQuantity});
+        }
+        console.log(this.selectedInventoryElement);
+        console.log(this.elements);
         // this.elements.push({icon : "shelves", name : "Disponible (" + this.inventoryElementMeasure?.unitBase?.name + ")", value : Number(this.inventoryElementMeasure?.unitBase?.quantity) * Number(this.selectedInventoryElement?.quantity) });
     }
 
     closeRawMaterialDialog(){
         this.onResetMaterialForm();
+    }
+
+    closeOperationRawMaterialDialog(){
+        this.onResetOperationMaterialForm();
+    }
+
+    goToActionsHistory(){
+        this.router.navigate(['/activityLog/view'], { queryParams: { sec: this.activityLogName } });
     }
 
     onResetMaterialForm(){
@@ -283,10 +406,28 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         this.elements = [];
     }
 
+    onResetOperationMaterialForm(){
+        this.operationRawMaterialForm.reset();
+        this.selectedInventoryElement = undefined;
+        this.selectedMeasure = undefined;
+        this.currentMeasureQuantity = 0;
+        this.formQuantity = 0;
+        this.modalSelectedQuantity = 0;
+        this.modalUnitBaseTotalQuantity = 0;
+        this.elements = [];
+    }
+
     createMaterialFormGroup() {
         return new FormGroup({
-            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
+            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             measure: new FormControl('', [Validators.required])
+        });
+    }
+
+    createOperationMaterialFormGroup() {
+        return new FormGroup({
+            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            reason: new FormControl('', [Validators.required, Validators.maxLength(50)])
         });
     }
 

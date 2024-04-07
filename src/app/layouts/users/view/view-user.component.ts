@@ -75,9 +75,8 @@ export class ViewUserComponent implements OnInit{
         this.elements.push({icon : "call", name : "Telefono", value : user.phone});
         this.elements.push({icon : "settings", name : "Rol", value : user.role?.identifier});
         this.elements.push({icon : "info", name : "Estado", value : user.status?.identifier});
-        // this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(provider.creationDate!.replaceAll("\"",""))});
-        // this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(provider.updateDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "badge", name : "Usuario Creador", value : "Pendiente..."});
+        this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(user.creationDate!.replaceAll("\"",""))});
+        // this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(user.updateDate!.replaceAll("\"",""))});
     }
 
 }

@@ -31,28 +31,6 @@ export class SummaryRawMaterialByProviderInventoryFactoryComponent implements On
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
-    tableHeaders = [
-        {
-            style: "width: 15%",
-            name: "Producto"
-        },
-        {
-            style: "width: 10%",
-            name: "Estado"
-        },
-        {
-            style: "width: 10%",
-            name: "Medida"
-        },
-        {
-            style: "width: 10%",
-            name: "Cantidad"
-        }
-        // {
-        //     style: "width: 10%",
-        //     name: "Acciones"
-        // }
-    ];
 
     constructor(private dataService: DataService, private alertService: AlertService) {
         // this.selectedSortOptSubject.subscribe(value => {
@@ -115,23 +93,18 @@ export class SummaryRawMaterialByProviderInventoryFactoryComponent implements On
     }
 
     setTableElements(elements?: InventoryElement[]){
-        this.tableElementsValues = {
-            headers: this.tableHeaders,
-            rows: []
-        }
+        this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
-            const curr_row = {
-                row: [
+            const curr_row = [
                     // { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha" },
                     { type: "text", value: element.rawMaterialBase?.name, header_name: "Producto" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: "Activo", header_name: "Estado" },
                     { type: "text", value: element.measure?.identifier, header_name: "Medida" },
                     { type: "text", value: element.quantity, header_name: "Cantidad" }
-                  ],
-            }
+            ];
 
-            this.tableElementsValues.rows.push(curr_row);
+            this.tableElementsValues.push(curr_row);
         });
     }
 

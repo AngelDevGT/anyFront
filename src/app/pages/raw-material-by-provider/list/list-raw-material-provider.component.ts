@@ -1,8 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-
-import { User } from '@app/models';
-import { AccountService } from '@app/services';
 import { DataService } from '@app/services';
 import {
 AbstractControl,

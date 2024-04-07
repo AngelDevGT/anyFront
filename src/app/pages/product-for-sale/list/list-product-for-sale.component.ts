@@ -1,8 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-
-import { User } from '@app/models';
-import { AccountService } from '@app/services';
 import { DataService } from '@app/services';
 import {
 AbstractControl,
@@ -65,7 +62,7 @@ export class ListProductForSaleComponent implements OnInit {
                     title: element.finishedProduct?.name,
                     photo: element.finishedProduct?.photo,
                     descriptions : [
-                        {name:'Proveedor:', value: element.establishment?.name},
+                        {name:'Tienda:', value: element.establishment?.name},
                         {name:'Precio:', value: this.dataService.getFormatedPrice(Number(element.price))},
                         {name:'Medida:', value: element.finishedProduct?.measure?.identifier},
                         {name:'Descripcion:', value: element.finishedProduct?.description},

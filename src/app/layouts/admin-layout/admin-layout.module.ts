@@ -44,6 +44,7 @@ import { ListFinishedProductComponent } from "@app/pages/finished-product/list/l
 import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
 import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-product-creation.component";
 import { MatDialogModule } from "@angular/material/dialog";
+import {MatExpansionModule} from '@angular/material/expansion';
 import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provider-order/view/view-raw-material-order.component";
 import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
 import { AddEditProductoForSaleComponent } from "@app/pages/product-for-sale/add-edit/add-edit-product-for-sale.component";
@@ -57,6 +58,15 @@ import { SummaryRawMaterialByProviderInventoryBodegaComponent } from "@app/pages
 import { SummaryRawMaterialByProviderInventoryFactoryComponent } from "@app/pages/admin-summary/rm-inventory-factory/summary-rm-inventory-factory.component";
 import { SummaryFinishedProductInventoryFactoryComponent } from "@app/pages/admin-summary/fp-inventory-factory/summary-fp-inventory-factory.component";
 import { ListStoreInventoryPFSComponent } from "@app/pages/store-inventory-pfs/list/list-store-inventory-pfs.component";
+import { ListStoreSalesPFSComponent } from "@app/pages/store-sales/list/list-store-sales-pfs.component";
+import { ViewStoreSalesPFSComponent } from "@app/pages/store-sales/view/view-store-sales-pfs.component";
+import { AddEditSaleComponent } from "@app/pages/store-sales/add-edit/add-edit-sale.component";
+import { SummaryProductForSaleOrderComponent } from "@app/pages/admin-summary/fp-order-factory/summary-pfs-store-order.component";
+import { SummaryProductForSaleInventoryFactoryComponent } from "@app/pages/admin-summary/pfs-inventory-store/summary-pfs-inventory-store.component";
+import { ViewActivityLogComponent } from "@app/pages/activity-log/view/view-activity-log.component";
+import { ListCashClosingComponent } from "@app/pages/cash-closing/list/list-cash-closing.component";
+import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash-closing.component";
+import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -80,6 +90,7 @@ import { ListStoreInventoryPFSComponent } from "@app/pages/store-inventory-pfs/l
     MatMenuModule,
     MatListModule,
     MatDialogModule,
+    MatExpansionModule,
   ],
   declarations: [
       HomeComponent,
@@ -115,7 +126,16 @@ import { ListStoreInventoryPFSComponent } from "@app/pages/store-inventory-pfs/l
       SummaryRawMaterialByProviderInventoryBodegaComponent,
       SummaryRawMaterialByProviderInventoryFactoryComponent,
       SummaryFinishedProductInventoryFactoryComponent,
+      SummaryProductForSaleOrderComponent,
+      SummaryProductForSaleInventoryFactoryComponent,
       ListStoreInventoryPFSComponent,
+      ListStoreSalesPFSComponent,
+      ViewStoreSalesPFSComponent,
+      AddEditSaleComponent,
+      ViewActivityLogComponent,
+      ListCashClosingComponent,
+      ViewCashClosingComponent,
+      AddEditCashClosingComponent,
       // UsersLayoutComponent
   ]
 })

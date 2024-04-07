@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 
-import { User } from '@app/models';
+import { User } from '@app/models/system/user.model';
 import { AccountService } from '@app/services';
 import {
 AbstractControl,

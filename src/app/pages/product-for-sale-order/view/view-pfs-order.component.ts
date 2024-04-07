@@ -41,36 +41,6 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     confirmDialogTitle = '...';
     confirmDialogText = '...';
     confirmDialogId = 0;
-    tableHeaders = [
-        {
-            style: "width: 20%",
-            name: "Nombre"
-        },
-        {
-            style: "width: 20%",
-            name: "Precio"
-        },
-        {
-            style: "width: 20%",
-            name: "Cantidad"
-        },
-        {
-            style: "width: 20%",
-            name: "Medida"
-        },
-        {
-            style: "width: 20%",
-            name: "Total"
-        },
-        // {
-        //     style: "width: 10%",
-        //     name: "Medida Base"
-        // },
-        // {
-        //     style: "width: 10%",
-        //     name: "Cantidad Base"
-        // }
-    ];
 
     constructor(private dataService: DataService, private alertService: AlertService,
         private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
@@ -86,23 +56,6 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
         if (this.viewOption && this.viewOption === "factory"){
             this.isFactory = true;
-        }
-
-        if(this.isFactory){
-            this.tableHeaders = [
-                {
-                    style: "width: 20%",
-                    name: "Nombre"
-                },
-                {
-                    style: "width: 20%",
-                    name: "Cantidad"
-                },
-                {
-                    style: "width: 20%",
-                    name: "Medida"
-                }
-            ];
         }
 
         this.loading = true;
@@ -324,18 +277,14 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         // this.elements.push({icon : "production_quantity_limits", name : "Monto pendiente", value : this.dataService.getFormatedPrice(Number(rmOrder.pendingAmount))});
         this.elements.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(pfsOrder.creationDate!)});
         this.elements.push({icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(pfsOrder.updateDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "badge", name : "Creado por", value : "Pendiente..."});
+        this.elements.push({icon : "badge", name : "Creado por", value : pfsOrder.creatorUser?.name});
         this.setTableElements(pfsOrder.productForSaleStoreOrderElements);
     }
 
     setTableElements(elements?: ProductForSaleStoreOrderElement[]){
-        this.tableElementsValues = {
-            headers: this.tableHeaders,
-            rows: []
-        }
+        this.tableElementsValues = [];
         elements?.forEach((element: ProductForSaleStoreOrderElement) => {
-            let curr_row = {
-                row: [
+            let curr_row = [
                     { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.price)), header_name: "Precio" },
@@ -344,18 +293,15 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.totalPrice)), header_name: "Total" },
                     // { type: "text", value: element.measure.unitBase.name, header_name: "Medida Base" },
                     // { type: "text", value: element.measure.unitBase.quantity, header_name: "Cantidad Base" },
-                  ],
-            }
+            ];
             if(this.isFactory){
-                curr_row = {
-                    row: [
+                curr_row = [
                         { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Nombre" },
                         { type: "text", value: element.quantity, header_name: "Cantidad" },
                         { type: "text", value: element.measure?.identifier, header_name: "Medida" }
-                      ],
-                }
+                ];
             }
-            this.tableElementsValues.rows.push(curr_row);
+            this.tableElementsValues.push(curr_row);
         });
     }
 

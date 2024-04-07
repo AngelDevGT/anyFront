@@ -1,6 +1,6 @@
 import { Measure } from "../auxiliary/measure.model";
 import { Status } from "../auxiliary/status.model";
-import { User } from "../user.model";
+import { User } from "../system/user.model";
 
 export class RawMaterialBase {
     _id?: string;

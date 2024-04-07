@@ -1,6 +1,6 @@
 import { Status } from "../auxiliary/status.model";
 import { Provider } from "../system/provider.model";
-import { User } from "../user.model";
+import { User } from "../system/user.model";
 import { RawMaterialBase } from "./raw-material-base.model";
 
 export class RawMaterialByProvider {

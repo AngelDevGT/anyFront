@@ -1,0 +1,145 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;" class="my-4">
+            <mat-card-title>{{title}}</mat-card-title>
+        </mat-card-header>
+        <div *ngIf="loading" class="text-center m-5">
+            <span class="spinner-border spinner-border-lg align-center"></span>
+        </div>
+        <mat-card-content *ngIf="!loading">
+            <form [formGroup]="operationRawMaterialForm" (ngSubmit)="onSaveForm()">
+                <div class="d-flex flex-wrap justify-content-center">
+                    <div class="d-flex flex-wrap justify-content-center col-12 p-3">
+                        <mat-form-field *ngIf="!isUpdate" appearance="outline" class="m-4">
+                            <mat-label>Fecha Inicio</mat-label>
+                            <input id="applyDate-form-productos" formControlName="initialDate" 
+                            matInput [max]="maxDate" [matDatepicker]="picker">
+                            <mat-hint>Mes/Dia/Año</mat-hint>
+                            <div class="invalid-feedback" *ngIf="or['initialDate'].errors">
+                                <div *ngIf="or['initialDate'].hasError('required')">
+                                    Fecha requerida
+                                </div>
+                            </div>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-datepicker touchUi #picker disabled="false"></mat-datepicker>
+                        </mat-form-field>
+                        <div class="my-4">
+                            <button *ngIf="!isUpdate"
+                            type="button" (click)="loadNewCashClosing(true)"
+                            class="btn btn-outline-success">
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons icon">sync</i>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="col-12"></div>
+                        <mat-form-field class="col-lg-6 col-md-8 col-12 custom-input align-self-start" appearance="outline">
+                            <mat-label>Comentario</mat-label>
+                            <textarea id="note-form-crear-comunidad" type="text" formControlName="note" matInput
+                                [ngClass]="{ 'is-invalid': or['note'].errors }"></textarea>
+                            <div class="invalid-feedback" *ngIf="or['note'].errors">
+                                <div *ngIf="or['note'].hasError('required')">
+                                    Comentario requerido
+                                </div>
+                                <div *ngIf="or['note'].errors['maxlength']">
+                                    El comentario debe tener maximo 100 caracteres
+                                </div>
+                            </div>
+                        </mat-form-field>
+                    </div>
+                </div>
+                <div *ngIf="!isUpdate" class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                    <div *ngIf="isUpdate" class="col-12">
+                        <view-object [objectElements]="elements"></view-object>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-lg-10">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <h2 class="font-weight-bold text-muted mt-4 col-6 text-center">Inventario</h2>
+                            </div>
+                            <div class="row justify-content-center">
+                                <h2 *ngIf="tableInventoryCapture.length == 0" class="font-weight text-danger col-6 text-center">Sin Productos</h2>
+                                <div *ngIf="tableInventoryCapture.length > 0" class="col-xl-11 col-lg-12 col-md-12 col-sm-12">
+                                    <responsive-table [tableElements]="tableInventoryCapture"
+                                        [pageSize]="pageSize"></responsive-table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <h2 class="font-weight-bold text-muted mt-4 col-6 text-center">Acciones de inventario</h2>
+                            </div>
+                            <div class="row justify-content-center">
+                                <h2 *ngIf="tableActivityLogs.length == 0" class="font-weight text-danger col-6 text-center">Sin Acciones</h2>
+                                <div *ngIf="tableActivityLogs.length > 0" class="col-xl-11 col-lg-12 col-md-12 col-sm-12">
+                                    <responsive-table [tableElements]="tableActivityLogs"
+                                        [pageSize]="pageSize"></responsive-table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <h2 class="font-weight-bold text-muted mt-4 col-6 text-center">Pedidos</h2>
+                            </div>
+                            <div class="row justify-content-center">                               
+                                <h2 *ngIf="tableSaleStoreOrders.length == 0" class="font-weight text-danger col-6 text-center">Sin Pedidos</h2>
+                                <mat-accordion *ngIf="tableSaleStoreOrders.length > 0" class="col-xl-11">
+                                    <mat-expansion-panel *ngFor="let tableStoreOrder of tableSaleStoreOrders">
+                                      <mat-expansion-panel-header>
+                                        <mat-panel-title>
+                                          {{tableStoreOrder.accordion_name}}
+                                        </mat-panel-title>
+                                      </mat-expansion-panel-header>
+                                        <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                                            <div class="col-12">
+                                                <view-object [objectElements]="tableStoreOrder.elements"></view-object>
+                                            </div>
+                                            <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
+                                                <responsive-table [tableElements]="tableStoreOrder.table_elements_values"
+                                                    [pageSize]="pageSize"></responsive-table>
+                                            </div>
+                                        </div>
+                                    </mat-expansion-panel>
+                                </mat-accordion>
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <h2 class="font-weight-bold text-muted mt-4 col-6 text-center">Ventas</h2>
+                            </div>
+                            <div class="row justify-content-center">
+                                <h2 *ngIf="tableShopResumes.length == 0" class="font-weight text-danger col-6 text-center">Sin Ventas</h2>
+                                <mat-accordion *ngIf="tableShopResumes.length > 0" class="col-xl-11">
+                                    <mat-expansion-panel *ngFor="let shopResume of tableShopResumes">
+                                      <mat-expansion-panel-header>
+                                        <mat-panel-title>
+                                          Venta: {{shopResume.accordion_name}}
+                                        </mat-panel-title>
+                                      </mat-expansion-panel-header>
+                                        <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                                            <div class="col-12">
+                                                <view-object [objectElements]="shopResume.elements"></view-object>
+                                            </div>
+                                            <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
+                                                <responsive-table [tableElements]="shopResume.table_elements_values"
+                                                    [pageSize]="pageSize"></responsive-table>
+                                            </div>
+                                        </div>
+                                    </mat-expansion-panel>
+                                </mat-accordion>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap justify-content-center my-4">
+                    <button
+                    type="submit"  [disabled]="submitting || operationRawMaterialForm.invalid"
+                    class="btn btn-outline-success btn-lg m-2">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        GUARDAR CIERRE DE CAJA
+                    </button>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

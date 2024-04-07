@@ -21,28 +21,6 @@ export class ListProviderComponent implements OnInit {
     entries = [5, 10, 20, 50];
     pageSize = 5;
     tableElementsValues?: any;
-    tableHeaders = [
-        {
-            style: "width: 15%",
-            name: "Nombre"
-        },
-        {
-            style: "width: 15%",
-            name: "Telefono"
-        },
-        {
-            style: "width: 15%",
-            name: "Empresa"
-        },
-        {
-            style: "width: 40%",
-            name: "Descripcion"
-        },
-        {
-            style: "width: 15%",
-            name: "Acciones"
-        }
-    ];
 
     constructor(private dataService: DataService, private alertService: AlertService) {}
 
@@ -80,13 +58,9 @@ export class ListProviderComponent implements OnInit {
     }
 
     setTableElements(elements: any){
-        this.tableElementsValues = {
-            headers: this.tableHeaders,
-            rows: []
-        }
+        this.tableElementsValues = [];
         elements?.forEach((provider: any) => {
-            const curr_row = {
-                row: [
+            const curr_row = [
                     { type: "text", value: provider.name, header_name: "Nombre" },
                     { type: "text", value: provider.phone, header_name: "Telefono" },
                     { type: "text", value: provider.company, header_name: "Empresa" },
@@ -94,6 +68,7 @@ export class ListProviderComponent implements OnInit {
                     {
                         type: "button",
                         style: "white-space: nowrap",
+                        header_name: "Acciones",
                         button: [
                             {
                                 type: "button",
@@ -115,9 +90,8 @@ export class ListProviderComponent implements OnInit {
                             }
                         ]
                     }
-                  ],
-            }
-            this.tableElementsValues.rows.push(curr_row);
+            ];
+            this.tableElementsValues.push(curr_row);
         });
     }
 

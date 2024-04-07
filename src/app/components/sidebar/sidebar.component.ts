@@ -117,6 +117,22 @@ export class SidebarComponent implements OnInit {
           link_name : "Resumen (Fabrica) Inventario de Producto Terminado",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/summary/inventory/store/productForSale",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Resumen (Tienda) Inventario de Producto para Venta",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/summary/productForSale/store/order",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Resumen (Tienda) Pedidos de Producto para Venta",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
         }
       ]
     },
@@ -200,14 +216,6 @@ export class SidebarComponent implements OnInit {
         },
         {
           root_class : "list-group list-group-flush",
-          router_link : "/productsForSale",
-          link_class : "list-group-item py-2 ripple",
-          link_name : "Productos para Venta",
-          icon_name : "arrow_right",
-          icon_class : "material-icons icon"
-        },
-        {
-          root_class : "list-group list-group-flush",
           router_link : "/inventory/factory/rawMaterial",
           link_class : "list-group-item py-2 ripple",
           link_name : "Inventario de Materia Prima",
@@ -259,12 +267,20 @@ export class SidebarComponent implements OnInit {
       sub_class : "position-sticky",
       is_tree : true,
       childs : [
+        // {
+        //   root_class : "list-group list-group-flush",
+        //   router_link : "/productsForSale/order",
+        //   query_params: {opt: 'store'},
+        //   link_class : "list-group-item py-2 ripple",
+        //   link_name : "Pedidos de Producto para Venta",
+        //   icon_name : "arrow_right",
+        //   icon_class : "material-icons icon"
+        // },
         {
           root_class : "list-group list-group-flush",
-          router_link : "/productsForSale/order",
-          query_params: {opt: 'store'},
+          router_link : "/productsForSale",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Pedidos de Producto para Venta",
+          link_name : "Productos para Venta",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         },
@@ -273,7 +289,7 @@ export class SidebarComponent implements OnInit {
           router_link : "/establishments",
           query_params: {opt: 'inventory'},
           link_class : "list-group-item py-2 ripple",
-          link_name : "Inventarios",
+          link_name : "Listado de Tiendas",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         }

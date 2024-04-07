@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { environment } from '@environments/enviroment';
-import { Role, User } from '@app/models';
+import { Role } from '@app/models';
 import { Establishment } from '@app/models/establishment.model';
 import { ProductForSale } from '@app/models/product/producto-for-sale.model';
 import { Provider } from '@app/models/system/provider.model';
@@ -16,6 +16,11 @@ import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.mo
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
 import { FinishedProductCreation } from '@app/models/product/finished-product-creation.model';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
+import { AccountService } from '../account.service';
+import { AddRawMaterialOrderPaymentHistory } from '@app/models/raw-material/add-raw-material-order-payment-history.model';
+import { ActivityLog } from '@app/models/system/activity-log';
+import { CashClosing } from '@app/models/store/cash-closing.model';
+import { ShopResume } from '@app/models/store/shop-resume.model';
 
 
 export const statusValues = {
@@ -191,7 +196,7 @@ export const activeStatus = {
     status: {
         "id": 2,
         "status": 1,
-        "text": "1",
+        "text": "2",
         "identifier": "Activo"
     }
 };
@@ -200,8 +205,17 @@ export const deleteStatus = {
     status: {
         "id": 3,
         "status": 1,
-        "text": "2",
+        "text": "3",
         "identifier": "Eliminado"
+    }
+}
+
+export const verifyStatus = {
+    status: {
+        "id": 10,
+        "status": 1,
+        "text": "10",
+        "identifier": "Verificado"
     }
 }
 
@@ -254,7 +268,7 @@ export const pendingFactoryStatus = {
 @Injectable({ providedIn: 'root' })
 export class DataService {
 
-    constructor( private router: Router, private http: HttpClient ) {
+    constructor( private router: Router, private http: HttpClient, private accountService: AccountService ) {
     }
 
     /** PRODUCTS **/
@@ -314,7 +328,7 @@ export class DataService {
     /** ESTABLISHMENT */
 
     getAllEstablishments() {
-        let params = JSON.stringify({findProduct: {}});
+        let params = JSON.stringify({findEstablishment: {}});
         return this.http.post(`${environment.apiUrl}/retrieveEstablishments`, params);
     }
 
@@ -328,8 +342,8 @@ export class DataService {
     }
 
     getEstablishmentById(id: string) {
-        let params = JSON.stringify({findProduct: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/retrieveEstablishments`, params);
+        let params = JSON.stringify({getEstablishment: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getEstablishment`, params);
     }
 
     getShortEstablishmentInfo(establishment: Establishment){
@@ -340,7 +354,8 @@ export class DataService {
         let params = JSON.stringify({
             addEstablishment: {
                 ...establishment,
-                "creatorUser": " ",
+                ...statusValues.activo,
+                creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/addEstablishment`, params);
     }
@@ -357,7 +372,8 @@ export class DataService {
     deleteEstablishment(params: any) {
         let deleteUser = JSON.stringify({
             updateStablishment: {
-                ...params
+                ...params,
+                ...statusValues.eliminado
             }});
         return this.http.post(`${environment.apiUrl}/updateStablishment`, deleteUser);
     }
@@ -388,7 +404,7 @@ export class DataService {
             addProvider: {
                 ...provider,
                 ...activeStatus,
-                "creatorUser": " ",
+                creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/addProvider`, params);
     }
@@ -458,12 +474,13 @@ export class DataService {
     
     getLocalDateTimeFromUTCTime(utcTime: string){
         let date = new Date(utcTime.replaceAll("\"",""));
-        return date.toLocaleString();
+        return date.toLocaleString().replace(",", " -");
     }
 
     getLocalDateFromUTCTime(utcTime: string){
         let date = new Date(utcTime.replaceAll("\"",""));
-        return date.toJSON().slice(0, 10);
+        return date.toLocaleString().split(",")[0];
+        // return date.toJSON().slice(0, 10);
     }
 
     /** MEASURE */
@@ -528,7 +545,7 @@ export class DataService {
             addRawMaterial: {
                 ...rawMaterial,
                 ...activeStatus,
-                "creatorUser": " ",
+                creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/addRawMaterial`, params);
     }
@@ -581,7 +598,7 @@ export class DataService {
             addRawMaterialByProvider: {
                 ...rawMaterial,
                 ...activeStatus,
-                "creatorUser": " ",
+                creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/AddRawMaterialByProvider`, params);
     }
@@ -634,7 +651,7 @@ export class DataService {
             addFinishedProduct: {
                 ...product,
                 ...activeStatus,
-                "creatorUser": " ",
+                creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/addFinishedProduct`, params);
     }
@@ -688,7 +705,7 @@ export class DataService {
                 ...rmOrder,
                 ...pendingPaymentStatus,
                 ...activeStatus,
-                "creatorUser": " ",
+                creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/addRawMaterialOrder`, params);
     }
@@ -699,6 +716,14 @@ export class DataService {
                 ...rmOrder
             }});
         return this.http.post(`${environment.apiUrl}/updateRawMaterialOrder`, params);
+    }
+
+    addRawMaterialOrderPaymentHistory(rmOrderHistory: AddRawMaterialOrderPaymentHistory){
+        let params = JSON.stringify({
+            addRawMaterialOrderPaymentHistory: {
+                ...rmOrderHistory
+            }});
+        return this.http.post(`${environment.apiUrl}/addRawMaterialOrderPaymentHistory`, params);
     }
 
     verifyRawMaterialOrder(orderId: string){
@@ -746,6 +771,14 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/getInventory`, parameters);
     }
 
+    updateInventoryElement(params: any) {
+        let parameters = JSON.stringify({
+            updateInventoryElement: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/UpdateInventoryElement`, parameters);
+    }
+
     /** PRODUCT CREATION */
     
     registerFinishedProductCreation(fpCreation: FinishedProductCreation){
@@ -781,7 +814,7 @@ export class DataService {
             addProductForSale: {
                 ...product,
                 ...activeStatus,
-                "creatorUser": " ",
+                creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/AddProductForSale`, params);
     }
@@ -831,7 +864,7 @@ export class DataService {
                 ...pfsOrder,
                 ...pendingStoreStatus,
                 ...pendingFactoryStatus,
-                "creatorUser": " ",
+                creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/addProductForSaleStoreOrder`, params);
     }
@@ -890,6 +923,134 @@ export class DataService {
                 factoryStatus: storeOrderStatus.eliminado,
             }});
         return this.http.post(`${environment.apiUrl}/updateProductForSaleStoreOrder`, deleteOrder);
+    }
+
+    /** SALES */
+    getShopHistory(params: any) {
+        let parameters = JSON.stringify({
+            retrieveShopHistory: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/RetrieveShopHistory`, parameters);
+    }
+
+    registerShop(params: any) {
+        let parameters = JSON.stringify({
+            inventoryID: "65bf467e008f7e88678d3927",
+            RegisterShop: {
+                ...params,
+                creatorUser: this.accountService.userValueFixed
+            }});
+        return this.http.post(`${environment.apiUrl}/registerShop`, parameters);
+    }
+
+    updateShopHistory(params: any) {
+        let updateShopHistory = JSON.stringify({
+            updateShopHistory: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/UpdateShopHistory`, updateShopHistory);
+    }
+
+    deleteShopHistory(params: any) {
+        let deleteShopHistory = JSON.stringify({
+            updateShopHistory: {
+                ...params,
+                ...statusValues.eliminado
+            }});
+        return this.http.post(`${environment.apiUrl}/UpdateShopHistory`, deleteShopHistory);
+    }
+
+    /** LOGS */
+
+    getAllActivityLogs() {
+        let params = JSON.stringify({retrieveActivityLog: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveActivityLogs`, params);
+    }
+
+
+    getAllActivityLogsByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveActivityLog: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveActivityLogs`, parameters);
+    }
+
+    addActivityLog(actLog: ActivityLog){
+        let params = JSON.stringify({
+            addActivityLog: {
+                ...actLog,
+                user: this.accountService.userValueFixed,
+            }});
+        return this.http.post(`${environment.apiUrl}/addActivityLog`, params);
+    }
+
+    getAllCashClosing() {
+        let params = JSON.stringify({retrieveStoreCashClosing: {}});
+        return this.http.post(`${environment.apiUrl}/retrieveSotreCashClosing`, params);
+    }
+
+
+    getAllCashClosingByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveStoreCashClosing: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveSotreCashClosing`, parameters);
+    }
+
+    getCashClosingById(id: string) {
+        let params = JSON.stringify({getStoreCashClosing: { "_id": id}});
+        return this.http.post(`${environment.apiUrl}/getStoreCashClosing`, params);
+    }
+
+    addCashClosing(cashClosing: CashClosing, queryParams?: { [key: string]: any }){
+        let body  = JSON.stringify({
+            addStoreCashClosing: {
+                ...cashClosing,
+                ...statusValues.activo,
+                userRequest: this.accountService.userValueFixed,
+            }});
+            
+        let params = new HttpParams();
+        if (queryParams) {
+            Object.keys(queryParams).forEach(key => {
+                params = params.append(key, queryParams[key]);
+            });
+        }
+        
+        return this.http.post(`${environment.apiUrl}/addStoreCashClosing`, body, { params: params });
+    }
+
+    updateCashClosing(id: string, cashClosing: CashClosing){
+        let params = JSON.stringify({
+            updateStoreCashClosing: {
+                "_id": id,
+                ...cashClosing
+            }});
+        return this.http.post(`${environment.apiUrl}/updateStoreCashClosing`, params);
+    }
+
+    deleteCashClosing(id: string, cashClosing: CashClosing) {
+        let deleteUser = JSON.stringify({
+            updateStoreCashClosing: {
+                "_id": id,
+                ...cashClosing,
+                ...deleteStatus
+            }});
+        return this.http.post(`${environment.apiUrl}/updateStoreCashClosing`, deleteUser);
+    }
+
+    verifyCashClosing(id: string, cashClosing: CashClosing) {
+        let deleteUser = JSON.stringify({
+            updateStoreCashClosing: {
+                "_id": id,
+                ...cashClosing,
+                ...verifyStatus,
+                userValidator: this.accountService.userValueFixed,
+            }});
+        return this.http.post(`${environment.apiUrl}/updateStoreCashClosing`, deleteUser);
     }
 
 }

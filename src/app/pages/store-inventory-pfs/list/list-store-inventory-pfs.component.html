@@ -1,21 +1,19 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
-        <mat-card-header style="justify-content: center;">
+        <mat-card-header style="justify-content: center;" class="my-4">
             <mat-card-title><strong *ngIf="storeName">{{storeName}}</strong>: Inventario de Producto Para Venta</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-            <div class="container">
+            <div *ngIf="this.inventoryElements" class="container">
                 <div class="row justify-content-center">
-                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
-                        <div>
-                            <!-- <button type="button" routerLink="create" class="btn btn-outline-success m-2">
-                                <div class="d-flex flex-row p-1">
-                                    <i class="material-icons icon">add</i>
-                                    <span>Crear Pedido</span>
-                                </div>
-                            </button> -->
-                        </div>
+                    <div class="d-flex flex-wrap justify-content-md-end justify-content-end pb-0">
                         <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
+                            <button type="button" (click)="goToActionsHistory()" class="btn btn-outline-secondary align-self-start py-2">
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons icon">history</i>
+                                    <span class="px-1">Historial de acciones</span>
+                                </div>
+                            </button>
                             <div class="select-filter mx-2">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Buscar</mat-label>
@@ -32,45 +30,62 @@
                         </div>
                     </div>
                     <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize" (sentData)="receiveData($event)"></responsive-table>
-                    <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
+            </div>
+            <div class="row justify-content-center">
+                <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center text-center"></span>
             </div>
         </mat-card-content>
     </mat-card>
 </div>
 
-
-<!-- <div class="modal fade" id="moveInventoryRawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="moveInventoryRawMaterialModalLabel" aria-hidden="true">
+<div class="modal fade" id="addInventoryRawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addInventoryRawMaterialModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="moveInventoryRawMaterialModalLabel">MOVER materia prima de BODEGA a inventario de FABRICA</h1>
-                <button [disabled]="submitting" type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h1 class="modal-title fs-5" id="addInventoryRawMaterialModalLabel">AGREGAR materia prima a inventario de BODEGA</h1>
+                <button type="button" class="btn-close" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form [formGroup]="rawMaterialForm">
+                <form [formGroup]="productForSaleForm">
                     <div class="d-flex flex-wrap justify-content-center">
                         <div class="col-12 p-3">
-                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.photo"></view-object>
+                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedInventoryElement?.productForSale?.finishedProduct?.photo"></view-object>
                         </div>
                         <div class="d-flex flex-wrap justify-content-center col-12 p-3">
-                            <div class="pb-4 col-6 col-lg-3">
+                            <!-- <div class="pb-4 col-6 col-lg-3">
                                 <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
                                     <option disabled selected value="">Medida</option>
                                     <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
                                 </select>
+                            </div> -->
+                            <div class="pb-4 col-6 col-lg-3">
+                                <strong>Cantidad a agregar: </strong>
                             </div>
                             <div class="px-2">
                                 <mat-form-field class="custom-input" appearance="outline">
                                     <mat-label>Cantidad</mat-label>
                                     <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
-                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="setQuantityValue($event)" />
+                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="sumQuantityValue($event)" />
                                     <div class="invalid-feedback" *ngIf="r['quantity'].errors">
                                         <div *ngIf="r['quantity'].hasError('required')">
                                             Cantidad requerida
                                         </div>
                                         <div *ngIf="r['quantity'].hasError('pattern')">
-                                            Debe contener unicamente numeros positivos
+                                            Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                                <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
+                                    <mat-label>Motivo</mat-label>
+                                    <textarea id="reason-form-crear-comunidad" type="text" formControlName="reason" matInput
+                                        [ngClass]="{ 'is-invalid': r['reason'].errors }"></textarea>
+                                    <div class="invalid-feedback" *ngIf="r['reason'].errors">
+                                        <div *ngIf="r['reason'].hasError('required')">
+                                            Motivo requerido
+                                        </div>
+                                        <div *ngIf="r['reason'].errors['maxlength']">
+                                            El motivo debe tener maximo 50 caracteres
                                         </div>
                                     </div>
                                 </mat-form-field>
@@ -81,8 +96,12 @@
                                     <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity }}</p>
                                 </div>
                                 <div class="total">
-                                    <p class="total-title">Cantidad Seleccionada ({{ inventoryUnitBase?.name }})</p>
+                                    <p class="total-title">Cantidad a agregar ({{ inventoryUnitBase?.name }})</p>
                                     <p class="total-amount">{{ modalSelectedQuantity }}</p>
+                                </div>
+                                <div class="total">
+                                    <p class="total-title">Cantidad final inventario ({{ inventoryUnitBase?.name }})</p>
+                                    <p class="total-amount">{{ modalFinalQuantity }}</p>
                                 </div>
                             </div>
                         </div>
@@ -90,48 +109,60 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button [disabled]="submitting" type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button [disabled]="submitting" type="button" class="btn btn-primary" (click)="onMoveMaterialForm()" [disabled]="!rawMaterialForm.valid">
-                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                    Mover a Fabrica
-                </button>
+                <button type="button" class="btn btn-secondary" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" (click)="onAddMaterialForm()" [disabled]="!productForSaleForm.valid" data-bs-dismiss="modal">Agregar</button>
             </div>
         </div>
     </div>
 </div>
 
-
 <div class="modal fade" id="removeInventoryRawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="removeInventoryRawMaterialModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="removeInventoryRawMaterialModalLabel">ELIMINAR materia prima de BODEGA</h1>
-                <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h1 class="modal-title fs-5" id="removeInventoryRawMaterialModalLabel">ELIMINAR materia prima a inventario de BODEGA</h1>
+                <button type="button" class="btn-close" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form [formGroup]="rawMaterialForm">
+                <form [formGroup]="productForSaleForm">
                     <div class="d-flex flex-wrap justify-content-center">
                         <div class="col-12 p-3">
-                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedInventoryElement?.rawMaterialByProvider?.rawMaterialBase?.photo"></view-object>
+                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedInventoryElement?.productForSale?.finishedProduct?.photo"></view-object>
                         </div>
                         <div class="d-flex flex-wrap justify-content-center col-12 p-3">
-                            <div class="pb-4 col-6 col-lg-3">
+                            <!-- <div class="pb-4 col-6 col-lg-3">
                                 <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
                                     <option disabled selected value="">Medida</option>
                                     <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
                                 </select>
+                            </div> -->
+                            <div class="pb-4 col-6 col-lg-3">
+                                <strong>Cantidad a eliminar: </strong>
                             </div>
                             <div class="px-2">
                                 <mat-form-field class="custom-input" appearance="outline">
                                     <mat-label>Cantidad</mat-label>
                                     <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
-                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="setQuantityValue($event)" />
+                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="restQuantityValue($event)" />
                                     <div class="invalid-feedback" *ngIf="r['quantity'].errors">
                                         <div *ngIf="r['quantity'].hasError('required')">
                                             Cantidad requerida
                                         </div>
                                         <div *ngIf="r['quantity'].hasError('pattern')">
-                                            Debe contener unicamente numeros positivos
+                                            Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                                <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
+                                    <mat-label>Motivo</mat-label>
+                                    <textarea id="reason-form-crear-comunidad" type="text" formControlName="reason" matInput
+                                        [ngClass]="{ 'is-invalid': r['reason'].errors }"></textarea>
+                                    <div class="invalid-feedback" *ngIf="r['reason'].errors">
+                                        <div *ngIf="r['reason'].hasError('required')">
+                                            Motivo requerido
+                                        </div>
+                                        <div *ngIf="r['reason'].errors['maxlength']">
+                                            El motivo debe tener maximo 50 caracteres
                                         </div>
                                     </div>
                                 </mat-form-field>
@@ -142,8 +173,12 @@
                                     <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity }}</p>
                                 </div>
                                 <div class="total">
-                                    <p class="total-title">Cantidad Seleccionada ({{ inventoryUnitBase?.name }})</p>
+                                    <p class="total-title">Cantidad a eliminar ({{ inventoryUnitBase?.name }})</p>
                                     <p class="total-amount">{{ modalSelectedQuantity }}</p>
+                                </div>
+                                <div class="total">
+                                    <p class="total-title">Cantidad final inventario ({{ inventoryUnitBase?.name }})</p>
+                                    <p class="total-amount">{{ modalFinalQuantity }}</p>
                                 </div>
                             </div>
                         </div>
@@ -151,9 +186,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" (click)="onDeleteMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">Eliminar</button>
+                <button type="button" class="btn btn-secondary" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" (click)="onDeleteMaterialForm()" [disabled]="!productForSaleForm.valid" data-bs-dismiss="modal">Eliminar</button>
             </div>
         </div>
     </div>
-</div> -->
+</div>

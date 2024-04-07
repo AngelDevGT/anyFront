@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
-
-import { User } from '@app/models';
 import { AlertService, DataService } from '@app/services';
 import {
 FormBuilder,
@@ -42,12 +40,10 @@ export class AddEditEstablishmentComponent implements OnInit{
             this.dataService.getEstablishmentById(this.id)
                 .pipe(first())
                 .subscribe((establ: any) => {
-                    let establishment = establ.findEstablishmentResponse?.establishment;
+                    let establishment = establ.getEstablishmentResponse.establishment;
                     if (establishment){
-                        if ( establishment.length > 0){
-                            this.establishmentForm.patchValue(establishment[0]);       
-                            this.loading = false;
-                        }
+                        this.establishmentForm.patchValue(establishment);       
+                        this.loading = false;
                     }
                 });
         }
@@ -66,7 +62,7 @@ export class AddEditEstablishmentComponent implements OnInit{
             .pipe(first())
             .subscribe({
                 next: () => {
-                    this.alertService.success('Establecimiento guardado', { keepAfterRouteChange: true });
+                    this.alertService.success('Tienda guardada', { keepAfterRouteChange: true });
                     this.router.navigateByUrl('/establishments');
                 },
                 error: error => {
