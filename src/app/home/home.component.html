@@ -1,7 +1,114 @@
-<div class="p-4">
-    <div class="container">
-        <h1>Hi {{user?.name}}!</h1>
-        <p>You're logged in with Angular 14!!</p>
-        <p><a routerLink="/users">Manage Users</a></p>
+
+<body class="bg-default">
+  <div class="main-content">
+    <div class="header bg-gradient-primary p-4">
+      <div class="container-fluid">
+        <div class="header-body">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-lg align-center"></span>
+          <div *ngIf="!isLoading" class="row">
+            <div class="col-xl-3 col-lg-6">
+              <div class="card card-stats mb-4 mb-xl-0">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col">
+                      <h5 class="card-title text-uppercase text-muted mb-0">Pedidos de Bodega</h5>
+                      <span class="h2 font-weight-bold mb-0">{{stats.rawMaterialOrders.total}}</span>
+                    </div>
+                    <div class="col-auto">
+                      <div class="icon icon-shape bg-danger text-white rounded-circle shadow">
+                        <i class="large material-icons mat-menu-icon">trolley</i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex flex-row p-1 text-success">
+                    <i class="large material-icons mat-menu-icon">done_outline</i>
+                    <span class="text-success mx-1"> {{stats.rawMaterialOrders.received}} </span>
+                    <span class="text-nowrap"> Recibidos </span>
+                  </div>
+                  <div class="d-flex flex-row p-1 text-primary">
+                    <i class="large material-icons mat-menu-icon">more_time</i>
+                    <span class="text-primary mx-1"> {{stats.rawMaterialOrders.pending}} </span>
+                    <span class="text-nowrap"> Pendientes </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-3 col-lg-6">
+              <div class="card card-stats mb-4 mb-xl-0">
+                <div class="card-body">
+                    <div class="row">
+                      <div class="col">
+                        <h5 class="card-title text-uppercase text-muted mb-0">Pedidos de Tienda</h5>
+                        <span class="h2 font-weight-bold mb-0">{{stats.productForSaleOrders.total}}</span>
+                      </div>
+                      <div class="col-auto">
+                        <div class="icon icon-shape bg-warning text-white rounded-circle shadow">
+                          <i class="large material-icons mat-menu-icon">storefront</i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="d-flex flex-row p-1 text-success">
+                      <i class="large material-icons mat-menu-icon">done_outline</i>
+                      <span class="text-success mx-1"> {{stats.productForSaleOrders.received}} </span>
+                      <span class="text-nowrap"> Recibidos </span>
+                    </div>
+                    <div class="d-flex flex-row p-1 text-primary">
+                      <i class="large material-icons mat-menu-icon">more_time</i>
+                      <span class="text-primary mx-1"> {{stats.productForSaleOrders.pending}} </span>
+                      <span class="text-nowrap"> Pendientes </span>
+                    </div>
+                  </div>
+              </div>
+            </div>
+            <div class="col-xl-3 col-lg-6">
+              <div class="card card-stats mb-4 mb-xl-0">
+                <div class="card-body">
+                    <div class="row">
+                      <div class="col">
+                        <h5 class="card-title text-uppercase text-muted mb-0">Ventas</h5>
+                        <span class="h2 font-weight-bold mb-0">{{stats.shopResumes.total}}</span>
+                      </div>
+                      <div class="col-auto">
+                        <div class="icon icon-shape bg-success text-white rounded-circle shadow">
+                          <i class="large material-icons mat-menu-icon">shopping_bag</i>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+            </div>
+            <!-- <div class="col-xl-3 col-lg-6">
+              <div class="card card-stats mb-4 mb-xl-0">
+                <div class="card-body">
+                    <div class="row">
+                      <div class="col">
+                        <h5 class="card-title text-uppercase text-muted mb-0">Cierres de caja</h5>
+                        <span class="h2 font-weight-bold mb-0">{{stats.cashClosing.total}}</span>
+                      </div>
+                      <div class="col-auto">
+                        <div class="icon icon-shape bg-information text-white rounded-circle shadow">
+                          <i class="large material-icons mat-menu-icon">dns</i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="d-flex flex-row p-1 text-success">
+                      <i class="large material-icons mat-menu-icon">done_outline</i>
+                      <span class="text-success mx-1"> {{stats.cashClosing.verified}} </span>
+                      <span class="text-nowrap"> Recibidos </span>
+                    </div>
+                    <div class="d-flex flex-row p-1 text-primary">
+                      <i class="large material-icons mat-menu-icon">more_time</i>
+                      <span class="text-primary mx-1"> {{stats.cashClosing.active}} </span>
+                      <span class="text-nowrap"> Pendientes </span>
+                    </div>
+                  </div>
+              </div>
+            </div> -->
+          </div>
+        </div>
+      </div>
     </div>
-</div>
+    <!-- Page content -->
+  </div>
+</body>
+

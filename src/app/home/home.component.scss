@@ -1,85 +1,187 @@
-// form{
-//     align-items: center;
-//     align-content: center;
-// }
 
-
-// .custom-form-field {
-//     width: 200px;
-//     font-size: 12px;
-//     margin-top: 3px;
-//     margin-bottom: -1.25em;
-  
-//     mat-datepicker-toggle {
-//         font-size: 12px;
-//     }
-  
-//     mat-label, mat-select {
-//         padding-bottom: 2px;
-//         font-size: 12px;
-//     }
-//   }
-
-mat-form-field{
-    width: 100%;
-    // margin-left: 5%;
-    // height: 30px !important;
-    // width: 50%;
-    // margin-left: 25%;
-    // height: 50%;
-    // // width: 90%;
-    // display: flex;
-    // align-items: flex-end;
-    // height: 10px !important;
-    
+h2,
+h5,
+.h2,
+.h5 {
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: .5rem;
+  color: #32325d;
 }
 
-// ::ng-deep .mat-form-field {
-//     font-size: 12px; // example
-// }
-
-// mat-select{
-//     // width: 90%;
-//     // margin-left: 5%;
-//     height: 5px !important;
-//     // height: 30px !important;
-//     // width: 50%;
-//     // margin-left: 25%;
-//     // height: 50%;
-//     // // width: 90%;
-//     // display: flex;
-//     // align-items: flex-end;
-//     // height: 10px !important;
-    
-// }
-
-
-// mat-label{
-//     // width:50%;
-//     align-self: center;
-//     // margin-left: 25% ;
-    
-// }
-
-
-.mat-form-field mat-select {
-    height: 10px;
-    // transition: height ease-in-out 100ms;
+h5,
+.h5 {
+  font-size: .8125rem;
 }
 
-.parent {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: row;
+@media (min-width: 992px) {
+  
+  .col-lg-6 {
+    max-width: 50%;
+    flex: 0 0 50%;
   }
-
-
-.centrado{
-    align-content: center;
 }
 
-.mat-success {
-    background-color: #33c000;
-    color: #fff;
+@media (min-width: 1200px) {
+  
+  .col-xl-3 {
+    max-width: 25%;
+    flex: 0 0 25%;
+  }
+  
+  .col-xl-6 {
+    max-width: 50%;
+    flex: 0 0 50%;
+  }
 }
+
+
+.bg-danger {
+  background-color: #f5365c !important;
+}
+
+
+
+@media (min-width: 1200px) {
+  
+  .justify-content-xl-between {
+    justify-content: space-between !important;
+  }
+}
+
+
+.pt-5 {
+  padding-top: 3rem !important;
+}
+
+.pb-8 {
+  padding-bottom: 8rem !important;
+}
+
+@media (min-width: 768px) {
+  
+  .pt-md-8 {
+    padding-top: 8rem !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  
+  .mb-xl-0 {
+    margin-bottom: 0 !important;
+  }
+}
+
+
+
+
+.font-weight-bold {
+  font-weight: 600 !important;
+}
+
+
+a.text-success:hover,
+a.text-success:focus {
+  color: #24a46d !important;
+}
+
+.text-warning {
+  color: #fb6340 !important;
+}
+
+a.text-warning:hover,
+a.text-warning:focus {
+  color: #fa3a0e !important;
+}
+
+.text-danger {
+  color: #f5365c !important;
+}
+
+a.text-danger:hover,
+a.text-danger:focus {
+  color: #ec0c38 !important;
+}
+
+.text-white {
+  color: #fff !important;
+}
+
+a.text-white:hover,
+a.text-white:focus {
+  color: #e6e6e6 !important;
+}
+
+.text-muted {
+  color: #8898aa !important;
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  a:not(.btn) {
+    text-decoration: underline;
+  }
+  
+  p,
+  h2 {
+    orphans: 3;
+    widows: 3;
+  }
+  
+  h2 {
+    page-break-after: avoid;
+  }
+  
+  @page {
+    size: a3;
+  }
+  
+  body {
+    min-width: 992px !important;
+  }
+}
+
+figcaption,
+main {
+  display: block;
+}
+
+main {
+  overflow: hidden;
+}
+
+.bg-yellow {
+  background-color: #ffd600 !important;
+}
+
+
+
+
+
+
+.icon {
+  width: 3rem;
+  height: 3rem;
+}
+
+.icon i {
+  font-size: 2.25rem;
+}
+
+.icon-shape {
+  display: inline-flex;
+  padding: 12px;
+  text-align: center;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+}
+
+
