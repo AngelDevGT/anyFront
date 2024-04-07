@@ -1,5 +1,5 @@
 export const environment = {
     production: false,
-    apiUrl: 'http://localhost:7071/api'
-    // apiUrl: 'https://apim-embutidos-any.azure-api.net/embutidos-any-qa'
+    // apiUrl: 'http://localhost:7071/api'
+    apiUrl: 'https://func-embutidos-any-qa.azurewebsites.net/api'
 };
