@@ -59,7 +59,7 @@ export class HomeComponent implements OnInit{
     setStats(){
         let rawMaterialOrdersStats = {
             total: 0,
-            pending: 0,
+            active: 0,
             received: 0,
             verified: 0
         };
@@ -67,6 +67,7 @@ export class HomeComponent implements OnInit{
         let productForSaleOrdersStats = {
             total: 0,
             pending: 0,
+            onWay: 0,
             received: 0,
             ready: 0
         };
@@ -87,8 +88,8 @@ export class HomeComponent implements OnInit{
 
         this.rawMaterialOrders?.forEach((order) => {
             rawMaterialOrdersStats.total++;
-            if(order.status?.id == 4){
-                rawMaterialOrdersStats.pending++;
+            if(order.status?.id == 2){
+                rawMaterialOrdersStats.active++;
             } else if(order.status?.id == 10){
                 rawMaterialOrdersStats.verified++;
             } else if(order.status?.id == 7){
@@ -100,6 +101,8 @@ export class HomeComponent implements OnInit{
             productForSaleOrdersStats.total++;
             if(order.storeStatus?.id == 1){
                 productForSaleOrdersStats.pending++;
+            } else if(order.storeStatus?.id == 2){
+                productForSaleOrdersStats.onWay++;
             } else if(order.storeStatus?.id == 7){
                 productForSaleOrdersStats.ready++;
             } else if(order.storeStatus?.id == 3){

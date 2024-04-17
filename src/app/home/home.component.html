@@ -22,13 +22,18 @@
                   </div>
                   <div class="d-flex flex-row p-1 text-success">
                     <i class="large material-icons mat-menu-icon">done_outline</i>
-                    <span class="text-success mx-1"> {{stats.rawMaterialOrders.received}} </span>
+                    <span class="text-success mx-1"> {{stats.rawMaterialOrders.verified}} </span>
+                    <span class="text-nowrap"> Verificados </span>
+                  </div>
+                  <div class="d-flex flex-row p-1 text-warning">
+                    <i class="large material-icons mat-menu-icon">archive</i>
+                    <span class="text-warning mx-1"> {{stats.rawMaterialOrders.received}} </span>
                     <span class="text-nowrap"> Recibidos </span>
                   </div>
                   <div class="d-flex flex-row p-1 text-primary">
                     <i class="large material-icons mat-menu-icon">more_time</i>
-                    <span class="text-primary mx-1"> {{stats.rawMaterialOrders.pending}} </span>
-                    <span class="text-nowrap"> Pendientes </span>
+                    <span class="text-primary mx-1"> {{stats.rawMaterialOrders.active}} </span>
+                    <span class="text-nowrap"> Activos </span>
                   </div>
                 </div>
               </div>
@@ -49,13 +54,23 @@
                     </div>
                     <div class="d-flex flex-row p-1 text-success">
                       <i class="large material-icons mat-menu-icon">done_outline</i>
-                      <span class="text-success mx-1"> {{stats.productForSaleOrders.received}} </span>
+                      <span class="text-success mx-1"> {{stats.productForSaleOrders.ready}} </span>
+                      <span class="text-nowrap"> Listos </span>
+                    </div>
+                    <div class="d-flex flex-row p-1 text-warning">
+                      <i class="large material-icons mat-menu-icon">archive</i>
+                      <span class="text-warning mx-1"> {{stats.productForSaleOrders.received}} </span>
                       <span class="text-nowrap"> Recibidos </span>
                     </div>
                     <div class="d-flex flex-row p-1 text-primary">
                       <i class="large material-icons mat-menu-icon">more_time</i>
                       <span class="text-primary mx-1"> {{stats.productForSaleOrders.pending}} </span>
                       <span class="text-nowrap"> Pendientes </span>
+                    </div>
+                    <div class="d-flex flex-row p-1 text-muted">
+                      <i class="large material-icons mat-menu-icon">local_shipping</i>
+                      <span class="text-muted mx-1"> {{stats.productForSaleOrders.onWay}} </span>
+                      <span class="text-nowrap"> En Camino </span>
                     </div>
                   </div>
               </div>
