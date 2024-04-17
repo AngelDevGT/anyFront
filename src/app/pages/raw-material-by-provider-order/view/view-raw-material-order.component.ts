@@ -69,10 +69,10 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     }
 
     setElementOptions(elemStatus?: Status, elemPayment?: PaymentStatus){
-        // Payment option
         if (elemStatus && elemPayment){
+            // Payment option
             if ((elemStatus.id == statusValues.activo.status.id 
-                || elemStatus.id == statusValues.recibido.status.id) && 
+                || elemStatus.id == statusValues.recibido.status.id || elemStatus.id == statusValues.verificado.status.id) && 
                 (elemPayment.id == paymentStatusValues.pendiente.paymentStatus.id
                     || elemPayment.id == paymentStatusValues.abonado.paymentStatus.id)){
                         this.paymentOption = true;
@@ -86,8 +86,9 @@ export class ViewRawMaterialOrderComponent implements OnInit{
                 }
     
             // Validate order option
-            if (elemStatus.id == statusValues.recibido.status.id && 
-                elemPayment.id == paymentStatusValues.pagado.paymentStatus.id){
+            if (elemStatus.id == statusValues.recibido.status.id 
+                // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id // Modificado para que se pueda validar sin haber pagado
+                ){
                     this.validateOption = true;
                 }
     

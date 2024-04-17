@@ -35,6 +35,12 @@
                                     </mat-option>
                                 </mat-select>
                             </mat-form-field>
+                            <mat-form-field class="col-lg-2 col-2 mx-2" appearance="outline">
+                                <mat-label>Unidades</mat-label>
+                                <mat-select matInput disableOptionCentering (valueChange)="selectedMeasureTableSubject.next($event)">
+                                    <mat-option *ngFor="let measure of generalMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
                         </div>
                     </div>
                     <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize" (sentData)="receiveData($event)"></responsive-table>

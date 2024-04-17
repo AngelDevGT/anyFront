@@ -12,7 +12,7 @@ import { InventoryElement } from '@app/models/inventory/inventory-element.model'
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
 import { Measure } from '@app/models';
 import { UnitBase } from '@app/models/auxiliary/unit-base.model';
-import { forkJoin } from 'rxjs';
+import { BehaviorSubject, forkJoin } from 'rxjs';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
@@ -35,6 +35,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     selectedMeasure?: Measure;
     elements: any = [];
     measureOptions?: Measure[];
+    generalMeasureOptions?: Measure[];
     inventoryUnitBase?: UnitBase;
     currentMeasureQuantity = 0;
     filteredMeasureOptions?: Measure[];
@@ -45,6 +46,8 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     modalUnitBaseTotalQuantity = 0;
     searchTerm?: string;
     entries = [5, 10, 20, 50];
+    selectedMeasureTable?: Measure;
+    selectedMeasureTableSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
@@ -53,6 +56,11 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router) {}
 
     ngOnInit() {
+
+        this.selectedMeasureTableSubject.subscribe(value => {
+            this.setMeasure(String(value));
+        });
+
         let establishmentId = this.route.snapshot.params['id'];
         this.inventory = undefined;
         let requestArray = [];
@@ -70,6 +78,9 @@ export class ListStoreInventoryPFSComponent implements OnInit {
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
                 // console.log('complete')
+                this.generalMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad");
+                if(this.generalMeasureOptions)
+                        this.selectedMeasureTable = this.generalMeasureOptions[1];
                 if (this.inventory){
                     this.inventoryElements = this.inventory?.inventoryElements;
                     console.log(this.inventoryElements);
@@ -99,14 +110,20 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.setTableElements(this.inventoryElements);
     }
 
+    setMeasure(measureId: string){
+        if(measureId){
+            this.selectedMeasureTable = this.measureOptions?.find(meas => String(meas.id) === measureId);
+            this.setTableElements(this.inventoryElements);
+        }
+    }
+
     setTableElements(elements?: InventoryElement[]){
-        console.log(elements);
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
             const curr_row = [
                     { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
-                    { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
-                    { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable!, element.measure!), header_name: "Medida", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable!, element.measure!), header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
                     {
                         type: "modal_button",

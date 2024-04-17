@@ -235,7 +235,9 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
                     } else {
                         updatedRawMaterialOrder.paidAmount = String(this.paidAmount.toFixed(2));
                         updatedRawMaterialOrder.pendingAmount = String(this.pendingAmount.toFixed(2));
-                        updatedRawMaterialOrder.paymentStatus = paymentStatusValues.abonado.paymentStatus;
+                        if(this.paidAmount != 0){
+                            updatedRawMaterialOrder.paymentStatus = paymentStatusValues.abonado.paymentStatus;
+                        }
                     }
                     updatedRawMaterialOrder.paymentType = this.rawMaterialOrder?.paymentType;
                     updatedRawMaterialOrder.rawMaterialOrderElements = this.rawMaterialOrderElements;

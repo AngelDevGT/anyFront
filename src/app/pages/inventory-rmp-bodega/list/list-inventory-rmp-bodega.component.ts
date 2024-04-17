@@ -12,7 +12,7 @@ import { InventoryElement } from '@app/models/inventory/inventory-element.model'
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
 import { Measure } from '@app/models';
 import { UnitBase } from '@app/models/auxiliary/unit-base.model';
-import { forkJoin } from 'rxjs';
+import { BehaviorSubject, forkJoin } from 'rxjs';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
 import { Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
@@ -31,6 +31,9 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     rawMaterialForm!: FormGroup;
     operationRawMaterialForm!: FormGroup;
     selectedMeasure?: Measure;
+    generalMeasureOptions?: Measure[];
+    selectedMeasureTable?: Measure;
+    selectedMeasureTableSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     elements: any = [];
     measureOptions?: Measure[];
     inventoryUnitBase?: UnitBase;
@@ -51,6 +54,11 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     constructor(private dataService: DataService, private alertService: AlertService, private router: Router) {}
 
     ngOnInit() {
+
+        this.selectedMeasureTableSubject.subscribe(value => {
+            this.setMeasure(String(value));
+        });
+
         this.inventory = undefined;
         let requestArray = [];
 
@@ -64,6 +72,9 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
+                this.generalMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad");
+                if(this.generalMeasureOptions)
+                        this.selectedMeasureTable = this.generalMeasureOptions[1];
                 // console.log('complete')
                 if (this.inventory){
                     this.inventoryElements = this.inventory?.inventoryElements;
@@ -75,6 +86,13 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
 
         this.rawMaterialForm = this.createMaterialFormGroup();
         this.operationRawMaterialForm = this.createOperationMaterialFormGroup();
+    }
+
+    setMeasure(measureId: string){
+        if(measureId){
+            this.selectedMeasureTable = this.measureOptions?.find(meas => String(meas.id) === measureId);
+            this.setTableElements(this.inventoryElements);
+        }
     }
 
     search(value: any): void {
@@ -102,8 +120,8 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
             const curr_row = [
                     { type: "text", value: element.rawMaterialByProvider?.rawMaterialBase?.name, header_name: "Producto", style: "width: 25%", id: element.rawMaterialByProvider?._id },
                     { type: "text", value: element.rawMaterialByProvider?.provider?.name, header_name: "Proveedor", style: "width: 15%" },
-                    { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
-                    { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable!, element.measure!), header_name: "Medida", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable!, element.measure!), header_name: "Cantidad", style: "width: 15%" },
                     // { type: "text", value: element.status?.identifier, header_name: "Estado", style: "width: 15%" },
                     {
                         type: "modal_button",

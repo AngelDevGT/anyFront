@@ -49,15 +49,15 @@ export class ViewRawMaterialByProviderComponent implements OnInit{
 
     deleteRawMaterial() {
         this.submitting = true;
-        this.dataService.deleteRawMaterial(this.rawMaterial)
+        this.dataService.deleteRawMaterialByProvider(this.rawMaterial)
             .pipe(first())
             .subscribe({
                 next: () => {
-                this.alertService.success('Materia Prima eliminada', { keepAfterRouteChange: true });
-                this.router.navigateByUrl('/rawMaterials');
+                this.alertService.success('Materia Prima Por Proveedor eliminada', { keepAfterRouteChange: true });
+                this.router.navigateByUrl('/rawMaterialsByProvider');
                 },
                 error: error => {
-                    this.alertService.error('Error al eliminar la materia prima, contacte con Administracion');
+                    this.alertService.error(`Error al eliminar la materia prima por proveedor"${error.error.updateRawMaterialResponse.AcknowledgementDescription}", contacte con Administracion.`);
                 }});
     }
 

@@ -92,7 +92,7 @@ export class ListRawMaterialOrderComponent implements OnInit {
         elements?.forEach((element: RawMaterialOrder) => {
             const curr_row =
             [
-                { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha", style: "width: 10%"},
+                { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!), header_name: "Fecha", style: "width: 10%"},
                 { type: "text", value: element.name, header_name: "Nombre", style: "width: 15%" },
                 { type: "text", value: element.provider?.name, header_name: "Proveedor", style: "width: 15%" },
                 { type: "text", value: element.status?.identifier, header_name: "Estado del pedido", style: "width: 10%" },

@@ -42,6 +42,12 @@ export class AddEditCashClosingComponent implements OnInit{
     tableShopResumes?: any = [];
     tableSaleStoreOrders?: any = [];
     tableInventoryCapture?: any = [];
+    totalDiscountShopResumes = 0;
+    totalAmountShopResumes = 0;
+    totalAmountStoreOrders = [0, 0, 0];
+    totalAmountInventoryCapture = 0;
+    totalAmountCashClosing = 0;
+    totalRemainingCashClosing = 0;
     activityLogs?: any = [];
     tableActivityLogs?: any = [];
     orderPayments?: any;
@@ -191,7 +197,20 @@ export class AddEditCashClosingComponent implements OnInit{
         this.tableInventoryCapture = [];
         this.tableShopResumes = [];
         this.tableActivityLogs = [];
+        this.totalDiscountShopResumes = 0;
+        this.totalAmountShopResumes = 0;
+        this.totalAmountStoreOrders = [0,0,0];
+        this.totalAmountInventoryCapture = 0;
+        this.totalAmountCashClosing = 0;
+        this.totalRemainingCashClosing = 0;
         cashClosing.saleStoreOrders?.forEach((element: ProductForSaleStoreOrder) => {
+            if(element.storeStatus?.id == 3){ //Recibido
+                this.totalAmountStoreOrders[0] += Number(element.finalAmount || 0);
+            } else if(element.storeStatus?.id == 1){ //Pendiente
+                this.totalAmountStoreOrders[1] += Number(element.finalAmount || 0);
+            } else if(element.storeStatus?.id == 7){ //Listo
+                this.totalAmountStoreOrders[2] += Number(element.finalAmount || 0);
+            } 
             const curr_row =
             { 
                 accordion_name: element.name,
@@ -211,12 +230,14 @@ export class AddEditCashClosingComponent implements OnInit{
                     {icon : "info", name : "Estado del pedido", value : element.storeStatus?.identifier},
                     {icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
                     {icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!.replaceAll("\"",""))},
-                    {icon : "badge", name : "Creado por", value : element.creatorUser?.name}
+                    {icon : "badge", name : "Creado por", value : element.creatorUser?.name},
+                    {icon : "payments", name : "Total", value : this.dataService.getFormatedPrice(Number(element?.finalAmount || 0))},
                 ]
             };
             this.tableSaleStoreOrders.push(curr_row);
         });
         cashClosing.inventoryCapture?.forEach((element: InventoryElement) => {
+            this.totalAmountInventoryCapture += Number(element.productForSale?.price || 0) * Number(element.quantity || 0);
             const curr_row = [
                 { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
                 { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
@@ -238,6 +259,8 @@ export class AddEditCashClosingComponent implements OnInit{
             this.tableActivityLogs.push(curr_row);
         });
         cashClosing.shopResumes?.forEach((element: ShopResume) => {
+            this.totalAmountShopResumes += Number(element.totalDiscount || 0);
+            this.totalAmountShopResumes += Number(element.total || 0);
             const curr_row =
             { 
                 accordion_name: this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"","")),
@@ -262,6 +285,7 @@ export class AddEditCashClosingComponent implements OnInit{
                 ]
             };
             this.tableShopResumes.push(curr_row);
+            this.totalAmountCashClosing = (this.totalAmountStoreOrders[0] - this.totalDiscountShopResumes) - this.totalAmountShopResumes;
         });
     }
 
@@ -298,13 +322,6 @@ export class AddEditCashClosingComponent implements OnInit{
 
         this.currDate = new Date(this.operationRawMaterialForm.controls['initialDate'].value);
 
-        this.newCashClosing = {
-            ...this.operationRawMaterialForm.value,
-            activityLogs: this.activityLogs,
-            initialDate: `${this.currDate.getFullYear()}/${this.currDate.getMonth() + 1}/${this.currDate.getDate()}`,
-            storeID: this.establishmentId
-        };
-
         let queryParams = {
             validation: false
         }
@@ -319,27 +336,55 @@ export class AddEditCashClosingComponent implements OnInit{
             .pipe(first())
             .subscribe({
                 next: () => {
-                this.alertService.success('Cierre de caja eliminado', { keepAfterRouteChange: true });
+                this.alertService.success('Cierre de caja actualizado', { keepAfterRouteChange: true });
                 this.router.navigateByUrl('/cashClosing/' + this.establishmentId);
                 },
                 error: error => {
-                    this.alertService.error('Error al eliminar el cierre de caja, contacte con Administracion');
+                    this.alertService.error('Error al actializar el cierre de caja, contacte con Administracion');
             }});
         } else {
-            this.dataService.addCashClosing(this.newCashClosing, queryParams)
-                .pipe(first())
-                .subscribe({
-                    next: () => {
-                        this.alertService.success('Cierre de Caja guardada', { keepAfterRouteChange: true });
-                        this.router.navigateByUrl('/cashClosing/' + this.establishmentId);
-                    },
-                    error: error => {
-                        let errorResponse = error.error;
-                        errorResponse = errorResponse.addEstablishmentResponse ? errorResponse.addEstablishmentResponse : errorResponse.updateEstablishmentResponse ? errorResponse.updateEstablishmentResponse : 'Error, consulte con el administrador';
-                        this.alertService.error(errorResponse.AcknowledgementDescription);
-                        this.submitting = false;
-                    }
-                });
+
+            let requestArray = [];
+            this.activityLogFilter = {};
+            const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
+            const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
+            this.activityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
+            this.activityLogFilter.initialDate = startDateOnly;
+            this.activityLogFilter.finalDate = endDateOnly;
+
+            requestArray.push(this.dataService.getAllActivityLogsByFilter(this.activityLogFilter));
+
+            forkJoin(requestArray).subscribe({
+                next: (result: any) => {
+                    this.activityLogs = result[0].retrieveActivityLogResponse?.activityLogs;
+                },
+                error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
+                complete: () => {
+                    // this.loading = false;
+
+                    this.newCashClosing = {
+                        ...this.operationRawMaterialForm.value,
+                        activityLogs: this.activityLogs,
+                        initialDate: `${this.currDate.getFullYear()}/${this.currDate.getMonth() + 1}/${this.currDate.getDate()}`,
+                        storeID: this.establishmentId
+                    };
+
+                    this.dataService.addCashClosing(this.newCashClosing, queryParams)
+                    .pipe(first())
+                    .subscribe({
+                        next: () => {
+                            this.alertService.success('Cierre de Caja guardada', { keepAfterRouteChange: true });
+                            this.router.navigateByUrl('/cashClosing/' + this.establishmentId);
+                        },
+                        error: error => {
+                            let errorResponse = error.error;
+                            errorResponse = errorResponse.addEstablishmentResponse ? errorResponse.addEstablishmentResponse : errorResponse.updateEstablishmentResponse ? errorResponse.updateEstablishmentResponse : 'Error, consulte con el administrador';
+                            this.alertService.error(errorResponse.AcknowledgementDescription);
+                            this.submitting = false;
+                        }
+                    });
+                }
+            });
 
         }
     }

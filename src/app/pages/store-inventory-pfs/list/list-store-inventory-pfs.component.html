@@ -20,11 +20,17 @@
                                     <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
                                 </mat-form-field>
                             </div>
-                            <mat-form-field class="col-lg-2 col-2" appearance="outline">
+                            <mat-form-field class="col-lg-2 col-2 mx-2" appearance="outline">
                                 <mat-select matInput disableOptionCentering [(value)]="pageSize">
                                     <mat-option *ngFor="let entry of entries" [value]="entry">
                                         {{ entry }}
                                     </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <mat-form-field class="col-lg-2 col-2 mx-2" appearance="outline">
+                                <mat-label>Unidades</mat-label>
+                                <mat-select matInput disableOptionCentering (valueChange)="selectedMeasureTableSubject.next($event)">
+                                    <mat-option *ngFor="let measure of generalMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
                                 </mat-select>
                             </mat-form-field>
                         </div>

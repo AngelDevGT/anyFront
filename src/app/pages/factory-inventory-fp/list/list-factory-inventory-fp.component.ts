@@ -12,7 +12,7 @@ import { InventoryElement } from '@app/models/inventory/inventory-element.model'
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
 import { Measure } from '@app/models';
 import { UnitBase } from '@app/models/auxiliary/unit-base.model';
-import { forkJoin } from 'rxjs';
+import { BehaviorSubject, forkJoin } from 'rxjs';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
 import { Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
@@ -31,6 +31,10 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     selectedInventoryElement?: InventoryElement;
     finishedProductForm!: FormGroup;
     selectedMeasure?: Measure;
+    measureOptions?: Measure[];
+    generalMeasureOptions?: Measure[];
+    selectedMeasureTable?: Measure;
+    selectedMeasureTableSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     elements: any = [];
     inventoryUnitBase?: UnitBase;
     currentMeasureQuantity = 0;
@@ -49,6 +53,11 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     constructor(private dataService: DataService, private alertService: AlertService, private router: Router) {}
 
     ngOnInit() {
+
+        this.selectedMeasureTableSubject.subscribe(value => {
+            this.setMeasure(String(value));
+        });
+
         this.inventory = undefined;
         let requestArray = [];
 
@@ -58,10 +67,14 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
+                this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
                 // console.log('complete')
+                this.generalMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad");
+                if(this.generalMeasureOptions)
+                        this.selectedMeasureTable = this.generalMeasureOptions[1];
                 if (this.inventory){
                     console.log(this.inventory);
                     this.inventoryElements = this.inventory?.inventoryElements;
@@ -75,6 +88,13 @@ export class ListFactoryInventoryFPComponent implements OnInit {
             }
         });
         this.finishedProductForm = this.createFinishedProductFormGroup();
+    }
+
+    setMeasure(measureId: string){
+        if(measureId){
+            this.selectedMeasureTable = this.measureOptions?.find(meas => String(meas.id) === measureId);
+            this.setTableElements(this.inventoryElements);
+        }
     }
 
     search(value: any): void {
@@ -97,8 +117,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         elements?.forEach((element: InventoryElement) => {
             const curr_row = [
                     { type: "text", value: element.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.finishedProduct?._id },
-                    { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 20%" },
-                    { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 20%" },
+                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable!, element.measure!), header_name: "Medida", style: "width: 20%" },
+                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable!, element.measure!), header_name: "Cantidad", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
                     // { type: "text", value: element.status?.identifier, header_name: "Estado", style: "width: 15%" },
                     // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },

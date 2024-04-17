@@ -5,7 +5,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { environment } from '@environments/enviroment';
-import { Role } from '@app/models';
+import { Measure, Role } from '@app/models';
 import { Establishment } from '@app/models/establishment.model';
 import { ProductForSale } from '@app/models/product/producto-for-sale.model';
 import { Provider } from '@app/models/system/provider.model';
@@ -264,6 +264,98 @@ export const pendingFactoryStatus = {
     }
 }
 
+export const measureUnits = 
+    [
+        {
+          "text": "1",
+          "identifier": "Unidad",
+          "id": 1,
+          "status": 1,
+          "unitBase": {
+            "quantity": 1,
+            "name": "Unidad",
+            "parent": "1"
+          }
+        },
+        {
+          "id": 2,
+          "status": 1,
+          "text": "2",
+          "identifier": "Docena",
+          "unitBase": {
+            "quantity": 12,
+            "name": "Unidad",
+            "parent": "1"
+          }
+        },
+        {
+          "id": 3,
+          "status": 1,
+          "text": "3",
+          "identifier": "Quincena",
+          "unitBase": {
+            "quantity": 15,
+            "name": "Unidad",
+            "parent": "1"
+          }
+        },
+        {
+          "id": 4,
+          "status": 1,
+          "text": "4",
+          "identifier": "Cajilla",
+          "unitBase": {
+            "quantity": 240,
+            "name": "Unidad",
+            "parent": "1"
+          }
+        },
+        {
+          "id": 5,
+          "status": 1,
+          "text": "5",
+          "identifier": "Onza",
+          "unitBase": {
+            "quantity": 0.0625,
+            "name": "Libra",
+            "parent": "6"
+          }
+        },
+        {
+          "id": 6,
+          "status": 1,
+          "text": "6",
+          "identifier": "Libra",
+          "unitBase": {
+            "quantity": 1,
+            "name": "Libra",
+            "parent": "6"
+          }
+        },
+        {
+          "id": 7,
+          "status": 1,
+          "text": "7",
+          "identifier": "Arroba",
+          "unitBase": {
+            "quantity": 25,
+            "name": "Libra",
+            "parent": "6"
+          }
+        },
+        {
+          "id": 8,
+          "status": 1,
+          "text": "8",
+          "identifier": "Quintal",
+          "unitBase": {
+            "quantity": 100,
+            "name": "Libra",
+            "parent": "6"
+          }
+        }
+    ]
+
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
@@ -474,7 +566,7 @@ export class DataService {
     
     getLocalDateTimeFromUTCTime(utcTime: string){
         let date = new Date(utcTime.replaceAll("\"",""));
-        return date.toLocaleString().replace(",", " -");
+        return date.toLocaleString().replace(",", " ");
     }
 
     getLocalDateFromUTCTime(utcTime: string){
@@ -491,6 +583,25 @@ export class DataService {
         if(measure == "onz")
             return "Onzas"
         return "Sin Definir"
+    }
+
+    getConvertedMeasureById(quantity: number, measureId?: number){
+        let foundMeasure = measureUnits.find(x => x.id == measureId);
+        return foundMeasure ? (quantity / foundMeasure.unitBase.quantity).toFixed(2)  : quantity;
+
+    }
+
+    getConvertedMeasure(quantity: number, measure: Measure, prevMeasure: Measure){
+        if(prevMeasure?.unitBase?.name == measure.unitBase?.name){
+            return (quantity / (Number(measure.unitBase!.quantity) || 1)).toFixed(2);
+        }
+        return quantity;
+    }
+
+    getConvertedMeasureName(measure: Measure, prevMeasure: Measure){
+        if(prevMeasure?.unitBase?.name == measure.unitBase?.name)
+            return measure.identifier;
+        return prevMeasure.identifier;
     }
 
     /** VALIDATION */

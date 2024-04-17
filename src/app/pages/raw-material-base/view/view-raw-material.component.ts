@@ -36,6 +36,7 @@ export class ViewRawMaterialComponent implements OnInit{
                         let rawMaterial = rawMat.GetRawMaterialResponse.rawMaterial;
                         if (rawMaterial){
                             this.rawMaterial = rawMaterial;
+                            console.log(this.rawMaterial);
                             this.setRawMaterialElements(rawMaterial);
                         }
                         this.loading = false;

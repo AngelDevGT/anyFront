@@ -75,10 +75,10 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
         this.loading = true;
 
         this.rawMaterialForm = this.createFormGroup();
-        this.title = 'Crear Materia Prima con Proveedor';
+        this.title = 'Crear Materia Prima por Proveedor';
 
         if (this.id){
-            this.title = 'Actualizar Materia Prima con Proveedor';
+            this.title = 'Actualizar Materia Prima por Proveedor';
         }
 
         this.rawMaterials = [];

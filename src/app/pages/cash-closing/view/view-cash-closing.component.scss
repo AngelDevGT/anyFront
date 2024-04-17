@@ -33,22 +33,47 @@
     font-size: x-large;
 }
 
+.subtotal-text{
+  color: gray;
+  font-size: large;
+  align-self: center;
+}
+
+.total-text{
+  color: black;
+  font-size: x-large;
+}
+
+
 .subtotal,
-  .descuento,
-  .total {
-    display: flex;
-    justify-content: space-between; /* Alinea los elementos a la izquierda y derecha */
-    width: 100%;
-  }
+.descuento,
+.total {
+  display: flex;
+  justify-content: space-between; /* Alinea los elementos a la izquierda y derecha */
+  width: 100%;
+}
 
-  .total-amount {
-    color: black;
-    font-size: large;
-    text-align: right; /* Alinea el texto a la derecha */
-  }
+.subtotal-amount{
+  color: gray;
+  font-size: large;
+  text-align: right; /* Alinea el texto a la derecha */
+}
 
-  .total-title {
-    color: black;
-    font-size: large;
-    font-weight: bold;
-  }
+.total-amount {
+  color: black;
+  font-size: large;
+  text-align: right; /* Alinea el texto a la derecha */
+}
+
+/* Opcional: Estilo para los títulos si deseas ajustar la apariencia */
+.subtotal-title{
+  color: gray;
+  font-size: large;
+  font-weight: bold;
+}
+
+.total-title {
+  color: black;
+  font-size: large;
+  font-weight: bold;
+}

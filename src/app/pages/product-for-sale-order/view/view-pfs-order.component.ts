@@ -149,7 +149,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                     this.navigateWithParams();
                 },
                 error: error => {
-                    this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
+                    this.alertService.error(`Error al actualizar el pedido "${error.error.manageProductForSaleStoreOrderResponse.AcknowledgementDescription}", contacte con Administracion`);
             }});
         } else if (this.confirmDialogId == 3){
             let newOrder: ProductForSaleStoreOrder = {
