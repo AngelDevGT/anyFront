@@ -223,7 +223,7 @@
                                             Cantidad requerida
                                         </div>
                                         <div *ngIf="r['quantity'].hasError('pattern')">
-                                            Debe contener unicamente numeros positivos
+                                            Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
                                         </div>
                                     </div>
                                 </mat-form-field>

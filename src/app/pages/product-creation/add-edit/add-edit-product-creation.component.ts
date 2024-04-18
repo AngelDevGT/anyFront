@@ -300,7 +300,7 @@ export class AddEditProductCreationComponent implements OnInit{
             rawMaterialID: this.selectedIE?.rawMaterialBase?._id,
             rawMaterialName: this.selectedIE?.rawMaterialBase?.name,
             measure: this.modalSelectedMeasure,
-            quantity: String(this.modalQuantity)
+            quantity: this.modalQuantity.toFixed(2)
         }
         console.log(newFinishedProductCreationConsumedElement);
         this.finishedProductCreationConsumedElements?.push(newFinishedProductCreationConsumedElement);

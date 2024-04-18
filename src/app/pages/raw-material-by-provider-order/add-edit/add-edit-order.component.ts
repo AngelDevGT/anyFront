@@ -266,9 +266,9 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
             ...this.rawMaterialForm.value,
             price: this.currentMeasurePrice,
             measure: this.selectedMeasure,
-            subtotalPrice: this.modalSubtotal,
-            totalDiscount: this.modalTotalDiscount,
-            totalPrice: this.modalTotal,
+            subtotalPrice: this.modalSubtotal.toFixed(2),
+            totalDiscount: this.modalTotalDiscount.toFixed(2),
+            totalPrice: this.modalTotal.toFixed(2),
         };
         this.rawMaterialOrderElements?.push(newOrderElement);
         this.findAndMoveRawMaterialById(true, this.selectedRMP?._id);
@@ -516,7 +516,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
     createMaterialFormGroup() {
         return new FormGroup({
-            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
+            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             discount: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             measure: new FormControl('', [Validators.required])
         });

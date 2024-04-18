@@ -62,6 +62,9 @@ export class ListRawMaterialOrderComponent implements OnInit {
             .subscribe({
                 next: (rmOrders: any) => {
                     this.rawMaterialOrders = rmOrders.retrieveRawMaterialOrderResponse?.rawMaterial;
+                    this.rawMaterialOrders = this.rawMaterialOrders?.filter((rmOrder: RawMaterialOrder) => {
+                        return rmOrder.status?.id !== statusValues.eliminado.status.id;
+                    });
                     this.allRawMaterialOrders = this.rawMaterialOrders;
                     this.sortDataByDate(this.sortOpts[0]);
                 }
