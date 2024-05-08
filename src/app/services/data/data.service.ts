@@ -591,17 +591,22 @@ export class DataService {
 
     }
 
-    getConvertedMeasure(quantity: number, measure: Measure, prevMeasure: Measure){
-        if(prevMeasure?.unitBase?.name == measure.unitBase?.name){
-            return (quantity / (Number(measure.unitBase!.quantity) || 1)).toFixed(2);
+    getConvertedMeasure(quantity: number, unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure){
+        if(prevMeasure?.unitBase?.name == unitMeasure?.unitBase?.name){
+            return (quantity / (Number(unitMeasure?.unitBase!.quantity) || 1)).toFixed(2);
+        }
+        if(prevMeasure?.unitBase?.name == weightMeasure?.unitBase?.name){
+            return (quantity / (Number(weightMeasure?.unitBase!.quantity) || 1)).toFixed(2);
         }
         return quantity;
     }
 
-    getConvertedMeasureName(measure: Measure, prevMeasure: Measure){
-        if(prevMeasure?.unitBase?.name == measure.unitBase?.name)
-            return measure.identifier;
-        return prevMeasure.identifier;
+    getConvertedMeasureName(unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure){
+        if(prevMeasure?.unitBase?.name == unitMeasure?.unitBase?.name)
+            return unitMeasure?.identifier;
+        if(prevMeasure?.unitBase?.name == weightMeasure?.unitBase?.name)
+            return weightMeasure?.identifier;
+        return prevMeasure?.identifier;
     }
 
     /** VALIDATION */
@@ -928,6 +933,18 @@ export class DataService {
                 creatorUser: this.accountService.userValueFixed,
             }});
         return this.http.post(`${environment.apiUrl}/AddProductForSale`, params);
+    }
+
+    addMultiProductForSale(products: ProductForSale[]){
+        for (let i = 0; i < products.length; i++) {
+            products[i].status = activeStatus.status;
+            products[i].creatorUser = this.accountService.userValueFixed;
+        }
+        let params = JSON.stringify({
+            addManyProductForSale:
+                products
+            });
+        return this.http.post(`${environment.apiUrl}/addManyProductForSale`, params);
     }
 
     updateProductForSale(id: string, product: ProductForSale){

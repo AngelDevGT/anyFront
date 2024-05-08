@@ -35,9 +35,12 @@ export class ListFactoryInventoryRMComponent implements OnInit {
     elements: any = [];
     measureOptions?: Measure[];
     inventoryUnitBase?: UnitBase;
-    generalMeasureOptions?: Measure[];
-    selectedMeasureTable?: Measure;
-    selectedMeasureTableSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    unitMeasureOptions?: Measure[];
+    weightMeasureOptions?: Measure[];
+    selectedUnitMeasure?: Measure;
+    selectedUnitMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    selectedWeightMeasure?: Measure;
+    selectedWeightMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     currentMeasureQuantity = 0;
     filteredMeasureOptions?: Measure[];
     selectedQuantity = 0;
@@ -56,8 +59,12 @@ export class ListFactoryInventoryRMComponent implements OnInit {
 
     ngOnInit() {
 
-        this.selectedMeasureTableSubject.subscribe(value => {
+        this.selectedUnitMeasureSubject.subscribe(value => {
             this.setMeasure(String(value));
+        });
+
+        this.selectedWeightMeasureSubject.subscribe(value => {
+            this.setWeightMeasure(String(value));
         });
 
         this.inventory = undefined;
@@ -73,9 +80,12 @@ export class ListFactoryInventoryRMComponent implements OnInit {
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
-                this.generalMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad");
-                if(this.generalMeasureOptions)
-                        this.selectedMeasureTable = this.generalMeasureOptions[1];
+                this.unitMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad");
+                this.weightMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Libra");
+                if(this.unitMeasureOptions)
+                        this.selectedUnitMeasure = this.unitMeasureOptions[1];
+                if(this.weightMeasureOptions)
+                    this.selectedWeightMeasure = this.weightMeasureOptions[1];
                 // console.log('complete')
                 if (this.inventory){
                     console.log(this.inventory);
@@ -109,8 +119,8 @@ export class ListFactoryInventoryRMComponent implements OnInit {
         elements?.forEach((element: InventoryElement) => {
             const curr_row = [
                     { type: "text", value: element.rawMaterialBase?.name, header_name: "Producto", style: "width: 25%", id: element.rawMaterialBase?._id },
-                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable!, element.measure!), header_name: "Medida", style: "width: 20%" },
-                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable!, element.measure!), header_name: "Cantidad", style: "width: 20%" },
+                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedUnitMeasure, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 20%" },
+                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedUnitMeasure, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
                     // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
@@ -361,7 +371,14 @@ export class ListFactoryInventoryRMComponent implements OnInit {
 
     setMeasure(measureId: string){
         if(measureId){
-            this.selectedMeasureTable = this.measureOptions?.find(meas => String(meas.id) === measureId);
+            this.selectedUnitMeasure = this.measureOptions?.find(meas => String(meas.id) === measureId);
+            this.setTableElements(this.inventoryElements);
+        }
+    }
+
+    setWeightMeasure(measureId: string){
+        if(measureId){
+            this.selectedWeightMeasure = this.measureOptions?.find(meas => String(meas.id) === measureId);
             this.setTableElements(this.inventoryElements);
         }
     }

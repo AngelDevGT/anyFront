@@ -8,8 +8,9 @@ FormGroup,
 Validators,
 FormControl,
 } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable, forkJoin } from 'rxjs';
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
+import { Provider } from '@app/models/system/provider.model';
 
 @Component({ 
     selector: 'page-list-raw-material-provider',
@@ -31,6 +32,9 @@ export class ListRawMaterialByProviderComponent implements OnInit {
     filteredEstablishmentOptions?: Observable<string[]>;
     creatorUserOptions: string[] = ['User10', 'User21', 'User43'];
     filteredCreatorUserOptions?: Observable<string[]>;
+    selectedProviderSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    selectedProvider?: Provider;
+    providerOptions?: Provider[];
 
     cards?: any[];
 
@@ -38,25 +42,56 @@ export class ListRawMaterialByProviderComponent implements OnInit {
 
     ngOnInit() {
         this.retriveRawMaterials();
+
+        this.selectedProviderSubject.subscribe(value => {
+            this.setProvider(String(value));
+        });
+    }
+
+    setProvider(providerId: string){
+        this.selectedProvider = this.providerOptions?.find(provid => provid._id === providerId);
+        console.log('setProvider', this.selectedProvider);
+        if(this.selectedProvider){
+            this.getCards();
+        }
     }
 
     retriveRawMaterials(){
         this.rawMaterials = undefined;
-        this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}})
-            .pipe(first())
-            .subscribe({
-                next: (rawMaterials: any) => {
-                    this.rawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
-                    this.allRawMaterials = this.rawMaterials;
-                    this.getCards();
-                }
-            });
+
+        let requestArray = [];
+        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}}));
+        requestArray.push(this.dataService.getAllProvidersByFilter({"status": { "id": 2}}));
+
+        forkJoin(requestArray).subscribe({
+            next: (result: any) => {
+
+                this.rawMaterials = result[0].retrieveRawMaterialByProviderResponse?.rawMaterial;
+                this.allRawMaterials = this.rawMaterials;
+                this.providerOptions = result[1].retrieveProviderResponse?.providers;
+            },
+            error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
+            complete: () => {
+                this.getCards();
+            }
+        });
+
+        // this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}})
+        //     .pipe(first())
+        //     .subscribe({
+        //         next: (rawMaterials: any) => {
+        //             this.rawMaterials = rawMaterials.retrieveRawMaterialByProviderResponse?.rawMaterial;
+        //             this.allRawMaterials = this.rawMaterials;
+        //             this.getCards();
+        //         }
+        //     });
     }
 
     getCards(){
         this.cards = [];
-        if (this.rawMaterials){
+        if (this.rawMaterials && this.selectedProvider){
             this.rawMaterials.forEach(element => {
+                if (element.provider?._id !== this.selectedProvider?._id) return;
                 let currentCard = {
                     title: element.rawMaterialBase?.name,
                     photo: element.rawMaterialBase?.photo,

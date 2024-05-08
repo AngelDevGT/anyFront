@@ -133,6 +133,13 @@ export class ViewActivityLogComponent implements OnInit {
                 );
             }
 
+            if(this.section?.includes("Producto Terminado en Inventario de Fabrica")){
+                cardElement.push(
+                    { value: element?.extra?.inventoryElement?.finishedProduct?.name, title: "Elemento", type: "row" },
+                    { value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, title: "Cantidad original", type: "row" }
+                );
+            }
+
             if(element.action === "movement"){
                 cardElement.push(
                     { value: `${element.request?.quantity} (${element.request?.measure?.identifier})`, title: "Cantidad movida", type: "row" }

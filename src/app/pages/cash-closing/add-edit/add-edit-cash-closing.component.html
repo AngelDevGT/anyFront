@@ -65,7 +65,7 @@
                                 </div>
                             </div>
                             <div class="d-flex flex-wrap justify-content-center justify-content-md-center">
-                                <div class="justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                                <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
                                     <div class="subtotal">
                                         <p class="subtotal-title">Monto total</p>
                                         <p class="subtotal-amount">Q. {{ totalAmountInventoryCapture | number: '1.2-2' }}</p>
@@ -111,7 +111,7 @@
                                 </mat-accordion>
                             </div>
                             <div class="d-flex flex-wrap justify-content-center justify-content-md-center">
-                                <div class="justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                                <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
                                     <div class="subtotal">
                                         <p class="subtotal-title">Monto total recibidos</p>
                                         <p class="subtotal-amount">Q. {{ totalAmountStoreOrders[0] | number: '1.2-2' }}</p>
@@ -153,7 +153,7 @@
                                 </mat-accordion>
                             </div>
                             <div class="d-flex flex-wrap justify-content-center justify-content-md-center">
-                                <div class="justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                                <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
                                     <div class="subtotal">
                                         <p class="subtotal-title">Descuento total</p>
                                         <p class="subtotal-amount">Q. {{ totalDiscountShopResumes | number: '1.2-2' }}</p>
@@ -170,12 +170,14 @@
                         <div class="row justify-content-center">
                             <div class="d-flex flex-wrap justify-content-center justify-content-md-center">
                                 <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
+                                    <p class="total-title text-center">Resumen</p>
+                                    <br>
                                     <div class="total">
-                                        <p class="total-title">Monto total de inventario</p>
+                                        <p class="total-title">Inventario</p>
                                         <p class="total-amount">Q. {{ totalAmountInventoryCapture | number: '1.2-2' }}</p>
                                     </div>
                                     <div class="total">
-                                        <p class="total-title">Monto restante de ventas y pedidos recibidos</p>
+                                        <p class="total-title">Pedidos recibidos - Ventas</p>
                                         <p class="total-amount">Q. {{ totalAmountCashClosing | number: '1.2-2' }}</p>
                                     </div>
                                 </div>

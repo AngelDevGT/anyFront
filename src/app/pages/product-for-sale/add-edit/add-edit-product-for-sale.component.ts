@@ -26,12 +26,15 @@ export class AddEditProductoForSaleComponent implements OnInit{
 
     //Form
     productoForSaleForm!: FormGroup;
+    finishedProductForm!: FormGroup;
     currentProductForSale?: ProductForSale;
+    productForSaleElements?: ProductForSale[];
     selectedEstablishmentSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     selectedEstablishment?: Establishment;
     establishmentOptions?: Establishment[];
 
     finishedProducts?: FinishedProduct[];
+    unselectedFinishedProducts?: FinishedProduct[];
     allFinishedProducts?: FinishedProduct[];
     selectedFinishedProduct?: FinishedProduct;
 
@@ -67,6 +70,7 @@ export class AddEditProductoForSaleComponent implements OnInit{
         this.loading = true;
 
         this.productoForSaleForm = this.createFormGroup();
+        this.finishedProductForm = this.createFinishedProductFormGroup();
         this.title = 'Crear Producto para Venta';
 
         if (this.id){
@@ -75,6 +79,8 @@ export class AddEditProductoForSaleComponent implements OnInit{
 
         this.finishedProducts = [];
         this.allFinishedProducts = this.finishedProducts;
+        this.unselectedFinishedProducts = [];
+        this.productForSaleElements = [];
 
         this.dataService.getAllEstablishments()
             .pipe(
@@ -108,6 +114,8 @@ export class AddEditProductoForSaleComponent implements OnInit{
 
     onResetForm() {
         this.productoForSaleForm.reset();
+        this.selectedFinishedProduct = undefined;
+        this.elements = [];
     }
 
     onSaveForm() {
@@ -133,11 +141,18 @@ export class AddEditProductoForSaleComponent implements OnInit{
         return this.productoForSaleForm.controls;
     }
 
+    get r() {
+        return this.finishedProductForm.controls;
+    }
+
     get priceValue() {
         return this.productoForSaleForm.get('price');
     }
 
     setEstablishment(establishmentId: string){
+        this.productForSaleElements = [];
+        this.unselectedFinishedProducts = [];
+        this.finishedProducts = this.allFinishedProducts;
         if(establishmentId){
             this.selectedEstablishment = this.establishmentOptions?.find(establ => String(establ._id) === establishmentId);
         }
@@ -166,21 +181,17 @@ export class AddEditProductoForSaleComponent implements OnInit{
             }
             return this.dataService.updateProductForSale(this.id, updatedProductoForSale);
         }
-        let newProductForSale = {
-            ...this.productoForSaleForm.value,
-            finishedProduct: this.selectedFinishedProduct,
-            establishment: this.selectedEstablishment
-        };
-        return this.dataService.addProductForSale(newProductForSale);
+        return this.dataService.addMultiProductForSale(this.productForSaleElements!);
     }
 
     createFormGroup() {
         return new FormGroup({
-          price: new FormControl('', [
-            Validators.required,
-            Validators.pattern(/^\d+(\.\d{1,2})?$/),
-          ]),
-          establishment: new FormControl('', [this.id ? Validators.nullValidator : Validators.required])
+        //   price: new FormControl('', [
+        //     Validators.required,
+        //     Validators.pattern(/^\d+(\.\d{1,2})?$/),
+        //   ]),
+          establishment: new FormControl('', [this.id ? Validators.nullValidator : Validators.required]),
+          price: new FormControl('', [this.id ? Validators.required : Validators.nullValidator, Validators.pattern(/^\d+(\.\d{1,2})?$/)])
         });
     }
 
@@ -190,16 +201,66 @@ export class AddEditProductoForSaleComponent implements OnInit{
         this.elements.push({icon : "feed", name : "Descripción", value : finishedProd.description});
     }
 
-    // getImage(imageId : any){
-    //     this.loadingPhoto = true;
-    //     return this.dataService.getImageById(imageId)
-    //         .pipe(first())
-    //         .subscribe({
-    //             next: (img: any) => {
-    //                 this.cardPhoto = img.getImageResponse.image.image;
-    //                 this.loadingPhoto = false;
-    //             }
-    //         });
-    //     }
+    selectFinishedProductV2(finishedProd: FinishedProduct, indexToRemove: number){
+        this.selectedFinishedProduct = finishedProd;
+        this.elements = [];
+        this.setFinishedProductElements(this.selectedFinishedProduct);
+        // this.rawMaterialIndexToRemove = indexToRemove;
+        // let newOrderElement: RawMaterialOrderElement = {
+        //     rawMaterialByProvider: rawMaterial,
+        //     price: rawMaterial.price,
+        //     discount: "0",
+        //     quantity: "1"
+        // };
+        // this.rawMaterialOrderElements?.push(newOrderElement);
+    }
+
+    unselectFinishedProductV2(productForSale: ProductForSale, indexToRemove: number){
+        this.productForSaleElements?.splice(indexToRemove, 1);
+        this.findAndMoveFinishedProductById(false, productForSale.finishedProduct?._id);
+    }
+
+    onSaveFinishedProductForm(){
+        let newProductForSale: ProductForSale = {
+            finishedProduct: this.selectedFinishedProduct,
+            establishment: this.selectedEstablishment,
+            ...this.finishedProductForm.value,
+        };
+        this.productForSaleElements?.push(newProductForSale);
+        this.findAndMoveFinishedProductById(true, this.selectedFinishedProduct?._id);
+        this.onResetFinishedProductForm();
+    }
+
+    findAndMoveFinishedProductById(isSelect: boolean, finishedProductId?: string){
+        if (isSelect){
+            let fpResult = this.finishedProducts?.find(fp => fp._id === finishedProductId);
+            if (fpResult) {
+                this.finishedProducts = this.finishedProducts?.filter(fp => fp._id !== finishedProductId);
+                this.unselectedFinishedProducts?.push(fpResult);
+            }
+        } else { // unselect
+            let fpResult = this.unselectedFinishedProducts?.find(fp => fp._id === finishedProductId);
+            if (fpResult){
+                this.unselectedFinishedProducts = this.unselectedFinishedProducts?.filter(fp => fp._id !== finishedProductId);
+                this.finishedProducts?.push(fpResult);
+            }
+        }
+    }
+
+    closeFinishedProductDialog(){
+        this.onResetFinishedProductForm();
+    }
+
+    createFinishedProductFormGroup() {
+        return new FormGroup({
+            price: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)])
+        });
+    }
+
+    onResetFinishedProductForm(){
+        this.finishedProductForm.reset();
+        this.selectedFinishedProduct = undefined;
+        this.elements = [];
+    }
 
 }

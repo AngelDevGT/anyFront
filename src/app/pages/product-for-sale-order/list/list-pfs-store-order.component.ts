@@ -3,7 +3,7 @@ import { first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, DataService, paymentStatusValues, statusValues} from '@app/services';
+import { AccountService, AlertService, DataService, paymentStatusValues, statusValues, storeOrderStatus} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -122,6 +122,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
     setTableElements(elements?: ProductForSaleStoreOrder[]){
         this.tableElementsValues = [];
         elements?.forEach((element: ProductForSaleStoreOrder) => {
+
+            if(element.factoryStatus?.id === storeOrderStatus.eliminado.id || element.storeStatus?.id === storeOrderStatus.eliminado.id) return;  
             let curr_row = [
                     { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha" },
                     { type: "text", value: element.name, header_name: "Nombre" },

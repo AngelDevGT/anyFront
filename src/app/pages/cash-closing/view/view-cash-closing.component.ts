@@ -179,7 +179,7 @@ export class ViewCashClosingComponent implements OnInit{
             this.tableInventoryCapture.push(curr_row);
         });
         cashClosing.shopResumes?.forEach((element: ShopResume) => {
-            this.totalAmountShopResumes += Number(element.totalDiscount || 0);
+            this.totalDiscountShopResumes += Number(element.totalDiscount || 0);
             this.totalAmountShopResumes += Number(element.total || 0);
             const curr_row =
             { 

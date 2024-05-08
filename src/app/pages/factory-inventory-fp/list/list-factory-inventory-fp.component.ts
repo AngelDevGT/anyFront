@@ -33,9 +33,13 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     selectedMeasure?: Measure;
     measureOptions?: Measure[];
     generalMeasureOptions?: Measure[];
+    weightMeasureOptions?: Measure[];
     selectedMeasureTable?: Measure;
     selectedMeasureTableSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    selectedWeightMeasure?: Measure;
+    selectedWeightMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     elements: any = [];
+    filteredMeasureOptions?: Measure[];
     inventoryUnitBase?: UnitBase;
     currentMeasureQuantity = 0;
     selectedQuantity = 0;
@@ -58,6 +62,10 @@ export class ListFactoryInventoryFPComponent implements OnInit {
             this.setMeasure(String(value));
         });
 
+        this.selectedWeightMeasureSubject.subscribe(value => {
+            this.setWeightMeasure(String(value));
+        });
+
         this.inventory = undefined;
         let requestArray = [];
 
@@ -75,6 +83,9 @@ export class ListFactoryInventoryFPComponent implements OnInit {
                 this.generalMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad");
                 if(this.generalMeasureOptions)
                         this.selectedMeasureTable = this.generalMeasureOptions[1];
+                this.weightMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Libra");
+                if(this.weightMeasureOptions)
+                    this.selectedWeightMeasure = this.weightMeasureOptions[1];
                 if (this.inventory){
                     console.log(this.inventory);
                     this.inventoryElements = this.inventory?.inventoryElements;
@@ -88,6 +99,13 @@ export class ListFactoryInventoryFPComponent implements OnInit {
             }
         });
         this.finishedProductForm = this.createFinishedProductFormGroup();
+    }
+
+    setWeightMeasure(measureId: string){
+        if(measureId){
+            this.selectedWeightMeasure = this.measureOptions?.find(meas => String(meas.id) === measureId);
+            this.setTableElements(this.inventoryElements);
+        }
     }
 
     setMeasure(measureId: string){
@@ -117,8 +135,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         elements?.forEach((element: InventoryElement) => {
             const curr_row = [
                     { type: "text", value: element.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.finishedProduct?._id },
-                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable!, element.measure!), header_name: "Medida", style: "width: 20%" },
-                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable!, element.measure!), header_name: "Cantidad", style: "width: 20%" },
+                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 20%" },
+                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
                     // { type: "text", value: element.status?.identifier, header_name: "Estado", style: "width: 15%" },
                     // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
@@ -164,8 +182,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         if (event.target instanceof HTMLInputElement) {
             this.formQuantity = Number(event.target.value) || 0;
         }
-        this.selectedMeasure = this.selectedInventoryElement?.measure;
-        this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
+        // this.selectedMeasure = this.selectedInventoryElement?.measure;
+        // this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
         this.calculateModalQuantity('rest');
     }
 
@@ -173,8 +191,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         if (event.target instanceof HTMLInputElement) {
             this.formQuantity = Number(event.target.value) || 0;
         }
-        this.selectedMeasure = this.selectedInventoryElement?.measure;
-        this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
+        // this.selectedMeasure = this.selectedInventoryElement?.measure;
+        // this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
         this.calculateModalQuantity('sum');
     }
 
@@ -186,10 +204,14 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         return this.finishedProductForm.get('reason');
     }
 
+    get measureSelect(){
+        return this.finishedProductForm.get('measure');
+    }
+
     calculateModalQuantity(actionType?: string) {
         this.setInventoryElementElements();
-        let totalQuantity = Number(this.formQuantity)*Number(this.currentMeasureQuantity) || 0;
-        this.modalUnitBaseTotalQuantity = Number(this.inventoryUnitBase?.quantity) * Number(this.selectedInventoryElement?.quantity);
+        let totalQuantity = +(Number(this.formQuantity)*Number(this.currentMeasureQuantity) || 0).toFixed(2);
+        this.modalUnitBaseTotalQuantity = +(Number(this.inventoryUnitBase?.quantity) * Number(this.selectedInventoryElement?.quantity)).toFixed(2);
         if(actionType === 'rest'){
             if(totalQuantity > this.modalUnitBaseTotalQuantity){
                 this.quantityInput?.setValue('0');
@@ -201,6 +223,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         } else if(actionType === 'sum'){
             this.modalFinalQuantity = this.modalUnitBaseTotalQuantity + totalQuantity;
         }
+        this.modalFinalQuantity = +this.modalFinalQuantity.toFixed(2);
         this.modalSelectedQuantity = totalQuantity;
     }
 
@@ -295,6 +318,23 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         this.inventoryUnitBase = this.selectedInventoryElement?.measure?.unitBase;
         this.elements = [];
         this.setInventoryElementElements();
+        this.filteredMeasureOptions = this.measureOptions?.filter(item => this.selectedInventoryElement?.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!));
+        this.measureSelect?.setValue('');
+    }
+
+    selectMeasure(measureId?: string){
+        return this.measureOptions?.find(measure => String(measure.id) === measureId);
+    }
+
+    changeMeasure(measureId: any){
+        if(measureId){
+            if(this.selectedMeasure){
+                this.elements.pop();
+            }
+            this.selectedMeasure = this.selectMeasure(measureId);
+            this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
+        }
+        this.calculateModalQuantity('rest');
     }
 
     goToActionsHistory(){
@@ -329,8 +369,9 @@ export class ListFactoryInventoryFPComponent implements OnInit {
 
     createFinishedProductFormGroup() {
         return new FormGroup({
-            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
-            reason: new FormControl('', [Validators.required, Validators.maxLength(50)])
+            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            reason: new FormControl('', [Validators.required, Validators.maxLength(50)]),
+            measure: new FormControl('', [Validators.required])
         });
     }
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { first } from 'rxjs/operators';
 
-import { AlertService, DataService} from '@app/services';
+import { AlertService, DataService, deleteStatus} from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CashClosing } from '@app/models/store/cash-closing.model';
 
@@ -43,7 +43,7 @@ export class ListCashClosingComponent implements OnInit {
                         return fechaB.getTime() - fechaA.getTime();
                     });
                     this.allCashClosings = this.cashClosings;
-                    this.setTableElements(this.cashClosings);
+                    this.setTableElements(this.cashClosings || []);
                 }
             });
     }
@@ -61,12 +61,13 @@ export class ListCashClosingComponent implements OnInit {
                 return true;
             });
         }
-        this.setTableElements(this.cashClosings);
+        this.setTableElements(this.cashClosings || []);
     }
 
-    setTableElements(elements: any){
+    setTableElements(elements: CashClosing[]){
         this.tableElementsValues = [];
-        elements?.forEach((element: any) => {
+        elements?.forEach((element: CashClosing) => {
+            if(element.status?.id === deleteStatus.status.id) return;
             let buttonsRow = {};
             buttonsRow = {
                 type: "button_text_icon",
@@ -86,12 +87,11 @@ export class ListCashClosingComponent implements OnInit {
                     }
                 ]
             };
-            console.log(buttonsRow);
             const curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate), header_name: "Fecha"},
+                    { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha"},
                     { type: "text", value: element.note, header_name: "Notas" },
-                    { type: "text", value: element.userRequest.name, header_name: "Persona a cargo" },
-                    { type: "text", value: element.status.identifier, header_name: "Cierre de caja" },
+                    { type: "text", value: element.userRequest?.name, header_name: "Persona a cargo" },
+                    { type: "text", value: element.status?.identifier, header_name: "Cierre de caja" },
                     buttonsRow
             ]
             this.tableElementsValues.push(curr_row);

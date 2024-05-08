@@ -28,17 +28,23 @@
                                     <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
                                 </mat-form-field>
                             </div>
+                            <mat-form-field class="col-lg-2 col-sm-12 mx-2" appearance="outline">
+                                <mat-label>Unidades</mat-label>
+                                <mat-select matInput disableOptionCentering (valueChange)="selectedMeasureTableSubject.next($event)">
+                                    <mat-option *ngFor="let measure of generalMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <mat-form-field class="col-lg-2 col-sm-12 mx-2" appearance="outline">
+                                <mat-label>Peso</mat-label>
+                                <mat-select matInput disableOptionCentering (valueChange)="selectedWeightMeasureSubject.next($event)">
+                                    <mat-option *ngFor="let measure of weightMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
                             <mat-form-field class="col-lg-2 col-2" appearance="outline">
                                 <mat-select matInput disableOptionCentering [(value)]="pageSize">
                                     <mat-option *ngFor="let entry of entries" [value]="entry">
                                         {{ entry }}
                                     </mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                            <mat-form-field class="col-lg-2 col-2 mx-2" appearance="outline">
-                                <mat-label>Unidades</mat-label>
-                                <mat-select matInput disableOptionCentering (valueChange)="selectedMeasureTableSubject.next($event)">
-                                    <mat-option *ngFor="let measure of generalMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
                                 </mat-select>
                             </mat-form-field>
                         </div>
@@ -73,8 +79,14 @@
                             </div> -->
                             <div class="d-flex flex-wrap justify-content-center col-12 p-3">
                                 <div class="pb-4 col-6 col-lg-3">
-                                    <strong>Cantidad a agregar: </strong>
+                                    <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
+                                        <option disabled selected value="">Medida</option>
+                                        <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
+                                    </select>
                                 </div>
+                                <!-- <div class="pb-4 col-6 col-lg-3">
+                                    <strong>Cantidad a agregar: </strong>
+                                </div> -->
                                 <mat-form-field class="custom-input" appearance="outline">
                                     <mat-label>Cantidad</mat-label>
                                     <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
@@ -150,23 +162,29 @@
                                     <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
                                 </select>
                             </div> -->
-                            <div class="pb-4 col-6 col-lg-3">
+                            <!-- <div class="pb-4 col-6 col-lg-3">
                                 <strong>Cantidad a eliminar: </strong>
+                            </div> -->
+                            <div class="pb-4 col-6 col-lg-3">
+                                <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
+                                    <option disabled selected value="">Medida</option>
+                                    <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
+                                </select>
                             </div>
-                            <div class="px-2">
-                                <mat-form-field class="custom-input" appearance="outline">
-                                    <mat-label>Cantidad</mat-label>
-                                    <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
-                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="restQuantityValue($event)" />
-                                    <div class="invalid-feedback" *ngIf="r['quantity'].errors">
-                                        <div *ngIf="r['quantity'].hasError('required')">
-                                            Cantidad requerida
-                                        </div>
-                                        <div *ngIf="r['quantity'].hasError('pattern')">
-                                            Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
-                                        </div>
+                            <mat-form-field class="custom-input" appearance="outline">
+                                <mat-label>Cantidad</mat-label>
+                                <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
+                                    [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="restQuantityValue($event)" />
+                                <div class="invalid-feedback" *ngIf="r['quantity'].errors">
+                                    <div *ngIf="r['quantity'].hasError('required')">
+                                        Cantidad requerida
                                     </div>
-                                </mat-form-field>
+                                    <div *ngIf="r['quantity'].hasError('pattern')">
+                                        Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                            <div class="d-flex flex-wrap px-2 col-lg-8 col-sm-12">
                                 <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
                                     <mat-label>Motivo</mat-label>
                                     <textarea id="reason-form-crear-comunidad" type="text" formControlName="reason" matInput

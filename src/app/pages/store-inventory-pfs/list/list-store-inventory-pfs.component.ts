@@ -47,7 +47,10 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     searchTerm?: string;
     entries = [5, 10, 20, 50];
     selectedMeasureTable?: Measure;
+    weightMeasureOptions?: Measure[];
     selectedMeasureTableSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    selectedWeightMeasure?: Measure;
+    selectedWeightMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
@@ -59,6 +62,10 @@ export class ListStoreInventoryPFSComponent implements OnInit {
 
         this.selectedMeasureTableSubject.subscribe(value => {
             this.setMeasure(String(value));
+        });
+
+        this.selectedWeightMeasureSubject.subscribe(value => {
+            this.setWeightMeasure(String(value));
         });
 
         let establishmentId = this.route.snapshot.params['id'];
@@ -81,6 +88,9 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                 this.generalMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad");
                 if(this.generalMeasureOptions)
                         this.selectedMeasureTable = this.generalMeasureOptions[1];
+                this.weightMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Libra");
+                if(this.weightMeasureOptions)
+                    this.selectedWeightMeasure = this.weightMeasureOptions[1];
                 if (this.inventory){
                     this.inventoryElements = this.inventory?.inventoryElements;
                     console.log(this.inventoryElements);
@@ -110,6 +120,13 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.setTableElements(this.inventoryElements);
     }
 
+    setWeightMeasure(measureId: string){
+        if(measureId){
+            this.selectedWeightMeasure = this.measureOptions?.find(meas => String(meas.id) === measureId);
+            this.setTableElements(this.inventoryElements);
+        }
+    }
+
     setMeasure(measureId: string){
         if(measureId){
             this.selectedMeasureTable = this.measureOptions?.find(meas => String(meas.id) === measureId);
@@ -122,8 +139,8 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         elements?.forEach((element: InventoryElement) => {
             const curr_row = [
                     { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
-                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable!, element.measure!), header_name: "Medida", style: "width: 15%" },
-                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable!, element.measure!), header_name: "Cantidad", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
                     {
                         type: "modal_button",
