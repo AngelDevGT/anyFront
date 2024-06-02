@@ -55,7 +55,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
     tableElementsValues?: any;
     activityLogName = "Acciones de Materia Prima en Inventario de Fabrica";
 
-    constructor(private dataService: DataService, private alertService: AlertService, private router: Router) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router) {}
 
     ngOnInit() {
 
@@ -114,55 +114,51 @@ export class ListFactoryInventoryRMComponent implements OnInit {
         this.setTableElements(this.inventoryElements);
     }
 
+    isAdmin(){
+        return this.accountService.isAdminUser();
+    }
+
     setTableElements(elements?: InventoryElement[]){
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
-            const curr_row = [
+            let curr_row: any = [
                     { type: "text", value: element.rawMaterialBase?.name, header_name: "Producto", style: "width: 25%", id: element.rawMaterialBase?._id },
                     { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedUnitMeasure, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 20%" },
                     { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedUnitMeasure, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
                     // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
-                    {
-                        type: "modal_button",
-                        style: "white-space: nowrap",
-                        header_name: "Acciones",
-                        data: element,
-                        button: [
-                            // {
-                            //     type: "button",
-                            //     data_bs_target: "#moveFactoryInventoryRawMaterialModal",
-                            //     class: "btn btn-primary mx-1",
-                            //     icon: {
-                            //         class: "material-icons",
-                            //         icon: "content_paste_go"
-                            //     },
-                            //     text: "Mover"
-                            // },
-                            {
-                                type: "button",
-                                data_bs_target: "#addInventoryRawMaterialModal",
-                                class: "btn btn-success mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "add_circle"
-                                },
-                                text: "Agregar"
-                            },
-                            {
-                                type: "button",
-                                data_bs_target: "#removeInventoryRawMaterialModal",
-                                class: "btn btn-danger mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "remove_circle"
-                                },
-                                text: "Eliminar"
-                            }
-                        ]
-                    }
             ];
+            if(this.isAdmin()){
+                curr_row.push({
+                    type: "modal_button",
+                    style: "white-space: nowrap",
+                    header_name: "Acciones",
+                    data: element,
+                    button: [
+                        {
+                            type: "button",
+                            data_bs_target: "#addInventoryRawMaterialModal",
+                            class: "btn btn-success mx-1",
+                            icon: {
+                                class: "material-icons",
+                                icon: "add_circle"
+                            },
+                            text: "Agregar"
+                        },
+                        {
+                            type: "button",
+                            data_bs_target: "#removeInventoryRawMaterialModal",
+                            class: "btn btn-danger mx-1",
+                            icon: {
+                                class: "material-icons",
+                                icon: "remove_circle"
+                            },
+                            text: "Eliminar"
+                        }
+                    ]
+                });
+            }
             this.tableElementsValues.push(curr_row);
         });
     }

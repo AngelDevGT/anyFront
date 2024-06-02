@@ -50,7 +50,6 @@ export class ListProductForSaleComponent implements OnInit {
     }
 
     setEstablishment(establishmentId: string){
-        console.log('setEstablishment', establishmentId);
         this.selectedEstablishment = this.establishmentOptions?.find(establishment => establishment._id === establishmentId);
         if(this.selectedEstablishment){
             this.getCards();

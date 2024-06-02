@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import jwt_decode from 'jwt-decode';
 
 import { environment } from '@environments/enviroment';
 import { User } from '@app/models/system/user.model';
+import { Role } from '@app/models';
 
 const undefinedStatus = {
     status: {
@@ -60,6 +61,10 @@ export class AccountService {
 
     public get userValue() {
         return this.userSubject.value;
+    }
+
+    public get userRole(){
+        return this.userValue?.role;
     }
 
     public get userValueFixed(){
@@ -204,5 +209,25 @@ export class AccountService {
         return this.userValue.userID === userId;
     }
 
+    checkLogin(): Observable<boolean> {
+        return of(this.userValue);
+      }
 
+    // checkUserRole(enabledRoles: string[]): Observable<boolean> {
+    //     let enabledUserRole = false;
+    //     for (let currRole of enabledRoles){
+    //         if (currRole === this.userValue.role.identifier){
+    //             enabledUserRole = true;
+    //         }
+    //     }
+    //     return of(enabledUserRole);
+    // }
+
+    getUserRole(): Observable<Role> {
+        return of(this.userValue.role);
+    }
+
+    getUserPaths(): Observable<Role> {
+        return of(this.userValue.role);
+    }
 }

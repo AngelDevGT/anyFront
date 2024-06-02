@@ -24,6 +24,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
     id?: string;
     viewOption = '';
+    storeId?: string;
     productForSaleOrder?: ProductForSaleStoreOrder;
     submitting = false;
     loading = false;
@@ -52,6 +53,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
+            this.storeId = params['store'];
         });
 
         if (this.viewOption && this.viewOption === "factory"){
@@ -234,11 +236,20 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
     navigateWithParams(){
         if(this.viewOption){
-            this.router.navigate(['/productsForSale/order'], {
-                queryParams: {
-                    opt: this.viewOption
-                }
-            });
+            if(this.storeId){
+                this.router.navigate(['/productsForSale/order'], {
+                    queryParams: {
+                        opt: this.viewOption,
+                        store: this.storeId
+                    }
+                });
+            } else {
+                this.router.navigate(['/productsForSale/order'], {
+                    queryParams: {
+                        opt: this.viewOption
+                    }
+                });
+            }
         } else {
             this.router.navigateByUrl('/productsForSale/order');
         }
@@ -307,7 +318,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
 
     generatePDF() {  
-        this.pdfService.generateRawMaterialOrderPDF(this.productForSaleOrder!);
+        this.pdfService.generateProductForSaleOrderPDF(this.productForSaleOrder!, this.viewOption);
     }  
 
 }

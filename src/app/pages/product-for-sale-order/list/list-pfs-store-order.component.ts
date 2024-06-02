@@ -10,6 +10,7 @@ import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.mo
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSelectChange } from '@angular/material/select';
+import { BehaviorSubject, forkJoin } from 'rxjs';
 
 @Component({ 
     templateUrl: 'list-pfs-store-order.component.html',
@@ -18,6 +19,11 @@ import { MatSelectChange } from '@angular/material/select';
 export class ListProductForSaleOrderComponent implements OnInit {
     productForSaleOrdes?: ProductForSaleStoreOrder[];
     allProductForSaleOrdes?: ProductForSaleStoreOrder[];
+    establishmentOptions?: Establishment[];
+    selectedEstablishment?: Establishment;
+    selectedEstablishmentSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    loadingOrders = false;
+    loadingEstablishments = false;
     searchTerm?: string;
     pageTitle?: string;
     entries = [5, 10, 20, 50];
@@ -36,11 +42,24 @@ export class ListProductForSaleOrderComponent implements OnInit {
             this.viewOption = params['opt'];
             this.storeOption = params['store'];
         });
-        this.pageTitle = 'Pedidos de Producto para Venta (Tienda)';
-        if(this.viewOption && this.viewOption === "factory"){
-            this.pageTitle = 'Pedidos de Producto para Venta (Fabrica)';
+        this.pageTitle = 'Pedidos de Producto Terminado (Fabrica)';
+        if(this.viewOption && this.viewOption === "store"){
+            this.pageTitle = 'Pedidos de Producto para Venta (Tienda)';
+            this.retrieveProductForSaleStoreOrders(this.storeOption);
+        } else {
+            this.retriveEstablishments();
+            this.selectedEstablishmentSubject.subscribe(value => {
+                this.setEstablishment(String(value));
+            });
         }
-        this.retrieveProductForSaleStoreOrders();
+    }
+
+    setEstablishment(establishmentId: string){
+        this.selectedEstablishment = this.establishmentOptions?.find(establishment => establishment._id === establishmentId);
+        // this.storeOption = establishmentId;
+        if(this.selectedEstablishment){
+            this.retrieveProductForSaleStoreOrders(establishmentId);
+        }
     }
 
     sortOptSelect(event: MatSelectChange){
@@ -63,16 +82,30 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.setTableElements(this.productForSaleOrdes);
     }
 
-    retrieveProductForSaleStoreOrders(){
+    retriveEstablishments(){
+        this.loadingEstablishments = true;
+        this.dataService.getAllEstablishmentsByFilter({"status": 1})
+        .pipe(first())
+        .subscribe({
+            next: (establishments: any) => {
+                this.establishmentOptions = establishments.findEstablishmentResponse?.establishment;
+                this.loadingEstablishments = false;
+            }
+        });
+    }
+
+    retrieveProductForSaleStoreOrders(storeId?: string){
         this.productForSaleOrdes = undefined;
-        if(this.storeOption){
-            this.dataService.getAllProductForSaleOrderByFilter({ establishmentID: this.storeOption})
+        this.loadingOrders = true;
+        if(storeId){
+            this.dataService.getAllProductForSaleOrderByFilter({ establishmentID: storeId})
             .pipe(first())
             .subscribe({
                 next: (pfsOrders: any) => {
                     this.productForSaleOrdes = pfsOrders.retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
                     this.allProductForSaleOrdes = this.productForSaleOrdes;
                     this.sortDataByDate(this.sortOpts[0]);
+                    this.loadingOrders = false;
                 }
             });
             return;
@@ -84,6 +117,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
                     this.productForSaleOrdes = pfsOrders.retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
                     this.allProductForSaleOrdes = this.productForSaleOrdes;
                     this.sortDataByDate(this.sortOpts[0]);
+                    this.loadingOrders = false;
                 }
             });
         }
@@ -125,7 +159,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
 
             if(element.factoryStatus?.id === storeOrderStatus.eliminado.id || element.storeStatus?.id === storeOrderStatus.eliminado.id) return;  
             let curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha" },
+                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha", rows_bg_color: element.storeStatus?.bg_color, rows_color: element.storeStatus?.color},
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name, header_name: "Tienda" },

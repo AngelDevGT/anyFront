@@ -86,6 +86,8 @@ export class ListStoreSalesPFSComponent implements OnInit {
     }
 
     setTableElements(elements?: ShopResume[]){
+        // Filtrar para mostrar solo elementos activos
+        elements = elements?.filter(element => element.status?.id !== 8);
         this.tableElementsValues = [];
         elements?.forEach((element: ShopResume) => {
             const curr_row = [

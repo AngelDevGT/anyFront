@@ -143,53 +143,69 @@ export const paymentStatusValues = {
 
 export const storeOrderStatus = {
     pendiente: {
-      "text": "1",
-      "identifier": "Pendiente",
-      "id": 1,
-      "status": 1
-    },
+        "text": "1",
+        "identifier": "Pendiente",
+        "id": 1,
+        "status": 1,
+        "bg_color": "#5d6d7e",
+        "color": "#fdfefe"
+      },
     en_camino:{
-      "id": 2,
-      "status": 1,
-      "text": "2",
-      "identifier": "En camino"
-    },
+        "id": 2,
+        "status": 1,
+        "text": "2",
+        "identifier": "En camino",
+        "bg_color": "#f1c40f",
+        "color": "#17202a"
+      },
     recibido: {
-      "id": 3,
-      "status": 1,
-      "text": "3",
-      "identifier": "Recibido"
-    },
+        "id": 3,
+        "status": 1,
+        "text": "3",
+        "identifier": "Recibido",
+        "bg_color": "#229954",
+        "color": "#fdfefe"
+      },
     cancelado: {
-      "id": 4,
-      "status": 1,
-      "text": "4",
-      "identifier": "Cancelado"
-    },
+        "id": 4,
+        "status": 1,
+        "text": "4",
+        "identifier": "Cancelado",
+        "bg_color": "#c0392b",
+        "color": "#fdfefe"
+      },
     eliminado: {
-      "id": 5,
-      "status": 1,
-      "text": "5",
-      "identifier": "Eliminado"
-    },
+        "id": 5,
+        "status": 1,
+        "text": "5",
+        "identifier": "Eliminado",
+        "bg_color": "#c0392b",
+        "color": "#fdfefe"
+      },
     devuelto: {
-      "id": 6,
-      "status": 1,
-      "text": "6",
-      "identifier": "Devuelto"
-    },
+        "id": 6,
+        "status": 1,
+        "text": "6",
+        "identifier": "Devuelto",
+        "bg_color": "#d35400",
+        "color": "#fdfefe"
+      },
     listo: {
-      "id": 7,
-      "status": 1,
-      "text": "7",
-      "identifier": "Listo"
-    },
+        "id": 7,
+        "status": 1,
+        "text": "7",
+        "identifier": "Listo",
+        "bg_color": "#3498db",
+        "color": "#fdfefe"
+      },
     entregado: {
-      "id": 8,
-      "status": 1,
-      "text": "8",
-      "identifier": "Entregado"
-    }
+        "id": 8,
+        "status": 1,
+        "text": "8",
+        "identifier": "Entregado",
+        "bg_color": "#229954",
+        "color": "#fdfefe"
+      }
 }
 
 export const activeStatus = {
@@ -1087,6 +1103,14 @@ export class DataService {
                 ...statusValues.eliminado
             }});
         return this.http.post(`${environment.apiUrl}/UpdateShopHistory`, deleteShopHistory);
+    }
+
+    cancelShop(params: any) {
+        let cancelShopRegister = JSON.stringify({
+            cancelShopRegister: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/cancelShop`, cancelShopRegister);
     }
 
     /** LOGS */

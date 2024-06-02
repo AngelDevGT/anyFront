@@ -1,7 +1,7 @@
 import { Component, OnInit} from '@angular/core';
 import { first } from 'rxjs/operators';
 
-import { AlertService, DataService } from '@app/services';
+import { AlertService, DataService, PdfService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Provider } from '@app/models/system/provider.model';
 import { ShopResume } from '@app/models/store/shop-resume.model';
@@ -24,7 +24,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     deleteOption = false;
 
     constructor(private dataService: DataService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router) {
+        private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
     }
 
     ngOnInit(): void {
@@ -44,6 +44,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                         }
                         this.setElements(this.shopResume);
                         this.loading = false;
+                        console.log(this.shopResume)
                     }
                 });
         }
@@ -64,6 +65,25 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                 }});
     }
 
+    cancelSale() {
+        this.submitting = true;
+        this.dataService.cancelShop({
+            "inventoryID": "65bf467e008f7e88678d3927",
+            "RegisterShop": {
+                "_id": this.shopResume?._id,
+            }
+        })
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                this.alertService.success('Venta cancelada', { keepAfterRouteChange: true });
+                this.router.navigateByUrl('/store/sales/history/' + this.shopResume?.establecimiento?._id);
+                },
+                error: error => {
+                    this.alertService.error('Error al eliminar la venta, contacte con Administracion');
+                }});
+    }
+
     editSale() {
         this.router.navigateByUrl('/store/sales/history/edit/' + this.id);
     }
@@ -73,10 +93,11 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         this.elements.push({icon : "person", name : "Cliente", value : shopResume?.nameClient ? shopResume?.nameClient : "--"});
         this.elements.push({icon : "tag", name : "NIT", value : shopResume?.nitClient ? shopResume?.nitClient : "--"});
         this.elements.push({icon : "feed", name : "Notas", value : shopResume?.nota ? shopResume?.nota : "--"});
+        // this.elements.push({icon : "credit_card", name : "Tipo de pago", value : shopResume?.paymentType?.identifier});
         this.elements.push({icon : "info", name : "Estado", value : shopResume?.status?.identifier});
         this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(shopResume!.creationDate!.replaceAll("\"",""))});
         this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(shopResume!.updateDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "badge", name : "Usuario Creador", value : "Pendiente..."});
+        this.elements.push({icon : "badge", name : "Vendido por", value : shopResume?.creatorUser?.name});
         this.setTableElements(shopResume?.itemsList);
     }
 
@@ -86,9 +107,10 @@ export class ViewStoreSalesPFSComponent implements OnInit{
             let curr_row = [
                     { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
-                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio" },
-                    { type: "text", value: element.quantity, header_name: "Cantidad" },
                     { type: "text", value: element.measure?.identifier, header_name: "Medida" },
+                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.price)), header_name: "Precio" },
+                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.discount)), header_name: "Descuento" },
+                    { type: "text", value: element.quantity, header_name: "Cantidad" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.totalDiscount)), header_name: "Descuento Total" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.total)), header_name: "Total" },
                     // { type: "text", value: element.measure.unitBase.name, header_name: "Medida Base" },
@@ -99,7 +121,15 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     }
 
     getSubTotal(){
-        return Number(this.shopResume?.total || 0) + Number(this.shopResume?.totalDiscount || 0) - Number(this.shopResume?.delivery || 0);
+        return Number(this.shopResume?.total || 0) - Number(this.shopResume?.delivery || 0);
+    }
+
+    getSubTotalWithoutDiscount(){
+        return Number(this.shopResume?.total || 0) + Number(this.shopResume?.totalDiscount) - Number(this.shopResume?.delivery || 0);
+    }
+
+    generatePDF() {  
+        this.pdfService.generateStoreSalePDF(this.shopResume!);
     }
 
 }

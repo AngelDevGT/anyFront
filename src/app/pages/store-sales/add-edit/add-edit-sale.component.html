@@ -105,10 +105,10 @@
                                             <thead>
                                                 <tr>
                                                     <th style="width: 30%">Nombre</th>
-                                                    <th style="width: 10%">Precio</th>
-                                                    <th style="width: 10%">Descuento</th>
-                                                    <th style="width: 15%">Cantidad</th>
                                                     <th style="width: 10%">Medida</th>
+                                                    <th style="width: 10%">Precio</th>
+                                                    <th style="width: 15%">Cantidad</th>
+                                                    <th style="width: 10%">Descuento total</th>
                                                     <th style="width: 10%">Total</th>
                                                     <th style="width: 15%">Acciones</th>
                                                 </tr>
@@ -116,10 +116,10 @@
                                             <tbody>
                                                 <tr *ngFor="let itemList of itemsList; let i = index">
                                                     <td>{{itemList.productForSale?.finishedProduct?.name}}</td>
-                                                    <td>Q{{itemList.price}}</td>
-                                                    <td>Q{{itemList.discount}}</td>
-                                                    <td>{{itemList.quantity}}</td>
                                                     <td>{{itemList.measure?.identifier}}</td>
+                                                    <td>Q{{itemList.price}}</td>
+                                                    <td>{{itemList.quantity}}</td>
+                                                    <td>Q{{itemList.totalDiscount}}</td>
                                                     <td>Q{{itemList.total}}</td>
                                                     <!-- <td><input [(ngModel)]="orderElement.quantity" [ngModelOptions]="{ standalone: true }" (keydown)="onQuantityKeydown($event)"
                                                         style="width: 100%;" type="text" placeholder="Cantidad" aria-label="Cantidad" min="1"
@@ -164,12 +164,16 @@
                                 <div class="row justify-content-center">
                                     <div *ngIf="!isEditOption" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
                                         <div class="subtotal">
-                                            <p class="subtotal-title">Subtotal</p>
-                                            <p class="subtotal-amount">Q{{ calculateSubtotal() | number: '1.2-2' }}</p>
+                                            <p class="subtotal-title">Subtotal sin descuento(s)</p>
+                                            <p class="subtotal-amount">Q{{ calculateSubtotalWithoutDiscount() | number: '1.2-2' }}</p>
                                         </div>
                                         <div class="descuento">
-                                            <p class="subtotal-title">Descuento</p>
+                                            <p class="subtotal-title">Descuento total</p>
                                             <p class="subtotal-amount">Q{{ calculateTotalDiscount() | number: '1.2-2' }}</p>
+                                        </div>
+                                        <div class="subtotal">
+                                            <p class="subtotal-title">Subtotal</p>
+                                            <p class="subtotal-amount">Q{{ calculateSubtotal() | number: '1.2-2' }}</p>
                                         </div>
                                         <div class="descuento">
                                             <p class="subtotal-title">Costo envio</p>

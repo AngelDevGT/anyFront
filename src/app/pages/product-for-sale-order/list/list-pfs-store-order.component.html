@@ -6,7 +6,7 @@
         <mat-card-content>
             <div class="container">
                 <div class="row justify-content-center">
-                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
+                    <div *ngIf="!loadingEstablishments" class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
                         <div>
                             <button *ngIf="viewOption != 'factory'" type="button" (click)="navigateWithParams()" class="btn btn-outline-success m-2">
                                 <!-- relative route "add" = "/users/add" -->
@@ -21,6 +21,14 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Buscar</mat-label>
                                     <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
+                                </mat-form-field>
+                            </div>
+                            <div *ngIf="viewOption&&viewOption==='factory'" class="select-filter mx-2">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Tienda</mat-label>
+                                    <mat-select matInput disableOptionCentering (valueChange)="selectedEstablishmentSubject.next($event)">
+                                        <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment._id}}">{{establishment.name}} ({{establishment.address}})</mat-option>
+                                    </mat-select>
                                 </mat-form-field>
                             </div>
                             <mat-form-field class="col-lg-2 col-md-4 col-sm-12 mx-2" appearance="outline">
@@ -40,7 +48,7 @@
                         </div>
                     </div>
                     <responsive-table *ngIf="this.productForSaleOrdes" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
-                    <span *ngIf="!productForSaleOrdes" class="spinner-border spinner-border-lg align-center"></span>
+                    <span *ngIf="loadingOrders||loadingEstablishments" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>
         </mat-card-content>

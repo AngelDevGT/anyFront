@@ -208,6 +208,7 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     private saveOrder(){
+        console.log(this.selectedPaymentType)
         if(this.isEditOption){
             let updatedShopResume: ShopResume = {
                 ...this.shopResume!,
@@ -224,6 +225,7 @@ export class AddEditSaleComponent implements OnInit{
                 paymentType: this.selectedPaymentType,
                 itemsList: this.itemsList,
             }
+            console.log(newShopResume);
             return this.dataService.registerShop(newShopResume);
         }
     }
@@ -340,7 +342,18 @@ export class AddEditSaleComponent implements OnInit{
         let subtotal = 0;
         if (this.itemsList){
             for(const itemList of this.itemsList){
-                subtotal += Number(itemList.price)*Number(itemList.quantity) || 0;
+                subtotal += Number(itemList.total) || 0;
+            }
+        }
+        this.subtotal = subtotal;
+        return subtotal;
+    }
+
+    calculateSubtotalWithoutDiscount() {
+        let subtotal = 0;
+        if (this.itemsList){
+            for(const itemList of this.itemsList){
+                subtotal += Number(itemList.subtotal) || 0;
             }
         }
         this.subtotal = subtotal;
@@ -365,7 +378,7 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     calculateTotal(){
-        this.total = this.subtotal - this.totalDiscount + this.delivery;
+        this.total = this.subtotal + this.delivery;
         return this.total;
     }
 
@@ -452,7 +465,7 @@ export class AddEditSaleComponent implements OnInit{
             ]),
             nitClient: new FormControl('', [ Validators.maxLength(20),]),
             nota: new FormControl('', [Validators.maxLength(100)]),
-            paymentType: new FormControl('', [this.isEditOption ? Validators.required : Validators.nullValidator]),
+            paymentType: new FormControl('', [this.isEditOption ? Validators.nullValidator : Validators.required]),
             delivery: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
         //   applyDate: new FormControl('', [Validators.required])
         });

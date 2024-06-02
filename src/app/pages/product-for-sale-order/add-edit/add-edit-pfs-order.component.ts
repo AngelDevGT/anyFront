@@ -161,12 +161,15 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     }
 
     loadProductsForSaleFromInventory(){
-        this.inventoryElements = this.productsForSale?.map((pfsItem) => {
+        this.inventoryElements = [];
+        this.productsForSale?.map((pfsItem) => {
             const matchingFinishedProduct = this.inventoryElementsSource?.find((invElem) => pfsItem.finishedProduct?._id === invElem?.finishedProduct?._id);
-            return matchingFinishedProduct ? {
-                ...matchingFinishedProduct,
-                productForSale: pfsItem
-            } : {}
+            if (matchingFinishedProduct){
+                this.inventoryElements?.push({
+                    ...matchingFinishedProduct,
+                    productForSale: pfsItem
+                });             
+            }
         });
         // this.filteredProductsForSale = this.productsForSale?.filter((pfsItem) => this.inventoryElements?.some((ieItem) => pfsItem.finishedProduct?._id === ieItem.finishedProduct?._id));
     }

@@ -2,8 +2,9 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
 import { HomeComponent } from '@app/home/index';
-import { AuthGuard } from '@app/helpers/index';
+// import { AuthGuard } from '@app/helpers/index';
 import { AdminLayoutComponent } from '@app/layouts';
+import { canActivate, canActivatePrev, canActivateV2 } from './helpers';
 
 const accountModule = () => import('./layouts/account/account-layout.module').then(x => x.AccountModule);
 const adminLayoutModule = () => import('@app/layouts').then(x => x.AdminLayouteModule);
@@ -25,7 +26,7 @@ const routes: Routes = [
                 loadChildren: adminLayoutModule
             }
         ],
-        canActivate: [AuthGuard]},
+        canActivate: [canActivateV2]},
     // { path: 'users', loadChildren: usersModule, canActivate: [AuthGuard] },
     { path: 'account', loadChildren: accountModule },
 

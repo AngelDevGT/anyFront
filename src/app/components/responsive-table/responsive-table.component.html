@@ -7,7 +7,9 @@
         </thead>
         <tbody>
             <tr
-                *ngFor="let row of rows | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
+                *ngFor="let row of rows | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize" 
+                [ngStyle]="{'background-color': row[0].rows_bg_color ? row[0].rows_bg_color : '', 'color': row[0].rows_color ? row[0].rows_color : ''}"
+                >
                 <td *ngFor="let field of row">
                   <p *ngIf="field.type === 'text'" class="row-value" [attr.data-label]="field.header_name">{{field.value}}</p>
                   <div *ngIf="field.type === 'button'" class="d-flex justify-content-lg-left row-value">

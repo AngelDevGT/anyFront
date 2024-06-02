@@ -1,3 +1,4 @@
+import { PaymentType } from "../auxiliary/payment-type.model";
 import { Status } from "../auxiliary/status.model";
 import { Establishment } from "../establishment.model";
 import { User } from "../user-bk1.model";
@@ -17,4 +18,5 @@ export interface ShopResume {
     updateDate?: string;
     itemsList?: ItemsList[];
     creatorUser?: User;
+    paymentType?: PaymentType;
 }  

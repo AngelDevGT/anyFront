@@ -10,7 +10,8 @@
             <br>
             <view-object [objectElements]="elements"></view-object>
             <div class="d-flex flex-wrap justify-content-center">
-                <button *ngIf="isAdmin() || isMine()"
+                <!-- <button *ngIf="isAdmin() || isMine()" -->
+                <button *ngIf="isAdmin()"
                 type="button" routerLink="/users/edit/{{user!._id}}" [disabled]="submitting"
                 class="btn btn-primary m-2">
                 <div class="d-flex flex-row p-1">

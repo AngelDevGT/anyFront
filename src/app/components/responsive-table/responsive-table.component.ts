@@ -42,13 +42,11 @@ export class ResponsiveTableComponent implements OnInit, OnChanges {
     }
 
     navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }, isAbsolute?: boolean){
-        console.log(isAbsolute, routerLink)
         const pathActual = this.router.url.split('?')[0];
         let newPath = `${pathActual}/${routerLink}`;
         if(isAbsolute){
             newPath = routerLink;
         }
-        console.log(newPath)
         if(queryParams){
           this.router.navigate([newPath], { queryParams: queryParams, queryParamsHandling: 'merge' });
         } else {

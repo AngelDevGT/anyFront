@@ -170,6 +170,7 @@ export class AddEditComponent implements OnInit {
                 status: this.selectedStatus,
                 role: this.selectedRole
             };
+            console.log(updatedUser);
             return this.accountService.update(this.id!, updatedUser);
         }
         let newUser = {

@@ -54,7 +54,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     tableElementsValues?: any;
     activityLogName = "Acciones de Materia Prima por Proveedor en Inventario de Bodega";
 
-    constructor(private dataService: DataService, private alertService: AlertService, private router: Router) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router) {}
 
     ngOnInit() {
 
@@ -131,6 +131,10 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         this.setTableElements(this.inventoryElements);
     }
 
+    isAdmin(){
+        return this.accountService.isAdminUser();
+    }
+
     setTableElements(elements?: InventoryElement[]){
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
@@ -145,7 +149,9 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
                         style: "white-space: nowrap",
                         header_name: "Acciones",
                         data: element,
-                        button: [
+                        button: 
+                        this.isAdmin() ?
+                        [
                             {
                                 type: "button",
                                 data_bs_target: "#moveInventoryRawMaterialModal",
@@ -175,6 +181,17 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
                                     icon: "remove_circle"
                                 },
                                 text: "Eliminar"
+                            }
+                        ] : [
+                            {
+                                type: "button",
+                                data_bs_target: "#moveInventoryRawMaterialModal",
+                                class: "btn btn-primary mx-1",
+                                icon: {
+                                    class: "material-icons",
+                                    icon: "content_paste_go"
+                                },
+                                text: "Mover"
                             }
                         ]
                     }

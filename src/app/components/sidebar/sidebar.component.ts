@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnChanges } from '@angular/core';
 import { Router } from '@angular/router';
+import { AccountService } from '@app/services';
 
 declare interface RouteInfo {
     path: string;
@@ -24,7 +25,9 @@ declare interface RouteInfo {
 })
 export class SidebarComponent implements OnInit {
 
-  menuItems: any = [
+  menuItems: any = [];
+
+  menuItemsOptions: any = [
     {
       button_type : "button",
       button_class : "list-group-item principal-bottom",
@@ -333,13 +336,45 @@ export class SidebarComponent implements OnInit {
     // }
   ];
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, private accountService: AccountService) { }
 
   ngOnInit() {
   //   this.menuItems = ROUTES.filter(menuItem => menuItem);
   //   this.router.events.subscribe((event) => {
   //     this.isCollapsed = true;
   //  });
+    this.getMenuTimes();
+  }
+
+  getMenuTimes(){
+    for(let item of this.menuItemsOptions){
+      let userValue = this.accountService.userValue;
+      let userPaths = userValue?.role?.paths || [];
+      let newItem = item;
+      let newItemChilds = [];
+      for(let child of item.childs){
+        let destinationRoute = child.router_link;
+        if(child.query_params){
+          destinationRoute += "?";
+          for(let key in child.query_params){
+            destinationRoute += key + "=" + child.query_params[key] + "&";
+          }
+          destinationRoute = destinationRoute.slice(0, -1);
+        }
+        const destinationRouteFound = userPaths.find((route: any) => {
+          const currRegex = new RegExp(route.matchPattern);
+          return currRegex.test(destinationRoute);
+        });
+        if(destinationRouteFound){
+          newItemChilds.push(child);
+        }
+      }
+      newItem.childs = newItemChilds;
+      if(newItemChilds.length > 0){
+        this.menuItems.push(newItem);
+      }
+    }
+    console.log(this.menuItems);
   }
 
   navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }){

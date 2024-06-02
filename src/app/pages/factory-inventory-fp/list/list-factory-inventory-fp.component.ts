@@ -54,7 +54,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     tableElementsValues?: any;
     activityLogName = "Acciones de Producto Terminado en Inventario de Fabrica";
 
-    constructor(private dataService: DataService, private alertService: AlertService, private router: Router) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router) {}
 
     ngOnInit() {
 
@@ -101,6 +101,10 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         this.finishedProductForm = this.createFinishedProductFormGroup();
     }
 
+    isAdmin(){
+        return this.accountService.isAdminUser();
+    }
+
     setWeightMeasure(measureId: string){
         if(measureId){
             this.selectedWeightMeasure = this.measureOptions?.find(meas => String(meas.id) === measureId);
@@ -133,7 +137,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     setTableElements(elements?: InventoryElement[]){
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
-            const curr_row = [
+            let curr_row: any = [
                     { type: "text", value: element.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.finishedProduct?._id },
                     { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 20%" },
                     { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 20%" },
@@ -141,7 +145,10 @@ export class ListFactoryInventoryFPComponent implements OnInit {
                     // { type: "text", value: element.status?.identifier, header_name: "Estado", style: "width: 15%" },
                     // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
-                    {
+                    
+                  ];
+                  if(this.isAdmin()){
+                    curr_row.push({
                         type: "modal_button",
                         style: "white-space: nowrap width: 30%",
                         header_name: "Acciones",
@@ -168,8 +175,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
                                 text: "Eliminar"
                             }
                         ]
-                    }
-                  ];
+                    });
+                  }
             this.tableElementsValues.push(curr_row);
         });
     }
