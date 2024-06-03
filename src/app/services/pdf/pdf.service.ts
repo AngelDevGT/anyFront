@@ -373,7 +373,7 @@ export class PdfService {
                                         this.dataService.getDecimalFromText(p.total!)
                                         // (p.price * p.qty).toFixed(2)
                                     ])),
-                            [{ text: 'Total (Q)', colSpan: 5 }, {}, {}, {}, {}, storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.subtotal), 0).toFixed(2), storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.totalDiscount), 0).toFixed(2), Number(storeSale?.total!).toFixed(2)]
+                            [{ text: 'Total (Q)', colSpan: 5 }, {}, {}, {}, {}, storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.subtotal), 0).toFixed(2), storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.totalDiscount), 0).toFixed(2), storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.total), 0).toFixed(2)]
                         ]
                     }  
                 },
