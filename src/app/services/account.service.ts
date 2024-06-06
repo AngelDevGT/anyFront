@@ -117,8 +117,7 @@ export class AccountService {
         let newUser = JSON.stringify({
             newUser: { 
                 ...user,
-                ...undefinedStatus,
-                ...undefinedRole
+                ...undefinedStatus
             }});
         // let newUser = { ...user };
         return this.http.post(`${environment.apiUrl}/newUser`, newUser);
