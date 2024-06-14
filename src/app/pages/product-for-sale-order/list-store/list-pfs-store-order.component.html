@@ -23,14 +23,14 @@
                                     <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
                                 </mat-form-field>
                             </div>
-                            <div *ngIf="viewOption&&viewOption==='factory'" class="select-filter mx-2">
+                            <!-- <div *ngIf="viewOption&&viewOption==='factory'" class="select-filter mx-2">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Tienda</mat-label>
                                     <mat-select matInput disableOptionCentering (valueChange)="selectedEstablishmentSubject.next($event)">
                                         <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment._id}}">{{establishment.name}} ({{establishment.address}})</mat-option>
                                     </mat-select>
                                 </mat-form-field>
-                            </div>
+                            </div> -->
                             <mat-form-field class="col-lg-2 col-md-4 col-sm-12 mx-2" appearance="outline">
                                 <mat-select matInput disableOptionCentering [(value)]="selectedSortOpt" (selectionChange)="sortOptSelect($event)">
                                     <mat-option *ngFor="let sortOpt of sortOpts" [value]="sortOpt">

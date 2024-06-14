@@ -20,7 +20,7 @@ import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/v
 import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bodega/list/list-inventory-rmp-bodega.component";
 import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-product-creation.component";
 import { AddEditProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/add-edit/add-edit-pfs-order.component";
-import { ListProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/list/list-pfs-store-order.component";
+import { ListProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/list-store/list-pfs-store-order.component";
 import { ViewProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/view/view-pfs-order.component";
 import { AddEditProductoForSaleComponent } from "@app/pages/product-for-sale/add-edit/add-edit-product-for-sale.component";
 import { ListProductForSaleComponent } from "@app/pages/product-for-sale/list/list-product-for-sale.component";
@@ -44,6 +44,7 @@ import { ListCashClosingComponent } from "@app/pages/cash-closing/list/list-cash
 import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash-closing.component";
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { canActivateV2 } from "@app/helpers";
+import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
 
 const usersModule = () => import('@app/layouts/users/users-layout.module').then(x => x.UsersModule);
 
@@ -57,6 +58,7 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'finishedProducts/edit/:id', component: AddEditFinishedProductComponent , canActivate: [canActivateV2]},
     { path: 'finishedProducts/view/:id', component: ViewFinishedProductComponent, canActivate: [canActivateV2]},
     { path: 'productsForSale/order', component: ListProductForSaleOrderComponent , canActivate: [canActivateV2]},
+    { path: 'finishedProduct/order', component: ListFinishedProductOrderInFactoryComponent, canActivate: [canActivateV2]},
     { path: 'productsForSale/order/create', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/order/edit/:id', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/order/view/:id', component: ViewProductForSaleOrderComponent , canActivate: [canActivateV2]},

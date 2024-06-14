@@ -34,6 +34,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
+    storeName = '';
 
     constructor(private dataService: DataService, private alertService: AlertService, private route: ActivatedRoute, private router: Router) {}
 
@@ -41,17 +42,13 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
             this.storeOption = params['store'];
+            this.storeName = params['name'];
         });
-        this.pageTitle = 'Pedidos de Producto Terminado (Fabrica)';
-        if(this.viewOption && this.viewOption === "store"){
-            this.pageTitle = 'Pedidos de Producto para Venta (Tienda)';
-            this.retrieveProductForSaleStoreOrders(this.storeOption);
-        } else {
-            this.retriveEstablishments();
-            this.selectedEstablishmentSubject.subscribe(value => {
-                this.setEstablishment(String(value));
-            });
-        }
+        this.pageTitle = `Pedidos de Producto Terminado (${this.storeName})`;
+        this.retrieveProductForSaleStoreOrders(this.storeOption);
+        if(this.viewOption === "store"){
+            this.pageTitle = `Pedidos de Producto para Venta (${this.storeName})`;
+        } 
     }
 
     setEstablishment(establishmentId: string){

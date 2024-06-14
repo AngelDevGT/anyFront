@@ -102,7 +102,7 @@ export class ListEstablishmentComponent implements OnInit {
                             type: "button",
                             routerLink: "/productsForSale/order",
                             is_absolute: true,
-                            query_params: {opt: "store", store: element._id},
+                            query_params: {opt: "store", store: element._id, name: element.name},
                             class: "btn btn-outline-secondary mx-1",
                             icon: {
                                 class: "material-icons",

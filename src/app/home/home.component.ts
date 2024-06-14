@@ -37,15 +37,16 @@ export class HomeComponent implements OnInit{
         
         let requestArray = [];
 
-        requestArray.push(this.dataService.getAllRawMaterialOrderByFilter({"status": 1}));
-        requestArray.push(this.dataService.getAllProducForSaleOrder());
+        // requestArray.push(this.dataService.getAllRawMaterialOrderByFilter({"status": 1}));
+        // requestArray.push(this.dataService.getAllProducForSaleOrder());
         requestArray.push(this.dataService.getShopHistory({}));
-        requestArray.push(this.dataService.getAllCashClosingByFilter({}));
+        // requestArray.push(this.dataService.getAllCashClosingByFilter({}));
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.rawMaterialOrders = result[0].retrieveRawMaterialOrderResponse?.rawMaterial;
-                this.productForSaleOrdes = result[1].retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
-                this.shopResumes = result[2].retrieveShopHistoryResponse?.FinishedProducts;
+                this.shopResumes = result[0].retrieveShopHistoryResponse?.FinishedProducts;
+                // this.rawMaterialOrders = result[0].retrieveRawMaterialOrderResponse?.rawMaterial;
+                // this.productForSaleOrdes = result[1].retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
+                // this.shopResumes = result[2].retrieveShopHistoryResponse?.FinishedProducts;
                 // this.cashClosings = result[3].retrieveStoreCashClosingResponse?.StoreCashClosing;
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
