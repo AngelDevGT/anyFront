@@ -187,8 +187,8 @@ export const storeOrderStatus = {
         "status": 1,
         "text": "6",
         "identifier": "Devuelto",
-        "bg_color": "#d35400",
-        "color": "#fdfefe"
+        "bg_color": "#aeb6bf",
+        "color": "#fff"
       },
     listo: {
         "id": 7,
