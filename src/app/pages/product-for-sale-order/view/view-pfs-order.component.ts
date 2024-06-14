@@ -42,6 +42,8 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     confirmDialogTitle = '...';
     confirmDialogText = '...';
     confirmDialogId = 0;
+    storeName = '';
+    
 
     constructor(private dataService: DataService, private alertService: AlertService,
         private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
@@ -54,6 +56,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
             this.storeId = params['store'];
+            this.storeName = params['name'];
         });
 
         if (this.viewOption && this.viewOption === "factory"){
@@ -240,7 +243,8 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                 this.router.navigate(['/productsForSale/order'], {
                     queryParams: {
                         opt: this.viewOption,
-                        store: this.storeId
+                        store: this.storeId,
+                        name: this.storeName
                     }
                 });
             } else {

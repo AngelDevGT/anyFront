@@ -84,6 +84,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     productForSaleIndexToRemove?: number;
     viewOption = '';
     storeOption = '';
+    storeName = '';
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
@@ -103,6 +104,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
             this.storeOption = params['store'];
+            this.storeName = params['name'];
         });
 
         this.orderForm = this.createFormGroup();
@@ -210,21 +212,13 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                     next: () => {
                         this.alertService.success('Orden de producto para venta guardada', { keepAfterRouteChange: true });
                         if(this.viewOption){
-                            if(this.viewOption === 'factory'){
-                                this.router.navigate(['/finishedProduct/order'], {
-                                    queryParams: {
-                                        opt: this.viewOption,
-                                        store: this.storeOption
-                                    }
-                                });
-                            } else {
-                                this.router.navigate(['/productsForSale/order'], {
-                                    queryParams: {
-                                        opt: this.viewOption,
-                                        store: this.storeOption
-                                    }
-                                });
-                            }
+                            this.router.navigate(['/finishedProduct/order'], {
+                                queryParams: {
+                                    opt: this.viewOption,
+                                    store: this.storeOption,
+                                    name: this.storeName
+                                }
+                            });
                         } else {
                             this.router.navigateByUrl('/productsForSale/order');
                         }
