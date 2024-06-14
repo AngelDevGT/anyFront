@@ -229,7 +229,9 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         if(this.viewOption){
             this.router.navigate(['/productsForSale/order/edit/' + _id], {
                 queryParams: {
-                    opt: this.viewOption
+                    opt: this.viewOption,
+                    store: this.storeId,
+                    name: this.storeName
                 }
             });
         } else {
