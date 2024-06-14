@@ -1,0 +1,140 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;" class="my-3">
+            <mat-card-title>{{pageTitle}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <!-- <div *ngIf="!loadingOrders" class="d-flex flex-wrap justify-content-md-end justify-content-end pb-0">
+                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
+                            <div class="select-filter mx-2">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Buscar</mat-label>
+                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
+                                </mat-form-field>
+                            </div>
+                            <mat-form-field class="col-lg-2 col-md-4 col-sm-12 mx-2" appearance="outline">
+                                <mat-select matInput disableOptionCentering [(value)]="selectedSortOpt" (selectionChange)="sortOptSelect($event)">
+                                    <mat-option *ngFor="let sortOpt of sortOpts" [value]="sortOpt">
+                                        {{ sortOpt }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <mat-form-field class="col-lg-2 col-md-4 col-sm-12 mx-2" appearance="outline">
+                                <mat-select matInput disableOptionCentering [(value)]="pageSize">
+                                    <mat-option *ngFor="let entry of entries" [value]="entry">
+                                        {{ entry }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                    </div> -->
+                    <!-- <responsive-table *ngIf="this.productForSaleOrdes" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table> -->
+                    <!-- <div *ngIf="cards" class="d-flex flex-wrap justify-content-center">
+                        <span *ngIf="!cards" class="spinner-border spinner-border-lg me-1"></span>
+                        <div *ngFor="let cardElements of cards | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize" class="p-2">
+                            <app-card [cardElements]="cardElements">
+                            </app-card>
+                        </div>
+                    </div>
+                    <div *ngIf="cards" class="d-flex flex-wrap justify-content-center pt-3">
+                        <ngb-pagination [pageSize] = "5" [collectionSize]="this.cards ? this.cards!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
+                    </div>
+                    <span *ngIf="loadingOrders" class="spinner-border spinner-border-lg align-center"></span> -->
+                    <div *ngIf="!loadingOrders" class="header-body">
+                        <div class="row">
+                            <div *ngFor="let card of cards" class="col-xl-3 col-lg-6">
+                                <div class="card card-stats mb-4 mb-xl-0">
+                                  <div class="card-body">
+                                      <div class="row mb-3">
+                                        <div class="col">
+                                          <!-- <h5 class="card-title text-uppercase text-muted mb-0">Ventas</h5> -->
+                                          <span class="h3 font-weight-bold mb-0">{{card.title}}</span>
+                                        </div>
+                                        <div class="col-auto">
+                                          <div class="icon icon-shape text-white rounded-circle shadow" style="background-color: orange;">
+                                            <i class="large material-icons mat-menu-icon">storefront</i>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div class="d-flex flex-row p-1" style="color: blue;">
+                                        <i class="large material-icons mat-menu-icon">done_outline</i>
+                                        <span class="mx-1" style="color: blue;"> {{card.ready}} </span>
+                                        <span class="text-nowrap"> Listo(s) </span>
+                                      </div>
+                                      <div class="d-flex flex-row p-1"  style="color: green;">
+                                        <i class="large material-icons mat-menu-icon">archive</i>
+                                        <span class="mx-1" style="color: green;"> {{card.received}} </span>
+                                        <span class="text-nowrap"> Recibido(s) </span>
+                                      </div>
+                                      <div class="d-flex flex-row p-1" style="color: gray;">
+                                        <i class="large material-icons mat-menu-icon">more_time</i>
+                                        <span class="mx-1" style="color: gray;"> {{card.pending}} </span>
+                                        <span class="text-nowrap"> Pendiente(s) </span>
+                                      </div>
+                                      <div class="d-flex flex-row p-1" style="color: #f1c40f;">
+                                        <i class="large material-icons mat-menu-icon">local_shipping</i>
+                                        <span class="mx-1" style="color: #f1c40f;"> {{card.onWay}} </span>
+                                        <span class="text-nowrap"> En Camino </span>
+                                      </div>
+                                      <div class="d-flex flex-row p-1" style="color: red;">
+                                        <i class="large material-icons mat-menu-icon">local_shipping</i>
+                                        <span class="mx-1" style="color: red" > {{card.devuelto}} </span>
+                                        <span class="text-nowrap"> Devuelto(s) </span>
+                                      </div>
+                                        <div class="col-sm-12 text-center p-2">
+                                            <button id="boton-form-crear-comunidad" type="submit"
+                                                class="btn btn-outline-secondary" 
+                                                data-bs-toggle="modal" data-bs-target="#pedidosModal"
+                                                (click)="navigateWithParamsEstablishmentOrders(card.id, card.title)">
+                                                <div class="d-flex flex-row">
+                                                    <i class="material-icons pb-0 mx-1">visibility</i>
+                                                    <span class="px-1">Pedidos</span>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                              </div>
+                        </div>
+                    </div>
+                    <span *ngIf="loadingOrders" class="spinner-border spinner-border-lg align-center"></span>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>
+
+<!-- <div class="modal hide fade" id="pedidosModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">{{dialogTitle}}</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div *ngIf="!loadingOrders" class="d-flex flex-wrap justify-content-md-end justify-content-end pb-0">
+                            <div class="d-flex justify-content-md-end justify-content-center pb-0">
+                                <div class="select-filter mx-2">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Buscar</mat-label>
+                                        <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
+                                    </mat-form-field>
+                                </div>
+                                <div class="pb-4 col-6 col-lg-4">
+                                    <select class="form-select form-select-lg" [(ngModel)]="selectedSortOpt" (ngModelChange)="sortOptSelect($event)">
+                                        <option *ngFor="let sortOpt of sortOpts" value="{{ sortOpt}}">{{sortOpt}}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <responsive-table *ngIf="tableElementsValues" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->

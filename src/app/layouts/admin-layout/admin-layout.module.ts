@@ -51,7 +51,7 @@ import { AddEditProductoForSaleComponent } from "@app/pages/product-for-sale/add
 import { ListProductForSaleComponent } from "@app/pages/product-for-sale/list/list-product-for-sale.component";
 import { ViewProductForSaleComponent } from "@app/pages/product-for-sale/view/view-product-for-sale.component";
 import { AddEditProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/add-edit/add-edit-pfs-order.component";
-import { ListProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/list/list-pfs-store-order.component";
+import { ListProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/list-store/list-pfs-store-order.component";
 import { ViewProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/view/view-pfs-order.component";
 import { SummaryRawMaterialOrderComponent } from "@app/pages/admin-summary/raw-material-order/summary-raw-material-order.component";
 import { SummaryRawMaterialByProviderInventoryBodegaComponent } from "@app/pages/admin-summary/rmp-inventory-bodega/summary-rmp-inventory-bodega.component";
@@ -67,6 +67,7 @@ import { ViewActivityLogComponent } from "@app/pages/activity-log/view/view-acti
 import { ListCashClosingComponent } from "@app/pages/cash-closing/list/list-cash-closing.component";
 import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash-closing.component";
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
+import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -136,6 +137,7 @@ import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/ad
       ListCashClosingComponent,
       ViewCashClosingComponent,
       AddEditCashClosingComponent,
+      ListFinishedProductOrderInFactoryComponent,
       // UsersLayoutComponent
   ]
 })
