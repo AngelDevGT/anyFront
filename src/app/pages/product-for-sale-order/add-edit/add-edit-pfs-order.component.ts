@@ -212,7 +212,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                     next: () => {
                         this.alertService.success('Orden de producto para venta guardada', { keepAfterRouteChange: true });
                         if(this.viewOption){
-                            this.router.navigate(['/finishedProduct/order'], {
+                            this.router.navigate(['/productsForSale/order'], {
                                 queryParams: {
                                     opt: this.viewOption,
                                     store: this.storeOption,
