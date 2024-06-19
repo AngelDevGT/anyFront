@@ -164,7 +164,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
                     this.isEditOption = true;
                     break;
                 case 'receive':
-                    this.title = 'Recibir Pedido de Materia Prima';
+                    this.title = 'Recibir y Validar Pedido de Materia Prima';
                     this.isReceiveOption = true;
                     break;
             }
@@ -242,8 +242,12 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
                     updatedRawMaterialOrder.paymentType = this.rawMaterialOrder?.paymentType;
                     updatedRawMaterialOrder.rawMaterialOrderElements = this.rawMaterialOrderElements;
                     updatedRawMaterialOrder.finalAmount = String(this.total);
-                    updatedRawMaterialOrder.status = statusValues.recibido.status;
-                    break;
+                    updatedRawMaterialOrder.status = statusValues.verificado.status;
+                    return this.dataService.updateRawMaterialOrder(updatedRawMaterialOrder).pipe(
+                        concatMap((result: any) => {
+                            return this.dataService.verifyRawMaterialOrder(this.rawMaterialOrder?._id!);
+                        })
+                    );
             }
             return this.dataService.updateRawMaterialOrder(updatedRawMaterialOrder);
         } else {

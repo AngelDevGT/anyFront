@@ -85,6 +85,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     viewOption = '';
     storeOption = '';
     storeName = '';
+    areTablesVisible = false;
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
@@ -127,6 +128,8 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         if (this.id){
             this.title = 'Actualizar Pedido de Producto para Venta'
             requestArray.push(this.dataService.getProductForSaleOrderById(this.id));
+        } else {
+            this.areTablesVisible = true;
         }
 
         let inventory: Inventory;
@@ -179,6 +182,9 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     loadRawMaterialOrder(){
         // this.setProvider(this.rawMaterialOrder?.provider?._id);
         this.orderForm.patchValue(this.productForSaleOrder!);
+        if(this.productForSaleOrder?.storeStatus?.id === 1){
+            this.areTablesVisible = true;
+        }
         // this.providertSelect?.patchValue(String(this.rawMaterialOrder?.provider?._id));
         this.selectedEstablishmentSubject.next(this.productForSaleOrder?._id);
         this.productForSaleOrderElements = this.productForSaleOrder?.productForSaleStoreOrderElements;

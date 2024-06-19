@@ -78,19 +78,19 @@ export class ViewRawMaterialOrderComponent implements OnInit{
                         this.paymentOption = true;
                     }
     
-            // // Receive order option
-            // if (elemStatus.id == statusValues.activo.status.id 
-            //     // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id
-            //     ){
-            //         this.receiveOption = true;
-            //     }
-    
-            // Validate order option
+            // Receive order option
             if (elemStatus.id == statusValues.activo.status.id 
-                // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id // Modificado para que se pueda validar sin haber pagado
+                // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id
                 ){
-                    this.validateOption = true;
+                    this.receiveOption = true;
                 }
+    
+            // // Validate order option
+            // if (elemStatus.id == statusValues.activo.status.id 
+            //     // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id // Modificado para que se pueda validar sin haber pagado
+            //     ){
+            //         this.validateOption = true;
+            //     }
     
             // Edit option and Delete option
             if (elemPayment.id != paymentStatusValues.pagado.paymentStatus.id && 
