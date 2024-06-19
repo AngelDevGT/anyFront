@@ -265,6 +265,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             measure: this.selectedMeasure,
             quantity: String(this.modalQuantity),
             totalPrice: this.modalTotal,
+            date: new Date().toISOString()
         };
         this.productForSaleOrderElements?.push(newOrderElement);
         this.findAndMoveProductForSaleById(true, this.selectedIE?.productForSale?._id);
