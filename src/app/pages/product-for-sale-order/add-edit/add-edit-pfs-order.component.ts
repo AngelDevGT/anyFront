@@ -86,10 +86,11 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     storeOption = '';
     storeName = '';
     areTablesVisible = false;
+    isPropertiesVisible = false;
+    warningMessage = '';
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
-        private imageCompress: NgxImageCompressService, private alertService: AlertService,
-        private router: Router, private formBuilder: FormBuilder, private modalService: NgbModal) {
+        private alertService: AlertService, private router: Router, private accountService: AccountService) {
 
         this.selectedEstablishmentSubject.subscribe(value => {
             this.setEstablishment(value);
@@ -185,6 +186,10 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         if(this.productForSaleOrder?.storeStatus?.id === 1){
             this.areTablesVisible = true;
         }
+        if(this.accountService.isAdminUser() || this.accountService.isSalesUser()){
+        // if(this.accountService.isSalesUser()){
+            this.isPropertiesVisible = true;
+        }
         // this.providertSelect?.patchValue(String(this.rawMaterialOrder?.provider?._id));
         this.selectedEstablishmentSubject.next(this.productForSaleOrder?._id);
         this.productForSaleOrderElements = this.productForSaleOrder?.productForSaleStoreOrderElements;
@@ -244,6 +249,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                 ...this.productForSaleOrder,
                 ...this.orderForm.value
             }
+            updatedProductForSaleOrder.comment = updatedProductForSaleOrder.comment && updatedProductForSaleOrder.comment.trim() ? updatedProductForSaleOrder.comment.trim() : '--';
             return this.dataService.updateProductForSaleOrder(updatedProductForSaleOrder);
         } else {
             let newProductForSaleOrder: ProductForSaleStoreOrder = {
@@ -253,6 +259,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                 productForSaleStoreOrderElements: this.productForSaleOrderElements,
                 finalAmount: this.total.toFixed(2)
             }
+            newProductForSaleOrder.comment = newProductForSaleOrder.comment ? newProductForSaleOrder.comment.trim() : '--';
             return this.dataService.addProductForSaleOrder(newProductForSaleOrder);
         }
     }
@@ -453,10 +460,15 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     calculateModalQuantity() {
         let totalQuantity = Number(this.modalQuantity)*Number(this.currentMeasureQuantity) || 0;
         let unitBaseTotalQuantity = Number(this.selectedIE?.measure?.unitBase?.quantity) * Number(this.selectedIE?.quantity);
+        let selectedMeasureQuantity = Number(this.selectedIE?.quantity)/Number(this.selectedMeasure?.unitBase?.quantity);
         if(totalQuantity > unitBaseTotalQuantity){
+            // this.warningMessage = `La cantidad ingresada (${totalQuantity} ${this.selectedIE?.measure?.identifier}(es)) supera la cantidad disponible en inventario (${unitBaseTotalQuantity} ${this.selectedIE?.measure?.identifier}(es))`;
+            this.warningMessage = `La cantidad ingresada de ${this.modalQuantity} ${this.selectedMeasure?.identifier}(s) supera la cantidad disponible en inventario de ${selectedMeasureQuantity} ${this.selectedMeasure?.identifier}(s)`;
             this.modalQuantityInput?.setValue('0');
             this.modalQuantity = 0;
             totalQuantity = 0;
+        } else {
+            this.warningMessage = '';
         }
         this.modalSelectedQuantity = totalQuantity;
     }
@@ -475,9 +487,9 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             Validators.maxLength(50),
           ]),
           comment: new FormControl('', [
-            Validators.required,
-            Validators.minLength(1),
-            Validators.maxLength(100),
+            // Validators.required,
+            // Validators.minLength(1),
+            // Validators.maxLength(100),
             ]),
         //   establishment: new FormControl('', [this.id ? Validators.nullValidator : Validators.required]),
         });

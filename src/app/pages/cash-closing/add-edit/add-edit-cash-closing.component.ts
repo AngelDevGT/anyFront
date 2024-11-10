@@ -44,6 +44,7 @@ export class AddEditCashClosingComponent implements OnInit{
     tableInventoryCapture?: any = [];
     totalDiscountShopResumes = 0;
     totalAmountShopResumes = 0;
+    totalAmountSale = 0;
     totalAmountStoreOrders = [0, 0, 0];
     totalAmountInventoryCapture = 0;
     totalAmountCashClosing = 0;
@@ -287,6 +288,7 @@ export class AddEditCashClosingComponent implements OnInit{
             this.tableShopResumes.push(curr_row);
             this.totalAmountCashClosing = (this.totalAmountStoreOrders[0] - this.totalDiscountShopResumes) - this.totalAmountShopResumes;
         });
+        this.totalAmountSale = this.totalAmountShopResumes - this.totalDiscountShopResumes;
     }
 
     setTablePayments(payments: any){
@@ -307,7 +309,7 @@ export class AddEditCashClosingComponent implements OnInit{
 
     createOperationMaterialFormGroup() {
         return new FormGroup({
-            note: new FormControl('', [Validators.required, Validators.maxLength(100)]),
+            note: new FormControl('', [Validators.maxLength(100)]),
             initialDate: new FormControl('', [this.isUpdate ? Validators.nullValidator : Validators.required, Validators.maxLength(45)])
         });
     }
@@ -332,6 +334,7 @@ export class AddEditCashClosingComponent implements OnInit{
                 ...this.cashClosing,
                 ...this.operationRawMaterialForm.value
             };
+            newCashClosing.note = newCashClosing.note && newCashClosing.note.trim() ? newCashClosing.note.trim() : '--';
             this.dataService.updateCashClosing(this.cashClosing!._id!, newCashClosing)
             .pipe(first())
             .subscribe({
@@ -369,6 +372,7 @@ export class AddEditCashClosingComponent implements OnInit{
                         storeID: this.establishmentId
                     };
 
+                    this.newCashClosing.note = this.newCashClosing.note && this.newCashClosing.note.trim() ? this.newCashClosing.note.trim() : '--';
                     this.dataService.addCashClosing(this.newCashClosing, queryParams)
                     .pipe(first())
                     .subscribe({

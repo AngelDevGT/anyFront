@@ -57,7 +57,7 @@ export class SummaryProductForSaleInventoryFactoryComponent implements OnInit {
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.inventory = result[0].getInventoryResponse.Inventory;
-                this.statusOptions = result[1].retrieveCatalogGenericResponse.elements;
+                this.statusOptions = result[1].retrieveCatalogGenericResponse.elements.slice(0, 3);
                 this.establishmentOptions = result[2].findEstablishmentResponse?.establishment;
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),

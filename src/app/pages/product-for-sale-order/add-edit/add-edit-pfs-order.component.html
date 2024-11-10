@@ -13,7 +13,7 @@
                 <div class="container">
                     <div class="row justify-content-center">
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
-                            <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                            <mat-form-field *ngIf="isPropertiesVisible" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
                                 <mat-label>Nombre del pedido</mat-label>
                                 <input id="nombre-form-crear-comunidad" type="text" formControlName="name" matInput
                                     [ngClass]="{ 'is-invalid': f['name'].errors }" />
@@ -38,7 +38,7 @@
                                     </div>
                                 </div>
                             </mat-form-field> -->
-                            <mat-form-field class="col-sm-12 col-md-8 col-lg-6 custom-input align-self-start" appearance="outline">
+                            <mat-form-field *ngIf="isPropertiesVisible" class="col-sm-12 col-md-8 col-lg-6 custom-input align-self-start" appearance="outline">
                                 <mat-label>Notas</mat-label>
                                 <textarea id="nombre-form-crear-comunidad" type="text" formControlName="comment" matInput
                                     [ngClass]="{ 'is-invalid': f['comment'].errors }"></textarea>
@@ -254,6 +254,9 @@
                                 </mat-form-field>
                             </div>
                         </div>
+                        <div *ngIf="warningMessage" class="row justify-content-center col-lg-7 col-md-8 col-sm-12">
+                            <p class="text-danger">{{warningMessage}}</p>
+                        </div>
                         <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                             <div class="subtotal">
                                 <p class="subtotal-title">Cantidad Disponible ({{ selectedIE?.measure?.identifier }})</p>
@@ -275,7 +278,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!productForSaleForm.valid" data-bs-dismiss="modal">Agregar</button>
+                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!productForSaleForm.valid || modalSelectedQuantity<=0" data-bs-dismiss="modal">Agregar</button>
             </div>
         </div>
     </div>

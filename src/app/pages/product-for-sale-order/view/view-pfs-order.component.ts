@@ -1,9 +1,10 @@
-import { Component, OnInit} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, inject, OnInit} from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 
-import { AlertService, DataService, PdfService, statusValues, storeOrderStatus } from '@app/services';
+import { AccountService, AlertService, DataService, PdfService, storeOrderStatus } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 import pdfMake from "pdfmake/build/pdfmake";  
 import pdfFonts from "pdfmake/build/vfs_fonts";  
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -13,6 +14,7 @@ import { PaymentStatus, Status } from '@app/models';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
 import { ProductForSaleStoreOrderElement } from '@app/models/product-for-sale/product-for-sale-store-order-element.model';
 import { ManageProductForSaleStoreOrderElement } from '@app/models/product-for-sale/manage-product-for-sale-store-order.model copy';
+import { MatButtonModule } from '@angular/material/button';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({ 
@@ -43,10 +45,11 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     confirmDialogText = '...';
     confirmDialogId = 0;
     storeName = '';
+    errorMessage = '';
     
 
-    constructor(private dataService: DataService, private alertService: AlertService,
-        private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
+    constructor(private dataService: DataService, private alertService: AlertService, private accountService: AccountService,
+        private route: ActivatedRoute, private pdfService: PdfService, private router: Router, private dialog: MatDialog) {
     }
 
     ngOnInit(): void {
@@ -79,6 +82,14 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         }
     }
 
+    openDialog(error_message: String): void {
+        this.dialog.open(DialogComponent, {
+          data: {
+            error_message: error_message
+          }
+        });
+    }
+
     setElementOptions(elemStatus?: Status){
         if (elemStatus){
             if(this.isFactory){
@@ -108,9 +119,13 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                         this.deleteOption = true;
                     }
             
-            if (!(elemStatus.id == storeOrderStatus.cancelado.id || elemStatus.id == storeOrderStatus.recibido.id ||
-                elemStatus.id == storeOrderStatus.eliminado.id)){
-                    this.editOption = true;
+            if (!(elemStatus.id == storeOrderStatus.cancelado.id || elemStatus.id == storeOrderStatus.recibido.id || elemStatus.id == storeOrderStatus.eliminado.id)){
+
+                    if(elemStatus.id == storeOrderStatus.pendiente.id || (this.accountService.isSalesUser() || this.accountService.isAdminUser())){
+                    // if(elemStatus.id == storeOrderStatus.pendiente.id || (this.accountService.isSalesUser())){
+                        this.editOption = true;
+                    }
+
                 }
         }
     }
@@ -154,7 +169,12 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                     this.navigateWithParams();
                 },
                 error: error => {
-                    this.alertService.error(`Error al actualizar el pedido "${error.error.manageProductForSaleStoreOrderResponse.AcknowledgementDescription}", contacte con Administracion`);
+                    // this.errorMessage = error.error.manageProductForSaleStoreOrderResponse.AcknowledgementDescription;
+                    this.openDialog("Error al marcar el pedido como Listo: \"" + 
+                        error.error.manageProductForSaleStoreOrderResponse.AcknowledgementDescription +
+                        "\". Contacte con Administracion"
+                    );
+                    // this.alertService.error(`Error al actualizar el pedido "${error.error.manageProductForSaleStoreOrderResponse.AcknowledgementDescription}", contacte con Administracion`);
             }});
         } else if (this.confirmDialogId == 3){
             let newOrder: ProductForSaleStoreOrder = {
@@ -328,3 +348,36 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     }  
 
 }
+
+@Component({
+    selector: 'dialog-component',
+    template: `
+        <h2 mat-dialog-title>ERROR</h2>
+        <mat-dialog-content>{{data.error_message}}</mat-dialog-content>
+        <mat-dialog-actions>
+        <button mat-button mat-dialog-close>Cerrar</button>
+        </mat-dialog-actions>
+    `,
+    standalone: true,
+    imports: [MatButtonModule, MatDialogModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  })
+  export class DialogComponent {
+    constructor(
+        public dialogRef: MatDialogRef<DialogComponent>,
+        @Inject(MAT_DIALOG_DATA) public data: any, private router: Router) {}
+
+    ngOnInit() {
+        // Subscribirse al evento de cierre del diálogo
+        this.dialogRef.afterClosed().subscribe(() => {
+          this.reloadPage(); // Recargar la página cuando se cierre el diálogo
+        });
+      }
+    
+      // Método para recargar la página
+      reloadPage(): void {
+        window.location.reload(); // Recarga la página completa
+        // O también puedes usar: location.reload(); -> Alternativa
+    }
+
+  }

@@ -1,0 +1,188 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>{{title}}</mat-card-title>
+            <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                            <div *ngIf="!isEditOption" class="row justify-content-center col-12">
+                                <div class="p-3 col-sm-12 col-md-6">
+                                    <h2 class="text-center text-muted">Materia prima disponible</h2>
+                                    <div class="table-container my-custom-scrollbar">
+                                        <table class="table table-bordered border-danger">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 40%">Nombre</th>
+                                                    <th style="width: 20%">Medida</th>
+                                                    <th style="width: 20%">Cantidad</th>
+                                                    <!-- <th style="width: 10%">Estado</th> -->
+                                                    <th style="width: 20%">Agregar</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let invElement of inventoryElements; let i = index">
+                                                    <td>{{invElement.rawMaterialBase?.name}}</td>
+                                                    <td>{{invElement.measure?.identifier}}</td>
+                                                    <td>{{invElement.quantity}}</td>
+                                                    <!-- <td>{{rawMaterial.status!.id}}</td> -->
+                                                    <td style="white-space: nowrap">
+                                                        <button
+                                                            type="button" (click)="selectInventoryElement(invElement, i)"
+                                                            class="btn btn-success btn-sm pb-0 mx-1"
+                                                            data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
+                                                                <i class="material-icons">add_circle</i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr *ngIf="!inventoryElements">
+                                                    <td colspan="4" class="text-center">
+                                                        <span class="spinner-border spinner-border-lg align-center"></span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="table-responsive p-3 col-sm-12 col-md-6">
+                                    <h2 class="text-center text-muted">Materia prima seleccionada</h2>
+                                    <div class="table-container my-custom-scrollbar">
+                                        <table class="table table-bordered border-danger table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 40%">Nombre</th>
+                                                    <th style="width: 20%">Medida</th>
+                                                    <th style="width: 20%">Cantidad</th>
+                                                    <th style="width: 20%">Eliminar</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let fpcElement of finishedProductCreationConsumedElements; let i = index">
+                                                    <td>{{fpcElement?.rawMaterialName}}</td>
+                                                    <td>{{fpcElement.measure?.identifier}}</td>
+                                                    <td>{{fpcElement.quantity}}</td>
+                                                    <td style="white-space: nowrap">
+                                                        <button
+                                                            type="button" (click)="unselectInventoryElement(fpcElement, i)"
+                                                            class="btn btn-danger btn-sm pb-0 mx-1">
+                                                                <i class="material-icons">cancel</i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <mat-divider></mat-divider>
+                            </div>
+                        </div>
+                        <div class="col-sm-12 text-center p-2">
+                            <button *ngIf="!isReceiveOption" id="boton-form-crear-comunidad" type="button" (click)="onSaveForm()" [disabled]="submitting||!finishedProductCreationConsumedElements||finishedProductCreationConsumedElements.length<=0"
+                                class="btn btn-outline-success btn-lg">
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                Consumir materia prima
+                            </button>
+                            <!-- <button *ngIf="isReceiveOption" (click)="onReceiveDialog()" type="button" [disabled]="submitting||orderForm.invalid||!rawMaterialOrderElements||rawMaterialOrderElements.length<=0" 
+                            data-bs-toggle="modal" data-bs-target="#confirmModal" class="btn btn-outline-success">
+                                <div class="d-flex flex-row p-1">
+                                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                    <i class="material-icons icon">receipt_long</i>
+                                    <span class="px-1">RECIBIR PEDIDO</span>
+                                </div>
+                            </button> -->
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>
+
+<div class="modal fade" id="rawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="rawMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div *ngIf="selectedRMP" class="modal-header">
+                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{this.selectedRMP.rawMaterialBase?.name}}</h1>
+                <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form [formGroup]="rawMaterialForm">
+                    <div class="d-flex flex-wrap justify-content-center">
+                        <div class="col-12 p-3">
+                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedIE?.rawMaterialBase?.photo"></view-object>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center col-12 p-3">
+                            <div class="pb-4 col-6 col-lg-3">
+                                <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
+                                    <option disabled selected value="">Medida</option>
+                                    <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
+                                </select>
+                            </div>
+                            <div class="px-2">
+                                <mat-form-field class="custom-input" appearance="outline">
+                                    <mat-label>Cantidad</mat-label>
+                                    <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
+                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="setModalQuantityValue($event)" />
+                                    <div class="invalid-feedback" *ngIf="r['quantity'].errors">
+                                        <div *ngIf="r['quantity'].hasError('required')">
+                                            Cantidad requerida
+                                        </div>
+                                        <div *ngIf="r['quantity'].hasError('pattern')">
+                                            Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                            </div>
+                        </div>
+                        <div *ngIf="modalSelectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
+                            <div class="subtotal">
+                                <p class="subtotal-title">Cantidad Disponible ({{ selectedIE?.measure?.identifier }})</p>
+                                <p class="subtotal-amount">{{ this.selectedIE?.quantity }}</p>
+                            </div>
+                            <div class="total">
+                                <p class="total-title">Cantidad Seleccionada ({{ selectedIE?.measure?.identifier }})</p>
+                                <p class="total-amount">{{ modalSelectedQuantity }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">Agregar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal hide fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">{{confirmDialogTitle}}</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div>
+                    {{confirmDialogText}}
+                </div>
+                <div *ngIf="warningDialogText">
+                    <br>
+                    <strong class="text-danger">{{warningDialogText}}</strong>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">CANCELAR</button>
+                <button type="button" [disabled]="submitting" (click)="onConfirmDialog()" data-bs-dismiss="modal" class="btn btn-primary">ACEPTAR</button>
+            </div>
+        </div>
+    </div>
+</div>

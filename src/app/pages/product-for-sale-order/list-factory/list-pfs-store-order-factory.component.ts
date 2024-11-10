@@ -44,7 +44,7 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
         });
-        this.pageTitle = 'Pedidos de Producto Terminado';
+        this.pageTitle = 'Pedidos';
         this.retrieveProductForSaleStoreOrders();
     }
 

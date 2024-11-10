@@ -42,7 +42,7 @@ export class AddEditProviderComponent implements OnInit{
 
         this.providerForm = this.createFormGroup();
 
-        this.title = 'Crear Proveedor';
+        this.title = 'Registrar Proveedor';
         if (this.id){
             this.title = 'Editar Proveedor';
             this.loading = true;

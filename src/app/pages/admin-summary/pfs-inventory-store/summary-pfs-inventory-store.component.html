@@ -33,7 +33,7 @@
                                     </div>
                                     <div class="col-md-2 select-filter">
                                         <mat-form-field appearance="outline">
-                                            <mat-label>Estado Pedido</mat-label>
+                                            <mat-label>Estado</mat-label>
                                             <mat-select matInput disableOptionCentering formControlName="orderStatus">
                                                 <mat-option *ngFor="let status of statusOptions" value="{{status.id}}">{{status.identifier}}</mat-option>
                                             </mat-select>
@@ -57,7 +57,7 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Inventarios de Productos para Venta (Tiendas)</mat-card-title>
+            <mat-card-title>Inventarios de productos en tiendas</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div class="container">

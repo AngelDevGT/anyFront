@@ -55,7 +55,7 @@ export class SummaryRawMaterialByProviderInventoryFactoryComponent implements On
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
-                this.statusOptions = result[1].retrieveCatalogGenericResponse.elements;
+                this.statusOptions = result[1].retrieveCatalogGenericResponse.elements.slice(0, 3);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {

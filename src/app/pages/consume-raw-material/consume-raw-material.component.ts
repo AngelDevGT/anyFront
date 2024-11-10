@@ -35,11 +35,11 @@ import { FinishedProductCreation } from '@app/models/product/finished-product-cr
 import { FinishedProductCreationProducedElement } from '@app/models/product/fp-creation-produced-element.model';
 
 @Component({ 
-    selector: 'page-add-edit-product-creation',
-    templateUrl: 'add-edit-product-creation.component.html',
-    styleUrls: ['add-edit-product-creation.component.scss']
+    selector: 'page-consume-raw-material',
+    templateUrl: 'consume-raw-material.component.html',
+    styleUrls: ['consume-raw-material.component.scss']
 })
-export class AddEditProductCreationComponent implements OnInit{
+export class ConsumeRawMaterialComponent implements OnInit{
 
     //Form
     orderForm!: FormGroup;
@@ -123,7 +123,7 @@ export class AddEditProductCreationComponent implements OnInit{
 
     ngOnInit(): void {
 
-        this.title = 'Registrar Producto Terminado en Inventario';
+        this.title = 'Consumir materia prima de inventario';
         this.id = this.route.snapshot.params['id'];
         this.route.queryParams.subscribe(params => {
             this.editOption = params['opt'];
@@ -150,8 +150,8 @@ export class AddEditProductCreationComponent implements OnInit{
 
         requestArray.push(this.dataService.getAllProvidersByFilter({"status": 1})); // providerRequest
         requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
-        // requestArray.push(this.dataService.getInventory({ _id: "64d7240f838808573bd7e9ee"}));
-        requestArray.push(this.dataService.getAllFinishedProductByFilter({ status: { id: 2}}));
+        requestArray.push(this.dataService.getInventory({ _id: "64d7240f838808573bd7e9ee"}));
+        // requestArray.push(this.dataService.getAllFinishedProductByFilter({ status: { id: 2}}));
 
         if (this.id){
             requestArray.push(this.dataService.getRawMaterialOrderById(this.id));
@@ -166,14 +166,14 @@ export class AddEditProductCreationComponent implements OnInit{
                 this.finishedProductMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
                 this.filteredMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
                 this.filteredFinishedProductMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                // inventory = result[2].getInventoryResponse?.Inventory;
-                // this.filteredRawMaterials = result[2].retrieveRawMaterialByProviderResponse?.rawMaterial;
+                inventory = result[2].getInventoryResponse?.Inventory;
+                this.filteredRawMaterials = result[2].retrieveRawMaterialByProviderResponse?.rawMaterial;
                 // this.finishedProducts = result[3].retrieveFinishedProductResponse.FinishedProducts;
-                this.finishedProducts = result[2].retrieveFinishedProductResponse.FinishedProducts;
+                // console.log(respuestaPeticion1, respuestaPeticion2, respuestaPeticion3);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
-                // this.inventoryElements = inventory.inventoryElements;
+                this.inventoryElements = inventory.inventoryElements;
                 this.loading = false;
             }
         });
@@ -229,10 +229,10 @@ export class AddEditProductCreationComponent implements OnInit{
         this.alertService.clear();
         this.submitting = true;
         let finishedProductCreation: FinishedProductCreation = {
-            destinyFinishedProductInventoryID: "64d7dae896457636c3f181e9",
-            // originRawMaterialInventoryID: "64d7240f838808573bd7e9ee",
-            finishedProductList: this.finishedProductCreationProducedElements,
-            // rawMaterialList: this.finishedProductCreationConsumedElements
+            // destinyFinishedProductInventoryID: "64d7dae896457636c3f181e9",
+            originRawMaterialInventoryID: "64d7240f838808573bd7e9ee",
+            // finishedProductList: this.finishedProductCreationProducedElements,
+            rawMaterialList: this.finishedProductCreationConsumedElements
         }
         // finishedProductCreation.rawMaterialList = this.finishedProductCreationConsumedElements;
         console.log(finishedProductCreation);
@@ -241,8 +241,8 @@ export class AddEditProductCreationComponent implements OnInit{
             .pipe(first())
                 .subscribe({
                     next: () => {
-                        this.alertService.success('Producto(s) registrado(s) en inventario correctamente', { keepAfterRouteChange: true });
-                        this.router.navigateByUrl('/inventory/factory/finishedProduct');
+                        this.alertService.success('Materia(s) prima(s) consumida(s) correctamente', { keepAfterRouteChange: true });
+                        this.router.navigateByUrl('/inventory/factory/rawMaterial');
                     },
                     error: error => {
                         let errorResponse = error.error;
@@ -299,22 +299,12 @@ export class AddEditProductCreationComponent implements OnInit{
             measure: this.modalSelectedMeasure,
             quantity: this.modalQuantity.toFixed(2)
         }
+        console.log(newFinishedProductCreationConsumedElement);
         this.finishedProductCreationConsumedElements?.push(newFinishedProductCreationConsumedElement);
+        console.log(this.finishedProductCreationConsumedElements);
         this.findAndMoveInventoryElementById(true, this.selectedIE?.rawMaterialBase?._id);
+        console.log(this.unselectedInventoryElements);
         this.onResetMaterialForm();
-    }
-
-    onSaveFinishedProductForm(){
-        console.log("selectedFinishedProduct: " + this.selectedFinishedProduct);
-        let newFinishedProductCreationProducedElement: FinishedProductCreationProducedElement = {
-            finishedProductID: this.selectedFinishedProduct?._id,
-            finishedProductName: this.selectedFinishedProduct?.name,
-            measure: this.modalFinishedProductSelectedMeasure,
-            quantity: String(this.modalFinishedProductQuantity)
-        }
-        this.finishedProductCreationProducedElements?.push(newFinishedProductCreationProducedElement);
-        this.findAndMoveFinishedProductById(true, this.selectedFinishedProduct?._id);
-        this.onResetFinishedProductForm();
     }
 
     setMeasure(measureId: string){

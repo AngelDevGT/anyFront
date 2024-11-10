@@ -45,6 +45,7 @@ import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { canActivateV2 } from "@app/helpers";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
+import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 
 const usersModule = () => import('@app/layouts/users/users-layout.module').then(x => x.UsersModule);
 
@@ -89,8 +90,10 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'inventory/warehouse/rawMaterialByProvider', component: ListWarehouseInventoryRMPComponent, canActivate: [canActivateV2]},
     { path: 'inventory/factory/rawMaterial', component: ListFactoryInventoryRMComponent, canActivate: [canActivateV2]},
     { path: 'inventory/factory/finishedProduct', component: ListFactoryInventoryFPComponent, canActivate: [canActivateV2]},
-    { path: 'establishments/inventory/:id', component: ListStoreInventoryPFSComponent, canActivate: [canActivateV2]},
+    { path: 'store', component: ListEstablishmentComponent, canActivate: [canActivateV2]},
+    { path: 'store/inventory/:id', component: ListStoreInventoryPFSComponent, canActivate: [canActivateV2]},
     { path: 'productCreation', component: AddEditProductCreationComponent, canActivate: [canActivateV2]},
+    { path: 'consumeRawMaterial', component: ConsumeRawMaterialComponent, canActivate: [canActivateV2]},
     { path: 'users', loadChildren: usersModule, canActivate: [canActivateV2]},
     { path: 'summary/rawMaterialByProvider/order', component: SummaryRawMaterialOrderComponent, canActivate: [canActivateV2]},
     { path: 'summary/inventory/warehouse/rawMaterialByProvider', component: SummaryRawMaterialByProviderInventoryBodegaComponent, canActivate: [canActivateV2]},

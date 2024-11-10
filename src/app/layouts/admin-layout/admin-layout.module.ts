@@ -68,6 +68,7 @@ import { ListCashClosingComponent } from "@app/pages/cash-closing/list/list-cash
 import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash-closing.component";
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
+import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 @NgModule({
@@ -114,6 +115,7 @@ import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-f
       ListFinishedProductComponent,
       ViewFinishedProductComponent,
       AddEditProductCreationComponent,
+      ConsumeRawMaterialComponent,
       ListWarehouseInventoryRMPComponent,
       ListFactoryInventoryRMComponent,
       ListFactoryInventoryFPComponent,

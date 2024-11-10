@@ -13,6 +13,7 @@ import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-
 import { ProductForSale } from '@app/models/product/producto-for-sale.model';
 import { Measure } from '@app/models';
 import { Establishment } from '@app/models/establishment.model';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({ 
     selector: 'page-list-product-for-sale',
@@ -29,57 +30,47 @@ export class ListProductForSaleComponent implements OnInit {
     searchTerm?: string;
     minDate: Date = new Date();
     nameOptions: string[] = ['Longaniza', 'Chorizo', 'Posta'];
+    storeID = '';
     filteredNameOptions?: Observable<string[]>;
-    establishmentOptions?: Establishment[];
-    selectedEstablishment?: Establishment;
-    selectedEstablishmentSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
-    filteredEstablishmentOptions?: Observable<string[]>;
-    creatorUserOptions: string[] = ['User10', 'User21', 'User43'];
     filteredCreatorUserOptions?: Observable<string[]>;
     cards?: any[];
 
-    constructor(private dataService: DataService, public _builder: FormBuilder) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, public _builder: FormBuilder) {}
 
     ngOnInit() {
-        this.retriveProductsForSale();
 
-        this.selectedEstablishmentSubject.subscribe(value => {
-            this.setEstablishment(String(value));
+        this.route.queryParams.subscribe(params => {
+            this.storeID = params['store'];
         });
 
-    }
+        this.retriveProductsForSale();
 
-    setEstablishment(establishmentId: string){
-        this.selectedEstablishment = this.establishmentOptions?.find(establishment => establishment._id === establishmentId);
-        if(this.selectedEstablishment){
-            this.getCards();
-        }
     }
 
     retriveProductsForSale(){
         this.productsForSale = undefined;
         let requestArray = [];
-        requestArray.push(this.dataService.getAllProductForSaleByFilter({"status": { "id": 2}}));
-        requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status": 1}));
-
-        forkJoin(requestArray).subscribe({
-            next: (result: any) => {
-                this.productsForSale = result[0].retrieveProductForSaleResponse?.productsForSale;
-                this.allProductsForSale = this.productsForSale;
-                this.establishmentOptions = result[1].findEstablishmentResponse?.establishment;
-            },
-            error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
-            complete: () => {
-                this.getCards();
-            }
-        });
+        if(this.storeID){
+            requestArray.push(this.dataService.getAllProductForSaleByFilter({"establishment": { "_id": this.storeID}}));
+            forkJoin(requestArray).subscribe({
+                next: (result: any) => {
+                    this.productsForSale = result[0].retrieveProductForSaleResponse?.productsForSale;
+                    this.allProductsForSale = this.productsForSale;
+                },
+                error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
+                complete: () => {
+                    this.getCards();
+                }
+            });
+        } else {
+            this.cards = [];
+        }
     }
 
     getCards(){
-        this.cards = [];
-        if (this.productsForSale && this.selectedEstablishment){
+        let newCards: any[] = [];
+        if (this.productsForSale){
             this.productsForSale.forEach(element => {
-                if(element.establishment?._id !== this.selectedEstablishment?._id) return;
                 let currentCard = {
                     title: element.finishedProduct?.name,
                     photo: element.finishedProduct?.photo,
@@ -97,8 +88,9 @@ export class ListProductForSaleComponent implements OnInit {
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currProduct._id},
                     ]
                 };
-                this.cards!.push(currentCard);
+                newCards.push(currentCard);
             });
+            this.cards = newCards;
         }
     }
 

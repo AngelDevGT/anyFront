@@ -67,6 +67,10 @@ export class AccountService {
         return this.userValue?.role;
     }
 
+    public get userEmail(){
+        return this.userValue?.correo;
+    }
+
     public get userValueFixed(){
         let userValue = this.userSubject.value;
         let logedUser: User = {
@@ -204,6 +208,10 @@ export class AccountService {
         return this.userValue.role.id === 1;
     }
 
+    isSalesUser(){
+        return this.userValue.role.id === 3;
+    }
+
     isLoginUser(userId: string){
         return this.userValue.userID === userId;
     }
@@ -228,5 +236,14 @@ export class AccountService {
 
     getUserPaths(): Observable<Role> {
         return of(this.userValue.role);
+    }
+
+    extractEmails(text: any): string[] {
+        if (!text) {
+            return [];
+        }
+        const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b/g;
+        const matches = text.match(emailPattern);
+        return matches ?? [];
     }
 }

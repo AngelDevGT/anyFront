@@ -1,0 +1,86 @@
+.genericCard {
+    /* margin-top: 10px; */
+    margin: 20px;
+}
+
+.custom-input{
+    padding: 0 10px;
+}
+
+// img{
+//     max-width: 250px;
+//     max-height: 250px;
+// }
+
+.responsive {
+    width: 90%;
+    height: auto;
+    align-self: center;
+}
+
+.form-group{
+    margin-bottom: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.my-custom-scrollbar {
+    position: relative;
+    height: 200px;
+    overflow: auto;
+    display: block;
+}
+
+.subtotal-text{
+    color: gray;
+    font-size: large;
+    align-self: center;
+}
+
+.total-text{
+    color: black;
+    font-size: x-large;
+}
+
+  
+  .subtotal,
+  .descuento,
+  .total {
+    display: flex;
+    justify-content: space-between; /* Alinea los elementos a la izquierda y derecha */
+    width: 100%;
+  }
+  
+  .subtotal-amount{
+    color: gray;
+    font-size: medium;
+    text-align: right; /* Alinea el texto a la derecha */
+  }
+
+  .total-amount {
+    color: black;
+    font-size: large;
+    text-align: right; /* Alinea el texto a la derecha */
+  }
+  
+  /* Opcional: Estilo para los títulos si deseas ajustar la apariencia */
+  .subtotal-title{
+    color: gray;
+    font-size: medium;
+    font-weight: bold;
+  }
+
+  .total-title {
+    color: black;
+    font-size: large;
+    font-weight: bold;
+  }
+  
+.input-with-text {
+    display: flex;
+    align-items: center;
+}
+
+.input-text {
+    margin-right: 2px; /* Espacio entre el texto 'Q' y el input */
+}

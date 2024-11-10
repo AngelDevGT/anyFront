@@ -41,6 +41,7 @@ export class ViewCashClosingComponent implements OnInit{
     tableInventoryCapture?: any = [];
     totalAmountInventoryCapture = 0;
     totalAmountCashClosing = 0;
+    totalAmountSale = 0;
     totalRemainingCashClosing = 0;
     tableActivityLogs?: any = [];
     orderPayments?: any;
@@ -210,6 +211,7 @@ export class ViewCashClosingComponent implements OnInit{
         });
 
         this.totalAmountCashClosing = (this.totalAmountStoreOrders[0] - this.totalDiscountShopResumes) - this.totalAmountShopResumes;
+        this.totalAmountSale = this.totalAmountShopResumes - this.totalDiscountShopResumes;
         // this.totalRemainingCashClosing = this.totalAmountCashClosing - this.totalAmountInventoryCapture;
     }
 
