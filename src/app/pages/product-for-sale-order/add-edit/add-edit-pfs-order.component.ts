@@ -131,6 +131,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             requestArray.push(this.dataService.getProductForSaleOrderById(this.id));
         } else {
             this.areTablesVisible = true;
+            this.isPropertiesVisible = true;
         }
 
         let inventory: Inventory;
