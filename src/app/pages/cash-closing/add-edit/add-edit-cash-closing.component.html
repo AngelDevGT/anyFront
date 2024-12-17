@@ -10,7 +10,7 @@
             <form [formGroup]="operationRawMaterialForm" (ngSubmit)="onSaveForm()">
                 <div class="d-flex flex-wrap justify-content-center">
                     <div class="d-flex flex-wrap justify-content-center col-12 p-3">
-                        <mat-form-field *ngIf="!isUpdate" appearance="outline" class="m-4">
+                        <!-- <mat-form-field *ngIf="!isUpdate" appearance="outline" class="m-4">
                             <mat-label>Fecha Inicio</mat-label>
                             <input id="applyDate-form-productos" formControlName="initialDate" 
                             matInput [max]="maxDate" [matDatepicker]="picker">
@@ -22,7 +22,7 @@
                             </div>
                             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                             <mat-datepicker touchUi #picker disabled="false"></mat-datepicker>
-                        </mat-form-field>
+                        </mat-form-field> -->
                         <!-- <div class="my-4">
                             <button *ngIf="!isUpdate"
                             type="button" (click)="loadNewCashClosing(true)"

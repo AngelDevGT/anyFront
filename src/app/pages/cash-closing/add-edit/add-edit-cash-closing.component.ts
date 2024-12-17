@@ -142,6 +142,7 @@ export class AddEditCashClosingComponent implements OnInit{
         this.activityLogFilter = {};
         const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
         const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
+        console.log('startDateOnly', startDateOnly);
         this.activityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
         this.activityLogFilter.initialDate = startDateOnly;
         this.activityLogFilter.finalDate = endDateOnly;
@@ -180,7 +181,7 @@ export class AddEditCashClosingComponent implements OnInit{
             newDate.setDate(newDate.getDate() - 1000);
             this.currDate = newDate;
         }
-        this.operationRawMaterialForm.controls['initialDate'].setValue(this.currDate);
+        // this.operationRawMaterialForm.controls['initialDate'].setValue(this.currDate);
     }
 
     closeRawMaterialDialog(){
@@ -384,6 +385,7 @@ export class AddEditCashClosingComponent implements OnInit{
             this.activityLogFilter = {};
             const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
             const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
+            console.log('startDateOnly', startDateOnly);
             this.activityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
             this.activityLogFilter.initialDate = startDateOnly;
             this.activityLogFilter.finalDate = endDateOnly;
