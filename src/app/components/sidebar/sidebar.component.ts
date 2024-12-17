@@ -211,14 +211,6 @@ export class SidebarComponent implements OnInit {
       childs : [
         {
           root_class : "list-group list-group-flush",
-          router_link : "/inventory/factory/rawMaterial",
-          link_class : "list-group-item py-2 ripple",
-          link_name : "Inventario de materia prima",
-          icon_name : "arrow_right",
-          icon_class : "material-icons icon"
-        },
-        {
-          root_class : "list-group list-group-flush",
           router_link : "/finishedProducts",
           link_class : "list-group-item py-2 ripple",
           link_name : "Listado de productos",
@@ -227,9 +219,9 @@ export class SidebarComponent implements OnInit {
         },
         {
           root_class : "list-group list-group-flush",
-          router_link : "/productCreation",
+          router_link : "/inventory/factory/rawMaterial",
           link_class : "list-group-item py-2 ripple",
-          link_name : "Registrar productos en inventario",
+          link_name : "Inventario de materia prima",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         },
@@ -238,6 +230,14 @@ export class SidebarComponent implements OnInit {
           router_link : "/consumeRawMaterial",
           link_class : "list-group-item py-2 ripple",
           link_name : "Consumir materia prima de inventario",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/productCreation",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Registrar productos en inventario",
           icon_name : "arrow_right",
           icon_class : "material-icons icon"
         },

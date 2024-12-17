@@ -175,6 +175,7 @@ export class AddEditSaleComponent implements OnInit{
 
     onResetMaterialForm(){
         this.rawMaterialForm.reset();
+        this.rawMaterialForm.get('discount')?.setValue('0');
         this.selectedIE = undefined;
         this.selectedMeasure = undefined;
         this.currentMeasurePrice = 0;
@@ -466,7 +467,7 @@ export class AddEditSaleComponent implements OnInit{
             nitClient: new FormControl('', [ Validators.maxLength(20),]),
             nota: new FormControl('', [Validators.maxLength(100)]),
             paymentType: new FormControl('', [this.isEditOption ? Validators.nullValidator : Validators.required]),
-            delivery: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            delivery: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
         //   applyDate: new FormControl('', [Validators.required])
         });
     }
@@ -474,7 +475,7 @@ export class AddEditSaleComponent implements OnInit{
     createMaterialFormGroup() {
         return new FormGroup({
             quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
-            discount: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            discount: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             measure: new FormControl('', [Validators.required])
         });
     }

@@ -607,6 +607,16 @@ export class DataService {
 
     }
 
+    getConvertedPrice(price: number, unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure){
+        let formattedPrice = price;
+        if(prevMeasure?.unitBase?.name == unitMeasure?.unitBase?.name){
+            formattedPrice =  Number((price * (Number(unitMeasure?.unitBase!.quantity) || 1)).toFixed(2));
+        } else if(prevMeasure?.unitBase?.name == weightMeasure?.unitBase?.name){
+            formattedPrice = Number((price * (Number(weightMeasure?.unitBase!.quantity) || 1)).toFixed(2));
+        }
+        return this.getFormatedPrice(formattedPrice);
+    }
+
     getConvertedMeasure(quantity: number, unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure){
         if(prevMeasure?.unitBase?.name == unitMeasure?.unitBase?.name){
             return (quantity / (Number(unitMeasure?.unitBase!.quantity) || 1)).toFixed(2);
@@ -1157,7 +1167,7 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/getStoreCashClosing`, params);
     }
 
-    addCashClosing(cashClosing: CashClosing, queryParams?: { [key: string]: any }){
+    addCashClosingV2(cashClosing: CashClosing, queryParams?: { [key: string]: any }){
         let body  = JSON.stringify({
             addStoreCashClosing: {
                 ...cashClosing,
@@ -1172,7 +1182,7 @@ export class DataService {
             });
         }
         
-        return this.http.post(`${environment.apiUrl}/addStoreCashClosing`, body, { params: params });
+        return this.http.post(`${environment.apiUrl}/addStoreCashClosingV2`, body, { params: params });
     }
 
     updateCashClosing(id: string, cashClosing: CashClosing){

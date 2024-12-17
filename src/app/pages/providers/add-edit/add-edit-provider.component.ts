@@ -85,14 +85,16 @@ export class AddEditProviderComponent implements OnInit{
     }
 
     private saveProvider() {
+        let providerFormValues = this.providerForm.value;
+        providerFormValues.description = providerFormValues.description && providerFormValues.description.trim() ? providerFormValues.description.trim() : '--';
         if (this.id){
             let newProvider = {
                 ...this.currentProvider,
-                ...this.providerForm.value
+                ...providerFormValues
             };
             return this.dataService.updateProvider(this.id, newProvider);
         };
-        return this.dataService.addProvider(this.providerForm.value);
+        return this.dataService.addProvider(providerFormValues);
     }
 
     get f() {
@@ -114,8 +116,8 @@ export class AddEditProviderComponent implements OnInit{
                 ]),
             description: new FormControl('', [
                 // Validators.required,
-                Validators.minLength(1),
-                Validators.maxLength(this.listMaxLength["description"]),
+                // Validators.minLength(1),
+                // Validators.maxLength(this.listMaxLength["description"]),
                 ]),
             company: new FormControl('', [
                 Validators.required,

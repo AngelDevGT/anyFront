@@ -13,6 +13,8 @@ export interface CashClosing {
     activityLogs?: ActivityLog[];
     saleStoreOrders?: ProductForSaleStoreOrder[];
     shopResumes?: ShopResume[];
+    lastInventory?: InventoryElement[];
+    lastInventoryCreationDate?: string;
     inventoryCapture?: InventoryElement[];
     userRequest?: User;
     userValidator?: User;

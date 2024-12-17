@@ -190,6 +190,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
     onResetMaterialForm(){
         this.rawMaterialForm.reset();
+        this.rawMaterialForm.get('discount')?.setValue('0');
         this.selectedRMP = undefined;
         this.selectedMeasure = undefined;
         this.currentMeasurePrice = 0;
@@ -521,7 +522,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
     createMaterialFormGroup() {
         return new FormGroup({
             quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
-            discount: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            discount: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             measure: new FormControl('', [Validators.required])
         });
     }

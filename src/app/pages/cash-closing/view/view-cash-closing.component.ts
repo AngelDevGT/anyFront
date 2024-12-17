@@ -36,11 +36,14 @@ export class ViewCashClosingComponent implements OnInit{
     tableShopResumes?: any = [];
     totalDiscountShopResumes = 0;
     totalAmountShopResumes = 0;
+    tableLastInventory?: any = [];
     tableSaleStoreOrders?: any = [];
+    totalDeliveryShopResumes = 0;
     totalAmountStoreOrders = [0,0,0];
     tableInventoryCapture?: any = [];
     totalAmountInventoryCapture = 0;
     totalAmountCashClosing = 0;
+    totalAmountLastInventory = 0;
     totalAmountSale = 0;
     totalRemainingCashClosing = 0;
     tableActivityLogs?: any = [];
@@ -112,15 +115,18 @@ export class ViewCashClosingComponent implements OnInit{
         this.setTableElements(cashClosing);
     }
 
-    setTableElements(cashClosing: CashClosing){
+    setTableElements(cashClosing: CashClosing, activityLogs?: ActivityLog[]){
         this.tableSaleStoreOrders = [];
         this.tableInventoryCapture = [];
+        this.tableLastInventory = [];
         this.tableShopResumes = [];
         this.tableActivityLogs = [];
         this.totalDiscountShopResumes = 0;
+        this.totalDeliveryShopResumes = 0;
         this.totalAmountShopResumes = 0;
         this.totalAmountStoreOrders = [0,0,0];
         this.totalAmountInventoryCapture = 0;
+        this.totalAmountLastInventory = 0;
         this.totalAmountCashClosing = 0;
         this.totalRemainingCashClosing = 0;
         cashClosing.saleStoreOrders?.forEach((element: ProductForSaleStoreOrder) => {
@@ -146,7 +152,7 @@ export class ViewCashClosingComponent implements OnInit{
                     }),
                 elements: [
                     {icon : "receipt_long", name : "Notas", value : element.comment},
-                    {icon : "person", name : "Establecimiento", value : element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name},
+                    {icon : "person", name : "Tienda", value : element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name},
                     {icon : "info", name : "Estado del pedido", value : element.storeStatus?.identifier},
                     {icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
                     {icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!.replaceAll("\"",""))},
@@ -156,6 +162,35 @@ export class ViewCashClosingComponent implements OnInit{
             };
             this.tableSaleStoreOrders.push(curr_row);
         });
+        cashClosing.inventoryCapture?.forEach((element: InventoryElement) => {
+            if (Number(element.quantity || 0) > 0 ){
+                const currTotal = Number(element.productForSale?.price || 0) * Number(element.quantity || 0);
+                this.totalAmountInventoryCapture += currTotal;
+                const curr_row = [
+                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                    { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
+                    { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getFormatedPrice(Number(currTotal)), header_name: "Total", style: "width: 15%" },
+                ];
+                this.tableInventoryCapture.push(curr_row);
+            }
+        });
+        cashClosing.lastInventory?.forEach((element: InventoryElement) => {
+            if (Number(element.quantity || 0) > 0 ){
+                const currTotal = Number(element.productForSale?.price || 0) * Number(element.quantity || 0);
+                this.totalAmountLastInventory += currTotal;
+                const curr_row = [
+                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                    { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
+                    { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
+                    { type: "text", value: this.dataService.getFormatedPrice(Number(currTotal)), header_name: "Total", style: "width: 15%" },
+                ];
+                this.tableLastInventory.push(curr_row);
+            }
+        });
+        console.log(cashClosing.activityLogs);
         cashClosing.activityLogs?.forEach((element: ActivityLog) => {
             const curr_row = [
                 { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.creationDate!), header_name: "Fecha" },
@@ -168,20 +203,10 @@ export class ViewCashClosingComponent implements OnInit{
             ];
             this.tableActivityLogs.push(curr_row);
         });
-        cashClosing.inventoryCapture?.forEach((element: InventoryElement) => {
-            this.totalAmountInventoryCapture += Number(element.productForSale?.price || 0) * Number(element.quantity || 0);
-            const curr_row = [
-                { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
-                { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
-                { type: "text", value: element.quantity, header_name: "Cantidad total", style: "width: 15%" },
-                { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
-                { type: "text", value: this.dataService.getFormatedPrice((Number(element.productForSale?.price) || 0) * (Number(element.quantity) || 0)), header_name: "Total" }
-            ];
-            this.tableInventoryCapture.push(curr_row);
-        });
         cashClosing.shopResumes?.forEach((element: ShopResume) => {
             this.totalDiscountShopResumes += Number(element.totalDiscount || 0);
-            this.totalAmountShopResumes += Number(element.total || 0);
+            this.totalDeliveryShopResumes += Number(element.delivery || 0);
+            this.totalAmountShopResumes += (Number(element.total || 0) - Number(element.delivery || 0));
             const curr_row =
             { 
                 accordion_name: this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"","")),
@@ -189,30 +214,30 @@ export class ViewCashClosingComponent implements OnInit{
                     element.itemsList?.map((elem: ItemsList) => {
                         return [
                             { type: "text", value: elem.productForSale?.finishedProduct?.name, header_name: "Nombre" },
-                            { type: "text", value: this.dataService.getFormatedPrice(Number(elem.productForSale?.price)), header_name: "Precio" },
-                            { type: "text", value: elem.quantity, header_name: "Cantidad" },
                             { type: "text", value: elem.measure?.identifier, header_name: "Medida" },
+                            { type: "text", value: elem.quantity, header_name: "Cantidad" },
+                            { type: "text", value: this.dataService.getFormatedPrice(Number(elem.price)), header_name: "Precio" },
                             { type: "text", value: this.dataService.getFormatedPrice(Number(elem.totalDiscount)), header_name: "Descuento Total" },
                             { type: "text", value: this.dataService.getFormatedPrice(Number(elem.total)), header_name: "Total" },
                         ];
                     }),
-                elements: [
+                elements_top: [
                     {icon : "person", name : "Cliente", value : element?.nameClient},
                     {icon : "tag", name : "NIT", value : element?.nitClient},
-                    {icon : "feed", name : "Notas", value : element?.nota},
-                    // {icon : "info", name : "Estado", value : element?.status?.identifier},
-                    {icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(element!.creationDate!.replaceAll("\"",""))},
+                    {icon : "feed", name : "Notas", value : element?.nota ? element?.nota : '--'},
                     {icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"",""))},
-                    {icon : "payments", name : "Descuento Total", value : this.dataService.getFormatedPrice(Number(element.totalDiscount))},
-                    {icon : "payments", name : "Total", value : this.dataService.getFormatedPrice(Number(element?.total))},
+                ],
+                elements_bottom: [
+                    {icon : "add", name : "Subtotal", value : this.dataService.getFormatedPrice(Number(element.total || 0) - Number(element.delivery || 0) + Number(element.totalDiscount || 0))},
+                    {icon : "add", name : "Envio", value : this.dataService.getFormatedPrice(Number(element?.delivery || 0))},
+                    {icon : "remove", name : "Descuento", value : this.dataService.getFormatedPrice(Number(element?.totalDiscount || 0))},
+                    {icon : "payments", name : "Total", value : this.dataService.getFormatedPrice(Number(element.total || 0))},
                 ]
             };
             this.tableShopResumes.push(curr_row);
         });
-
-        this.totalAmountCashClosing = (this.totalAmountStoreOrders[0] - this.totalDiscountShopResumes) - this.totalAmountShopResumes;
-        this.totalAmountSale = this.totalAmountShopResumes - this.totalDiscountShopResumes;
-        // this.totalRemainingCashClosing = this.totalAmountCashClosing - this.totalAmountInventoryCapture;
+        this.totalAmountSale = this.totalAmountShopResumes - this.totalDiscountShopResumes + this.totalDeliveryShopResumes;
+        this.totalAmountCashClosing = (this.totalAmountInventoryCapture + this.totalAmountShopResumes + this.totalDiscountShopResumes) - (this.totalAmountStoreOrders[0] + this.totalAmountLastInventory);
     }
 
     setTablePayments(payments: any){
