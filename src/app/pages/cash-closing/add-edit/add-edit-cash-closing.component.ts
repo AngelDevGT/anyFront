@@ -344,7 +344,7 @@ export class AddEditCashClosingComponent implements OnInit{
     createOperationMaterialFormGroup() {
         return new FormGroup({
             note: new FormControl('', [Validators.maxLength(100)]),
-            initialDate: new FormControl('', [this.isUpdate ? Validators.nullValidator : Validators.required, Validators.maxLength(45)])
+            // initialDate: new FormControl('', [this.isUpdate ? Validators.nullValidator : Validators.required, Validators.maxLength(45)])
         });
     }
 
