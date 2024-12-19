@@ -36,7 +36,8 @@ export class AddEditCashClosingComponent implements OnInit{
     activityLogFilter: any = {};
     operationRawMaterialForm!: FormGroup;
     loading = false;
-    elements: any = [];
+    elementsByUpdate: any = [];
+    elementsByCreate: any = [];
     entries = [5, 10, 20, 50];
     pageSize = 5;
     tableShopResumes?: any = [];
@@ -218,11 +219,12 @@ export class AddEditCashClosingComponent implements OnInit{
     }
 
     setElements(cashClosing: CashClosing){
-        this.elements.push({icon : "receipt_long", name : "Notas", value : cashClosing.note});
-        this.elements.push({icon : "calendar_today", name : "Ultimo cierre de caja", value : cashClosing.lastInventoryCreationDate ? this.dataService.getLocalDateTimeFromUTCTime(cashClosing.lastInventoryCreationDate): 'Sin cierre anterior'});
-        this.elements.push({icon : "info", name : "Estado", value : cashClosing.status?.identifier});
-        this.elements.push({icon : "person", name : "Persona a cargo", value : cashClosing.userRequest?.name + " (" + cashClosing.userRequest?.email + ")"});
-        this.elements.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(cashClosing.creationDate!)});
+        this.elementsByUpdate.push({icon : "receipt_long", name : "Notas", value : cashClosing.note});
+        this.elementsByUpdate.push({icon : "calendar_today", name : "Ultimo cierre de caja", value : cashClosing.lastInventoryCreationDate ? this.dataService.getLocalDateTimeFromUTCTime(cashClosing.lastInventoryCreationDate): 'Sin cierre anterior'});
+        this.elementsByCreate.push({icon : "calendar_today", name : "Ultimo cierre de caja", value : cashClosing.lastInventoryCreationDate ? this.dataService.getLocalDateTimeFromUTCTime(cashClosing.lastInventoryCreationDate): 'Sin cierre anterior'});
+        this.elementsByUpdate.push({icon : "info", name : "Estado", value : cashClosing.status?.identifier});
+        this.elementsByUpdate.push({icon : "person", name : "Persona a cargo", value : cashClosing.userRequest?.name + " (" + cashClosing.userRequest?.email + ")"});
+        this.elementsByUpdate.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(cashClosing.creationDate!)});
         this.setTableElements(cashClosing);
     }
 

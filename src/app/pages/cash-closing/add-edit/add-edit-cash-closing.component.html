@@ -49,8 +49,8 @@
                     </div>
                 </div>
                 <div *ngIf="!isUpdate" class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
-                    <div *ngIf="isUpdate" class="col-12">
-                        <view-object [objectElements]="elements"></view-object>
+                    <div class="col-12">
+                        <view-object [objectElements]="elementsByCreate"></view-object>
                     </div>
                     <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-lg-10">
                         <div class="container">
