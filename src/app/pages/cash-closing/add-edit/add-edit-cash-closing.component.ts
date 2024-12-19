@@ -119,10 +119,10 @@ export class AddEditCashClosingComponent implements OnInit{
 
     loadNewCashClosing(isFromForm?: boolean){
         if(isFromForm && !this.or['initialDate'].errors){
-            this.currDate = new Date(this.operationRawMaterialForm.controls['initialDate'].value);
+            // this.currDate = new Date(this.operationRawMaterialForm.controls['initialDate'].value);
             this.getNewCashClosing();
         } else {
-            this.setLastCashClosingDate();
+            // this.setLastCashClosingDate();
             this.getNewCashClosing();
         }
     }
@@ -140,30 +140,55 @@ export class AddEditCashClosingComponent implements OnInit{
         };
 
         this.activityLogFilter = {};
-        const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
+        // const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
         const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
-        console.log('startDateOnly', startDateOnly);
+        // console.log('startDateOnly', startDateOnly);
         this.activityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
-        this.activityLogFilter.initialDate = startDateOnly;
+        // this.activityLogFilter.initialDate = startDateOnly;
         this.activityLogFilter.finalDate = endDateOnly;
 
-        requestArray.push(this.dataService.addCashClosingV2(this.newCashClosing, queryParams));
-        requestArray.push(this.dataService.getAllActivityLogsByFilter(this.activityLogFilter));
-
-        forkJoin(requestArray).subscribe({
-            next: (result: any) => {
-                let cashClosing = result[0].addStoreCashClosingResponse?.data;
-                if (cashClosing){
-                    this.cashClosing = cashClosing;
+        this.dataService.addCashClosingV2(this.newCashClosing, queryParams).pipe(
+            concatMap((cashClosing: any) => {
+                this.cashClosing = cashClosing.addStoreCashClosingResponse?.data;
+                this.setElements(this.cashClosing!);
+                let lastInventoryCreationDate = this.cashClosing?.lastInventoryCreationDate;
+                if (lastInventoryCreationDate){
+                    this.activityLogFilter.initialDate = lastInventoryCreationDate;
+                } else {
+                    const newDate = new Date();
+                    newDate.setDate(newDate.getDate() - 10000);
+                    this.activityLogFilter.initialDate = new Date(newDate).toISOString().split('T')[0].replace(/-/g, '/');
                 }
-                this.activityLogs = result[1].retrieveActivityLogResponse?.activityLogs;
+                return this.dataService.getAllActivityLogsByFilter(this.activityLogFilter);
+            })
+        ).subscribe({
+            next: (activityLogs: any) => {
+                this.activityLogs = activityLogs.retrieveActivityLogResponse?.activityLogs;
+                this.setTableElements(this.cashClosing!, this.activityLogs);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
-                this.setTableElements(this.cashClosing!, this.activityLogs);
                 this.loading = false;
             }
         });
+
+        // requestArray.push(this.dataService.addCashClosingV2(this.newCashClosing, queryParams));
+        // requestArray.push(this.dataService.getAllActivityLogsByFilter(this.activityLogFilter));
+
+        // forkJoin(requestArray).subscribe({
+        //     next: (result: any) => {
+        //         let cashClosing = result[0].addStoreCashClosingResponse?.data;
+        //         if (cashClosing){
+        //             this.cashClosing = cashClosing;
+        //         }
+        //         this.activityLogs = result[1].retrieveActivityLogResponse?.activityLogs;
+        //     },
+        //     error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
+        //     complete: () => {
+        //         this.setTableElements(this.cashClosing!, this.activityLogs);
+        //         this.loading = false;
+        //     }
+        // });
     }
 
     setLastCashClosingDate(){
@@ -194,6 +219,7 @@ export class AddEditCashClosingComponent implements OnInit{
 
     setElements(cashClosing: CashClosing){
         this.elements.push({icon : "receipt_long", name : "Notas", value : cashClosing.note});
+        this.elements.push({icon : "calendar_today", name : "Ultimo cierre de caja", value : cashClosing.lastInventoryCreationDate ? this.dataService.getLocalDateTimeFromUTCTime(cashClosing.lastInventoryCreationDate): 'Sin cierre anterior'});
         this.elements.push({icon : "info", name : "Estado", value : cashClosing.status?.identifier});
         this.elements.push({icon : "person", name : "Persona a cargo", value : cashClosing.userRequest?.name + " (" + cashClosing.userRequest?.email + ")"});
         this.elements.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(cashClosing.creationDate!)});
@@ -383,12 +409,21 @@ export class AddEditCashClosingComponent implements OnInit{
 
             let requestArray = [];
             this.activityLogFilter = {};
-            const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
+            // const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
             const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
-            console.log('startDateOnly', startDateOnly);
+            // console.log('startDateOnly', startDateOnly);
             this.activityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
-            this.activityLogFilter.initialDate = startDateOnly;
+            // this.activityLogFilter.initialDate = startDateOnly;
             this.activityLogFilter.finalDate = endDateOnly;
+
+            let lastInventoryCreationDate = this.cashClosing?.lastInventoryCreationDate;
+            if (lastInventoryCreationDate){
+                this.activityLogFilter.initialDate = lastInventoryCreationDate;
+            } else {
+                const newDate = new Date();
+                newDate.setDate(newDate.getDate() - 10000);
+                this.activityLogFilter.initialDate = new Date(newDate).toISOString().split('T')[0].replace(/-/g, '/');
+            }
 
             requestArray.push(this.dataService.getAllActivityLogsByFilter(this.activityLogFilter));
 

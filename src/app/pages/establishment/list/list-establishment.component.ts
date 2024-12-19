@@ -83,7 +83,7 @@ export class ListEstablishmentComponent implements OnInit {
                         {
                             type: "button",
                             routerLink: "inventory/" + element._id,
-                            class: "btn btn-outline-primary mx-1",
+                            class: "btn btn-outline-primary m-1",
                             icon: {
                                 class: "material-icons",
                                 icon: "inventory_2"
@@ -94,7 +94,7 @@ export class ListEstablishmentComponent implements OnInit {
                             type: "button",
                             routerLink: "/store/sales/history/" + element._id,
                             is_absolute: true,
-                            class: "btn btn-outline-success mx-1",
+                            class: "btn btn-outline-success m-1",
                             icon: {
                                 class: "material-icons",
                                 icon: "shopping_bag"
@@ -106,7 +106,7 @@ export class ListEstablishmentComponent implements OnInit {
                             routerLink: "/productsForSale/order",
                             is_absolute: true,
                             query_params: {opt: "store", store: element._id, name: element.name},
-                            class: "btn btn-outline-secondary mx-1",
+                            class: "btn btn-outline-secondary m-1",
                             icon: {
                                 class: "material-icons",
                                 icon: "local_shipping"
@@ -117,7 +117,7 @@ export class ListEstablishmentComponent implements OnInit {
                             type: "button",
                             routerLink: "/cashClosing/" + element._id,
                             is_absolute: true,
-                            class: "btn btn-outline-danger mx-1",
+                            class: "btn btn-outline-danger m-1",
                             icon: {
                                 class: "material-icons",
                                 icon: "dns"
@@ -141,7 +141,7 @@ export class ListEstablishmentComponent implements OnInit {
                             type: "button",
                             routerLink: "view/" + element._id,
                             query_params: {opt: this.viewOption},
-                            class: "btn btn-outline-success mx-1",
+                            class: "btn btn-outline-success m-1",
                             icon: {
                                 class: "material-icons",
                                 icon: "visibility"
@@ -153,7 +153,7 @@ export class ListEstablishmentComponent implements OnInit {
                             routerLink: "edit/" + element._id,
                             query_params: {opt: this.viewOption},
                             is_absolute: false,
-                            class: "btn btn-outline-primary mx-1",
+                            class: "btn btn-outline-primary m-1",
                             icon: {
                                 class: "material-icons",
                                 icon: "edit"
@@ -165,7 +165,7 @@ export class ListEstablishmentComponent implements OnInit {
                             routerLink: "/productsForSale",
                             query_params: { store: element._id },
                             is_absolute: true,
-                            class: "btn btn-outline-danger mx-1",
+                            class: "btn btn-outline-danger m-1",
                             icon: {
                                 class: "material-icons",
                                 icon: "shopping_bag"

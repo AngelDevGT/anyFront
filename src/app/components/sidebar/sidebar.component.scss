@@ -1,3 +1,19 @@
+#sidebarMenuSmall {
+
+  @media (min-width: 991.98px) {
+    display: none !important; 
+  }
+
+}
+
+#sidebarMenuLarge {
+
+  @media (max-width: 991.97px) {
+    display: none;
+  }
+
+}
+
 .sidebar {
   position: fixed;
   top: 0;

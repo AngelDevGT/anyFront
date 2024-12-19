@@ -18,7 +18,7 @@
                           <i class="{{button_value.icon.class}}">{{button_value.icon.icon}}</i>
                     </button>
                   </div>
-                  <div *ngIf="field.type === 'button_text_icon'" class="d-flex justify-content-lg-left row-value">
+                  <div *ngIf="field.type === 'button_text_icon'" class="d-flex align-content-center flex-wrap">
                     <button *ngFor="let button_value of field.button" type="{{button_value.type}}" (click)="navigateWithParams(button_value.routerLink, button_value.query_params, button_value.is_absolute)"
                           class="{{button_value.class}}">
                         <div class="d-flex flex-row">
@@ -27,7 +27,7 @@
                         </div>
                     </button>
                   </div>
-                  <div *ngIf="field.type === 'modal_button'" class="d-flex justify-content-lg-left row-value">
+                  <div *ngIf="field.type === 'modal_button'" class="d-flex align-content-center flex-wrap">
                     <button *ngFor="let button_value of field.button" (click)="sendData(field.data)" type="{{button_value.type}}"
                     data-bs-toggle="modal" [attr.data-bs-target]="button_value.data_bs_target" class="{{button_value.class}}" [disabled]="button_value.disabled">
                     <div class="d-flex flex-row">
