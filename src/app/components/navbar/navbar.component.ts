@@ -31,14 +31,8 @@ export class NavbarComponent implements OnInit {
   existSession: boolean;
   control = new FormControl();
   searchInput = '';
-
-  // resultList?: User[];
-  // resultListSearch?: option[];
-//   filteredResultList?: Observable<User[]>;
-
-  // category = new FormControl();
-  // categoryList: string[] = ['Usuario', 'Comunidad'];
-  // selectedCategory = this.categoryList[0];
+  menuItems: any = [];
+  yet:boolean=false;
 
 
   constructor( private accountService: AccountService, private router: Router) {
@@ -63,29 +57,13 @@ export class NavbarComponent implements OnInit {
             }    
         }
     });
-    // this.sesion$.subscribe(isSuscribe => {
-    //   if (isSuscribe) {//isSuscribe nos devolvera el valor de la vaeable booleana, es decir la bariable observable
-    //     this.dataService.getUserByToken(this.sessionService.getUserWithToken()).subscribe(response => {
-    //       var user = response;
-    //       this.sessionService.assignUserRolesWithSession(user);
-    //       this.existSession = true;
-    //       ////////////
+    this.menuItems = this.accountService.getUserMenuItems();
+  }
 
-    //       this.token = localStorage.getItem('token');
-    //       this.token = JSON.parse(this.token).token;
-          
-    //       ///////////
-    //     })
-    //     //POST->Usuario
-    //   } else {
-    //     this.sessionService.assignUserRolesWithoutSession();
-    //     this.existSession = false;
-    //   }
-    // });
-
-    // this.filteredResultList = this.control.valueChanges.pipe(
-    //   startWith(''),
-    // );
+  ngAfterViewInit(){
+    setTimeout(()=>{
+      this.yet=true
+    })
   }
 
   logOut() {
@@ -96,71 +74,24 @@ export class NavbarComponent implements OnInit {
     this.router.navigate(['/users/view/', this.accountService.userValue.userID]);
   }
 
-//   updateResultList() {
-//     if (this.selectedCategory == this.categoryList[0]) {
-//       var aux = new User();
-//       aux.token = this.token;
-//       let search: OrdinaryObject = {
-//         stringParam: this.searchInput
-//       }
-//       this.dataService.getUsersBySearch(search, aux)
-//         .subscribe(data => {
-//           this.resultListSearch = [];
-//           data.forEach(dt => {
-//             var opt: option = {
-//               value: dt.registroAcademico,
-//               viewValue: dt.nombreCompleto
-//             }
-//             this.resultListSearch.push(opt)
-//           })
-//         });
-//     } else if (this.selectedCategory == this.categoryList[1]) {
-//       var aux = new User();
-//       aux.token = this.token;
-//       let search: OrdinaryObject = {
-//         stringParam: this.searchInput
-//       }
-//       this.dataService.getCommunitiesBySearch(search, aux)
-//         .subscribe(data => {
-//           this.resultListSearch = [];
-//           data.forEach(dt => {
-//             var opt: option = {
-//               value: dt.id?.toString(),
-//               viewValue: dt.nombre
-//             }
-//             this.resultListSearch.push(opt);
-//           })
-//         })
-//     }
-
-//   }
-
-  // selectUser(rst: option) {
-  //   if (this.selectedCategory == this.categoryList[0]) {
-  //     this.searchInput = rst.viewValue!;
-  //     this.router.navigate(['userProfile', rst.value]);
-  //   } else if (this.selectedCategory == this.categoryList[1]) {
-  //     this.searchInput = rst.viewValue!;
-  //     this.router.navigate(['viewComunity', rst.value]);
-  //   }
-  // }
-
   onKey(event: any) {
-    // console.log(this.searchInput);
     if (!this.token) {
       this.token = localStorage.getItem('token');
       this.token = JSON.parse(this.token).token;
     }
-    // this.updateResultList();
-    // console.log("Result:::: ",this.resultListSearch);
   }
 
-//   goToPageUserProfile(){
-//     this.dataService
-//       .getUserByToken(this.sesionService.getUserWithToken())
-//       .subscribe((response) => {
-//         this.router.navigate(['userProfile', response.registroAcademico]);
-//       });
-//   }
+  navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }){
+    if(queryParams){
+      this.router.navigate([routerLink], { queryParams: queryParams, queryParamsHandling: 'merge' });
+    } else {
+      this.router.navigate([routerLink]);
+    }
+  }
+
+  action(value:any)
+    {
+      this.navigateWithParams(value[0], value[1]);
+    }
 
 }

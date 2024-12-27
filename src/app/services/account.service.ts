@@ -45,6 +45,254 @@ const undefinedRole = {
     }
 };
 
+const menuItemsOptions: any = [
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#administrar-lvl1",
+      button_aria_controls : "administrar-lvl1",
+      button_aria_expanded : "false",
+      button_icon_class : "material-icons icon",
+      button_icon : "admin_panel_settings",
+      button_name : "Sistema",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "administrar-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/users",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Usuarios",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/establishments",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Tiendas",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        }
+      ]
+    },{
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#reports-lvl1",
+      button_aria_controls : "reports-lvl1",
+      button_aria_expanded : "false",
+      button_icon_class : "material-icons icon",
+      button_icon : "description",
+      button_name : "Reportes",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "reports-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/summary/rawMaterialByProvider/order",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Pedidos de materia prima",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/summary/inventory/factory/rawMaterial",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Inventario de materia prima",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/summary/inventory/factory/finishedProduct",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Inventario de productos",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/summary/inventory/store/productForSale",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Inventario de producto en tiendas",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/summary/productForSale/store/order",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Listado de pedidos",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        }
+      ]
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#providers-lvl1",
+      button_aria_controls : "providers-lvl1",
+      button_aria_expanded : "false",
+      button_icon_class : "material-icons icon",
+      button_icon : "local_shipping",
+      button_name : "Proveedores",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "providers-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/rawMaterials",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Materia prima",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/providers",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Registro proveedores",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/rawMaterialsByProvider",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Ingreso de proveedores",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/rawMaterialByProvider/order",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Pedidos de materia prima",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+      ]
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#fabrica-lvl1",
+      button_aria_controls : "fabrica-lvl1",
+      button_aria_expanded : "false",
+      button_icon_class : "material-icons icon",
+      button_icon : "shelves",
+      button_name : "Bodega",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "fabrica-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/finishedProducts",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Listado de productos",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/inventory/factory/rawMaterial",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Inventario de materia prima",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/consumeRawMaterial",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Consumir materia prima de inventario",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/productCreation",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Registrar productos en inventario",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/inventory/factory/finishedProduct",
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Inventario de productos",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        },
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/finishedProduct/order",
+          query_params: {opt: 'factory'},
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Pedidos",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        }
+      ]
+    },
+    {
+      button_type : "button",
+      button_class : "list-group-item principal-bottom",
+      button_toggle : "collapse",
+      button_data_bs_toggle : "collapse",
+      button_data_bs_target : "#store-lvl1",
+      button_aria_controls : "store-lvl1",
+      button_aria_expanded : "false",
+      button_icon_class : "material-icons icon",
+      button_icon : "storefront",
+      button_name : "Tienda",
+      button_dropdown_icon_class : "material-icons icon",
+      button_dropdown_icon : "arrow_drop_down",
+      root_id : "store-lvl1",
+      root_class : "panel-collapse collapse",
+      sub_class : "position-sticky",
+      is_tree : true,
+      childs : [
+        {
+          root_class : "list-group list-group-flush",
+          router_link : "/store",
+          query_params: {opt: 'inventory'},
+          link_class : "list-group-item py-2 ripple",
+          link_name : "Listado de Tiendas",
+          icon_name : "arrow_right",
+          icon_class : "material-icons icon"
+        }
+      ]
+    },
+];
+
 @Injectable({ providedIn: 'root' })
 export class AccountService {
 
@@ -246,4 +494,37 @@ export class AccountService {
         const matches = text.match(emailPattern);
         return matches ?? [];
     }
+
+    getUserMenuItems(){
+        let menuItems: any = [];
+        let copy_menuItemsOptions = structuredClone(menuItemsOptions)
+        for(let item of copy_menuItemsOptions){
+        let userPaths = this.userValue?.role?.paths || [];
+        let newItem = item;
+        let newItemChilds = [];
+        for(let child of item.childs){
+            let destinationRoute = child.router_link;
+            if(child.query_params){
+            destinationRoute += "?";
+            for(let key in child.query_params){
+                destinationRoute += key + "=" + child.query_params[key] + "&";
+            }
+            destinationRoute = destinationRoute.slice(0, -1);
+            }
+            const destinationRouteFound = userPaths.find((route: any) => {
+            const currRegex = new RegExp(route.matchPattern);
+            return currRegex.test(destinationRoute);
+            });
+            if(destinationRouteFound){
+            newItemChilds.push(child);
+            }
+        }
+        newItem.childs = newItemChilds;
+        if(newItemChilds.length > 0){
+            menuItems.push(newItem);
+        }
+        }
+        return menuItems;
+    }
+
 }

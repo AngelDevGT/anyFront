@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { NavbarComponent } from './navbar/navbar.component';
+import { MenuComponent } from './menu/menu.component';
 import { CardComponent } from './card/card.component';
 import { ResponsiveTableComponent } from './responsive-table/responsive-table.component';
 import { RouterModule } from '@angular/router';
@@ -49,6 +50,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     // BrowserAnimationsModule
   ],
   declarations: [
+    MenuComponent,
     NavbarComponent,
     SidebarComponent,
     CardComponent,
@@ -57,6 +59,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     DynamicDialogComponent,
   ],
   exports: [
+    MenuComponent,
     NavbarComponent,
     SidebarComponent,
     CardComponent,

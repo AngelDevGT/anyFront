@@ -2,16 +2,10 @@
   <nav id="main-navbar" class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <!-- Container wrapper -->
     <div class="container-fluid">
-      <button
-              data-bs-toggle="collapse" 
-              data-bs-target="#sidebarMenuSmall" 
-              aria-controls="sidebarMenuSmall" 
-              aria-expanded="false"
-              class="navbar-toggler mx-auto"
-              type="button"
-              >
-              <mat-icon>table_rows_narrow</mat-icon>
-      </button>
+
+      <menu-component id="sidebarMenuSmall" [menu]="menuItems" (action)="action($event)">
+        <mat-icon style="color: white;">table_rows_narrow</mat-icon>
+      </menu-component>
 
       <!-- Brand -->
       <a class="navbar-brand d-none d-md-flex" href="/home">
@@ -51,11 +45,6 @@
       </form> -->
 
       <!-- Right links -->
-      <ul class="navbar-nav ms-auto d-flex flex-row">
-        <!-- Notification dropdown -->
-
-        <!-- Avatar -->
-        <li class="nav-item dropdown">
           <button mat-icon-button [matMenuTriggerFor]="menu" class="btn btn-outline-light mat-menu-button">
             <i class="large material-icons mat-menu-icon">apps</i>
           </button>
@@ -69,8 +58,6 @@
               <span>Cerrar Sesión</span>
             </button>
           </mat-menu>
-        </li>
-      </ul>
     </div>
     <!-- Container wrapper -->
   </nav>

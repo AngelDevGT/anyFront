@@ -1,6 +1,14 @@
 .spacer {
     flex: 1 1 auto;
 }
+
+#sidebarMenuSmall {
+
+  @media (min-width: 991.98px) {
+    display: none !important; 
+  }
+
+}
  
 .conten>* {
     margin-top: 10px;

@@ -93,8 +93,6 @@ export const canActivate: CanActivateFn = (
             const currRegex = new RegExp(route.matchPattern);
             return currRegex.test(destinationRoute)
           });
-          console.log(destinationRoute);
-          console.log(destinationRouteFound);
           if(!destinationRouteFound){
             return of(router.createUrlTree(['/home']));
           }
