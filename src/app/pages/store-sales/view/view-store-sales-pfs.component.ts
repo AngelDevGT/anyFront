@@ -1,11 +1,12 @@
 import { Component, OnInit} from '@angular/core';
-import { first } from 'rxjs/operators';
+import { concatMap, first } from 'rxjs/operators';
 
 import { AlertService, DataService, PdfService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Provider } from '@app/models/system/provider.model';
 import { ShopResume } from '@app/models/store/shop-resume.model';
 import { ItemsList } from '@app/models/store/item-list.model';
+import { ActivityLog } from '@app/models/system/activity-log';
 
 @Component({ 
     selector: 'page-view-store-sales-pfs',
@@ -22,6 +23,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     pageSize = 5;
     elements: any = [];
     deleteOption = false;
+    activityLogName = "Acciones de Producto para Venta en tienda";
 
     constructor(private dataService: DataService, private alertService: AlertService,
         private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
@@ -43,8 +45,8 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                             this.deleteOption = true;
                         }
                         this.setElements(this.shopResume);
+                        this.activityLogName = this.activityLogName + "|||" + this.shopResume?.establecimiento?._id;
                         this.loading = false;
-                        console.log(this.shopResume)
                     }
                 });
         }
@@ -66,6 +68,15 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     }
 
     cancelSale() {
+        let activityLog: ActivityLog = {
+            action: "cancel",
+            section: this.activityLogName,
+            description: "Cancelacion de venta de producto en tienda '" + this.shopResume?.itemsList?.map((item: ItemsList) => item.productForSale?.finishedProduct?.name).join(", ") + "'",
+            extra: {
+                reason: "Cancelacion de venta de producto en tienda",
+            },
+            request: this.shopResume
+        }
         this.submitting = true;
         this.dataService.cancelShop({
             "inventoryID": "65bf467e008f7e88678d3927",
@@ -73,7 +84,11 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                 "_id": this.shopResume?._id,
             }
         })
-            .pipe(first())
+            .pipe(concatMap((result: any) => {
+                        activityLog.response = result;
+                        activityLog.status = result.cancelShopRegisterResponse.AcknowledgementIndicator;
+                        return this.dataService.addActivityLog(activityLog);
+                }))
             .subscribe({
                 next: () => {
                 this.alertService.success('Venta cancelada', { keepAfterRouteChange: true });

@@ -4,20 +4,16 @@ import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { ngxCsv } from 'ngx-csv';
 
-import { AccountService, AlertService, DataService, paymentStatusValues, statusValues} from '@app/services';
+import { AccountService, AlertService, DataService, measureUnitsConst} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Establishment } from '@app/models/establishment.model';
-import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import { BehaviorSubject, forkJoin } from 'rxjs';
-import { MatSelectChange } from '@angular/material/select';
-import { Provider } from '@app/models/system/provider.model';
-import { Status } from '@app/models';
-import { InventoryElement } from '@app/models/inventory/inventory-element.model';
-import { Inventory } from '@app/models/inventory/inventory.model';
 import { ActivityLog } from '@app/models/system/activity-log';
 import { User } from '@app/models/system/user.model';
 import { LogElement } from '@app/models/system/log-element';
+import { ItemsList } from '@app/models/store/item-list.model';
 import { ActivatedRoute } from '@angular/router';
+import { FinishedProductCreationConsumedElement } from '@app/models/product/fp-creation-consumed-element.model';
+import { FinishedProductCreationProducedElement } from '@app/models/product/fp-creation-produced-element.model';
 
 @Component({ 
     templateUrl: 'view-activity-log.component.html',
@@ -28,6 +24,7 @@ export class ViewActivityLogComponent implements OnInit {
     allActivityLogs?: ActivityLog[];
     section?: string;
     title?: string;
+    dateRange?: string;
     userOptions?: User[];
     cardElements?: any[];
     logForm!: FormGroup;
@@ -58,13 +55,23 @@ export class ViewActivityLogComponent implements OnInit {
         if (userId && userId !== ""){
             activityLogFilter.user = { _id: userId };
         }
+        const nowObject = new Date();
+        let startDateObject = new Date(nowObject.getFullYear(), nowObject.getMonth(), 1, 0, 0, 0, 0);
+        let endDateObject = nowObject;
+
         if (startDate && startDate !== "" && endDate && endDate !== "") {
-            const startDateOnly = new Date(startDate).toISOString().split('T')[0].replace(/-/g, '/');
-            const endDateOnly = new Date(endDate).toISOString().split('T')[0].replace(/-/g, '/');
-            activityLogFilter.initialDate = startDateOnly;
-            activityLogFilter.finalDate = endDateOnly;
-        }
-        console.log(activityLogFilter);
+            startDateObject = new Date(startDate);
+            endDateObject = new Date(endDate);
+        } 
+
+        const startDateOnly = new Date(startDateObject).toLocaleDateString('es-GT').replace(/-/g, '/');
+        const endDateOnly = new Date(endDateObject).toLocaleDateString('es-GT').replace(/-/g, '/');
+        const startDateUS = new Date(startDateObject).toLocaleDateString('en-US').replace(/-/g, '/');
+        const endDateUS = new Date(endDateObject).toLocaleDateString('en-US').replace(/-/g, '/');
+        activityLogFilter.initialDate = startDateUS;
+        activityLogFilter.finalDate = endDateUS;
+
+        this.dateRange = `${startDateOnly} - ${endDateOnly}`;
 
         this.cardElements = [];
         let requestArray = [];
@@ -108,10 +115,12 @@ export class ViewActivityLogComponent implements OnInit {
         this.cardElements = [];
         elements?.forEach((element: ActivityLog) => {
 
+            let isUnidad = element.extra?.inventoryElement?.measure?.id === measureUnitsConst.unidad.id ? true : false;
+
             let cardElement = [
-                { value: element.action === "movement" ? "primary" : element.action === "remove" ? "danger" : "success", title: "cardColor", type: "color" },
-                { value: element.action === "movement" ? "Movimiento" : element.action === "remove" ? "Retiro" : "Ingreso", title: "", type: "title" },
-                { value: this.dataService.getLocalDateFromUTCTime(element.creationDate!), title: "Fecha", type: "row" },
+                { value: this.dataService.getLogActionColor(element.action), title: "cardColor", type: "color" },
+                { value: this.dataService.getLogActionName(element.action), title: "", type: "title" },
+                { value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), title: "Fecha", type: "row" },
                 { value: element.description, title: "Descripcion", type: "row" }
             ]
 
@@ -122,32 +131,84 @@ export class ViewActivityLogComponent implements OnInit {
             if(this.section?.includes("Materia Prima por Proveedor")){
                 cardElement.push(
                     { value: element?.extra?.inventoryElement?.rawMaterialByProvider?.rawMaterialBase?.name, title: "Elemento", type: "row" },
-                    { value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, title: "Cantidad original", type: "row" }
                 );
+            }
+
+            if(this.section?.includes("Materia Prima en")){
+                if(element.action === "consume"){
+                    cardElement.push(
+                        { value: element?.request?.rawMaterialList?.map((fpcElement: FinishedProductCreationConsumedElement) => fpcElement.rawMaterialName).join(", "), title: "Elemento(s)", type: "row" },
+                    );
+                } else {
+                    cardElement.push(
+                        { value: element?.extra?.inventoryElement?.rawMaterialBase?.name, title: "Elemento", type: "row" },
+                    );
+                }
             }
 
             if(this.section?.includes("Producto para Venta")){
-                cardElement.push(
-                    { value: element?.extra?.inventoryElement?.productForSale?.finishedProduct?.name, title: "Elemento", type: "row" },
-                    { value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, title: "Cantidad original", type: "row" }
-                );
+                if(element.action === "sale" || element.action === "cancel"){
+                    cardElement.push(
+                        { value: element?.request?.itemsList?.map((item: ItemsList) => item.productForSale?.finishedProduct?.name).join(", "), title: "Elemento(s)", type: "row" },
+                    );
+                } else {
+                    cardElement.push(
+                        { value: element?.extra?.inventoryElement?.productForSale?.finishedProduct?.name, title: "Elemento", type: "row" },
+                    );
+                }
             }
 
-            if(this.section?.includes("Producto Terminado en Inventario de Fabrica")){
-                cardElement.push(
-                    { value: element?.extra?.inventoryElement?.finishedProduct?.name, title: "Elemento", type: "row" },
-                    { value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, title: "Cantidad original", type: "row" }
-                );
+            if(this.section?.includes("Producto en Inventario")){
+                if(element.action === "creation"){
+                    cardElement.push(
+                        { value: element?.request?.finishedProductList?.map((fpcElement: FinishedProductCreationProducedElement) => fpcElement.finishedProductName).join(", "), title: "Elemento(s)", type: "row" },
+                    );
+                } else {
+                    cardElement.push(
+                        { value: element?.extra?.inventoryElement?.finishedProduct?.name, title: "Elemento", type: "row" },
+                    );
+                }
             }
 
-            if(element.action === "movement"){
-                cardElement.push(
-                    { value: `${element.request?.quantity} (${element.request?.measure?.identifier})`, title: "Cantidad movida", type: "row" }
-                );
+            if(element.action === "consume"){
+                for (let i = 0; i < element.request?.rawMaterialList?.map((fpcElement: FinishedProductCreationConsumedElement) => fpcElement.rawMaterialName).length; i++) {
+                    let currIsUnidad = element.request?.rawMaterialList[i]?.measure?.id === measureUnitsConst.unidad.id ? true : false;
+                    let quantityUnit = currIsUnidad ? "Docena" : element.request?.rawMaterialList[i]?.measure?.identifier;
+                    let newQuantity = currIsUnidad ? Number(Number(element.request?.rawMaterialList[i]?.quantity)/12).toFixed(2) : element.request?.rawMaterialList[i]?.quantity;
+                    cardElement.push(
+                        { value: `${element.request?.rawMaterialList[i]?.rawMaterialName} (${newQuantity} ${quantityUnit})`, title: "Consumo", type: "row" }
+                    );
+                }
+            } else if(element.action === "creation"){
+                for (let i = 0; i < element.request?.finishedProductList?.map((fpcElement: FinishedProductCreationProducedElement) => fpcElement.finishedProductName).length; i++) {
+                    let currIsUnidad = element.request?.finishedProductList[i]?.measure?.id === measureUnitsConst.unidad.id ? true : false;
+                    let quantityUnit = currIsUnidad ? "Docena" : element.request?.finishedProductList[i]?.measure?.identifier;
+                    let newQuantity = currIsUnidad ? Number(Number(element.request?.finishedProductList[i]?.quantity)/12).toFixed(2) : element.request?.finishedProductList[i]?.quantity;
+                    cardElement.push(
+                        { value: `${element.request?.finishedProductList[i]?.finishedProductName} (${newQuantity} ${quantityUnit})`, title: "Consumo", type: "row" }
+                    );
+                }
+            } else if(element.action === "sale" || element.action === "cancel"){
+                for (let i = 0; i< element.request?.itemsList?.map((item: ItemsList) => item.productForSale?.finishedProduct?.name).length; i++){
+                    let currIsUnidad = element.request?.itemsList[i]?.productForSale?.finishedProduct?.measure?.id === measureUnitsConst.unidad.id ? true : false;
+                    let quantityUnit = currIsUnidad ? "Docena" : element.request?.itemsList[i]?.productForSale?.finishedProduct?.measure?.identifier;
+                    let newQuantity = currIsUnidad ? Number(Number(element.request?.itemsList[i]?.quantity)/12).toFixed(2) : element.request?.itemsList[i]?.quantity;
+                    cardElement.push(
+                        { value: `${element.request?.itemsList[i]?.productForSale?.finishedProduct?.name} (${newQuantity} ${quantityUnit})`, title: "Venta", type: "row" }
+                    );
+                }
             } else {
+                let quantityUnit = isUnidad ? "Docena" : element.extra?.inventoryElement?.measure?.identifier;
+                let newQuantity = isUnidad ? Number(Number(element.request?.newQuantity)/12).toFixed(2) : element.request?.newQuantity;
+                let quantity = isUnidad ? Number((Number(element.extra?.inventoryElement?.quantity)||0)/12).toFixed(2) : element.extra?.inventoryElement?.quantity;
+                let modifiedQuantity = isUnidad ? Number((Number(element.request?.newQuantity) - Number(element.extra?.inventoryElement?.quantity))/12).toFixed(2) || 0 : Number(element.request?.newQuantity) - Number(element.extra?.inventoryElement?.quantity) || 0;
+
                 cardElement.push(
-                    { value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, title: "Cantidad final", type: "row" },
+                    { value: `${quantity} (${quantityUnit})`, title: "Cantidad original", type: "row" },
+                    { value: `${newQuantity} (${quantityUnit})`, title: "Cantidad final", type: "row" },
+                    { value: `${modifiedQuantity} (${quantityUnit})`, title: "Cantidad modificada",  type: "row" },
                 );
+                
             }
 
             cardElement.push(

@@ -43,11 +43,6 @@
                                 <mat-label>Descripcion</mat-label>
                                 <textarea id="description-form-crear-comunidad" type="text" formControlName="description" matInput
                                     [ngClass]="{ 'is-invalid': f['description'].errors }"></textarea>
-                                <div class="invalid-feedback" *ngIf="f['description'].errors">
-                                    <div *ngIf="f['description'].errors['maxlength']">
-                                        La descripcion debe tener maximo 50 caracteres
-                                    </div>
-                                </div>
                             </mat-form-field>
                         </div>
                         <div class="col-sm-12 text-center p-2">

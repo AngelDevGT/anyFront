@@ -61,11 +61,13 @@
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
             <mat-card-title>{{title}}</mat-card-title>
+            <mat-card-subtitle>Rango de fechas: {{dateRange}}</mat-card-subtitle>
+            <mat-card-subtitle>Cantidad encontrada: {{cardElements?.length}}</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
             <div class="container">
                 <div class="row justify-content-center">
-                    <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
+                    <div class="d-flex flex-wrap justify-content-md-center justify-content-center pt-4">
                         <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
                             <div class="select-filter mx-2">
                                 <mat-form-field appearance="outline">

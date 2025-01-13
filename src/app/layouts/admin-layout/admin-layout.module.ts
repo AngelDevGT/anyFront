@@ -69,7 +69,21 @@ import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
+import { MAT_DATE_LOCALE } from '@angular/material/core';
+import { MAT_DATE_FORMATS } from '@angular/material/core';
 // import { UsersLayoutComponent } from "../users/users-layout.component";
+
+export const MY_DATE_FORMATS = {
+  parse: {
+    dateInput: 'DD/MM/YYYY', // Para entrada del usuario
+  },
+  display: {
+    dateInput: 'DD/MM/YYYY', // Formato de visualización
+    monthYearLabel: 'MMMM YYYY', // Formato para la etiqueta de mes y año
+    dateA11yLabel: 'LL', // Formato accesible
+    monthYearA11yLabel: 'MMMM YYYY', // Formato accesible de mes y año
+  },
+};
 
 @NgModule({
   imports: [
@@ -141,7 +155,11 @@ import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/con
       AddEditCashClosingComponent,
       ListFinishedProductOrderInFactoryComponent,
       // UsersLayoutComponent
-  ]
+  ],
+  providers: [
+    { provide: MAT_DATE_LOCALE, useValue: 'es-GT' }, // Idioma español Guatemala
+    { provide: MAT_DATE_FORMATS, useValue: MY_DATE_FORMATS }, // Formato personalizado
+  ],
 })
 
   export class AdminLayouteModule {}

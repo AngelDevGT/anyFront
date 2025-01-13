@@ -97,10 +97,7 @@ export class AddEditEstablishmentComponent implements OnInit{
             Validators.minLength(1),
             Validators.maxLength(50),
             ]),
-            description: new FormControl('', [
-            Validators.minLength(1),
-            Validators.maxLength(100),
-            ]),
+            description: new FormControl(''),
         });
     }
 

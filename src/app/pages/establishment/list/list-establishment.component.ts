@@ -182,7 +182,6 @@ export class ListEstablishmentComponent implements OnInit {
                 ];
             };
             const emails = this.accountService.extractEmails(element.description);
-            console.log(emails);
             // if(false){
             if(this.accountService.isAdminUser()){
                 this.tableElementsValues.push(curr_row);
@@ -194,7 +193,6 @@ export class ListEstablishmentComponent implements OnInit {
                 }
             }
         });
-        console.log(this.tableElementsValues);
     }
 
 }

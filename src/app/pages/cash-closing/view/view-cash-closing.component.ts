@@ -194,13 +194,13 @@ export class ViewCashClosingComponent implements OnInit{
         console.log(cashClosing.activityLogs);
         cashClosing.activityLogs?.forEach((element: ActivityLog) => {
             const curr_row = [
-                { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.creationDate!), header_name: "Fecha" },
-                { type: "text", value: element.action === "movement" ? "Movimiento" : element.action === "remove" ? "Retiro" : "Ingreso", header_name: "Accion" },
-                // { type: "text", value: element.description, header_name: "Descripcion" },
+                { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha" },
+                { type: "text", value: this.dataService.getLogActionName(element.action), header_name: "Accion" },
                 { type: "text", value: element.extra?.reason, header_name: "Motivo" },
-                { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
-                { type: "text", value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad original" },
-                { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
+                { type: "text", value: element.description, header_name: "Descripcion" },
+                // { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
+                // { type: "text", value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad original" },
+                // { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
             ];
             this.tableActivityLogs.push(curr_row);
         });

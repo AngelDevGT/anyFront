@@ -52,7 +52,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
-    activityLogName = "Acciones de Producto Terminado en Inventario de Fabrica";
+    activityLogName = "Acciones de Producto en Inventario de Bodega";
 
     constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router) {}
 
@@ -253,7 +253,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         let activityLog: ActivityLog = {
             action: "add",
             section: this.activityLogName,
-            description: "Adicion de Producto Terminado '" + this.selectedInventoryElement?.finishedProduct?.name + "' al inventario de fabrica.",
+            description: "Adicion de Producto '" + this.selectedInventoryElement?.finishedProduct?.name + "' al inventario de bodega.",
             extra: {
                 inventoryElement: this.selectedInventoryElement,
                 reason: this.operationReasonInput?.value
@@ -296,7 +296,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         let activityLog: ActivityLog = {
             action: "remove",
             section: this.activityLogName,
-            description: "Retiro de Producto Terminado '" + this.selectedInventoryElement?.finishedProduct?.name + "' del inventario de fabrica",
+            description: "Retiro de Producto '" + this.selectedInventoryElement?.finishedProduct?.name + "' del inventario de bodega",
             extra: {
                 inventoryElement: this.selectedInventoryElement,
                 reason: this.operationReasonInput?.value

@@ -33,6 +33,7 @@ import { Inventory } from '@app/models/inventory/inventory.model';
 import { FinishedProductCreationConsumedElement } from '@app/models/product/fp-creation-consumed-element.model';
 import { FinishedProductCreation } from '@app/models/product/finished-product-creation.model';
 import { FinishedProductCreationProducedElement } from '@app/models/product/fp-creation-produced-element.model';
+import { ActivityLog } from '@app/models/system/activity-log';
 
 @Component({ 
     selector: 'page-consume-raw-material',
@@ -108,6 +109,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
     modalFinishedProductQuantity = 0;
     finishedProductMeasureQuantity = 0;
     modalFinishedProductSelectedMeasure?: Measure;
+    activityLogName = "Acciones de Materia Prima en Inventario de Bodega";
 
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
@@ -235,10 +237,26 @@ export class ConsumeRawMaterialComponent implements OnInit{
             rawMaterialList: this.finishedProductCreationConsumedElements
         }
         // finishedProductCreation.rawMaterialList = this.finishedProductCreationConsumedElements;
-        console.log(finishedProductCreation);
+        // console.log(finishedProductCreation);
+
+        let activityLog: ActivityLog = {
+            action: "consume",
+            section: this.activityLogName,
+            description: "Consumo de Materia Prima '" + this.finishedProductCreationConsumedElements?.map(fpcElement => fpcElement.rawMaterialName).join(", ") + "' en inventario de bodega" ,
+            extra: {
+                inventoryElement: this.unselectedInventoryElements,
+                reason: "Consumo de Materia Prima en inventario de bodega",
+            },
+            request: finishedProductCreation
+        }
+        
         this.saveOrder()
         this.dataService.registerFinishedProductCreation(finishedProductCreation)
-            .pipe(first())
+            .pipe(concatMap((result: any) => {
+                    activityLog.response = result;
+                    activityLog.status = result.registerFinishedProductCreationResponse.AcknowledgementIndicator;
+                    return this.dataService.addActivityLog(activityLog);
+                }))
                 .subscribe({
                     next: () => {
                         this.alertService.success('Materia(s) prima(s) consumida(s) correctamente', { keepAfterRouteChange: true });
@@ -292,18 +310,18 @@ export class ConsumeRawMaterialComponent implements OnInit{
     }
 
     onSaveMaterialForm(){
-        console.log(this.selectedIE);
+        // console.log(this.selectedIE);
         let newFinishedProductCreationConsumedElement: FinishedProductCreationConsumedElement = {
             rawMaterialID: this.selectedIE?.rawMaterialBase?._id,
             rawMaterialName: this.selectedIE?.rawMaterialBase?.name,
             measure: this.modalSelectedMeasure,
             quantity: this.modalQuantity.toFixed(2)
         }
-        console.log(newFinishedProductCreationConsumedElement);
+        // console.log(newFinishedProductCreationConsumedElement);
         this.finishedProductCreationConsumedElements?.push(newFinishedProductCreationConsumedElement);
-        console.log(this.finishedProductCreationConsumedElements);
+        // console.log(this.finishedProductCreationConsumedElements);
         this.findAndMoveInventoryElementById(true, this.selectedIE?.rawMaterialBase?._id);
-        console.log(this.unselectedInventoryElements);
+        // console.log(this.unselectedInventoryElements);
         this.onResetMaterialForm();
     }
 
@@ -471,8 +489,8 @@ export class ConsumeRawMaterialComponent implements OnInit{
     unselectInventoryElement(fpcElement: FinishedProductCreationConsumedElement, indexToRemove: number){
         this.finishedProductCreationConsumedElements?.splice(indexToRemove, 1);
         this.findAndMoveInventoryElementById(false, fpcElement.rawMaterialID);
-        console.log(this.finishedProductCreationConsumedElements);
-        console.log(this.unselectedInventoryElements);
+        // console.log(this.finishedProductCreationConsumedElements);
+        // console.log(this.unselectedInventoryElements);
     }
 
     unselectRawMaterial(orderElement: RawMaterialOrderElement, indexToRemove: number){
@@ -492,8 +510,8 @@ export class ConsumeRawMaterialComponent implements OnInit{
     unselectFinishedProduct(fppElement: FinishedProductCreationProducedElement, indexToRemove: number){
         this.finishedProductCreationProducedElements?.splice(indexToRemove, 1);
         this.findAndMoveFinishedProductById(false, fppElement.finishedProductID);
-        console.log(this.finishedProductCreationProducedElements);
-        console.log(this.unselectedFinishedProductElements);
+        // console.log(this.finishedProductCreationProducedElements);
+        // console.log(this.unselectedFinishedProductElements);
     }
 
     calculateSubtotal() {

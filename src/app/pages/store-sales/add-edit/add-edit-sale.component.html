@@ -237,14 +237,14 @@
                                             Cantidad requerida
                                         </div>
                                         <div *ngIf="r['quantity'].hasError('pattern')">
-                                            Debe contener unicamente numeros positivos
+                                            DDebe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
                                         </div>
                                     </div>
                                 </mat-form-field>
                             </div>
                             <div class="px-2">
                                 <mat-form-field class="custom-input align-self-start" appearance="outline">
-                                    <mat-label>Descuento (Quetzales)</mat-label>
+                                    <mat-label>{{discountInputName}} {{discountMeasureValue.identifier}}</mat-label>
                                     <input id="discount-modal-form" type="text" formControlName="discount" matInput
                                         [ngClass]="{ 'is-invalid': r['discount'].errors }" (input)="setDiscountValue($event)" />
                                     <div class="invalid-feedback" *ngIf="r['discount'].errors">
@@ -267,7 +267,7 @@
                                     </div>
                                     <div class="total">
                                         <p class="total-title">Cantidad Seleccionada ({{ selectedIE?.measure?.identifier }})</p>
-                                        <p class="total-amount">{{ selectedQuantity }}</p>
+                                        <p class="total-amount">{{ selectedQuantity | number: '1.2-2' }}</p>
                                     </div>
                                 </div>
                             </div>

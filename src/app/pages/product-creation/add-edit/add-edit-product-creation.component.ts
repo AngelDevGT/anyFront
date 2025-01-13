@@ -33,6 +33,7 @@ import { Inventory } from '@app/models/inventory/inventory.model';
 import { FinishedProductCreationConsumedElement } from '@app/models/product/fp-creation-consumed-element.model';
 import { FinishedProductCreation } from '@app/models/product/finished-product-creation.model';
 import { FinishedProductCreationProducedElement } from '@app/models/product/fp-creation-produced-element.model';
+import { ActivityLog } from '@app/models/system/activity-log';
 
 @Component({ 
     selector: 'page-add-edit-product-creation',
@@ -108,6 +109,7 @@ export class AddEditProductCreationComponent implements OnInit{
     modalFinishedProductQuantity = 0;
     finishedProductMeasureQuantity = 0;
     modalFinishedProductSelectedMeasure?: Measure;
+    activityLogName = "Acciones de Producto en Inventario de Bodega";
 
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
@@ -230,15 +232,25 @@ export class AddEditProductCreationComponent implements OnInit{
         this.submitting = true;
         let finishedProductCreation: FinishedProductCreation = {
             destinyFinishedProductInventoryID: "64d7dae896457636c3f181e9",
-            // originRawMaterialInventoryID: "64d7240f838808573bd7e9ee",
             finishedProductList: this.finishedProductCreationProducedElements,
-            // rawMaterialList: this.finishedProductCreationConsumedElements
         }
-        // finishedProductCreation.rawMaterialList = this.finishedProductCreationConsumedElements;
-        console.log(finishedProductCreation);
+        let activityLog: ActivityLog = {
+            action: "creation",
+            section: this.activityLogName,
+            description: "Registro de Producto '" + this.finishedProductCreationProducedElements?.map(fpcElement => fpcElement.finishedProductName).join(", ") + "' en inventario de bodega" ,
+            extra: {
+                inventoryElement: this.unselectedInventoryElements,
+                reason: "Registro de Producto en Inventario de Bodega",
+            },
+            request: finishedProductCreation
+        }
         this.saveOrder()
         this.dataService.registerFinishedProductCreation(finishedProductCreation)
-            .pipe(first())
+            .pipe(concatMap((result: any) => {
+                    activityLog.response = result;
+                    activityLog.status = result.registerFinishedProductCreationResponse.AcknowledgementIndicator;
+                    return this.dataService.addActivityLog(activityLog);
+                }))
                 .subscribe({
                     next: () => {
                         this.alertService.success('Producto(s) registrado(s) en inventario correctamente', { keepAfterRouteChange: true });

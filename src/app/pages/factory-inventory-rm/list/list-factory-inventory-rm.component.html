@@ -62,7 +62,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="moveFactoryInventoryRawMaterialModalLabel">MOVER materia prima de BODEGA a inventario de FABRICA</h1>
+                <h1 class="modal-title fs-5" id="moveFactoryInventoryRawMaterialModalLabel">MOVER materia prima de BODEGA a inventario de BODEGA</h1>
                 <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -110,7 +110,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-primary" (click)="onMoveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">
-                    Mover a Fabrica
+                    Mover a BODEGA
                 </button>
             </div>
         </div>
@@ -121,7 +121,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="addInventoryRawMaterialModalLabel">AGREGAR a inventario de FABRICA</h1>
+                <h1 class="modal-title fs-5" id="addInventoryRawMaterialModalLabel">AGREGAR a inventario de BODEGA</h1>
                 <button type="button" class="btn-close" (click)="closeOperationRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -200,7 +200,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="removeInventoryRawMaterialModalLabel">ELIMINAR de inventario de FABRICA</h1>
+                <h1 class="modal-title fs-5" id="removeInventoryRawMaterialModalLabel">ELIMINAR de inventario de BODEGA</h1>
                 <button type="button" class="btn-close" (click)="closeOperationRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">

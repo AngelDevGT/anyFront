@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import {BehaviorSubject, forkJoin} from 'rxjs';
-import {first} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, forkJoin} from 'rxjs';
+import {concatMap, first} from 'rxjs/operators';
 import { NgxImageCompressService } from 'ngx-image-compress';
 
-import { statusValues, AlertService, DataService, paymentStatusValues } from '@app/services';
+import { statusValues, AlertService, DataService, measureUnitsConst } from '@app/services';
 import {
 FormBuilder,
 FormGroup,
@@ -22,6 +22,7 @@ import { Inventory } from '@app/models/inventory/inventory.model';
 import { ItemsList } from '@app/models/store/item-list.model';
 import { ShopResume } from '@app/models/store/shop-resume.model';
 import { Establishment } from '@app/models/establishment.model';
+import { ActivityLog } from '@app/models/system/activity-log';
 
 @Component({ 
     selector: 'page-add-edit-sale',
@@ -79,6 +80,10 @@ export class AddEditSaleComponent implements OnInit{
     selectedQuantity = 0;
     id?: string;
     shopResume?: ShopResume;
+    discountInputName = 'Descuento (Q) por ';
+    discountMeasureValue: any = [];
+    activityLogName = "Acciones de Producto para Venta en tienda";
+    activityLog?: ActivityLog;
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
@@ -101,7 +106,7 @@ export class AddEditSaleComponent implements OnInit{
         
         this.title = 'Registrar Venta';
 
-        this.orderForm = this.createFormGroup();
+        this.orderForm = this.createAddFormGroup();
         this.rawMaterialForm = this.createMaterialFormGroup();
 
         this.inventoryElements = [];
@@ -114,6 +119,7 @@ export class AddEditSaleComponent implements OnInit{
 
         if (this.id){
             this.title = 'Actualizar Venta';
+            this.orderForm = this.createEditFormGroup();
             this.isEditOption = true;
             this.dataService.getShopHistory({_id: this.id})
                 .pipe(first())
@@ -122,7 +128,6 @@ export class AddEditSaleComponent implements OnInit{
                     if (shopRes[0]){
                         this.shopResume = shopRes[0];
                         this.orderForm.patchValue(this.shopResume!);
-                        console.log(this.shopResume);
                         this.loading = false;
                     }
                 });
@@ -147,11 +152,10 @@ export class AddEditSaleComponent implements OnInit{
                         this.inventoryElements = this.inventory?.inventoryElements;
                         this.inventoryElements = this.inventoryElements?.filter(invElem =>invElem.productForSale?.establishment?._id === String(this.establishment?._id));
                         this.allInventoryElements = this.inventoryElements;
-                        console.log(this.inventoryElements);
-                        console.log(this.inventory)
                     }
                     this.loading = false;
                     this.title = 'Registrar Venta (' + this.establishment?.name + ')';
+                    this.activityLogName = this.activityLogName + "|||" + this.establishment?._id;
                 }
             });
         }
@@ -174,6 +178,7 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     onResetMaterialForm(){
+        this.discountMeasureValue = [];
         this.rawMaterialForm.reset();
         this.rawMaterialForm.get('discount')?.setValue('0');
         this.selectedIE = undefined;
@@ -189,7 +194,14 @@ export class AddEditSaleComponent implements OnInit{
         this.alertService.clear();
         this.submitting = true;
         this.saveOrder()
-            .pipe(first())
+            .pipe(concatMap((result: any) => {
+                if(this.isEditOption || !this.activityLog){
+                    return EMPTY;
+                }
+                    this.activityLog.response = result;
+                    this.activityLog.status = result.RegisterShopResponse.AcknowledgementIndicator;
+                    return this.dataService.addActivityLog(this.activityLog);
+                }))
                 .subscribe({
                     next: () => {
                         this.alertService.success('Venta guardada', { keepAfterRouteChange: true });
@@ -209,7 +221,6 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     private saveOrder(){
-        console.log(this.selectedPaymentType)
         if(this.isEditOption){
             let updatedShopResume: ShopResume = {
                 ...this.shopResume!,
@@ -226,7 +237,16 @@ export class AddEditSaleComponent implements OnInit{
                 paymentType: this.selectedPaymentType,
                 itemsList: this.itemsList,
             }
-            console.log(newShopResume);
+            this.activityLog = {
+                action: "sale",
+                section: this.activityLogName,
+                description: "Venta de producto en tienda '" + this.itemsList?.map(item => item.productForSale?.finishedProduct?.name).join(", ") + "'",
+                extra: {
+                    inventoryElement: this.unselectedInventoryElements,
+                    reason: "Venta de producto en tienda",
+                },
+                request: newShopResume
+            }
             return this.dataService.registerShop(newShopResume);
         }
     }
@@ -365,7 +385,7 @@ export class AddEditSaleComponent implements OnInit{
         let totalDiscount = 0;
         if (this.itemsList){
             for (const itemList of this.itemsList) {
-                totalDiscount += Number(itemList.discount)*Number(itemList.quantity) || 0;
+                totalDiscount += Number(itemList.totalDiscount) || 0;
             }
         }
         this.totalDiscount = totalDiscount;
@@ -438,7 +458,8 @@ export class AddEditSaleComponent implements OnInit{
         let totalQuantity = Number(this.modalQuantity)*Number(this.currentMeasureQuantity) || 0;
         let unitBaseTotalQuantity = Number(this.selectedIE?.measure?.unitBase?.quantity) * Number(this.selectedIE?.quantity);
         let subtotal = Number(this.modalQuantity)*Number(this.currentMeasurePrice) || 0;
-        let totalDiscount = Number(this.modalDiscount)*Number(this.modalQuantity) || 0;
+        let totalDiscount = Number(this.modalDiscount)*(Number(totalQuantity)/Number(this.discountMeasureValue?.unitBase?.quantity)) || 0;
+        // let totalDiscount = Number(this.modalDiscount)*Number(this.modalQuantity) || 0;
         let total = subtotal - totalDiscount || 0;
         if(total < 0 || totalQuantity > unitBaseTotalQuantity){
             this.discountInput?.setValue('0');
@@ -459,22 +480,32 @@ export class AddEditSaleComponent implements OnInit{
         this.modalTotalText = this.dataService.getFormatedPrice(total);
     }
 
-    createFormGroup() {
+    createAddFormGroup() {
         return new FormGroup({
             nameClient: new FormControl('', [
             Validators.maxLength(50),
             ]),
             nitClient: new FormControl('', [ Validators.maxLength(20),]),
             nota: new FormControl('', [Validators.maxLength(100)]),
-            paymentType: new FormControl('', [this.isEditOption ? Validators.nullValidator : Validators.required]),
+            paymentType: new FormControl('', [Validators.required]),
             delivery: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
         //   applyDate: new FormControl('', [Validators.required])
         });
     }
 
+    createEditFormGroup() {
+        return new FormGroup({
+            nameClient: new FormControl('', [
+            Validators.maxLength(50),
+            ]),
+            nitClient: new FormControl('', [ Validators.maxLength(20),]),
+            nota: new FormControl('', [Validators.maxLength(100)]),
+        });
+    }
+
     createMaterialFormGroup() {
         return new FormGroup({
-            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
+            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             discount: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             measure: new FormControl('', [Validators.required])
         });
@@ -509,6 +540,7 @@ export class AddEditSaleComponent implements OnInit{
         // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
         this.elements.push({icon : "feed", name : "Descripción", value : invElement.productForSale?.finishedProduct?.name});
         this.elements.push({icon : "monetization_on", name : "Precio (" + invElement.productForSale?.finishedProduct?.measure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(invElement.productForSale?.price))});
+        this.discountMeasureValue = invElement.measure?.unitBase?.parent === measureUnitsConst.unidad.unitBase.parent ? measureUnitsConst.docena : measureUnitsConst.libra;
     }
 
     closeRawMaterialDialog(){

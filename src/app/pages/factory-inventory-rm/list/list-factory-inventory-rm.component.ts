@@ -53,7 +53,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
     pageSize = 5;
     page = 1;
     tableElementsValues?: any;
-    activityLogName = "Acciones de Materia Prima en Inventario de Fabrica";
+    activityLogName = "Acciones de Materia Prima en Inventario de Bodega";
 
     constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router) {}
 
@@ -294,7 +294,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
         let activityLog: ActivityLog = {
             action: "remove",
             section: this.activityLogName,
-            description: "Retiro de Materia Prima '" + this.selectedInventoryElement?.rawMaterialBase?.name + "' del inventario de fabrica",
+            description: "Retiro de Materia Prima '" + this.selectedInventoryElement?.rawMaterialBase?.name + "' del inventario de bodega",
             extra: {
                 inventoryElement: this.selectedInventoryElement,
                 reason: this.operationReasonInput?.value

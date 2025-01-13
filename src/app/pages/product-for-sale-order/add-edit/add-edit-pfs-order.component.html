@@ -264,7 +264,7 @@
                             </div>
                             <div class="total">
                                 <p class="total-title">Cantidad Seleccionada ({{ selectedIE?.measure?.identifier }})</p>
-                                <p class="total-amount">{{ modalSelectedQuantity }}</p>
+                                <p class="total-amount">{{ modalSelectedQuantity | number: '1.2-2'}}</p>
                             </div>
                         </div>
                         <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">

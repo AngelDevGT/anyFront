@@ -372,6 +372,106 @@ export const measureUnits =
         }
     ]
 
+    export const measureUnitsConst = 
+    {
+        unidad: 
+        {
+          "text": "1",
+          "identifier": "Unidad",
+          "id": 1,
+          "status": 1,
+          "unitBase": {
+            "quantity": 1,
+            "name": "Unidad",
+            "parent": "1"
+          }
+        },
+        docena:
+        {
+          "id": 2,
+          "status": 1,
+          "text": "2",
+          "identifier": "Docena",
+          "unitBase": {
+            "quantity": 12,
+            "name": "Unidad",
+            "parent": "1"
+          }
+        },
+        quincena:
+        {
+          "id": 3,
+          "status": 1,
+          "text": "3",
+          "identifier": "Quincena",
+          "unitBase": {
+            "quantity": 15,
+            "name": "Unidad",
+            "parent": "1"
+          }
+        },
+        cajilla:
+        {
+          "id": 4,
+          "status": 1,
+          "text": "4",
+          "identifier": "Cajilla",
+          "unitBase": {
+            "quantity": 240,
+            "name": "Unidad",
+            "parent": "1"
+          }
+        },
+        onza:
+        {
+          "id": 5,
+          "status": 1,
+          "text": "5",
+          "identifier": "Onza",
+          "unitBase": {
+            "quantity": 0.0625,
+            "name": "Libra",
+            "parent": "6"
+          }
+        },
+        libra:
+        {
+          "id": 6,
+          "status": 1,
+          "text": "6",
+          "identifier": "Libra",
+          "unitBase": {
+            "quantity": 1,
+            "name": "Libra",
+            "parent": "6"
+          }
+        },
+        arroba:
+        {
+          "id": 7,
+          "status": 1,
+          "text": "7",
+          "identifier": "Arroba",
+          "unitBase": {
+            "quantity": 25,
+            "name": "Libra",
+            "parent": "6"
+          }
+        },
+        quintal:
+        {
+          "id": 8,
+          "status": 1,
+          "text": "8",
+          "identifier": "Quintal",
+          "unitBase": {
+            "quantity": 100,
+            "name": "Libra",
+            "parent": "6"
+          }
+        }
+    }
+
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
@@ -1151,6 +1251,14 @@ export class DataService {
     getAllCashClosing() {
         let params = JSON.stringify({retrieveStoreCashClosing: {}});
         return this.http.post(`${environment.apiUrl}/retrieveSotreCashClosing`, params);
+    }
+
+    getLogActionName(action?: string){
+        return action === "consume" ? "Consumo" : action === "creation" ? "Registro" : (action === "sale" ? "Venta" : (action === "cancel" ? "Cancelacion" : (action === "remove" ? "Retiro" : "Ingreso")));
+    }
+
+    getLogActionColor(action?: string){
+        return action === "consume" ? "warning" : action === "creation" ? "primary" : (action === "sale" ? "primary" : (action === "cancel" ? "danger" : (action === "remove" ? "danger" :  "success")));
     }
 
 
