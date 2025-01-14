@@ -109,11 +109,11 @@
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad a agregar ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="total-amount">{{ modalSelectedQuantity }}</p>
+                                    <p class="total-amount">{{ modalSelectedQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad final inventario ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="total-amount">{{ modalFinalQuantity }}</p>
+                                    <p class="total-amount">{{ modalFinalQuantity | number: '1.2-2' }}</p>
                                 </div>
                             </div>
                         </div>
@@ -186,11 +186,11 @@
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad a eliminar ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="total-amount">{{ modalSelectedQuantity }}</p>
+                                    <p class="total-amount">{{ modalSelectedQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad final inventario ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="total-amount">{{ modalFinalQuantity }}</p>
+                                    <p class="total-amount">{{ modalFinalQuantity | number: '1.2-2' }}</p>
                                 </div>
                             </div>
                         </div>
