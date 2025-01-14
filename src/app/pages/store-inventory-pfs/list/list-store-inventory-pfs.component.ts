@@ -362,7 +362,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
 
     createProductForSaleFormGroup() {
         return new FormGroup({
-            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
+            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             reason: new FormControl('', [Validators.required, Validators.maxLength(50)])
         });
     }
