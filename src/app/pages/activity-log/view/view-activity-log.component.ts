@@ -112,6 +112,7 @@ export class ViewActivityLogComponent implements OnInit {
     }
 
     setCardElements(elements?: ActivityLog[]){
+        elements = elements?.sort((a, b) => new Date(b.creationDate!).getTime() - new Date(a.creationDate!).getTime());
         this.cardElements = [];
         elements?.forEach((element: ActivityLog) => {
 
