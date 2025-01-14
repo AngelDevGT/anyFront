@@ -186,7 +186,7 @@ export class ViewActivityLogComponent implements OnInit {
                     let quantityUnit = currIsUnidad ? "Docena" : element.request?.finishedProductList[i]?.measure?.identifier;
                     let newQuantity = currIsUnidad ? Number(Number(element.request?.finishedProductList[i]?.quantity)/12).toFixed(2) : element.request?.finishedProductList[i]?.quantity;
                     cardElement.push(
-                        { value: `${element.request?.finishedProductList[i]?.finishedProductName} (${newQuantity} ${quantityUnit})`, title: "Consumo", type: "row" }
+                        { value: `${element.request?.finishedProductList[i]?.finishedProductName} (${newQuantity} ${quantityUnit})`, title: "Registro", type: "row" }
                     );
                 }
             } else if(element.action === "sale" || element.action === "cancel"){
