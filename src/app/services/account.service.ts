@@ -311,6 +311,10 @@ export class AccountService {
         return this.userSubject.value;
     }
 
+    public get userName(){
+        return this.userValue?.name;
+    }
+
     public get userRole(){
         return this.userValue?.role;
     }
