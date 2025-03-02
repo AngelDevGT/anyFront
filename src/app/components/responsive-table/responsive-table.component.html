@@ -48,5 +48,5 @@
     </table>
 </div>
 <div class="d-flex flex-wrap justify-content-center">
-    <ngb-pagination [pageSize] = "pageSize" [collectionSize]="this.rows?.length ? this.rows!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
+    <ngb-pagination [pageSize] = "pageSize" [maxSize]="4" [rotate]="true" [collectionSize]="this.rows?.length ? this.rows!.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
 </div>
