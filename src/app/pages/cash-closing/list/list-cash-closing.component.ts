@@ -52,11 +52,10 @@ export class ListCashClosingComponent implements OnInit {
         if (this.allCashClosings){
             this.cashClosings = this.allCashClosings?.filter((val) => {
                 if(this.searchTerm){
-                    // const nameMatch = val.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const addressMatch = val.address?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const descriptionMatch = val.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // return nameMatch || addressMatch || descriptionMatch;
-                    return true;
+                    const dateMatch = val.creationDate?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const personInChargeMatch = val.userRequest?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const statusMatch = val.status?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    return dateMatch || personInChargeMatch || statusMatch;
                 }
                 return true;
             });

@@ -113,8 +113,8 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         if (this.allInventoryElements){
             this.inventoryElements = this.allInventoryElements?.filter((val) => {
                 if(this.searchTerm){
-                    const nameMatch = val.finishedProduct?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const measureMatch = val.finishedProduct?.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const nameMatch = val.productForSale?.finishedProduct?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const measureMatch = val.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
 
                     return nameMatch || measureMatch;
                 }

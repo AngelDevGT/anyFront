@@ -73,11 +73,10 @@ export class ListStoreSalesPFSComponent implements OnInit {
         if (this.allShopResumes){
             this.shopResumes = this.allShopResumes?.filter((val) => {
                 if(this.searchTerm){
-                    return true;
-                    // const nameMatch = val.finishedProduct?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const measureMatch = val.finishedProduct?.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-
-                    // return nameMatch || measureMatch;
+                    const clientMatch = val.nameClient?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const dateMatch = val.updateDate?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const noteMatch = val.nota?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    return clientMatch || dateMatch || noteMatch;
                 }
                 return true;
             });
