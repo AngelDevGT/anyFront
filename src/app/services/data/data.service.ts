@@ -1270,6 +1270,14 @@ export class DataService {
         return this.http.post(`${environment.apiUrl}/retrieveSotreCashClosing`, parameters);
     }
 
+    getAllCashClosingV2ByFilter(params: any) {
+        let parameters = JSON.stringify({
+            retrieveStoreCashClosing: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrl}/retrieveStoreCashClosingV2`, parameters);
+    }
+
     getCashClosingById(id: string) {
         let params = JSON.stringify({getStoreCashClosing: { "_id": id}});
         return this.http.post(`${environment.apiUrl}/getStoreCashClosing`, params);

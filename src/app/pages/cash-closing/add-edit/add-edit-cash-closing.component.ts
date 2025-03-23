@@ -90,7 +90,7 @@ export class AddEditCashClosingComponent implements OnInit{
         if (this.id){
             if(!this.isUpdate){
                 this.cashClosings = [];
-                this.dataService.getAllCashClosing()
+                this.dataService.getAllCashClosingByFilter({storeID: this.establishmentId})
                 .pipe(first())
                 .subscribe({
                     next: (cashClosings: any) => {
