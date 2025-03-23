@@ -32,7 +32,7 @@ export class ListCashClosingComponent implements OnInit {
 
     retriveCashClosing(){
         this.cashClosings = undefined;
-        this.dataService.getAllCashClosingByFilter({storeID: this.establishmentId})
+        this.dataService.getAllCashClosingV2ByFilter({storeID: this.establishmentId})
             .pipe(first())
             .subscribe({
                 next: (cashClosings: any) => {
