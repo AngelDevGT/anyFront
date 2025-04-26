@@ -381,7 +381,7 @@ export class AddEditCashClosingComponent implements OnInit{
             + this.totalAmountShopResumes 
             + this.totalDiscountShopResumes) 
             - (this.totalAmountStoreOrders[0] + this.totalAmountLastInventory)
-            - totalActivityLogsAmountAdded;
+            - totalActivityLogsAmountAdded
             + totalActivityLogsAmountRemoved 
             ;
     }

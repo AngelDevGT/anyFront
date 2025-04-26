@@ -63,6 +63,18 @@
                                     [pageSize]="pageSize"></responsive-table>
                             </div>
                         </div>
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-center">
+                            <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
+                                <div class="subtotal">
+                                    <p class="subtotal-title">Monto total adiciones</p>
+                                    <p class="subtotal-amount">Q. {{ activityLogsModifiedAmounts.added | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">Monto total retiros</p>
+                                    <p class="subtotal-amount">Q. {{ activityLogsModifiedAmounts.removed | number: '1.2-2' }}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="container">
                         <div class="row justify-content-center">
@@ -176,6 +188,14 @@
                                     <div class="total">
                                         <p class="total-title">(-) Inventario anterior</p>
                                         <p class="total-amount">Q. {{ totalAmountLastInventory | number: '1.2-2' }}</p>
+                                    </div>
+                                    <div class="total">
+                                        <p class="total-title">(-) Adiciones de inventario</p>
+                                        <p class="total-amount">Q. {{ activityLogsModifiedAmounts.added | number: '1.2-2' }}</p>
+                                    </div>
+                                    <div class="total">
+                                        <p class="total-title">(+) Retiros de inventario</p>
+                                        <p class="total-amount">Q. {{ activityLogsModifiedAmounts.removed | number: '1.2-2' }}</p>
                                     </div>
                                     <hr>
                                     <div class="total">
