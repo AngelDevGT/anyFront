@@ -315,14 +315,17 @@ export class AddEditCashClosingComponent implements OnInit{
         });
         let totalActivityLogsAmountAdded = 0;
         let totalActivityLogsAmountRemoved = 0;
+        let modifiedAmount = 0;
         activityLogs?.forEach((element: ActivityLog) => {
             let modifiedQuantity = 0;
             if (element.action == "add"){
                 modifiedQuantity = Number(element?.request?.newQuantity || 0) - Number(element.extra?.inventoryElement?.quantity || 0);
-                totalActivityLogsAmountAdded += modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
+                modifiedAmount = modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
+                totalActivityLogsAmountAdded += modifiedAmount;
             } else if (element.action == "remove"){
                 modifiedQuantity = Number(element.extra?.inventoryElement?.quantity || 0) - Number(element?.request?.newQuantity || 0);
-                totalActivityLogsAmountRemoved += modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
+                modifiedAmount = modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
+                totalActivityLogsAmountRemoved += modifiedAmount;
             }
             const curr_row = [
                 { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha" },
@@ -331,6 +334,8 @@ export class AddEditCashClosingComponent implements OnInit{
                 // { type: "text", value: element.description, header_name: "Descripcion" },
                 { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
                 { type: "text", value: `${modifiedQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad modificada" },
+                { type: "text", value: this.dataService.getFormatedPrice(Number(element.extra?.inventoryElement?.productForSale?.price)), header_name: "Precio" },
+                { type: "text", value: this.dataService.getFormatedPrice(Number(modifiedAmount)), header_name: "Total" },
                 // { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
             ];
             this.tableActivityLogs.push(curr_row);
