@@ -266,6 +266,14 @@
                                             <p class="total-title">(-) Inventario anterior</p>
                                             <p class="total-amount">Q. {{ totalAmountLastInventory | number: '1.2-2' }}</p>
                                         </div>
+                                        <div class="total">
+                                            <p class="total-title">(-) Adiciones de inventario</p>
+                                            <p class="total-amount">Q. {{ activityLogsModifiedAmounts.added | number: '1.2-2' }}</p>
+                                        </div>
+                                        <div class="total">
+                                            <p class="total-title">(+) Retiros de inventario</p>
+                                            <p class="total-amount">Q. {{ activityLogsModifiedAmounts.removed | number: '1.2-2' }}</p>
+                                        </div>
                                         <hr>
                                         <div class="total">
                                             <p class="total-title">(=) Monto final</p>

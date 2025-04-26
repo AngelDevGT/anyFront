@@ -313,30 +313,30 @@ export class AddEditCashClosingComponent implements OnInit{
                 this.tableLastInventory.push(curr_row);
             }
         });
-        let totalAmountAdded = 0;
-        let totalAmountRemoved = 0;
+        let totalActivityLogsAmountAdded = 0;
+        let totalActivityLogsAmountRemoved = 0;
         activityLogs?.forEach((element: ActivityLog) => {
             let modifiedQuantity = 0;
             if (element.action == "add"){
                 modifiedQuantity = Number(element?.request?.newQuantity || 0) - Number(element.extra?.inventoryElement?.quantity || 0);
-                totalAmountAdded += modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
+                totalActivityLogsAmountAdded += modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
             } else if (element.action == "remove"){
                 modifiedQuantity = Number(element.extra?.inventoryElement?.quantity || 0) - Number(element?.request?.newQuantity || 0);
-                totalAmountRemoved += modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
+                totalActivityLogsAmountRemoved += modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
             }
             const curr_row = [
                 { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha" },
                 { type: "text", value: this.dataService.getLogActionName(element.action), header_name: "Accion" },
                 { type: "text", value: element.extra?.reason, header_name: "Motivo" },
-                { type: "text", value: element.description, header_name: "Descripcion" },
+                // { type: "text", value: element.description, header_name: "Descripcion" },
                 { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
                 { type: "text", value: `${modifiedQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad modificada" },
                 // { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
             ];
             this.tableActivityLogs.push(curr_row);
         });
-        this.activityLogsModifiedAmounts.added = totalAmountAdded;
-        this.activityLogsModifiedAmounts.removed = totalAmountRemoved;
+        this.activityLogsModifiedAmounts.added = totalActivityLogsAmountAdded;
+        this.activityLogsModifiedAmounts.removed = totalActivityLogsAmountRemoved;
         cashClosing.shopResumes?.forEach((element: ShopResume) => {
             this.totalDiscountShopResumes += Number(element.totalDiscount || 0);
             this.totalDeliveryShopResumes += Number(element.delivery || 0);
@@ -371,7 +371,14 @@ export class AddEditCashClosingComponent implements OnInit{
             this.tableShopResumes.push(curr_row);
         });
         this.totalAmountSale = this.totalAmountShopResumes - this.totalDiscountShopResumes + this.totalDeliveryShopResumes;
-        this.totalAmountCashClosing = (this.totalAmountInventoryCapture + this.totalAmountShopResumes + this.totalDiscountShopResumes) - (this.totalAmountStoreOrders[0] + this.totalAmountLastInventory);
+        this.totalAmountCashClosing = (
+            this.totalAmountInventoryCapture 
+            + this.totalAmountShopResumes 
+            + this.totalDiscountShopResumes) 
+            - (this.totalAmountStoreOrders[0] + this.totalAmountLastInventory)
+            - totalActivityLogsAmountAdded;
+            + totalActivityLogsAmountRemoved 
+            ;
     }
 
     setTablePayments(payments: any){
