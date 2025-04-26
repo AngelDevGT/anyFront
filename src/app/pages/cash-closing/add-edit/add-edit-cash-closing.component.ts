@@ -55,6 +55,7 @@ export class AddEditCashClosingComponent implements OnInit{
     totalAmountCashClosing = 0;
     totalRemainingCashClosing = 0;
     activityLogs?: any = [];
+    activityLogsModifiedAmounts?: any = {};
     tableActivityLogs?: any = [];
     orderPayments?: any;
     payAmount = 0;
@@ -312,18 +313,30 @@ export class AddEditCashClosingComponent implements OnInit{
                 this.tableLastInventory.push(curr_row);
             }
         });
+        let totalAmountAdded = 0;
+        let totalAmountRemoved = 0;
         activityLogs?.forEach((element: ActivityLog) => {
+            let modifiedQuantity = 0;
+            if (element.action == "add"){
+                modifiedQuantity = Number(element?.request?.newQuantity || 0) - Number(element.extra?.inventoryElement?.quantity || 0);
+                totalAmountAdded += modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
+            } else if (element.action == "remove"){
+                modifiedQuantity = Number(element.extra?.inventoryElement?.quantity || 0) - Number(element?.request?.newQuantity || 0);
+                totalAmountRemoved += modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
+            }
             const curr_row = [
                 { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha" },
                 { type: "text", value: this.dataService.getLogActionName(element.action), header_name: "Accion" },
                 { type: "text", value: element.extra?.reason, header_name: "Motivo" },
                 { type: "text", value: element.description, header_name: "Descripcion" },
                 { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
-                { type: "text", value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad original" },
-                { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
+                { type: "text", value: `${modifiedQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad modificada" },
+                // { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
             ];
             this.tableActivityLogs.push(curr_row);
         });
+        this.activityLogsModifiedAmounts.added = totalAmountAdded;
+        this.activityLogsModifiedAmounts.removed = totalAmountRemoved;
         cashClosing.shopResumes?.forEach((element: ShopResume) => {
             this.totalDiscountShopResumes += Number(element.totalDiscount || 0);
             this.totalDeliveryShopResumes += Number(element.delivery || 0);
