@@ -326,6 +326,8 @@ export class AddEditCashClosingComponent implements OnInit{
                 modifiedQuantity = Number(element.extra?.inventoryElement?.quantity || 0) - Number(element?.request?.newQuantity || 0);
                 modifiedAmount = modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
                 totalActivityLogsAmountRemoved += modifiedAmount;
+            } else {
+                return;
             }
             const curr_row = [
                 { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha" },
