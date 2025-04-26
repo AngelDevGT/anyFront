@@ -33,7 +33,8 @@ export class AddEditCashClosingComponent implements OnInit{
     cashClosings?: CashClosing[];
     cashClosing?: CashClosing;
     newCashClosing: CashClosing = {};
-    activityLogFilter: any = {};
+    addActivityLogFilter: any = {};
+    removeActivityLogFilter: any = {};
     operationRawMaterialForm!: FormGroup;
     loading = false;
     elementsByUpdate: any = [];
@@ -136,17 +137,18 @@ export class AddEditCashClosingComponent implements OnInit{
         }
         this.newCashClosing = {
             note: 'validation',
-            // initialDate: `${this.currDate.getFullYear()}/${this.currDate.getMonth() + 1}/${this.currDate.getDate()}`,
             storeID: this.establishmentId
         };
 
-        this.activityLogFilter = {};
-        // const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
+        this.addActivityLogFilter = {};
+        this.removeActivityLogFilter = {};
         const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
-        // console.log('startDateOnly', startDateOnly);
-        this.activityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
-        // this.activityLogFilter.initialDate = startDateOnly;
-        this.activityLogFilter.finalDate = endDateOnly;
+        this.addActivityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
+        this.removeActivityLogFilter.section = this.addActivityLogFilter.section;
+        this.addActivityLogFilter.finalDate = endDateOnly;
+        this.removeActivityLogFilter.finalDate = this.addActivityLogFilter.finalDate;
+        this.addActivityLogFilter.action = "add";
+        this.removeActivityLogFilter.action = "remove";
 
         this.dataService.addCashClosingV2(this.newCashClosing, queryParams).pipe(
             concatMap((cashClosing: any) => {
@@ -154,17 +156,24 @@ export class AddEditCashClosingComponent implements OnInit{
                 this.setElements(this.cashClosing!);
                 let lastInventoryCreationDate = this.cashClosing?.lastInventoryCreationDate;
                 if (lastInventoryCreationDate){
-                    this.activityLogFilter.initialDate = lastInventoryCreationDate;
+                    this.addActivityLogFilter.initialDate = lastInventoryCreationDate;
                 } else {
                     const newDate = new Date();
                     newDate.setDate(newDate.getDate() - 10000);
-                    this.activityLogFilter.initialDate = new Date(newDate).toISOString().split('T')[0].replace(/-/g, '/');
+                    this.addActivityLogFilter.initialDate = new Date(newDate).toISOString().split('T')[0].replace(/-/g, '/');
                 }
-                return this.dataService.getAllActivityLogsByFilter(this.activityLogFilter);
-            })
+                this.removeActivityLogFilter.initialDate = this.addActivityLogFilter.initialDate;
+                return this.dataService.getAllActivityLogsByFilter(this.addActivityLogFilter);
+            }),
+            concatMap((activityLogs: any) => {
+                let addActivityLog = activityLogs.retrieveActivityLogResponse?.activityLogs;
+                this.activityLogs = addActivityLog;
+                return this.dataService.getAllActivityLogsByFilter(this.removeActivityLogFilter);
+            }),
         ).subscribe({
             next: (activityLogs: any) => {
-                this.activityLogs = activityLogs.retrieveActivityLogResponse?.activityLogs;
+                let removeActivityLog = activityLogs.retrieveActivityLogResponse?.activityLogs;
+                this.activityLogs = this.activityLogs.concat(removeActivityLog);
                 this.setTableElements(this.cashClosing!, this.activityLogs);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -174,7 +183,7 @@ export class AddEditCashClosingComponent implements OnInit{
         });
 
         // requestArray.push(this.dataService.addCashClosingV2(this.newCashClosing, queryParams));
-        // requestArray.push(this.dataService.getAllActivityLogsByFilter(this.activityLogFilter));
+        // requestArray.push(this.dataService.getAllActivityLogsByFilter(this.addActivityLogFilter));
 
         // forkJoin(requestArray).subscribe({
         //     next: (result: any) => {
@@ -303,16 +312,15 @@ export class AddEditCashClosingComponent implements OnInit{
                 this.tableLastInventory.push(curr_row);
             }
         });
-        console.log('activityLogs', activityLogs);
         activityLogs?.forEach((element: ActivityLog) => {
             const curr_row = [
                 { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha" },
                 { type: "text", value: this.dataService.getLogActionName(element.action), header_name: "Accion" },
                 { type: "text", value: element.extra?.reason, header_name: "Motivo" },
                 { type: "text", value: element.description, header_name: "Descripcion" },
-                // { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
-                // { type: "text", value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad original" },
-                // { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
+                { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
+                { type: "text", value: `${element.extra?.inventoryElement?.quantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad original" },
+                { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
             ];
             this.tableActivityLogs.push(curr_row);
         });
@@ -410,28 +418,36 @@ export class AddEditCashClosingComponent implements OnInit{
         } else {
 
             let requestArray = [];
-            this.activityLogFilter = {};
+            this.addActivityLogFilter = {};
             // const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
             const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
             // console.log('startDateOnly', startDateOnly);
-            this.activityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
-            // this.activityLogFilter.initialDate = startDateOnly;
-            this.activityLogFilter.finalDate = endDateOnly;
+            this.addActivityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
+            this.removeActivityLogFilter.section = this.addActivityLogFilter.section;
+            // this.addActivityLogFilter.initialDate = startDateOnly;
+            this.addActivityLogFilter.finalDate = endDateOnly;
+            this.removeActivityLogFilter.finalDate = this.addActivityLogFilter.finalDate;
+            this.addActivityLogFilter.action = "add";
+            this.removeActivityLogFilter.action = "remove";
 
             let lastInventoryCreationDate = this.cashClosing?.lastInventoryCreationDate;
             if (lastInventoryCreationDate){
-                this.activityLogFilter.initialDate = lastInventoryCreationDate;
+                this.addActivityLogFilter.initialDate = lastInventoryCreationDate;
             } else {
                 const newDate = new Date();
                 newDate.setDate(newDate.getDate() - 10000);
-                this.activityLogFilter.initialDate = new Date(newDate).toISOString().split('T')[0].replace(/-/g, '/');
+                this.addActivityLogFilter.initialDate = new Date(newDate).toISOString().split('T')[0].replace(/-/g, '/');
             }
+            this.removeActivityLogFilter.initialDate = this.addActivityLogFilter.initialDate;
 
-            requestArray.push(this.dataService.getAllActivityLogsByFilter(this.activityLogFilter));
+            requestArray.push(this.dataService.getAllActivityLogsByFilter(this.addActivityLogFilter));
+            requestArray.push(this.dataService.getAllActivityLogsByFilter(this.removeActivityLogFilter));
 
             forkJoin(requestArray).subscribe({
                 next: (result: any) => {
                     this.activityLogs = result[0].retrieveActivityLogResponse?.activityLogs;
+                    let removeActivityLog = result[1].retrieveActivityLogResponse?.activityLogs;
+                    this.activityLogs = this.activityLogs.concat(removeActivityLog);
                 },
                 error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
                 complete: () => {
