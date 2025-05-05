@@ -197,7 +197,7 @@
                                     <mat-divider></mat-divider>
                                 </div>
                             </div>
-                            <div *ngIf="!id" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
+                            <div *ngIf="areTablesVisible" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
                                 <div class="total">
                                     <p class="total-title">Total</p>
                                     <p class="total-amount">Q{{ calculateTotal() | number: '1.2-2' }}</p>

@@ -248,7 +248,8 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         if(this.id){
             let updatedProductForSaleOrder: ProductForSaleStoreOrder = {
                 ...this.productForSaleOrder,
-                ...this.orderForm.value
+                ...this.orderForm.value,
+                finalAmount: this.total.toFixed(2)
             }
             updatedProductForSaleOrder.comment = updatedProductForSaleOrder.comment && updatedProductForSaleOrder.comment.trim() ? updatedProductForSaleOrder.comment.trim() : '--';
             return this.dataService.updateProductForSaleOrder(updatedProductForSaleOrder);
