@@ -1,10 +1,6 @@
-import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
-import { filter, first } from 'rxjs/operators';
-import {map, startWith} from 'rxjs/operators';
-import {MatTableDataSource} from '@angular/material/table';
-import { ngxCsv } from 'ngx-csv';
+import { Component, OnInit } from '@angular/core';
 
-import { AccountService, AlertService, DataService, measureUnitsConst} from '@app/services';
+import { AccountService, DataService, measureUnitsConst } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, forkJoin } from 'rxjs';
 import { ActivityLog } from '@app/models/system/activity-log';
@@ -14,6 +10,7 @@ import { ItemsList } from '@app/models/store/item-list.model';
 import { ActivatedRoute } from '@angular/router';
 import { FinishedProductCreationConsumedElement } from '@app/models/product/fp-creation-consumed-element.model';
 import { FinishedProductCreationProducedElement } from '@app/models/product/fp-creation-produced-element.model';
+import { Measure } from '@app/models';
 
 @Component({ 
     templateUrl: 'view-activity-log.component.html',
@@ -190,12 +187,15 @@ export class ViewActivityLogComponent implements OnInit {
                     );
                 }
             } else if(element.action === "sale" || element.action === "cancel"){
+                let docenaObject = measureUnitsConst.docena;
+                let libraObject = measureUnitsConst.libra;
                 for (let i = 0; i< element.request?.itemsList?.map((item: ItemsList) => item.productForSale?.finishedProduct?.name).length; i++){
                     let currIsUnidad = element.request?.itemsList[i]?.productForSale?.finishedProduct?.measure?.id === measureUnitsConst.unidad.id ? true : false;
                     let quantityUnit = currIsUnidad ? "Docena" : element.request?.itemsList[i]?.productForSale?.finishedProduct?.measure?.identifier;
-                    let newQuantity = currIsUnidad ? Number(Number(element.request?.itemsList[i]?.quantity)/12).toFixed(2) : element.request?.itemsList[i]?.quantity;
+                    let newQuantity = this.dataService.getConvertedMeasure(Number(element.request?.itemsList[i]?.quantity * element.request?.itemsList[i]?.measure.unitBase!.quantity), {"unitBase": {name: docenaObject.unitBase.name, quantity: String(docenaObject.unitBase.quantity)}}, {"unitBase": {name: libraObject.unitBase.name, quantity: String(libraObject.unitBase.quantity)}}, element.request?.itemsList[i]?.measure);
+                    console.log(element.request?.itemsList[i]);
                     cardElement.push(
-                        { value: `${element.request?.itemsList[i]?.productForSale?.finishedProduct?.name} (${newQuantity} ${quantityUnit})`, title: "Venta", type: "row" }
+                        { value: `${newQuantity} ${quantityUnit}(s) de ${element.request?.itemsList[i]?.productForSale?.finishedProduct?.name}`, title: "Venta", type: "row" }
                     );
                 }
             } else {
