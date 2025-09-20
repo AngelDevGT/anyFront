@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { concatMap, map } from 'rxjs/operators';
 import jwt_decode from 'jwt-decode';
 
 import { environment } from '@environments/enviroment';
@@ -323,12 +323,16 @@ export class AccountService {
         return this.userValue?.correo;
     }
 
+    setUserSubject(user: User) {
+        this.userSubject.next(user);
+    }
+
     public get userValueFixed(){
         let userValue = this.userSubject.value;
         let logedUser: User = {
             name: userValue?.name,
             email: userValue?.correo,
-            _id: userValue?.userID,
+            id: userValue?.userID,
         };
         return logedUser;
     }
@@ -344,21 +348,20 @@ export class AccountService {
             loginUser: { 
                 "email": email, "password": password 
             }});
-        return this.http.post(`${environment.apiUrl}/LoginUser`, loginUser, options)
-            .pipe(map((user: any) => {
-                let usr = user.loginUserResponse.token;
-                // store user details and jwt token in local storage to keep user logged in between page refreshes
-                let jwd_decoded_usr: any = jwt_decode(usr);
-                let logedUser: User = { 
-                    ...jwd_decoded_usr,
-                    name: jwd_decoded_usr.name,
-                    email: jwd_decoded_usr.correo,
-                    _id: jwd_decoded_usr.userID,
-                };
-                console.log(logedUser);
-                localStorage.setItem('user', JSON.stringify(jwt_decode(usr)));
-                this.userSubject.next(logedUser);
-                return user;
+        return this.http.post(`${environment.apiUrlV2}/LoginUser`, loginUser, options)
+            .pipe(concatMap((user: any) => {
+                  let usr = user.loginUserResponse.token;
+                  // store user details and jwt token in local storage to keep user logged in between page refreshes
+                  let jwd_decoded_usr: any = jwt_decode(usr);
+                  let logedUser: User = { 
+                      ...jwd_decoded_usr,
+                      name: jwd_decoded_usr.name,
+                      email: jwd_decoded_usr.correo,
+                      _id: jwd_decoded_usr.userID,
+                  };
+                  localStorage.setItem('user', JSON.stringify(jwt_decode(usr)));
+                  this.userSubject.next(logedUser);
+                  return this.getUserByEmail(logedUser.email!);
             }));
     }
 
@@ -376,7 +379,17 @@ export class AccountService {
                 ...undefinedStatus
             }});
         // let newUser = { ...user };
-        return this.http.post(`${environment.apiUrl}/newUser`, newUser);
+        return this.http.post(`${environment.apiUrlV2}/newUser`, newUser);
+    }
+
+    registerV3(user: User) {
+        let newUser = JSON.stringify({
+            "$1": user.ext_id,
+            "$2": user.name,
+            "$3": user.email,
+            "$4": user.role?.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/registerUser`, newUser);
     }
 
     create(user: User) {
@@ -385,18 +398,20 @@ export class AccountService {
                 ...user
             }});
         // let newUser = { ...user };
-        return this.http.post(`${environment.apiUrl}/newUser`, newUser);
+        return this.http.post(`${environment.apiUrlV2}/newUser`, newUser);
     }
 
-    getAll() {
-        // let headers = new HttpHeaders({
-        //     Authorization: 'Bearer ' + this.userValue?.token,
-        // });
-        // let options = { headers: headers };
-        let params = JSON.stringify({retrieveUsers: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveUsers`, params);
+    createUserV3(user: User) {
+        let newUser = JSON.stringify({
+            "$1": user.name,
+            "$2": user.status?.id,
+            "$3": user.email,
+            "$4": user.phone ? user.phone : 0,
+            "$5": user.role?.id,
+            "$6": user.ext_id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/createUser`, newUser);
     }
-
 
     getAllUsersByFilter(params: any) {
         // let headers = new HttpHeaders({
@@ -404,24 +419,40 @@ export class AccountService {
         // });
         // let options = { headers: headers };
         let parameters = JSON.stringify({
-            retrieveUsers: {
+            u: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveUsers`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveUsers`, parameters);
     }
 
     getUserById(id: string) {
+        let params = JSON.stringify({u: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getUser`, params);
+    }
+
+    getUserByIdV2(id: string) {
         let params = JSON.stringify({retrieveUsers: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/retrieveUsers`, params);
+        return this.http.post(`${environment.apiUrlV2}/retrieveUsers`, params);
+
+    }
+
+    getUserByEmail(email: string) {
+        let params = JSON.stringify({u: { "email": email}});
+        return this.http.post(`${environment.apiUrlV3}/getUser`, params);
+    }
+
+    getUserByEmailV2(email: string) {
+        let params = JSON.stringify({retrieveUsers: { "email": email}});
+        return this.http.post(`${environment.apiUrlV2}/retrieveUsers`, params);
     }
 
     update(id: string, params: any) {
         let modifyUser = JSON.stringify({
             updateUser: {
-                "_id": id,
+                "_id": params.ext_id,
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/ModifyUser`, modifyUser)
+        return this.http.post(`${environment.apiUrlV2}/ModifyUser`, modifyUser)
             .pipe(map(x => {
                 // update stored user if the logged in user updated their own record
                 if (id == this.userValue?._id) {
@@ -436,13 +467,24 @@ export class AccountService {
             }));
     }
 
+    updateUserV3(id: string, params: any) {
+        let modifyUser = JSON.stringify({
+            "$1": params.name,
+            "$2": params.phone ? params.phone : 0,
+            "$3": params.status?.id,
+            "$4": params.role?.id,
+            "$5": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateUser`, modifyUser);
+    }
+
     deleteUser(params: any) {
         let deleteUser = JSON.stringify({
             updateUser: {
                 ...params,
                 ...deleteStatus
             }});
-        return this.http.post(`${environment.apiUrl}/ModifyUser`, deleteUser)
+        return this.http.post(`${environment.apiUrlV3}/ModifyUser`, deleteUser)
             .pipe(map(x => {
                 // auto logout if the logged in user deleted their own record
                 if (params._id === this.userValue?.userID) {
@@ -529,6 +571,28 @@ export class AccountService {
         }
         }
         return menuItems;
+    }
+
+    findJsonValue(obj: any, targetKey: string): any | null {
+        if (obj == null || typeof obj !== 'object') return null;
+
+        if (targetKey in obj) {
+            return obj[targetKey];
+        }
+
+        if (Array.isArray(obj)) {
+            for (const item of obj) {
+            const result = this.findJsonValue(item, targetKey);
+            if (result !== null) return result;
+            }
+        }
+
+        for (const key of Object.keys(obj)) {
+            const result = this.findJsonValue(obj[key], targetKey);
+            if (result !== null) return result;
+        }
+
+        return null;
     }
 
 }

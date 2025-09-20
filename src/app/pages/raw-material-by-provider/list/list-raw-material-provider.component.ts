@@ -49,8 +49,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
     }
 
     setProvider(providerId: string){
-        this.selectedProvider = this.providerOptions?.find(provid => provid._id === providerId);
-        console.log('setProvider', this.selectedProvider);
+        this.selectedProvider = this.providerOptions?.find(provid => provid.id === providerId);
         if(this.selectedProvider){
             this.getCards();
         }
@@ -60,15 +59,15 @@ export class ListRawMaterialByProviderComponent implements OnInit {
         this.rawMaterials = undefined;
 
         let requestArray = [];
-        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}}));
-        requestArray.push(this.dataService.getAllProvidersByFilter({"status": { "id": 2}}));
+        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34}));
+        requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
 
-                this.rawMaterials = result[0].retrieveRawMaterialByProviderResponse?.rawMaterial;
+                this.rawMaterials = this.dataService.findJsonValue(result[0], 'json_result') || [];
                 this.allRawMaterials = this.rawMaterials;
-                this.providerOptions = result[1].retrieveProviderResponse?.providers;
+                this.providerOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -91,7 +90,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
         this.cards = [];
         if (this.rawMaterials && this.selectedProvider){
             this.rawMaterials.forEach(element => {
-                if (element.provider?._id !== this.selectedProvider?._id) return;
+                if (element.provider?.id !== this.selectedProvider?.id) return;
                 let currentCard = {
                     title: element.rawMaterialBase?.name,
                     photo: element.rawMaterialBase?.photo,
@@ -100,11 +99,11 @@ export class ListRawMaterialByProviderComponent implements OnInit {
                         {name:'Precio:', value: this.dataService.getFormatedPrice(Number(element.price))},
                         {name:'Medida:', value: element.rawMaterialBase?.measure?.identifier},
                         {name:'Descripcion:', value: element.rawMaterialBase?.description},
-                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!)},
+                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!)},
                     ],
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/rawMaterialsByProvider/view/' + element._id},
-                        {title: 'Editar', value: 'edit_note', link: '/rawMaterialsByProvider/edit/' + element._id},
+                        {title: 'Ver', value: 'visibility', link: '/rawMaterialsByProvider/view/' + element.id},
+                        {title: 'Editar', value: 'edit_note', link: '/rawMaterialsByProvider/edit/' + element.id},
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currRawMaterial._id},
                     ]
                 };

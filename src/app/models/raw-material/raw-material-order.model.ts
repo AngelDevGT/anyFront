@@ -7,7 +7,7 @@ import { RawMaterialOrderElement } from "./raw-material-order-element.model";
 import { RawMaterialOrderPayment } from "./raw-material-order-payment.model";
 
 export class RawMaterialOrder {
-    _id?: string;
+    id?: string;
     rawMaterialOrderElements?: RawMaterialOrderElement[];
     rawMaterialOrderPayments?: RawMaterialOrderPayment[];
     name?: string;
@@ -21,5 +21,5 @@ export class RawMaterialOrder {
     pendingAmount?: string;
     creatorUser?: User;
     creationDate?: string;
-    updateDate?: string;
+    updatedDate?: string;
 }

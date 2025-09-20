@@ -8,7 +8,7 @@ import {
     UploadResponse,
 } from 'ngx-image-compress';
 
-import { AccountService, statusValues, AlertService, DataService, paymentStatusValues } from '@app/services';
+import { AccountService, statusValues, AlertService, DataService, paymentStatusValues, actionTypeValues } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -87,6 +87,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
     displayStyle = false;
     selectedRMP?: RawMaterialByProvider;
     selectedIE?: InventoryElement;
+    inventory?: Inventory;
     elements: any = [];
     measureOptions?: Measure[];
     filteredMeasureOptions?: Measure[];
@@ -113,7 +114,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
-        private imageCompress: NgxImageCompressService, private alertService: AlertService,
+        private imageCompress: NgxImageCompressService, private alertService: AlertService, private accountService: AccountService,
         private router: Router, private formBuilder: FormBuilder, private modalService: NgbModal) {
 
             this.selectedMeasureSubject.subscribe(value => {
@@ -150,31 +151,32 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
         let requestArray = [];
 
-        requestArray.push(this.dataService.getAllProvidersByFilter({"status": 1})); // providerRequest
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
-        requestArray.push(this.dataService.getInventory({ _id: "64d7240f838808573bd7e9ee"}));
+        requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
+        requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
+        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveRawMaterialInventory'));
         // requestArray.push(this.dataService.getAllFinishedProductByFilter({ status: { id: 2}}));
 
-        if (this.id){
-            requestArray.push(this.dataService.getRawMaterialOrderById(this.id));
-        }
+        // if (this.id){
+        //     requestArray.push(this.dataService.getRawMaterialOrderById(this.id));
+        // }
 
         let inventory: Inventory;
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.providerOptions = result[0].retrieveProviderResponse?.providers;
-                this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                this.finishedProductMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                this.filteredMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                this.filteredFinishedProductMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                inventory = result[2].getInventoryResponse?.Inventory;
-                this.filteredRawMaterials = result[2].retrieveRawMaterialByProviderResponse?.rawMaterial;
+                this.providerOptions = result[0].retrieveProviderResponse?.data[0]?.json_result || null;
+                this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.finishedProductMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.filteredMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.filteredFinishedProductMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                inventory = this.dataService.findJsonValue(result[2], 'json_result') || {};
+                this.filteredRawMaterials = this.dataService.findJsonValue(inventory, 'json_result') || [];
                 // this.finishedProducts = result[3].retrieveFinishedProductResponse.FinishedProducts;
                 // console.log(respuestaPeticion1, respuestaPeticion2, respuestaPeticion3);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
+                this.inventory = inventory;
                 this.inventoryElements = inventory.inventoryElements;
                 this.loading = false;
             }
@@ -201,7 +203,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
         this.orderForm.patchValue(this.rawMaterialOrder!);
         this.rawMaterialOrderElements = this.rawMaterialOrder?.rawMaterialOrderElements;
         this.rawMaterialOrder?.rawMaterialOrderElements?.forEach(rawMaterialOrder => {
-            this.findAndMoveRawMaterialById(true, rawMaterialOrder.rawMaterialByProvider?._id);
+            this.findAndMoveRawMaterialById(true, rawMaterialOrder.rawMaterialByProvider?.id);
         });
     }
 
@@ -230,89 +232,77 @@ export class ConsumeRawMaterialComponent implements OnInit{
     onSaveForm() {
         this.alertService.clear();
         this.submitting = true;
-        let finishedProductCreation: FinishedProductCreation = {
-            // destinyFinishedProductInventoryID: "64d7dae896457636c3f181e9",
-            originRawMaterialInventoryID: "64d7240f838808573bd7e9ee",
-            // finishedProductList: this.finishedProductCreationProducedElements,
-            rawMaterialList: this.finishedProductCreationConsumedElements
-        }
-        // finishedProductCreation.rawMaterialList = this.finishedProductCreationConsumedElements;
-        // console.log(finishedProductCreation);
 
-        let activityLog: ActivityLog = {
-            action: "consume",
-            section: this.activityLogName,
-            description: "Consumo de Materia Prima '" + this.finishedProductCreationConsumedElements?.map(fpcElement => fpcElement.rawMaterialName).join(", ") + "' en inventario de bodega" ,
-            extra: {
-                inventoryElement: this.unselectedInventoryElements,
-                reason: "Consumo de Materia Prima en inventario de bodega",
-            },
-            request: finishedProductCreation
-        }
-        
-        this.saveOrder()
-        this.dataService.registerFinishedProductCreation(finishedProductCreation)
-            .pipe(concatMap((result: any) => {
-                    activityLog.response = result;
-                    activityLog.status = result.registerFinishedProductCreationResponse.AcknowledgementIndicator;
-                    return this.dataService.addActivityLog(activityLog);
-                }))
+        let inventoryElementsToConsume = this.finishedProductCreationConsumedElements?.map(fpcElement => {
+            return {
+                inventoryType: this.inventory?.inventoryType,
+                unitName: this.inventory?.unitName,
+                elementId: fpcElement.rawMaterialID,
+                measureId: fpcElement.measure?.id,
+                quantity: fpcElement.quantity,
+                creatorUserId: this.accountService.userValue.uuid,
+                comment: "Consumo de Materia Prima en inventario de bodega",
+                actionTypeId: actionTypeValues.remove_rm_by_consume.actionType.id,
+            };
+        });
+
+        this.dataService.multiAddRemoveInventoryElement(inventoryElementsToConsume)
+            .pipe(first())
                 .subscribe({
                     next: () => {
                         this.alertService.success('Materia(s) prima(s) consumida(s) correctamente', { keepAfterRouteChange: true });
                         this.router.navigateByUrl('/inventory/factory/rawMaterial');
                     },
                     error: error => {
-                        let errorResponse = error.error;
-                        errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateRawMaterial ? errorResponse.updateRawMaterial : 'Error, consulte con el administrador';
-                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al consumir materia prima');
+                        this.alertService.error(errorMessage);
                         this.submitting = false;
                     }
                 });
     }
 
-    private saveOrder(){
-        if(this.id){
-            let updatedRawMaterialOrder: RawMaterialOrder = {
-                ...this.rawMaterialOrder,
-                ...this.orderForm.value
-            }
-            switch(this.editOption){
-                case 'edit':
-                    break;
-                case 'receive':
-                    if(this.paidAmount >= this.total){
-                        updatedRawMaterialOrder.pendingAmount = "0";
-                        updatedRawMaterialOrder.paidAmount = String(this.total.toFixed(2));
-                        updatedRawMaterialOrder.paymentStatus = paymentStatusValues.pagado.paymentStatus;
-                    } else {
-                        updatedRawMaterialOrder.paidAmount = String(this.paidAmount.toFixed(2));
-                        updatedRawMaterialOrder.pendingAmount = String(this.pendingAmount.toFixed(2));
-                        updatedRawMaterialOrder.paymentStatus = paymentStatusValues.abonado.paymentStatus;
-                    }
-                    updatedRawMaterialOrder.paymentType = this.rawMaterialOrder?.paymentType;
-                    updatedRawMaterialOrder.rawMaterialOrderElements = this.rawMaterialOrderElements;
-                    updatedRawMaterialOrder.finalAmount = String(this.total);
-                    updatedRawMaterialOrder.status = statusValues.recibido.status;
-                    break;
-            }
-            return this.dataService.updateRawMaterialOrder(updatedRawMaterialOrder);
-        } else {
-            let newRawMaterialOrder = {
-                ...this.orderForm.value,
-                rawMaterialOrderElements: this.rawMaterialOrderElements,
-                pendingAmount: this.total.toFixed(2),
-                paidAmount: "0",
-                finalAmount: this.total.toFixed(2)
-            }
-            return this.dataService.addRawMaterialOrder(newRawMaterialOrder);
-        }
-    }
+    // private saveOrder(){
+    //     if(this.id){
+    //         let updatedRawMaterialOrder: RawMaterialOrder = {
+    //             ...this.rawMaterialOrder,
+    //             ...this.orderForm.value
+    //         }
+    //         switch(this.editOption){
+    //             case 'edit':
+    //                 break;
+    //             case 'receive':
+    //                 if(this.paidAmount >= this.total){
+    //                     updatedRawMaterialOrder.pendingAmount = "0";
+    //                     updatedRawMaterialOrder.paidAmount = String(this.total.toFixed(2));
+    //                     updatedRawMaterialOrder.paymentStatus = paymentStatusValues.pagado.status;
+    //                 } else {
+    //                     updatedRawMaterialOrder.paidAmount = String(this.paidAmount.toFixed(2));
+    //                     updatedRawMaterialOrder.pendingAmount = String(this.pendingAmount.toFixed(2));
+    //                     updatedRawMaterialOrder.paymentStatus = paymentStatusValues.abonado.status;
+    //                 }
+    //                 updatedRawMaterialOrder.paymentType = this.rawMaterialOrder?.paymentType;
+    //                 updatedRawMaterialOrder.rawMaterialOrderElements = this.rawMaterialOrderElements;
+    //                 updatedRawMaterialOrder.finalAmount = String(this.total);
+    //                 updatedRawMaterialOrder.status = statusValues.recibido.status;
+    //                 break;
+    //         }
+    //         return this.dataService.updateRawMaterialOrder(updatedRawMaterialOrder);
+    //     } else {
+    //         let newRawMaterialOrder = {
+    //             ...this.orderForm.value,
+    //             rawMaterialOrderElements: this.rawMaterialOrderElements,
+    //             pendingAmount: this.total.toFixed(2),
+    //             paidAmount: "0",
+    //             finalAmount: this.total.toFixed(2)
+    //         }
+    //         return this.dataService.addRawMaterialOrder(newRawMaterialOrder);
+    //     }
+    // }
 
     onSaveMaterialForm(){
         // console.log(this.selectedIE);
         let newFinishedProductCreationConsumedElement: FinishedProductCreationConsumedElement = {
-            rawMaterialID: this.selectedIE?.rawMaterialBase?._id,
+            rawMaterialID: this.selectedIE?.rawMaterialBase?.id,
             rawMaterialName: this.selectedIE?.rawMaterialBase?.name,
             measure: this.modalSelectedMeasure,
             quantity: this.modalQuantity.toFixed(2)
@@ -320,7 +310,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
         // console.log(newFinishedProductCreationConsumedElement);
         this.finishedProductCreationConsumedElements?.push(newFinishedProductCreationConsumedElement);
         // console.log(this.finishedProductCreationConsumedElements);
-        this.findAndMoveInventoryElementById(true, this.selectedIE?.rawMaterialBase?._id);
+        this.findAndMoveInventoryElementById(true, this.selectedIE?.rawMaterialBase?.id);
         // console.log(this.unselectedInventoryElements);
         this.onResetMaterialForm();
     }
@@ -355,7 +345,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
     }
 
     findProviderById(providerId?: string){
-        return this.providerOptions?.find(provider => String(provider._id) === providerId);
+        return this.providerOptions?.find(provider => String(provider.id) === providerId);
     }
 
     findPaymentType(paymentId?: string){
@@ -364,15 +354,15 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
     findAndMoveRawMaterialById(isSelect: boolean, rawMaterialId?: string){
         if (isSelect){
-            let rawMaterialResult = this.filteredRawMaterials?.find(rawMaterial => rawMaterial._id === rawMaterialId);
+            let rawMaterialResult = this.filteredRawMaterials?.find(rawMaterial => rawMaterial.id === rawMaterialId);
             if (rawMaterialResult) {
-                this.filteredRawMaterials = this.filteredRawMaterials?.filter(rawMaterial => rawMaterial._id !== rawMaterialId);
+                this.filteredRawMaterials = this.filteredRawMaterials?.filter(rawMaterial => rawMaterial.id !== rawMaterialId);
                 this.unselectedRawMaterials?.push(rawMaterialResult);
             }
         } else { // unselect
-            let rawMaterialResult = this.unselectedRawMaterials?.find(rawMaterial => rawMaterial._id === rawMaterialId);
+            let rawMaterialResult = this.unselectedRawMaterials?.find(rawMaterial => rawMaterial.id === rawMaterialId);
             if (rawMaterialResult){
-                this.unselectedRawMaterials = this.unselectedRawMaterials?.filter(rawMaterial => rawMaterial._id !== rawMaterialId);
+                this.unselectedRawMaterials = this.unselectedRawMaterials?.filter(rawMaterial => rawMaterial.id !== rawMaterialId);
                 this.filteredRawMaterials?.push(rawMaterialResult);
             }
         }
@@ -380,15 +370,15 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
     findAndMoveInventoryElementById(isSelect: boolean, inventoryElementId?: string){
         if(isSelect){
-            let inventoryElementResult = this.inventoryElements?.find(invElement => invElement.rawMaterialBase?._id === inventoryElementId);
+            let inventoryElementResult = this.inventoryElements?.find(invElement => invElement.rawMaterialBase?.id === inventoryElementId);
             if(inventoryElementResult){
-                this.inventoryElements = this.inventoryElements?.filter(invElement => invElement.rawMaterialBase?._id !== inventoryElementId);
+                this.inventoryElements = this.inventoryElements?.filter(invElement => invElement.rawMaterialBase?.id !== inventoryElementId);
                 this.unselectedInventoryElements?.push(inventoryElementResult);
             }
         } else {
-            let inventoryElementResult = this.unselectedInventoryElements?.find(invElement => invElement.rawMaterialBase?._id === inventoryElementId);
+            let inventoryElementResult = this.unselectedInventoryElements?.find(invElement => invElement.rawMaterialBase?.id === inventoryElementId);
             if(inventoryElementResult){
-                this.unselectedInventoryElements = this.unselectedInventoryElements?.filter(invElement => invElement.rawMaterialBase?._id !== inventoryElementId);
+                this.unselectedInventoryElements = this.unselectedInventoryElements?.filter(invElement => invElement.rawMaterialBase?.id !== inventoryElementId);
                 this.inventoryElements?.push(inventoryElementResult);
             }
         }
@@ -396,15 +386,15 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
     findAndMoveFinishedProductById(isSelect: boolean, finishedProductId?: string){
         if(isSelect){
-            let finishedProductResult = this.finishedProducts?.find(fpElement => fpElement?._id === finishedProductId);
+            let finishedProductResult = this.finishedProducts?.find(fpElement => fpElement?.id === finishedProductId);
             if(finishedProductResult){
-                this.finishedProducts = this.finishedProducts?.filter(fpElement => fpElement?._id !== finishedProductId);
+                this.finishedProducts = this.finishedProducts?.filter(fpElement => fpElement?.id !== finishedProductId);
                 this.unselectedFinishedProductElements?.push(finishedProductResult);
             }
         } else {
-            let finishedProductResult = this.unselectedFinishedProductElements?.find(fpElement => fpElement?._id === finishedProductId);
+            let finishedProductResult = this.unselectedFinishedProductElements?.find(fpElement => fpElement?.id === finishedProductId);
             if(finishedProductResult){
-                this.unselectedFinishedProductElements = this.unselectedFinishedProductElements?.filter(fpElement => fpElement?._id !== finishedProductId);
+                this.unselectedFinishedProductElements = this.unselectedFinishedProductElements?.filter(fpElement => fpElement?.id !== finishedProductId);
                 this.finishedProducts?.push(finishedProductResult);
             }
         }
@@ -495,7 +485,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
     unselectRawMaterial(orderElement: RawMaterialOrderElement, indexToRemove: number){
         this.rawMaterialOrderElements?.splice(indexToRemove, 1);
-        this.findAndMoveRawMaterialById(false, orderElement.rawMaterialByProvider?._id);
+        this.findAndMoveRawMaterialById(false, orderElement.rawMaterialByProvider?.id);
         // this.filteredRawMaterials?.push(orderElement.rawMaterialByProvider!);
     }
 

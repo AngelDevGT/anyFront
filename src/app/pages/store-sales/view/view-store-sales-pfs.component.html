@@ -47,7 +47,7 @@
                     </div>
                 </button>
                 <button
-                *ngIf="shopResume?.status?.id !== 8"
+                *ngIf="shopResume?.status?.id == 52"
                 type="button" (click)="editSale()" [disabled]="submitting"
                 class="btn btn-primary m-2">
                 <div class="d-flex flex-row p-1">
@@ -57,7 +57,7 @@
                 </div>
                 </button>
                 <button
-                *ngIf="shopResume?.status?.id !== 8" type="button" (click)="cancelSale()" [disabled]="submitting"
+                *ngIf="shopResume?.status?.id == 52" type="button" (click)="cancelSale()" [disabled]="submitting"
                 class="btn btn-danger m-2">
                 <div class="d-flex flex-row p-1">
                     <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>

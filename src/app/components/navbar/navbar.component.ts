@@ -71,7 +71,7 @@ export class NavbarComponent implements OnInit {
   }
 
   viewUser(){
-    this.router.navigate(['/users/view/', this.accountService.userValue.userID]);
+    this.router.navigate(['/users/view/', this.accountService.userValue.uuid]);
   }
 
   onKey(event: any) {

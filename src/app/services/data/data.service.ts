@@ -22,6 +22,91 @@ import { ActivityLog } from '@app/models/system/activity-log';
 import { CashClosing } from '@app/models/store/cash-closing.model';
 import { ShopResume } from '@app/models/store/shop-resume.model';
 
+export const establishmentStatusValues = {
+    activo: { status: {id: 28}},
+    inactivo: { status: {id: 27}},
+    eliminado: { status: {id: 29}}
+}
+
+export const providerStatusValues = {
+    activo: { status: {id: 30}},
+    eliminado: { status: {id: 31}}
+}
+
+export const rawMaterialStatusValues = {
+    activo: { status: {id: 32}},
+    eliminado: { status: {id: 33}}
+}
+
+export const rawMaterialByProviderStatusValues = {
+    activo: { status: {id: 34}},
+    eliminado: { status: {id: 35}}
+}
+
+export const finishedProductStatusValues = {
+    activo: { status: {id: 36}},
+    eliminado: { status: {id: 37}}
+}
+
+export const rawMaterialOrderStatusValues = {
+    activo: { status: {id: 38}},
+    eliminado: { status: {id: 43}},
+    verificado: { status: {id: 45}}
+}
+
+export const productForSaleStatusValues = {
+    activo: { status: {id: 50}},
+    eliminado: { status: {id: 51}}
+}
+
+export const paymentStatusValues = {
+    pendiente: { status: {id: 3}},
+    abonado: { status: {id: 4}},
+    pagado: { status: {id: 5}}
+}
+
+export const pfsStoreOrderStatusValues = {
+    en_camino: { status: {id: 20}},
+    listo: { status: {id: 21}},
+    recibido: { status: {id: 22}},
+    cancelado: { status: {id: 23}},
+    entregado: { status: {id: 25}},
+    devuelto: { status: {id: 26}},
+    pendiente: { status: {id: 19}},
+    eliminado: { status: {id: 24}}
+}
+
+export const pfsFactoryOrderStatusValues = {
+    en_camino: { status: {id: 1}},
+    eliminado: { status: {id: 10}},
+    pendiente: { status: {id: 11}},
+    en_curso: { status: {id: 12}},
+    listo: { status: {id: 13}},
+    recibido: { status: {id: 14}},
+    cancelado: { status: {id: 15}},
+    entregado: { status: {id: 16}},
+    verificado: { status: {id: 17}},
+    devuelto: { status: {id: 18}}
+}
+
+export const actionTypeValues = {
+    register_rm_by_order: { actionType: {id: 1}},
+    add_rm_manual: { actionType: {id: 2}},
+    remove_rm_manual: { actionType: {id: 3}},
+    remove_rm_by_consume: { actionType: {id: 4}},
+    register_fp_by_creation: { actionType: {id: 5}},
+    add_fp_manual: { actionType: {id: 6}},
+    remove_fp_manual: { actionType: {id: 7}},
+    remove_fp_by_order: { actionType: {id: 8}},
+    add_pfs_by_order: { actionType: {id: 11}},
+    register_pfs_by_reservation: { actionType: {id: 9}},
+    remove_pfs_by_order: { actionType: {id: 10}},
+    remove_pfs_manual: { actionType: {id: 13}},
+    remove_pfs_by_sale: { actionType: {id: 14}},
+    add_fp_by_devolution: { actionType: {id: 15}},
+    add_pfs_manual: { actionType: {id: 12}},
+    add_pfs_by_cancelation: { actionType: {id: 16}}
+}
 
 export const statusValues = {
     inactivo: {
@@ -112,33 +197,6 @@ export const statusValues = {
             "identifier": "Devuelto"
         }
     }
-}
-
-export const paymentStatusValues = {
-    pendiente: {
-        paymentStatus: {
-            "id": 1,
-            "status": 1,
-            "text": "1",
-            "identifier": "Pendiente"
-        }
-    },
-    abonado: {
-        paymentStatus: {
-            "id": 2,
-            "status": 1,
-            "text": "2",
-            "identifier": "Abonado"
-        }
-    },
-    pagado: {
-        paymentStatus: {
-            "id": 3,
-            "status": 1,
-            "text": "3",
-            "identifier": "Pagado"
-        }
-    },
 }
 
 export const storeOrderStatus = {
@@ -483,7 +541,7 @@ export class DataService {
 
     getAllProducts() {
         let params = JSON.stringify({findProduct: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveProducts`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveProducts`, params);
     }
 
 
@@ -492,12 +550,12 @@ export class DataService {
             findProduct: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveProducts`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveProducts`, parameters);
     }
 
     getProductById(id: string) {
         let params = JSON.stringify({getProduct: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getProduct`, params);
+        return this.http.post(`${environment.apiUrlV3}/getProduct`, params);
     }
 
     // addProduct(product: ProductForSale, productImg: string){
@@ -510,7 +568,7 @@ export class DataService {
     //         addProduct: {
     //             ...product,
     //         }});
-    //     return this.http.post(`${environment.apiUrl}/addProduct`, params);
+    //     return this.http.post(`${environment.apiUrlV3}/addProduct`, params);
     // }
 
     // updateProduct(id: string, product: ProductForSale, productImg: string){
@@ -522,7 +580,7 @@ export class DataService {
     //         updateProduct: {
     //             ...product,
     //         }});
-    //     return this.http.post(`${environment.apiUrl}/updateProduct`, params);
+    //     return this.http.post(`${environment.apiUrlV3}/updateProduct`, params);
     // }
 
     deleteProduct(params: any) {
@@ -530,28 +588,66 @@ export class DataService {
             updateProduct: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/updateProduct`, deleteUser);
+        return this.http.post(`${environment.apiUrlV3}/updateProduct`, deleteUser);
     }
+
+    toSnakeCase(str: string): string {
+        return str.replace(/([A-Z])/g, "_$1").toLowerCase();
+    }
+
+    convertAndFilter(obj: Record<string, any>): Record<string, any> {
+        const result: Record<string, any> = {};
+
+        for (const key in obj) {
+            const value = obj[key];
+
+            // Caso especial: objeto con 'id'
+            if (
+            value &&
+            typeof value === "object" &&
+            !Array.isArray(value) &&
+            "id" in value &&
+            typeof value.id !== "object"
+            ) {
+            result[`${this.toSnakeCase(key)}_id`] = value.id;
+            }
+
+            // Valor primitivo (string, number, boolean, null)
+            else if (
+            value === null ||
+            typeof value === "string" ||
+            typeof value === "number" ||
+            typeof value === "boolean"
+            ) {
+            result[this.toSnakeCase(key)] = value;
+            }
+
+            // Todo lo demás (arrays, objetos anidados sin `id`) se ignora
+        }
+
+        return result;
+    }
+
 
     /** ESTABLISHMENT */
 
     getAllEstablishments() {
-        let params = JSON.stringify({findEstablishment: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveEstablishments`, params);
+        let params = JSON.stringify({e: {}});
+        return this.http.post(`${environment.apiUrlV3}/retrieveEstablishments`, params);
     }
 
 
     getAllEstablishmentsByFilter(params: any) {
         let parameters = JSON.stringify({
-            findProduct: {
+            e: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveEstablishments`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveEstablishments`, parameters);
     }
 
     getEstablishmentById(id: string) {
-        let params = JSON.stringify({getEstablishment: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getEstablishment`, params);
+        let params = JSON.stringify({e: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getEstablishment`, params);
     }
 
     getShortEstablishmentInfo(establishment: Establishment){
@@ -560,79 +656,82 @@ export class DataService {
 
     addEstablishment(establishment: Establishment){
         let params = JSON.stringify({
-            addEstablishment: {
-                ...establishment,
-                ...statusValues.activo,
-                creatorUser: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/addEstablishment`, params);
+                name: establishment.name,
+                address: establishment.address,
+                description: establishment.description,
+                status_id: establishmentStatusValues.activo.status.id,
+                creator_user_id: this.accountService.userValue.uuid
+            });
+        return this.http.put(`${environment.apiUrlV3}/addEstablishment`, params);
     }
 
     updateEstablishment(id: string, establishment: Establishment){
         let params = JSON.stringify({
-            updateStablishment: {
-                "_id": id,
-                ...establishment
-            }});
-        return this.http.post(`${environment.apiUrl}/updateStablishment`, params);
+            name: establishment.name,
+            address: establishment.address,
+            description: establishment.description,
+            id: id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateEstablishment`, params);
     }
 
     deleteEstablishment(params: any) {
         let deleteUser = JSON.stringify({
-            updateStablishment: {
-                ...params,
-                ...statusValues.eliminado
-            }});
-        return this.http.post(`${environment.apiUrl}/updateStablishment`, deleteUser);
+            id: params.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteEstablishment`, deleteUser);
     }
 
     /** PROVIDERS */
 
     getAllProviders() {
-        let params = JSON.stringify({retrieveProvider: {}});
-        return this.http.post(`${environment.apiUrl}/retriveProviders`, params);
+        let params = JSON.stringify({p: {}});
+        return this.http.post(`${environment.apiUrlV3}/retriveProviders`, params);
     }
 
 
     getAllProvidersByFilter(params: any) {
         let parameters = JSON.stringify({
-            retrieveProvider: {
+            p: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retriveProviders`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveProviders`, parameters);
     }
 
     getProviderById(id: string) {
-        let params = JSON.stringify({getProvider: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getProvider`, params);
+        let params = JSON.stringify({p: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getProvider`, params);
     }
 
     addProvider(provider: Provider){
         let params = JSON.stringify({
-            addProvider: {
-                ...provider,
-                ...activeStatus,
-                creatorUser: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/addProvider`, params);
+            name: provider.name,
+            phone: provider.phone,
+            description: provider.description,
+            company: provider.company,
+            email: provider.email,
+            status_id: providerStatusValues.activo.status.id,
+            creator_user_id: this.accountService.userValue.uuid
+        });
+        return this.http.put(`${environment.apiUrlV3}/addProvider`, params);
     }
 
     updateProvider(id: string, provider: Provider){
         let params = JSON.stringify({
-            updateProvider: {
-                "_id": id,
-                ...provider
-            }});
-        return this.http.post(`${environment.apiUrl}/updateProvider`, params);
+            name: provider.name,
+            phone: provider.phone,
+            description: provider.description,
+            company: provider.company,
+            id: id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateProvider`, params);
     }
 
     deleteProvider(params: any) {
         let deleteUser = JSON.stringify({
-            updateProvider: {
-                ...params,
-                ...deleteStatus
-            }});
-        return this.http.post(`${environment.apiUrl}/updateProvider`, deleteUser);
+            id: params.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteProvider`, deleteUser);
     }
 
     /** PRICE */
@@ -657,12 +756,12 @@ export class DataService {
           'enctype': 'multipart/form-data'
         });
     
-        return this.http.post(`${environment.apiUrl}/ImageUpload`, formData, { headers });
+        return this.http.post(`${environment.apiUrlV2}/ImageUpload`, formData, { headers });
     }
 
     getImageById(id: string) {
         let params = JSON.stringify({getImage: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getImage`, params);
+        return this.http.post(`${environment.apiUrlV2}/getImage`, params);
     }
 
     getImageWithURL(imgName: string) {
@@ -681,11 +780,13 @@ export class DataService {
     /** DATE */
     
     getLocalDateTimeFromUTCTime(utcTime: string){
+        utcTime = utcTime.includes("Z") ? utcTime : utcTime + "Z";
         let date = new Date(utcTime.replaceAll("\"",""));
         return date.toLocaleString().replace(",", " ");
     }
 
     getLocalDateFromUTCTime(utcTime: string){
+        utcTime = utcTime.includes("Z") ? utcTime : utcTime + "Z";
         let date = new Date(utcTime.replaceAll("\"",""));
         return date.toLocaleString().split(",")[0];
         // return date.toJSON().slice(0, 10);
@@ -699,12 +800,6 @@ export class DataService {
         if(measure == "onz")
             return "Onzas"
         return "Sin Definir"
-    }
-
-    getConvertedMeasureById(quantity: number, measureId?: number){
-        let foundMeasure = measureUnits.find(x => x.id == measureId);
-        return foundMeasure ? (quantity / foundMeasure.unitBase.quantity).toFixed(2)  : quantity;
-
     }
 
     getConvertedPrice(price: number, unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure){
@@ -743,39 +838,61 @@ export class DataService {
 
     /** CONSTANTES */
 
-    getAllConstants() {
-        let params = JSON.stringify({retrieveCatalogGeneric: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveGenericCatalog`, params);
+    findJsonValue(obj: any, targetKey: string): any | null {
+        if (obj == null || typeof obj !== 'object') return null;
+
+        if (targetKey in obj) {
+            return obj[targetKey];
+        }
+
+        if (Array.isArray(obj)) {
+            for (const item of obj) {
+            const result = this.findJsonValue(item, targetKey);
+            if (result !== null) return result;
+            }
+        }
+
+        for (const key of Object.keys(obj)) {
+            const result = this.findJsonValue(obj[key], targetKey);
+            if (result !== null) return result;
+        }
+
+        return null;
     }
 
+    getAnyComponent(params: any, catalog: any) {
+        return this.http.post(`${environment.apiUrlV3}/${catalog}`, params);
+    }
 
-    getAllConstantsByFilter(params: any) {
-        let parameters = JSON.stringify({
-            retrieveCatalogGeneric: {
-                ...params
-            }});
-        return this.http.post(`${environment.apiUrl}/retrieveGenericCatalog`, parameters);
+    getErrorMessageResponse(error: any, defaultMessage: string): string {
+        const errorValue = error.error;
+        let errorResponse = this.findJsonValue(errorValue, 'error');
+        let ackError = this.findJsonValue(errorValue, 'AcknowledgementDescription');
+        if (ackError && errorResponse) {
+            return `${ackError}: ${errorResponse}`;
+        }
+        return defaultMessage;
     }
 
     /** RAW MATERIAL BASE */
 
     getAllRawMaterials() {
-        let params = JSON.stringify({retrieveRawMaterial: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveRawMaterial`, params);
+        let params = JSON.stringify({rm: {}});
+        return this.http.post(`${environment.apiUrlV3}/retrieveRawMaterial`, params);
     }
 
 
     getAllRawMaterialsByFilter(params: any) {
         let parameters = JSON.stringify({
-            retrieveRawMaterial: {
+            rm: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveRawMaterial`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveRawMaterial`, parameters);
     }
 
     getRawMaterialById(id: string) {
-        let params = JSON.stringify({getRawMaterial: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getRawMaterial`, params);
+        let params = JSON.stringify({rm: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getRawMaterial`, params);
     }
 
     addRawMaterial(rawMaterial: RawMaterialBase, img?: string){
@@ -784,12 +901,14 @@ export class DataService {
             delete rawMaterial.photo;
         }
         let params = JSON.stringify({
-            addRawMaterial: {
-                ...rawMaterial,
-                ...activeStatus,
-                creatorUser: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/addRawMaterial`, params);
+            name: rawMaterial.name,
+            description: rawMaterial.description,
+            photo: rawMaterial.photo,
+            unit_base_id: rawMaterial.measure?.id,
+            status_id: rawMaterialStatusValues.activo.status.id,
+            creator_user_id: this.accountService.userValue.uuid
+        });
+        return this.http.put(`${environment.apiUrlV3}/addRawMaterial`, params);
     }
 
     updateRawMaterial(id: string, rawMaterial: RawMaterialBase, img?: string){
@@ -798,90 +917,87 @@ export class DataService {
             rawMaterial.photo = "";
         }
         let params = JSON.stringify({
-            updateRawMaterial: {
-                "_id": id,
-                ...rawMaterial
-            }});
-        return this.http.post(`${environment.apiUrl}/UpdateRawMaterial`, params);
+            name: rawMaterial.name,
+            description: rawMaterial.description,
+            photo: rawMaterial.photo,
+            id: id   
+        });
+        return this.http.patch(`${environment.apiUrlV3}/UpdateRawMaterial`, params);
     }
 
     deleteRawMaterial(params: any) {
         let deleteUser = JSON.stringify({
-            updateRawMaterial: {
-                ...params,
-                ...deleteStatus
-            }});
-        return this.http.post(`${environment.apiUrl}/UpdateRawMaterial`, deleteUser);
+            id: params.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteRawMaterial`, deleteUser);
     }
 
     /** RAW MATERIAL BY PROVIDER */
 
     getAllRawMaterialsByProvider() {
-        let params = JSON.stringify({retrieveRawMaterialByProvider: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveRawMaterialByProvider`, params);
+        let params = JSON.stringify({rmbp: {}});
+        return this.http.post(`${environment.apiUrlV3}/retrieveRawMaterialByProvider`, params);
     }
 
 
     getAllRawMaterialsByProviderByFilter(params: any) {
         let parameters = JSON.stringify({
-            retrieveRawMaterialByProvider: {
+            rmbp: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveRawMaterialByProvider`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveRawMaterialByProvider`, parameters);
     }
 
     getRawMaterialByProviderById(id: string) {
-        let params = JSON.stringify({getRawMaterialByProvider: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getRawMaterialByProvider`, params);
+        let params = JSON.stringify({rmbp: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getRawMaterialByProvider`, params);
     }
 
     addRawMaterialByProvider(rawMaterial: RawMaterialByProvider){
         let params = JSON.stringify({
-            addRawMaterialByProvider: {
-                ...rawMaterial,
-                ...activeStatus,
-                creatorUser: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/AddRawMaterialByProvider`, params);
+            price: rawMaterial.price,
+            provider_id: rawMaterial.provider?.id,
+            raw_material_base_id: rawMaterial.rawMaterialBase?.id,
+            status_id: rawMaterialByProviderStatusValues.activo.status.id,
+            creator_user_id: this.accountService.userValue.uuid
+        });
+        return this.http.put(`${environment.apiUrlV3}/addRawMaterialByProvider`, params);
     }
 
     updateRawMaterialByProvider(id: string, rawMaterial: RawMaterialByProvider){
         let params = JSON.stringify({
-            updateRawMaterialByProvider: {
-                "_id": id,
-                ...rawMaterial
-            }});
-        return this.http.post(`${environment.apiUrl}/updateRawMaterialByProvider`, params);
+            price: rawMaterial.price,
+            id: id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateRawMaterialByProvider`, params);
     }
 
     deleteRawMaterialByProvider(params: any) {
         let deleteUser = JSON.stringify({
-            updateRawMaterialByProvider: {
-                ...params,
-                ...deleteStatus
-            }});
-        return this.http.post(`${environment.apiUrl}/updateRawMaterialByProvider`, deleteUser);
+            id: params.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteRawMaterialByProvider`, deleteUser);
     }
 
     /** FINISHED PRODUCT */
 
     getAllFinishedProduct() {
-        let params = JSON.stringify({retrieveFinishedProduct: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveFinishedProduct`, params);
+        let params = JSON.stringify({fp: {}});
+        return this.http.post(`${environment.apiUrlV3}/retrieveFinishedProduct`, params);
     }
 
 
     getAllFinishedProductByFilter(params: any) {
         let parameters = JSON.stringify({
-            retrieveFinishedProduct: {
+            fp: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveFinishedProduct`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveFinishedProduct`, parameters);
     }
 
     getFinishedProductById(id: string) {
-        let params = JSON.stringify({getFinishedProduct: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getFinishedProduct`, params);
+        let params = JSON.stringify({fp: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getFinishedProduct`, params);
     }
 
     addFinishedProduct(product: FinishedProduct, img?: string){
@@ -890,12 +1006,14 @@ export class DataService {
             delete product.photo;
         }
         let params = JSON.stringify({
-            addFinishedProduct: {
-                ...product,
-                ...activeStatus,
-                creatorUser: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/addFinishedProduct`, params);
+            name: product.name,
+            description: product.description,
+            photo: product.photo,
+            status_id: finishedProductStatusValues.activo.status.id,
+            unit_base_id: product.measure?.id,
+            creator_user_id: this.accountService.userValue.uuid
+        });
+        return this.http.put(`${environment.apiUrlV3}/addFinishedProduct`, params);
     }
 
     updateFinishedProduct(id: string, product: FinishedProduct, img?: string){
@@ -904,85 +1022,104 @@ export class DataService {
             product.photo = "";
         }
         let params = JSON.stringify({
-            updateFinishedProduct: {
-                "_id": id,
-                ...product
-            }});
-        return this.http.post(`${environment.apiUrl}/updateFinishedProduct`, params);
+            name: product.name,
+            description: product.description,
+            photo: product.photo,
+            id: id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateFinishedProduct`, params);
     }
 
     deleteFinishedProduct(params: any) {
         let deleteUser = JSON.stringify({
-            updateFinishedProduct: {
-                ...params,
-                ...deleteStatus
-            }});
-        return this.http.post(`${environment.apiUrl}/updateFinishedProduct`, deleteUser);
+            id: params.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteFinishedProduct`, deleteUser);
     }
 
     /** RAW MATERIAL ORDER */
 
     getAllRawMaterialOrder() {
-        let params = JSON.stringify({retrieveRawMaterialOrder: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveRawMaterialOrder`, params);
+        let params = JSON.stringify({rmo: {}});
+        return this.http.post(`${environment.apiUrlV3}/listRawMaterialOrder`, params);
     }
 
 
     getAllRawMaterialOrderByFilter(params: any) {
         let parameters = JSON.stringify({
-            retrieveRawMaterialOrder: {
+            rmo: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveRawMaterialOrder`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listRawMaterialOrder`, parameters);
     }
 
     getRawMaterialOrderById(id: string) {
-        let params = JSON.stringify({getRawMaterialOrder: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getRawMaterialOrder`, params);
+        let params = JSON.stringify({rmo: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getRawMaterialOrder`, params);
     }
 
     addRawMaterialOrder(rmOrder: RawMaterialOrder){
         let params = JSON.stringify({
-            addRawMaterialOrder: {
+            "$1": JSON.stringify({
                 ...rmOrder,
-                ...pendingPaymentStatus,
-                ...activeStatus,
-                creatorUser: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/addRawMaterialOrder`, params);
+                description: rmOrder.comment,
+                creatorUser: { id: this.accountService.userValue.uuid }
+            }),
+            "$2": JSON.stringify(rmOrder.rawMaterialOrderElements)
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addRawMaterialOrder`, params);
+    }
+
+    updateRawMaterialOrderElements(rmOrder: RawMaterialOrder){
+        let params = JSON.stringify({
+            order_id: rmOrder.id,
+            order_properties: JSON.stringify({
+                ...rmOrder,
+                description: rmOrder.comment,
+                creatorUser: { id: this.accountService.userValue.uuid }
+            }),
+            order_elements: JSON.stringify(rmOrder.rawMaterialOrderElements)
+        });
+        return this.http.post(`${environment.apiUrlV3}/updateRawMaterialOrderElements`, params);
     }
 
     updateRawMaterialOrder(rmOrder: RawMaterialOrder){
         let params = JSON.stringify({
-            updateRawMaterialOrder: {
-                ...rmOrder
-            }});
-        return this.http.post(`${environment.apiUrl}/updateRawMaterialOrder`, params);
+            name: rmOrder.name,
+            payment_type_id: rmOrder.paymentType?.id,
+            description: rmOrder.comment,
+            id: rmOrder.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateRawMaterialOrder`, params);
     }
 
-    addRawMaterialOrderPaymentHistory(rmOrderHistory: AddRawMaterialOrderPaymentHistory){
+    addRawMaterialOrderPaymentHistory(rmoId: string, amount: string, paymentTypeId: string){
         let params = JSON.stringify({
-            addRawMaterialOrderPaymentHistory: {
-                ...rmOrderHistory
-            }});
-        return this.http.post(`${environment.apiUrl}/addRawMaterialOrderPaymentHistory`, params);
+            "$1": rmoId,
+            "$2": amount,
+            "$3": paymentTypeId
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addRawMaterialOrderPaymentHistory`, params);
     }
 
-    verifyRawMaterialOrder(orderId: string){
+    verifyRawMaterialOrder(rmOrder: RawMaterialOrder){
         let params = JSON.stringify({
-            verifyRawMaterialOrder: {
-                rawMaterialOrderID: orderId,
-            }});
-        return this.http.post(`${environment.apiUrl}/verifyRawMaterialOrder`, params);
+            "$1": rmOrder.id,
+            "$2": JSON.stringify({
+                ...rmOrder,
+                description: rmOrder.comment
+            }),
+            "$3": JSON.stringify(rmOrder.rawMaterialOrderElements),
+            "$4": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/verifyRawMaterialOrder`, params);
     }
 
     deleteRawMaterialOrder(params: any) {
         let deleteOrder = JSON.stringify({
-            updateRawMaterialOrder: {
-                ...params,
-                ...deleteStatus
-            }});
-        return this.http.post(`${environment.apiUrl}/updateRawMaterialOrder`, deleteOrder);
+            id: params.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteRawMaterialOrder`, deleteOrder);
     }
 
     /** MOVEMENT */
@@ -992,17 +1129,25 @@ export class DataService {
             moveStoreToFactory: {
                 ...movement
             }});
-        return this.http.post(`${environment.apiUrl}/MoveStoreToFactory`, params);
+        return this.http.post(`${environment.apiUrlV3}/MoveStoreToFactory`, params);
     }
 
     /** INVENTORY */
 
-    getAllInventoryByFilter(params: any) {
+    getInventoryByType(params: any, inventoryType: string) {
         let parameters = JSON.stringify({
-            retrieveInventory: {
+            i: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveInventory`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/${inventoryType}`, parameters);
+    }
+
+    getAllInventoryByFilter(params: any) {
+        let parameters = JSON.stringify({
+            i: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveInventory`, parameters);
     }
 
     getInventory(params: any) {
@@ -1010,7 +1155,28 @@ export class DataService {
             getInventory: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/getInventory`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/getInventory`, parameters);
+    }
+
+    addRemoveInventoryElement(params: any) {
+        let parameters = JSON.stringify({
+                "$1": params.inventoryType,
+                "$2": params.unitName,
+                "$3": params.elementId,
+                "$4": params.selectedMeasureId,
+                "$5": params.elementQuantity,
+                "$6": this.accountService.userValue.uuid,
+                "$7": params.reason,
+                "$8": params.actionTypeId
+            });
+        return this.http.patch(`${environment.apiUrlV3}/addRemoveInventoryElement`, parameters);
+    }
+
+    multiAddRemoveInventoryElement(params: any) {
+        let parameters = JSON.stringify({
+            "$1": JSON.stringify(params)
+        });
+        return this.http.patch(`${environment.apiUrlV3}/multiAddRemoveInventoryElement`, parameters);
     }
 
     updateInventoryElement(params: any) {
@@ -1018,7 +1184,7 @@ export class DataService {
             updateInventoryElement: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/UpdateInventoryElement`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/UpdateInventoryElement`, parameters);
     }
 
     /** PRODUCT CREATION */
@@ -1028,49 +1194,50 @@ export class DataService {
             registerFinishedProductCreation: {
                 ...fpCreation
             }});
-        return this.http.post(`${environment.apiUrl}/registerFinishedProductCreation`, params);
+        return this.http.post(`${environment.apiUrlV3}/registerFinishedProductCreation`, params);
     }
 
     /** PRODUCT FOR SALE */
     getAllProductForSale() {
-        let params = JSON.stringify({getProductForSale: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveProductsForSale`, params);
+        let params = JSON.stringify({pfs: {}});
+        return this.http.post(`${environment.apiUrlV3}/retrieveProductsForSale`, params);
     }
 
 
     getAllProductForSaleByFilter(params: any) {
         let parameters = JSON.stringify({
-            retrieveProductForSale: {
+            pfs: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveProductsForSale`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveProductsForSale`, parameters);
     }
 
     getProductForSaleById(id: string) {
-        let params = JSON.stringify({getProductForSale: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getProductForSale`, params);
+        let params = JSON.stringify({pfs: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getProductForSale`, params);
     }
 
     addProductForSale(product: ProductForSale){
         let params = JSON.stringify({
-            addProductForSale: {
-                ...product,
-                ...activeStatus,
-                creatorUser: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/AddProductForSale`, params);
+            price: product.price,
+            establishment_id: product.establishment?.id,
+            finished_product_id: product.finishedProduct?.id,
+            status_id: productForSaleStatusValues.activo.status.id,
+            creatorUser: this.accountService.userValue.uuid,
+        });
+        return this.http.put(`${environment.apiUrlV3}/addProductForSale`, params);
     }
 
     addMultiProductForSale(products: ProductForSale[]){
         for (let i = 0; i < products.length; i++) {
-            products[i].status = activeStatus.status;
-            products[i].creatorUser = this.accountService.userValueFixed;
+            products[i].status = { id: productForSaleStatusValues.activo.status.id };
+            products[i].creatorUser = { id: this.accountService.userValue.uuid };
         }
         let params = JSON.stringify({
-            addManyProductForSale:
+            products_for_sale:
                 products
             });
-        return this.http.post(`${environment.apiUrl}/addManyProductForSale`, params);
+        return this.http.post(`${environment.apiUrlV3}/addManyProductForSale`, params);
     }
 
     updateProductForSale(id: string, product: ProductForSale){
@@ -1079,7 +1246,7 @@ export class DataService {
                 "_id": id,
                 ...product
             }});
-        return this.http.post(`${environment.apiUrl}/updateProductForSale`, params);
+        return this.http.post(`${environment.apiUrlV3}/updateProductForSale`, params);
     }
 
     deleteProductForSale(params: any) {
@@ -1088,77 +1255,89 @@ export class DataService {
                 ...params,
                 ...deleteStatus
             }});
-        return this.http.post(`${environment.apiUrl}/updateProductForSale`, deleteUser);
+        return this.http.post(`${environment.apiUrlV3}/updateProductForSale`, deleteUser);
     }
 
     /** PRODUCT FOR SALE ORDER */
 
     getAllProducForSaleOrder() {
-        let params = JSON.stringify({retrieveProductForSaleStoreOrder: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveProductForSaleStoreOrder`, params);
+        let params = JSON.stringify({pfsso: {}});
+        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrder`, params);
     }
 
 
     getAllProductForSaleOrderByFilter(params: any) {
         let parameters = JSON.stringify({
-            retrieveProductForSaleStoreOrder: {
+            pfsso: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveProductForSaleStoreOrder`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrder`, parameters);
     }
 
     getProductForSaleOrderById(id: string) {
-        let params = JSON.stringify({getProductForSaleStoreOrder: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getProductForSaleStoreOrder`, params);
+        let params = JSON.stringify({pfsso: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrder`, params);
     }
 
     addProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
         let params = JSON.stringify({
-            addProductForSaleStoreOrder: {
+            "$1": JSON.stringify({
                 ...pfsOrder,
-                ...pendingStoreStatus,
-                ...pendingFactoryStatus,
-                creatorUser: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/addProductForSaleStoreOrder`, params);
+                creatorUser: { id: this.accountService.userValue.uuid },
+            }),
+            "$2": JSON.stringify(pfsOrder.productForSaleStoreOrderElements)
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addProductForSaleStoreOrder`, params);
     }
 
     updateProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
         let params = JSON.stringify({
-            updateProductForSaleStoreOrder: {
-                ...pfsOrder
-            }});
-        return this.http.post(`${environment.apiUrl}/updateProductForSaleStoreOrder`, params);
+            "$1": pfsOrder.name,
+            "$2": pfsOrder.comment,
+            "$3": pfsOrder.id    
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrder`, params);
     }
 
-    manageProductForSaleOrderStateReady(pfsOrder: ProductForSaleStoreOrder){
+    updateProductForSaleOrderEnCamino(pfsOrderId: string){
         let params = JSON.stringify({
-            manageProductForSaleStoreOrder: {
-                ...pfsOrder,
-                storeStatus: storeOrderStatus.listo,
-                factoryStatus: storeOrderStatus.listo
-            }});
-        return this.http.post(`${environment.apiUrl}/manageProductForSaleStoreOrder`, params);
+            "$1": pfsOrderId
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrderEnCamino`, params);
     }
 
-    manageProductForSaleOrderStateReceived(pfsOrder: ProductForSaleStoreOrder){
+    updateProductForSaleOrderStatus(pfsOrder: ProductForSaleStoreOrder){
         let params = JSON.stringify({
-            manageProductForSaleStoreOrder: {
-                ...pfsOrder,
-                storeStatus: storeOrderStatus.recibido,
-                factoryStatus: storeOrderStatus.entregado
-            }});
-        return this.http.post(`${environment.apiUrl}/manageProductForSaleStoreOrder`, params);
+            "$1": pfsOrder.id    
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrder`, params);
     }
 
-    manageProductForSaleOrderStateReturned(pfsOrder: ProductForSaleStoreOrder){
+    manageProductForSaleOrderStateReady(pfsOrderId: string){
         let params = JSON.stringify({
-            manageProductForSaleStoreOrder: {
-                ...pfsOrder,
-                storeStatus: storeOrderStatus.devuelto,
-                factoryStatus: storeOrderStatus.devuelto
-            }});
-        return this.http.post(`${environment.apiUrl}/manageProductForSaleStoreOrder`, params);
+            "$1": pfsOrderId,
+            "$2": pfsFactoryOrderStatusValues.listo.status.id,
+            "$3": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrder`, params);
+    }
+
+    manageProductForSaleOrderStateReceived(pfsOrderId: string){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": pfsFactoryOrderStatusValues.entregado.status.id,
+            "$3": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrder`, params);
+    }
+
+    manageProductForSaleOrderStateReturned(pfsOrderId: string){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": pfsFactoryOrderStatusValues.devuelto.status.id,
+            "$3": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrder`, params);
     }
 
     verifyProductForSaleOrder(orderId: string){
@@ -1166,68 +1345,67 @@ export class DataService {
             verifyRawMaterialOrder: {
                 rawMaterialOrderID: orderId,
             }});
-        return this.http.post(`${environment.apiUrl}/verifyRawMaterialOrder`, params);
+        return this.http.post(`${environment.apiUrlV3}/verifyRawMaterialOrder`, params);
     }
 
-    deleteProductForSaleOrder(params: any) {
+    deleteProductForSaleOrder(orderId: any) {
         let deleteOrder = JSON.stringify({
-            updateProductForSaleStoreOrder: {
-                ...params,
-                storeStatus: storeOrderStatus.eliminado,
-                factoryStatus: storeOrderStatus.eliminado,
-            }});
-        return this.http.post(`${environment.apiUrl}/updateProductForSaleStoreOrder`, deleteOrder);
+            "$1": orderId,
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteProductForSaleStoreOrder`, deleteOrder);
     }
 
     /** SALES */
-    getShopHistory(params: any) {
+    getAllShopHistory(params: any) {
         let parameters = JSON.stringify({
-            retrieveShopHistory: {
+            ss: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/RetrieveShopHistory`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listShopSale`, parameters);
     }
 
-    registerShop(params: any) {
+    getShopHistoryById(params: any) {
         let parameters = JSON.stringify({
-            inventoryID: "65bf467e008f7e88678d3927",
-            RegisterShop: {
-                ...params,
-                creatorUser: this.accountService.userValueFixed
+            ss: {
+                ...params
             }});
-        return this.http.post(`${environment.apiUrl}/registerShop`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/getShopSale`, parameters);
     }
 
-    updateShopHistory(params: any) {
+    registerShop(params: ShopResume) {
+        let parameters = JSON.stringify({
+            "$1": JSON.stringify({
+                ...params
+            }),
+            "$2": JSON.stringify(params.itemsList),
+            "$3": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/registerShop`, parameters);
+    }
+
+    updateShopHistory(params: ShopResume) {
         let updateShopHistory = JSON.stringify({
-            updateShopHistory: {
-                ...params
-            }});
-        return this.http.post(`${environment.apiUrl}/UpdateShopHistory`, updateShopHistory);
+            "$1": params.nameClient,
+            "$2": params.nitClient,
+            "$3": params.nota,
+            "$4": params.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/UpdateShopHistory`, updateShopHistory);
     }
 
-    deleteShopHistory(params: any) {
+    cancelShop(params: ShopResume) {
         let deleteShopHistory = JSON.stringify({
-            updateShopHistory: {
-                ...params,
-                ...statusValues.eliminado
-            }});
-        return this.http.post(`${environment.apiUrl}/UpdateShopHistory`, deleteShopHistory);
-    }
-
-    cancelShop(params: any) {
-        let cancelShopRegister = JSON.stringify({
-            cancelShopRegister: {
-                ...params
-            }});
-        return this.http.post(`${environment.apiUrl}/cancelShop`, cancelShopRegister);
+            "$1": params.id,
+            "$2": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/cancelShopHistory`, deleteShopHistory);
     }
 
     /** LOGS */
 
     getAllActivityLogs() {
         let params = JSON.stringify({retrieveActivityLog: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveActivityLogs`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveActivityLogs`, params);
     }
 
 
@@ -1236,7 +1414,15 @@ export class DataService {
             retrieveActivityLog: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveActivityLogs`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveActivityLogs`, parameters);
+    }
+
+    getAllInventoryLogsByFilter(params: any, catalog: any) {
+        let parameters = JSON.stringify({
+            iea: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/${catalog}`, parameters);
     }
 
     addActivityLog(actLog: ActivityLog){
@@ -1245,12 +1431,12 @@ export class DataService {
                 ...actLog,
                 user: this.accountService.userValueFixed,
             }});
-        return this.http.post(`${environment.apiUrl}/addActivityLog`, params);
+        return this.http.post(`${environment.apiUrlV3}/addActivityLog`, params);
     }
 
     getAllCashClosing() {
         let params = JSON.stringify({retrieveStoreCashClosing: {}});
-        return this.http.post(`${environment.apiUrl}/retrieveSotreCashClosing`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveSotreCashClosing`, params);
     }
 
     getLogActionName(action?: string){
@@ -1267,7 +1453,7 @@ export class DataService {
             retrieveStoreCashClosing: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveSotreCashClosing`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveSotreCashClosing`, parameters);
     }
 
     getAllCashClosingV2ByFilter(params: any) {
@@ -1275,60 +1461,58 @@ export class DataService {
             retrieveStoreCashClosing: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrl}/retrieveStoreCashClosingV2`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV2`, parameters);
+    }
+
+    listCashClosingByFilter(params: any) {
+        let parameters = JSON.stringify({
+            cc: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/listStoreCashClosing`, parameters);
+    }
+
+    getNewCashClosing(id: string) {
+        let params = JSON.stringify({e: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosing`, params);
     }
 
     getCashClosingById(id: string) {
-        let params = JSON.stringify({getStoreCashClosing: { "_id": id}});
-        return this.http.post(`${environment.apiUrl}/getStoreCashClosing`, params);
+        let params = JSON.stringify({cc: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosing`, params);
     }
 
-    addCashClosingV2(cashClosing: CashClosing, queryParams?: { [key: string]: any }){
-        let body  = JSON.stringify({
-            addStoreCashClosing: {
-                ...cashClosing,
-                ...statusValues.activo,
-                userRequest: this.accountService.userValueFixed,
-            }});
-            
-        let params = new HttpParams();
-        if (queryParams) {
-            Object.keys(queryParams).forEach(key => {
-                params = params.append(key, queryParams[key]);
-            });
-        }
-        
-        return this.http.post(`${environment.apiUrl}/addStoreCashClosingV2`, body, { params: params });
-    }
-
-    updateCashClosing(id: string, cashClosing: CashClosing){
+    addCashClosingV2(notes: string, establishment_id: string){
         let params = JSON.stringify({
-            updateStoreCashClosing: {
-                "_id": id,
-                ...cashClosing
-            }});
-        return this.http.post(`${environment.apiUrl}/updateStoreCashClosing`, params);
+            "$1": notes,
+            "$2": establishment_id,
+            "$3": this.accountService.userValue.uuid
+        });
+        
+        return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosing`, params);
     }
 
-    deleteCashClosing(id: string, cashClosing: CashClosing) {
-        let deleteUser = JSON.stringify({
-            updateStoreCashClosing: {
-                "_id": id,
-                ...cashClosing,
-                ...deleteStatus
-            }});
-        return this.http.post(`${environment.apiUrl}/updateStoreCashClosing`, deleteUser);
+    updateCashClosing(id: string, note: string){
+        let params = JSON.stringify({
+            "$1": note,
+            "$2": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateStoreCashClosing`, params);
     }
 
-    verifyCashClosing(id: string, cashClosing: CashClosing) {
-        let deleteUser = JSON.stringify({
-            updateStoreCashClosing: {
-                "_id": id,
-                ...cashClosing,
-                ...verifyStatus,
-                userValidator: this.accountService.userValueFixed,
-            }});
-        return this.http.post(`${environment.apiUrl}/updateStoreCashClosing`, deleteUser);
+    deleteCashClosing(id: string) {
+        let deleteCashClosing = JSON.stringify({
+            "$1": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteStoreCashClosing`, deleteCashClosing);
+    }
+
+    verifyCashClosing(id: string) {
+        let verifyCashClosing = JSON.stringify({
+            "$1": id,
+            "$2": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/verifyCashClosing`, verifyCashClosing);
     }
 
 }

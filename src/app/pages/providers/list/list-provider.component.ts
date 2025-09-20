@@ -30,11 +30,11 @@ export class ListProviderComponent implements OnInit {
 
     retriveProviders(){
         this.providers = undefined;
-        this.dataService.getAllProvidersByFilter({"status": { "id": 2}})
+        this.dataService.getAllProvidersByFilter({"status_id": 30})
             .pipe(first())
             .subscribe({
                 next: (providers: any) => {
-                    this.providers = providers.retrieveProviderResponse?.providers;
+                    this.providers = this.dataService.findJsonValue(providers, 'json_result');
                     this.allProviders = this.providers;
                     this.setTableElements(this.providers);
                 }
@@ -72,7 +72,7 @@ export class ListProviderComponent implements OnInit {
                         button: [
                             {
                                 type: "button",
-                                routerLink: "view/" + provider._id,
+                                routerLink: "view/" + provider.id,
                                 class: "btn btn-success btn-sm pb-0 mx-1",
                                 icon: {
                                     class: "material-icons",
@@ -81,7 +81,7 @@ export class ListProviderComponent implements OnInit {
                             },
                             {
                                 type: "button",
-                                routerLink: "edit/" + provider._id,
+                                routerLink: "edit/" + provider.id,
                                 class: "btn btn-primary btn-sm pb-0 mx-1",
                                 icon: {
                                     class: "material-icons",

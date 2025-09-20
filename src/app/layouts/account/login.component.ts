@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { first } from 'rxjs/operators';
 
 import { AccountService, AlertService } from '@app/services';
+import { User } from '@app/models/system/user.model';
 
 @Component({ 
     templateUrl: 'login.component.html',
@@ -45,18 +46,29 @@ export class LoginComponent implements OnInit {
 
         this.loading = true;
         this.accountService.login(this.f['email'].value, this.f['password'].value)
-            .pipe(first())
             .subscribe({
-                next: (user) => {
-                    // get return url from query parameters or default to home page
+                next: (usr) => {
+                    let user : User = this.accountService.findJsonValue(usr, 'json_result');
+                    if (user){
+                        const userValue = this.accountService.userValue;
+                        const logedUser: User = { 
+                            ...userValue,
+                            status: user.status,
+                            role: user.role,
+                            uuid: user.id
+                        };
+                        localStorage.removeItem('user');
+                        localStorage.setItem('user', JSON.stringify(logedUser));
+                        this.accountService.setUserSubject(logedUser);
+                    }
                     const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
                     this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
                         this.router.navigate([returnUrl]);
                     });
-                    // this.router.navigateByUrl(returnUrl);
                 },
-                error: error => {
-                    this.alertService.error(error.error.loginUserResponse.AcknowledgementDescription);
+                error: (error) => {
+                    let errorMsg = this.accountService.findJsonValue(error, 'AcknowledgementDescription');
+                    this.alertService.error(errorMsg);
                     this.loading = false;
                 }
             });

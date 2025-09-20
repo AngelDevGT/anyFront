@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {BehaviorSubject, EMPTY, forkJoin} from 'rxjs';
+import {BehaviorSubject, EMPTY, forkJoin, of} from 'rxjs';
 import {concatMap, first} from 'rxjs/operators';
 import { NgxImageCompressService } from 'ngx-image-compress';
 
@@ -121,41 +121,41 @@ export class AddEditSaleComponent implements OnInit{
             this.title = 'Actualizar Venta';
             this.orderForm = this.createEditFormGroup();
             this.isEditOption = true;
-            this.dataService.getShopHistory({_id: this.id})
+            this.dataService.getShopHistoryById({id: this.id})
                 .pipe(first())
                 .subscribe((shopResumRes: any) => {
-                    let shopRes = shopResumRes.retrieveShopHistoryResponse?.FinishedProducts;
-                    if (shopRes[0]){
-                        this.shopResume = shopRes[0];
+                    let shopRes = this.dataService.findJsonValue(shopResumRes, 'json_result') || {};
+                    if (shopRes){
+                        this.shopResume = shopRes;
                         this.orderForm.patchValue(this.shopResume!);
                         this.loading = false;
                     }
                 });
         } else {
 
-            requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentType", enableElements: "true"})); // paymentTypeRequest
-            requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
-            requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "65bf467e008f7e88678d3927"}));
+            requestArray.push(this.dataService.getAnyComponent({}, 'getPaymentTypes')); // paymentTypeRequest
+            requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
+            requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventory'));
             requestArray.push(this.dataService.getEstablishmentById(establishmentId));
     
             forkJoin(requestArray).subscribe({
                 next: (result: any) => {
-                    this.paymentTypeOptions = result[0].retrieveCatalogGenericResponse.elements;
-                    this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                    this.filteredMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                    this.inventory = result[2].retrieveInventoryResponse?.Inventorys[0];
-                    this.establishment = result[3].getEstablishmentResponse.establishment;
+                    this.paymentTypeOptions = this.dataService.findJsonValue(result[0], 'json_result') || [];
+                    this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                    this.filteredMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                    this.inventory = this.dataService.findJsonValue(result[2], 'json_result') || {};
+                    this.establishment = this.dataService.findJsonValue(result[3], 'json_result') || {};
                 },
                 error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
                 complete: () => {
                     if (this.inventory){
                         this.inventoryElements = this.inventory?.inventoryElements;
-                        this.inventoryElements = this.inventoryElements?.filter(invElem =>invElem.productForSale?.establishment?._id === String(this.establishment?._id));
+                        // this.inventoryElements = this.inventoryElements?.filter(invElem =>invElem.productForSale?.establishment?.id === String(this.establishment?.id));
                         this.allInventoryElements = this.inventoryElements;
                     }
                     this.loading = false;
                     this.title = 'Registrar Venta (' + this.establishment?.name + ')';
-                    this.activityLogName = this.activityLogName + "|||" + this.establishment?._id;
+                    this.activityLogName = this.activityLogName + "|||" + this.establishment?.id;
                 }
             });
         }
@@ -169,7 +169,7 @@ export class AddEditSaleComponent implements OnInit{
         this.selectedPaymentTypeSubject.next(String(this.rawMaterialOrder?.paymentType?.id));
         // this.rawMaterialOrderElements = this.rawMaterialOrder?.rawMaterialOrderElements;
         this.rawMaterialOrder?.rawMaterialOrderElements?.forEach(rawMaterialOrder => {
-            this.findAndMoveInventoryElementById(true, rawMaterialOrder.rawMaterialByProvider?._id);
+            this.findAndMoveInventoryElementById(true, rawMaterialOrder.rawMaterialByProvider?.id);
         });
     }
 
@@ -194,27 +194,19 @@ export class AddEditSaleComponent implements OnInit{
         this.alertService.clear();
         this.submitting = true;
         this.saveOrder()
-            .pipe(concatMap((result: any) => {
-                if(this.isEditOption || !this.activityLog){
-                    return EMPTY;
-                }
-                    this.activityLog.response = result;
-                    this.activityLog.status = result.RegisterShopResponse.AcknowledgementIndicator;
-                    return this.dataService.addActivityLog(this.activityLog);
-                }))
+            .pipe(first())
                 .subscribe({
                     next: () => {
                         this.alertService.success('Venta guardada', { keepAfterRouteChange: true });
                         if(this.isEditOption){
-                            this.router.navigateByUrl('/store/sales/history/' + this.shopResume?.establecimiento?._id);
+                            this.router.navigateByUrl('/store/sales/history/' + this.shopResume?.establishment?.id);
                         } else {
-                            this.router.navigateByUrl('/store/sales/history/' + this.establishment?._id);
+                            this.router.navigateByUrl('/store/sales/history/' + this.establishment?.id);
                         }
                     },
                     error: error => {
-                        let errorResponse = error.error;
-                        errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateRawMaterial ? errorResponse.updateRawMaterial : 'Error, consulte con el administrador';
-                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        const errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al guardar la venta');
+                        this.alertService.error(errorMessage);
                         this.submitting = false;
                     }
                 });
@@ -231,21 +223,12 @@ export class AddEditSaleComponent implements OnInit{
             let newShopResume: ShopResume = {
                 ...this.orderForm.value,
                 establecimiento: this.establishment,
+                establishment: this.establishment,
                 total: this.total.toFixed(2),
                 subtotal: this.subtotal.toFixed(2),
                 totalDiscount: this.totalDiscount.toFixed(2),
                 paymentType: this.selectedPaymentType,
                 itemsList: this.itemsList,
-            }
-            this.activityLog = {
-                action: "sale",
-                section: this.activityLogName,
-                description: "Venta de producto en tienda '" + this.itemsList?.map(item => item.productForSale?.finishedProduct?.name).join(", ") + "'",
-                extra: {
-                    inventoryElement: this.unselectedInventoryElements,
-                    reason: "Venta de producto en tienda",
-                },
-                request: newShopResume
             }
             return this.dataService.registerShop(newShopResume);
         }
@@ -262,7 +245,7 @@ export class AddEditSaleComponent implements OnInit{
             total: this.modalTotal,
         };
         this.itemsList?.push(newItemList);
-        this.findAndMoveInventoryElementById(true, this.selectedIE?.productForSale?._id);
+        this.findAndMoveInventoryElementById(true, this.selectedIE?.productForSale?.id);
         this.onResetMaterialForm();
         // this.filteredRawMaterials?.splice(this.rawMaterialIndexToRemove!, 1);
     }
@@ -277,15 +260,15 @@ export class AddEditSaleComponent implements OnInit{
 
     findAndMoveInventoryElementById(isSelect: boolean, productForSaleId?: string){
         if (isSelect){
-            let invElementResult = this.inventoryElements?.find(invElement => invElement.productForSale?._id === productForSaleId);
+            let invElementResult = this.inventoryElements?.find(invElement => invElement.productForSale?.id === productForSaleId);
             if (invElementResult) {
-                this.inventoryElements = this.inventoryElements?.filter(invElement => invElement.productForSale?._id !== productForSaleId);
+                this.inventoryElements = this.inventoryElements?.filter(invElement => invElement.productForSale?.id !== productForSaleId);
                 this.unselectedInventoryElements?.push(invElementResult);
             }
         } else { // unselect
-            let invElementResult = this.unselectedInventoryElements?.find(invElement => invElement.productForSale?._id === productForSaleId);
+            let invElementResult = this.unselectedInventoryElements?.find(invElement => invElement.productForSale?.id === productForSaleId);
             if (invElementResult){
-                this.unselectedInventoryElements = this.unselectedInventoryElements?.filter(invElement => invElement.productForSale?._id !== productForSaleId);
+                this.unselectedInventoryElements = this.unselectedInventoryElements?.filter(invElement => invElement.productForSale?.id !== productForSaleId);
                 this.inventoryElements?.push(invElementResult);
             }
         }
@@ -342,6 +325,7 @@ export class AddEditSaleComponent implements OnInit{
         this.elements = [];
         this.setInventoryElemElements(this.selectedIE!);
         this.filteredMeasureOptions = this.measureOptions?.filter(item => this.selectedIE?.productForSale?.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!));
+        console.log(this.filteredMeasureOptions);
         this.measureSelect?.setValue('');
         // this.rawMaterialIndexToRemove = indexToRemove;
         // let newOrderElement: RawMaterialOrderElement = {
@@ -355,7 +339,7 @@ export class AddEditSaleComponent implements OnInit{
 
     unselectItemList(itemList: ItemsList, indexToRemove: number){
         this.itemsList?.splice(indexToRemove, 1);
-        this.findAndMoveInventoryElementById(false, itemList?.productForSale?._id);
+        this.findAndMoveInventoryElementById(false, itemList?.productForSale?.id);
         // this.filteredRawMaterials?.push(orderElement.rawMaterialByProvider!);
     }
 
@@ -540,7 +524,9 @@ export class AddEditSaleComponent implements OnInit{
         // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
         this.elements.push({icon : "feed", name : "Descripción", value : invElement.productForSale?.finishedProduct?.name});
         this.elements.push({icon : "monetization_on", name : "Precio (" + invElement.productForSale?.finishedProduct?.measure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(invElement.productForSale?.price))});
-        this.discountMeasureValue = invElement.measure?.unitBase?.parent === measureUnitsConst.unidad.unitBase.parent ? measureUnitsConst.docena : measureUnitsConst.libra;
+        this.discountMeasureValue = invElement.measure?.unitBase?.name === measureUnitsConst.unidad.unitBase.name ? measureUnitsConst.docena : measureUnitsConst.libra;
+        console.log("Discount Measure Value: ", this.discountMeasureValue);
+        console.log("Inventory Element: ", invElement);
     }
 
     closeRawMaterialDialog(){

@@ -35,17 +35,17 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         this.loading = true;
 
         if (this.id){
-            this.dataService.getShopHistory({_id: this.id})
+            this.dataService.getShopHistoryById({id: this.id})
                 .pipe(first())
                 .subscribe((shopResumRes: any) => {
-                    let shopRes = shopResumRes.retrieveShopHistoryResponse?.FinishedProducts;
-                    if (shopRes[0]){
-                        this.shopResume = shopRes[0];
+                    let shopRes = this.dataService.findJsonValue(shopResumRes, 'json_result') || {};
+                    if (shopRes){
+                        this.shopResume = shopRes;
                         if(this.shopResume?.status?.id === 3){
                             this.deleteOption = true;
                         }
                         this.setElements(this.shopResume);
-                        this.activityLogName = this.activityLogName + "|||" + this.shopResume?.establecimiento?._id;
+                        this.activityLogName = this.activityLogName + "|||" + this.shopResume?.establecimiento?.id;
                         this.loading = false;
                     }
                 });
@@ -53,50 +53,23 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     }
 
 
-    deleteSale() {
-        this.submitting = true;
-        this.dataService.deleteShopHistory(this.shopResume)
+    cancelSale() {
+        if (this.shopResume) {
+            this.submitting = true;
+            this.dataService.cancelShop(this.shopResume)
             .pipe(first())
             .subscribe({
                 next: () => {
-                this.alertService.success('Venta eliminado', { keepAfterRouteChange: true });
-                this.router.navigateByUrl('/store/sales/history/' + this.shopResume?.establecimiento?._id);
-                },
-                error: error => {
-                    this.alertService.error('Error al eliminar la venta, contacte con Administracion');
-                }});
-    }
-
-    cancelSale() {
-        let activityLog: ActivityLog = {
-            action: "cancel",
-            section: this.activityLogName,
-            description: "Cancelacion de venta de producto en tienda '" + this.shopResume?.itemsList?.map((item: ItemsList) => item.productForSale?.finishedProduct?.name).join(", ") + "'",
-            extra: {
-                reason: "Cancelacion de venta de producto en tienda",
-            },
-            request: this.shopResume
-        }
-        this.submitting = true;
-        this.dataService.cancelShop({
-            "inventoryID": "65bf467e008f7e88678d3927",
-            "RegisterShop": {
-                "_id": this.shopResume?._id,
-            }
-        })
-            .pipe(concatMap((result: any) => {
-                        activityLog.response = result;
-                        activityLog.status = result.cancelShopRegisterResponse.AcknowledgementIndicator;
-                        return this.dataService.addActivityLog(activityLog);
-                }))
-            .subscribe({
-                next: () => {
                 this.alertService.success('Venta cancelada', { keepAfterRouteChange: true });
-                this.router.navigateByUrl('/store/sales/history/' + this.shopResume?.establecimiento?._id);
+                this.router.navigateByUrl('/store/sales/history/' + this.shopResume?.establishment?.id);
                 },
                 error: error => {
-                    this.alertService.error('Error al eliminar la venta, contacte con Administracion');
-                }});
+                    let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al consumir materia prima');
+                    this.alertService.error(errorMessage);
+                    this.submitting = false;
+                }
+            });
+        }
     }
 
     editSale() {
@@ -111,7 +84,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         // this.elements.push({icon : "credit_card", name : "Tipo de pago", value : shopResume?.paymentType?.identifier});
         this.elements.push({icon : "info", name : "Estado", value : shopResume?.status?.identifier});
         this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(shopResume!.creationDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(shopResume!.updateDate!.replaceAll("\"",""))});
+        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(shopResume!.updatedDate!.replaceAll("\"",""))});
         this.elements.push({icon : "badge", name : "Vendido por", value : shopResume?.creatorUser?.name});
         this.setTableElements(shopResume?.itemsList);
     }
@@ -124,7 +97,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: element.measure?.identifier, header_name: "Medida" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.price)), header_name: "Precio" },
-                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.discount)), header_name: "Descuento" },
+                    // { type: "text", value: this.dataService.getFormatedPrice(Number(element.discount)), header_name: "Descuento" },
                     { type: "text", value: element.quantity, header_name: "Cantidad" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.totalDiscount)), header_name: "Descuento Total" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.total)), header_name: "Total" },

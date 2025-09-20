@@ -72,10 +72,10 @@ export class AddEditRawMaterialComponent implements OnInit{
 
         this.loading = true;
 
-        this.dataService.getAllConstantsByFilter({fc_id_catalog: "unitBase", enableElements: "true"})
+        this.dataService.getAnyComponent({}, 'getUnitBase')
             .pipe(
                 concatMap((measures: any) => {
-                    this.measureOptions = measures.retrieveCatalogGenericResponse.elements;
+                    this.measureOptions = this.dataService.findJsonValue(measures, 'json_result');
                     if (this.id){
                         return this.dataService.getRawMaterialById(this.id);
                     }
@@ -85,7 +85,7 @@ export class AddEditRawMaterialComponent implements OnInit{
             )
             .subscribe((rawMat: any) => {
                 if (rawMat){
-                    let rawMaterial = rawMat.GetRawMaterialResponse.rawMaterial;
+                    let rawMaterial = this.dataService.findJsonValue(rawMat, 'json_result');
                     if (rawMaterial){
                         this.currentRawMaterial = rawMaterial;
                         this.rawMaterialForm.patchValue(rawMaterial);
@@ -138,9 +138,13 @@ export class AddEditRawMaterialComponent implements OnInit{
                         this.router.navigateByUrl('/rawMaterials');
                     },
                     error: error => {
-                        let errorResponse = error.error;
-                        errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateRawMaterial ? errorResponse.updateRawMaterial : 'Error, consulte con el administrador';
-                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        let errorResponse = this.dataService.findJsonValue(error, 'error');
+                        let ackError = this.dataService.findJsonValue(error, 'AcknowledgementDescription');
+                        let errorMessage = 'Error al guardar la materia prima, consulte con el administrador';
+                        if (ackError && errorResponse) {
+                            errorMessage = `${ackError}: ${errorResponse}`;
+                        }
+                        this.alertService.error(errorMessage);
                         this.submitting = false;
                     }
             });

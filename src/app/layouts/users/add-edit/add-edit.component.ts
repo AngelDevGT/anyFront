@@ -58,14 +58,14 @@ export class AddEditComponent implements OnInit {
             this.title = 'Editar Usuario';
         }
 
-        this.dataService.getAllConstantsByFilter({fc_id_catalog: "roles", enableElements: "true"})
+        this.dataService.getAnyComponent({r: {status: 1}}, 'getRoles')
             .pipe(
                 concatMap((roles: any) => {
-                    this.roleOptions = roles.retrieveCatalogGenericResponse.elements;
-                    return this.dataService.getAllConstantsByFilter({fc_id_catalog: "status", enableElements: "true"});
+                    this.roleOptions = this.dataService.findJsonValue(roles, 'json_result');
+                    return this.dataService.getAnyComponent({s: {type: "user"}}, 'getStatus')
                 }),
                 concatMap((status: any) => {
-                    this.statusOptions = status.retrieveCatalogGenericResponse.elements;
+                    this.statusOptions = this.dataService.findJsonValue(status, 'json_result');
                     this.statusOptions = this.statusOptions?.slice(0, 3);
                     if(this.id){
                         return this.accountService.getUserById(this.id);
@@ -76,17 +76,15 @@ export class AddEditComponent implements OnInit {
             )
             .subscribe((usr: any) => {
                 if(usr){
-                    let user = usr.retrieveUsersResponse?.users;
+                    let user = this.dataService.findJsonValue(usr, 'json_result') || {};
                     if (user){
-                        if ( user.length > 0){
-                            this.userForm.patchValue(user[0]);
-                            this.currentUser = user[0];
-                            this.selectedRole = this.currentUser?.role;
-                            this.selectedStatus = this.currentUser?.status;
-                            this.roleSelect?.patchValue(String(this.selectedRole?.id));
-                            this.statusSelect?.patchValue(String(this.selectedStatus?.id));
-                            this.loading = false;
-                        }
+                        this.userForm.patchValue(user);
+                        this.currentUser = user;
+                        this.selectedRole = this.currentUser?.role;
+                        this.selectedStatus = this.currentUser?.status;
+                        this.roleSelect?.patchValue(String(this.selectedRole?.id));
+                        this.statusSelect?.patchValue(String(this.selectedStatus?.id));
+                        this.loading = false;
                     }
                 }
             });
@@ -120,8 +118,20 @@ export class AddEditComponent implements OnInit {
         this.alertService.clear();
 
         this.submitting = true;
-        this.saveUser()
-            .pipe(first())
+        if(this.id){
+
+            let updatedUser = {
+                ...this.currentUser,
+                ...this.userForm.value,
+                status: this.selectedStatus,
+                role: this.selectedRole
+            };
+
+            updatedUser.status.text = String(updatedUser.status?.id);
+            this.accountService.update(this.id!, updatedUser)
+            .pipe(concatMap((result: any) => {
+                return this.accountService.updateUserV3(this.id!, updatedUser);
+            }))
             .subscribe({
                 next: () => {
                     this.alertService.success('Usuario guardado', { keepAfterRouteChange: true });
@@ -134,6 +144,33 @@ export class AddEditComponent implements OnInit {
                     this.submitting = false;
                 }
             });
+        } else {
+            let newUser = {
+                ...this.userForm.value,
+                status: this.selectedStatus,
+                role: this.selectedRole
+            }
+
+            this.accountService.create(newUser)
+            .pipe(concatMap((result: any) => {
+                return this.accountService.getUserByEmailV2(newUser.email!);
+            }), concatMap((usr: any) => {
+                let user = usr.retrieveUsersResponse?.users;
+                newUser = { ...newUser, ext_id: user[0]._id };
+                return this.accountService.createUserV3(newUser);
+            }))
+            .subscribe({
+                next: () => {
+                    this.alertService.success('Usuario creado', { keepAfterRouteChange: true });
+                    this.router.navigateByUrl('/users');
+                },
+                error: error => {
+                    let errorResponse = this.dataService.findJsonValue(error, 'AcknowledgementDescription') || 'Error, consulte con el administrador';
+                    this.alertService.error(errorResponse);
+                    this.submitting = false;
+                }
+            });
+        }
     }
 
     createFormGroup(){
@@ -161,30 +198,5 @@ export class AddEditComponent implements OnInit {
             ]),
         });
     }
-
-    private saveUser() {
-        if(this.id){
-            let updatedUser = {
-                ...this.currentUser,
-                ...this.userForm.value,
-                status: this.selectedStatus,
-                role: this.selectedRole
-            };
-            console.log(updatedUser);
-            return this.accountService.update(this.id!, updatedUser);
-        }
-        let newUser = {
-            ...this.userForm.value,
-            status: this.selectedStatus,
-            role: this.selectedRole
-        }
-        return this.accountService.create(newUser);
-    }
-
-    // changeRole(e: any){
-    //     this.roleSelect!.setValue(e.target.value, {
-    //     onlySelf: true
-    //     });
-    // }
 
 }

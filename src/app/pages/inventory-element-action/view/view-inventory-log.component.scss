@@ -1,0 +1,122 @@
+.genericCard {
+    /* margin-top: 10px; */
+    margin: 20px;
+}
+
+.custom-input{
+    padding: 0 10px;
+}
+
+// img{
+//     max-width: 250px;
+//     max-height: 250px;
+// }
+
+.responsive {
+    width: 90%;
+    height: auto;
+    align-self: center;
+}
+
+.form-group{
+    margin-bottom: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.example-container {
+    display: flex;
+    flex-direction: column;
+    max-height: 500px;
+    min-width: 300px;
+  }
+  
+  .mat-table {
+    overflow: auto;
+    max-height: 500px;
+  }
+  
+  .mobile-label {
+    display: none;
+  }
+  
+  @media(max-width: 600px) {
+    .mobile-label {
+      width: 80px;
+      display: inline-block;
+          font-weight: bold;
+    }
+  
+    .mat-header-row {
+      display: none;
+    }
+  
+    .mat-row { 
+      flex-direction: column;
+      align-items: start;
+      padding: 8px 24px;
+    }
+  }
+  
+  mat-form-field{
+    width: 100%;
+    // margin-left: 5%;
+    // height: 30px !important;
+    // width: 50%;
+    // margin-left: 25%;
+    // height: 50%;
+    // // width: 90%;
+    // display: flex;
+    // align-items: flex-end;
+    // height: 10px !important;
+    
+}
+
+.mat-form-field mat-select {
+  height: 10px;
+  // transition: height ease-in-out 100ms;
+}
+
+.parent {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+}
+
+
+.centrado{
+  align-content: center;
+}
+
+.mat-success {
+  background-color: #33c000;
+  color: #fff;
+}
+
+.mat-remove {
+  background-color: #ff8000;
+  color: #fff;
+}
+
+.inbtn{
+  // display: flex;
+  // justify-content: center;
+  // align-items: center; 
+  // display: inline-block;
+  padding: 10px;
+}
+
+.genericCard {
+  /* margin-top: 10px; */
+  margin: 20px;
+}
+
+.select-filter{
+  padding: 0 5px;
+}
+
+.custom-mat-card-content{
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}

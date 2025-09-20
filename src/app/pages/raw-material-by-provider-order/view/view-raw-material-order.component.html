@@ -52,7 +52,7 @@
                     </div>
                 </button>
                 <button *ngIf="receiveOption"
-                    type="button" (click)="receiveOrder(rawMaterialOrder?._id)" 
+                    type="button" (click)="receiveOrder(rawMaterialOrder?.id)" 
                     [disabled]="submitting"
                     class="btn btn-success m-2">
                     <div class="d-flex flex-row p-1">
@@ -77,7 +77,7 @@
                     </div>
                 </button>
                 <button *ngIf="editOption"
-                    type="button" (click)="editOrder(rawMaterialOrder?._id)" [disabled]="submitting"
+                    type="button" (click)="editOrder(rawMaterialOrder?.id)" [disabled]="submitting"
                     class="btn btn-primary m-2">
                     <div class="d-flex flex-row p-1">
                         <i class="material-icons icon">edit</i>
@@ -160,7 +160,7 @@
     </div>
 </div>
 
-<div class="modal hide fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+<!-- <div class="modal hide fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -177,7 +177,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <div class="modal hide fade" id="orderPaymentsModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
     aria-hidden="true">

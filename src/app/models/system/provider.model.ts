@@ -2,7 +2,7 @@ import { Status } from "../auxiliary/status.model";
 import { User } from "./user.model";
 
 export class Provider {
-    _id?: string;
+    id?: string;
     name?: string;
     phone?: string;
     company?: string;
@@ -11,5 +11,5 @@ export class Provider {
     status?: Status;
     creatorUser?: User;
     creationDate?: string;
-    updateDate?: string;
+    updatedDate?: string;
 }

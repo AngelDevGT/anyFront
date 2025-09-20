@@ -120,10 +120,10 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
         let requestArray = [];
 
-        requestArray.push(this.dataService.getAllProvidersByFilter({"status": 1})); // providerRequest
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentType", enableElements: "true"})); // paymentTypeRequest
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
-        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status": { "id": 2}})); //rawMaterialByProviderRequest
+        requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
+        requestArray.push(this.dataService.getAnyComponent({}, 'getPaymentTypes')); // paymentTypeRequest
+        requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
+        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34})); //rawMaterialByProviderRequest
 
         if (this.id){
             requestArray.push(this.dataService.getRawMaterialOrderById(this.id));
@@ -131,14 +131,14 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.providerOptions = result[0].retrieveProviderResponse?.providers;
-                this.paymentTypeOptions = result[1].retrieveCatalogGenericResponse.elements;
-                this.measureOptions = result[2].retrieveCatalogGenericResponse.elements;
-                this.filteredMeasureOptions = result[2].retrieveCatalogGenericResponse.elements;
-                this.rawMaterials = result[3].retrieveRawMaterialByProviderResponse?.rawMaterial;
-                this.filteredRawMaterials = result[3].retrieveRawMaterialByProviderResponse?.rawMaterial;
+                this.providerOptions = this.dataService.findJsonValue(result[0], 'json_result') || [];
+                this.paymentTypeOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.measureOptions = this.dataService.findJsonValue(result[2], 'json_result') || [];
+                this.filteredMeasureOptions = this.dataService.findJsonValue(result[2], 'json_result') || [];
+                this.rawMaterials = this.dataService.findJsonValue(result[3], 'json_result') || [];
+                this.filteredRawMaterials = this.dataService.findJsonValue(result[3], 'json_result') || [];
                 if (this.id){
-                    this.rawMaterialOrder = result[4].GetRawMaterialOrderResponse?.rawMaterial;
+                    this.rawMaterialOrder = this.dataService.findJsonValue(result[4], 'json_result') || {};
                 }
                 // console.log(respuestaPeticion1, respuestaPeticion2, respuestaPeticion3);
             },
@@ -175,12 +175,12 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
         // this.setProvider(this.rawMaterialOrder?.provider?._id);
         this.orderForm.patchValue(this.rawMaterialOrder!);
         // this.providertSelect?.patchValue(String(this.rawMaterialOrder?.provider?._id));
-        this.selectedProviderSubject.next(this.rawMaterialOrder?.provider?._id);
+        this.selectedProviderSubject.next(this.rawMaterialOrder?.provider?.id);
         this.paymentTypeSelect?.patchValue(String(this.rawMaterialOrder?.paymentType?.id));
         this.selectedPaymentTypeSubject.next(String(this.rawMaterialOrder?.paymentType?.id));
         this.rawMaterialOrderElements = this.rawMaterialOrder?.rawMaterialOrderElements;
         this.rawMaterialOrder?.rawMaterialOrderElements?.forEach(rawMaterialOrder => {
-            this.findAndMoveRawMaterialById(true, rawMaterialOrder.rawMaterialByProvider?._id);
+            this.findAndMoveRawMaterialById(true, rawMaterialOrder.rawMaterialByProvider?.id);
         });
     }
 
@@ -210,12 +210,11 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
                         this.router.navigateByUrl('/rawMaterialByProvider/order');
                     },
                     error: error => {
-                        let errorResponse = error.error;
-                        errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateRawMaterial ? errorResponse.updateRawMaterial : 'Error, consulte con el administrador';
-                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al guardar el pedido de materia prima');
+                        this.alertService.error(errorMessage);
                         this.submitting = false;
-                    }
-                });
+                }
+            });
     }
 
     private saveOrder(){
@@ -232,23 +231,19 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
                     if(this.paidAmount >= this.total){
                         updatedRawMaterialOrder.pendingAmount = "0";
                         updatedRawMaterialOrder.paidAmount = String(this.total.toFixed(2));
-                        updatedRawMaterialOrder.paymentStatus = paymentStatusValues.pagado.paymentStatus;
+                        updatedRawMaterialOrder.paymentStatus = paymentStatusValues.pagado.status;
                     } else {
                         updatedRawMaterialOrder.paidAmount = String(this.paidAmount.toFixed(2));
                         updatedRawMaterialOrder.pendingAmount = String(this.pendingAmount.toFixed(2));
                         if(this.paidAmount != 0){
-                            updatedRawMaterialOrder.paymentStatus = paymentStatusValues.abonado.paymentStatus;
+                            updatedRawMaterialOrder.paymentStatus = paymentStatusValues.abonado.status;
                         }
                     }
                     updatedRawMaterialOrder.paymentType = this.rawMaterialOrder?.paymentType;
                     updatedRawMaterialOrder.rawMaterialOrderElements = this.rawMaterialOrderElements;
                     updatedRawMaterialOrder.finalAmount = String(this.total);
                     updatedRawMaterialOrder.status = statusValues.verificado.status;
-                    return this.dataService.updateRawMaterialOrder(updatedRawMaterialOrder).pipe(
-                        concatMap((result: any) => {
-                            return this.dataService.verifyRawMaterialOrder(this.rawMaterialOrder?._id!);
-                        })
-                    );
+                    return this.dataService.verifyRawMaterialOrder(updatedRawMaterialOrder).pipe(first());
             }
             return this.dataService.updateRawMaterialOrder(updatedRawMaterialOrder);
         } else {
@@ -276,7 +271,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
             totalPrice: this.modalTotal.toFixed(2),
         };
         this.rawMaterialOrderElements?.push(newOrderElement);
-        this.findAndMoveRawMaterialById(true, this.selectedRMP?._id);
+        this.findAndMoveRawMaterialById(true, this.selectedRMP?.id);
         this.onResetMaterialForm();
         // this.filteredRawMaterials?.splice(this.rawMaterialIndexToRemove!, 1);
     }
@@ -305,7 +300,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
     }
 
     findProviderById(providerId?: string){
-        return this.providerOptions?.find(provider => String(provider._id) === providerId);
+        return this.providerOptions?.find(provider => String(provider.id) === providerId);
     }
 
     findPaymentType(paymentId?: string){
@@ -314,15 +309,15 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
     findAndMoveRawMaterialById(isSelect: boolean, rawMaterialId?: string){
         if (isSelect){
-            let rawMaterialResult = this.filteredRawMaterials?.find(rawMaterial => rawMaterial._id === rawMaterialId);
+            let rawMaterialResult = this.filteredRawMaterials?.find(rawMaterial => rawMaterial.id === rawMaterialId);
             if (rawMaterialResult) {
-                this.filteredRawMaterials = this.filteredRawMaterials?.filter(rawMaterial => rawMaterial._id !== rawMaterialId);
+                this.filteredRawMaterials = this.filteredRawMaterials?.filter(rawMaterial => rawMaterial.id !== rawMaterialId);
                 this.unselectedRawMaterials?.push(rawMaterialResult);
             }
         } else { // unselect
-            let rawMaterialResult = this.unselectedRawMaterials?.find(rawMaterial => rawMaterial._id === rawMaterialId);
+            let rawMaterialResult = this.unselectedRawMaterials?.find(rawMaterial => rawMaterial.id === rawMaterialId);
             if (rawMaterialResult){
-                this.unselectedRawMaterials = this.unselectedRawMaterials?.filter(rawMaterial => rawMaterial._id !== rawMaterialId);
+                this.unselectedRawMaterials = this.unselectedRawMaterials?.filter(rawMaterial => rawMaterial.id !== rawMaterialId);
                 this.filteredRawMaterials?.push(rawMaterialResult);
             }
         }
@@ -366,7 +361,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
     filterByProvider(providerId: string){
         if(providerId){
             this.filteredRawMaterials = this.rawMaterials?.filter((val) => {
-                return providerId === val.provider?._id;
+                return providerId === val.provider?.id;
             });
         }
     }
@@ -402,7 +397,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
     unselectRawMaterial(orderElement: RawMaterialOrderElement, indexToRemove: number){
         this.rawMaterialOrderElements?.splice(indexToRemove, 1);
-        this.findAndMoveRawMaterialById(false, orderElement.rawMaterialByProvider?._id);
+        this.findAndMoveRawMaterialById(false, orderElement.rawMaterialByProvider?.id);
         // this.filteredRawMaterials?.push(orderElement.rawMaterialByProvider!);
     }
 

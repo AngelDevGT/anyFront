@@ -19,6 +19,7 @@ import { ShopResume } from '@app/models/store/shop-resume.model';
 import { ItemsList } from '@app/models/store/item-list.model';
 import { forkJoin } from 'rxjs';
 import { ActivityLog } from '@app/models/system/activity-log';
+import { InventoryElementAction } from '@app/models/inventory/inventory-element-action.model';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({ 
@@ -92,20 +93,20 @@ export class AddEditCashClosingComponent implements OnInit{
         if (this.id){
             if(!this.isUpdate){
                 this.cashClosings = [];
-                this.dataService.getAllCashClosingV2ByFilter({storeID: this.establishmentId})
-                .pipe(first())
-                .subscribe({
-                    next: (cashClosings: any) => {
-                        this.cashClosings = cashClosings.retrieveStoreCashClosingResponse?.StoreCashClosing;
-                        this.loadNewCashClosing();
-                    }
-                });
-                
+                this.dataService.getNewCashClosing(this.establishmentId)
+                    .pipe(first())
+                    .subscribe({
+                        next: (cashClosings: any) => {
+                            this.cashClosing = this.dataService.findJsonValue(cashClosings, 'json_result') || {};
+                            this.setElements(this.cashClosing!);
+                            this.loading = false;
+                        }
+                    });
             } else {
                 this.dataService.getCashClosingById(this.id)
                     .pipe(first())
                     .subscribe((cashCls: any) =>{
-                        let cashClosing = cashCls.getStoreCashClosingResponse?.rawMaterial;
+                        let cashClosing = this.dataService.findJsonValue(cashCls, 'json_result') || {};
                         if (cashClosing){
                             this.cashClosing = cashClosing;
                             // this.setElements(this.cashClosing!);
@@ -118,88 +119,6 @@ export class AddEditCashClosingComponent implements OnInit{
 
         this.operationRawMaterialForm = this.createOperationMaterialFormGroup();
 
-    }
-
-    loadNewCashClosing(isFromForm?: boolean){
-        if(isFromForm && !this.or['initialDate'].errors){
-            // this.currDate = new Date(this.operationRawMaterialForm.controls['initialDate'].value);
-            this.getNewCashClosing();
-        } else {
-            // this.setLastCashClosingDate();
-            this.getNewCashClosing();
-        }
-    }
-
-    getNewCashClosing(){
-        let requestArray = [];
-        this.loading = true;
-        let queryParams = {
-            validation: true
-        }
-        this.newCashClosing = {
-            note: 'validation',
-            storeID: this.establishmentId
-        };
-
-        this.addActivityLogFilter = {};
-        this.removeActivityLogFilter = {};
-        const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
-        this.addActivityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
-        this.removeActivityLogFilter.section = this.addActivityLogFilter.section;
-        this.addActivityLogFilter.finalDate = endDateOnly;
-        this.removeActivityLogFilter.finalDate = this.addActivityLogFilter.finalDate;
-        this.addActivityLogFilter.action = "add";
-        this.removeActivityLogFilter.action = "remove";
-
-        this.dataService.addCashClosingV2(this.newCashClosing, queryParams).pipe(
-            concatMap((cashClosing: any) => {
-                this.cashClosing = cashClosing.addStoreCashClosingResponse?.data;
-                this.setElements(this.cashClosing!);
-                let lastInventoryCreationDate = this.cashClosing?.lastInventoryCreationDate;
-                if (lastInventoryCreationDate){
-                    this.addActivityLogFilter.initialDate = lastInventoryCreationDate;
-                } else {
-                    const newDate = new Date();
-                    newDate.setDate(newDate.getDate() - 10000);
-                    this.addActivityLogFilter.initialDate = new Date(newDate).toISOString().split('T')[0].replace(/-/g, '/');
-                }
-                this.removeActivityLogFilter.initialDate = this.addActivityLogFilter.initialDate;
-                return this.dataService.getAllActivityLogsByFilter(this.addActivityLogFilter);
-            }),
-            concatMap((activityLogs: any) => {
-                let addActivityLog = activityLogs.retrieveActivityLogResponse?.activityLogs;
-                this.activityLogs = addActivityLog;
-                return this.dataService.getAllActivityLogsByFilter(this.removeActivityLogFilter);
-            }),
-        ).subscribe({
-            next: (activityLogs: any) => {
-                let removeActivityLog = activityLogs.retrieveActivityLogResponse?.activityLogs;
-                this.activityLogs = this.activityLogs.concat(removeActivityLog);
-                this.setTableElements(this.cashClosing!, this.activityLogs);
-            },
-            error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
-            complete: () => {
-                this.loading = false;
-            }
-        });
-
-        // requestArray.push(this.dataService.addCashClosingV2(this.newCashClosing, queryParams));
-        // requestArray.push(this.dataService.getAllActivityLogsByFilter(this.addActivityLogFilter));
-
-        // forkJoin(requestArray).subscribe({
-        //     next: (result: any) => {
-        //         let cashClosing = result[0].addStoreCashClosingResponse?.data;
-        //         if (cashClosing){
-        //             this.cashClosing = cashClosing;
-        //         }
-        //         this.activityLogs = result[1].retrieveActivityLogResponse?.activityLogs;
-        //     },
-        //     error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
-        //     complete: () => {
-        //         this.setTableElements(this.cashClosing!, this.activityLogs);
-        //         this.loading = false;
-        //     }
-        // });
     }
 
     setLastCashClosingDate(){
@@ -234,7 +153,7 @@ export class AddEditCashClosingComponent implements OnInit{
         this.elementsByCreate.push({icon : "calendar_today", name : "Ultimo cierre de caja", value : cashClosing.lastInventoryCreationDate ? this.dataService.getLocalDateTimeFromUTCTime(cashClosing.lastInventoryCreationDate): 'Sin cierre anterior'});
         this.elementsByUpdate.push({icon : "info", name : "Estado", value : cashClosing.status?.identifier});
         this.elementsByUpdate.push({icon : "person", name : "Persona a cargo", value : cashClosing.userRequest?.name + " (" + cashClosing.userRequest?.email + ")"});
-        this.elementsByUpdate.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(cashClosing.creationDate!)});
+        // this.elementsByUpdate.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(cashClosing.creationDate!)});
         this.setTableElements(cashClosing);
     }
 
@@ -253,11 +172,11 @@ export class AddEditCashClosingComponent implements OnInit{
         this.totalAmountCashClosing = 0;
         this.totalRemainingCashClosing = 0;
         cashClosing.saleStoreOrders?.forEach((element: ProductForSaleStoreOrder) => {
-            if(element.storeStatus?.id == 3){ //Recibido
+            if(element.storeStatus?.id == 22){ //Recibido
                 this.totalAmountStoreOrders[0] += Number(element.finalAmount || 0);
-            } else if(element.storeStatus?.id == 1){ //Pendiente
+            } else if(element.storeStatus?.id == 19){ //Pendiente
                 this.totalAmountStoreOrders[1] += Number(element.finalAmount || 0);
-            } else if(element.storeStatus?.id == 7){ //Listo
+            } else if(element.storeStatus?.id == 21){ //Listo
                 this.totalAmountStoreOrders[2] += Number(element.finalAmount || 0);
             } 
             const curr_row =
@@ -275,10 +194,10 @@ export class AddEditCashClosingComponent implements OnInit{
                     }),
                 elements: [
                     {icon : "receipt_long", name : "Notas", value : element.comment},
-                    {icon : "person", name : "Tienda", value : element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name},
+                    {icon : "person", name : "Tienda", value : cashClosing.establishment?.name},
                     {icon : "info", name : "Estado del pedido", value : element.storeStatus?.identifier},
                     {icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
-                    {icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!.replaceAll("\"",""))},
+                    {icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!.replaceAll("\"",""))},
                     {icon : "badge", name : "Creado por", value : element.creatorUser?.name},
                     {icon : "payments", name : "Total", value : this.dataService.getFormatedPrice(Number(element?.finalAmount || 0))},
                 ]
@@ -290,7 +209,7 @@ export class AddEditCashClosingComponent implements OnInit{
                 const currTotal = Number(element.productForSale?.price || 0) * Number(element.quantity || 0);
                 this.totalAmountInventoryCapture += currTotal;
                 const curr_row = [
-                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?.id },
                     { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
                     { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
@@ -304,7 +223,7 @@ export class AddEditCashClosingComponent implements OnInit{
                 const currTotal = Number(element.productForSale?.price || 0) * Number(element.quantity || 0);
                 this.totalAmountLastInventory += currTotal;
                 const curr_row = [
-                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?.id },
                     { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
                     { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
@@ -315,30 +234,26 @@ export class AddEditCashClosingComponent implements OnInit{
         });
         let totalActivityLogsAmountAdded = 0;
         let totalActivityLogsAmountRemoved = 0;
-        let modifiedAmount = 0;
-        activityLogs?.forEach((element: ActivityLog) => {
-            let modifiedQuantity = 0;
-            if (element.action == "add"){
-                modifiedQuantity = Number(element?.request?.newQuantity || 0) - Number(element.extra?.inventoryElement?.quantity || 0);
-                modifiedAmount = modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
-                totalActivityLogsAmountAdded += modifiedAmount;
-            } else if (element.action == "remove"){
-                modifiedQuantity = Number(element.extra?.inventoryElement?.quantity || 0) - Number(element?.request?.newQuantity || 0);
-                modifiedAmount = modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
-                totalActivityLogsAmountRemoved += modifiedAmount;
-            } else {
-                return;
+        let filteredInventoryElementActions = cashClosing.inventoryElementActions?.filter((element: InventoryElementAction) => {
+            return element.actionType?.type == 'REMOVE_PFS_MANUAL' || element.actionType?.type == 'ADD_PFS_MANUAL';
+        });
+
+        filteredInventoryElementActions?.forEach((element: InventoryElementAction) => {
+            const totalAmount = Number(element.quantity || 0) * Number(element.price || 0);
+
+            if (element.actionType?.type == 'ADD_PFS_MANUAL'){
+                totalActivityLogsAmountAdded += totalAmount;
+            } else if (element.actionType?.type == 'REMOVE_PFS_MANUAL'){
+                totalActivityLogsAmountRemoved += totalAmount;
             }
+
             const curr_row = [
+                { type: "text", value: element.actionType?.action, header_name: "Accion" },
                 { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha" },
-                { type: "text", value: this.dataService.getLogActionName(element.action), header_name: "Accion" },
-                { type: "text", value: element.extra?.reason, header_name: "Motivo" },
-                // { type: "text", value: element.description, header_name: "Descripcion" },
-                { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
-                { type: "text", value: `${modifiedQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad modificada" },
-                { type: "text", value: this.dataService.getFormatedPrice(Number(element.extra?.inventoryElement?.productForSale?.price)), header_name: "Precio" },
-                { type: "text", value: this.dataService.getFormatedPrice(Number(modifiedAmount)), header_name: "Total" },
-                // { type: "text", value: `${element?.request?.newQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad final" }
+                { type: "text", value: element.reason, header_name: "Razon" },
+                { type: "text", value: element.element?.name, header_name: "Elemento" },
+                { type: "text", value: `${element.quantity} ${element.measure?.identifier}(s)`, header_name: "Cantidad" },
+                { type: "text", value: this.dataService.getFormatedPrice(totalAmount), header_name: "Total" },
             ];
             this.tableActivityLogs.push(curr_row);
         });
@@ -350,7 +265,7 @@ export class AddEditCashClosingComponent implements OnInit{
             this.totalAmountShopResumes += (Number(element.total || 0) - Number(element.delivery || 0));
             const curr_row =
             { 
-                accordion_name: this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"","")),
+                accordion_name: this.dataService.getLocalDateTimeFromUTCTime(element!.updatedDate!.replaceAll("\"","")),
                 table_elements_values: 
                     element.itemsList?.map((elem: ItemsList) => {
                         return [
@@ -366,7 +281,7 @@ export class AddEditCashClosingComponent implements OnInit{
                     {icon : "person", name : "Cliente", value : element?.nameClient},
                     {icon : "tag", name : "NIT", value : element?.nitClient},
                     {icon : "feed", name : "Notas", value : element?.nota ? element?.nota : '--'},
-                    {icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"",""))},
+                    {icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(element!.updatedDate!.replaceAll("\"",""))},
                 ],
                 elements_bottom: [
                     {icon : "add", name : "Subtotal", value : this.dataService.getFormatedPrice(Number(element.total || 0) - Number(element.delivery || 0) + Number(element.totalDiscount || 0))},
@@ -427,12 +342,8 @@ export class AddEditCashClosingComponent implements OnInit{
 
         this.submitting = true;
         if(this.isUpdate){
-            let newCashClosing = {
-                ...this.cashClosing,
-                ...this.operationRawMaterialForm.value
-            };
-            newCashClosing.note = newCashClosing.note && newCashClosing.note.trim() ? newCashClosing.note.trim() : '--';
-            this.dataService.updateCashClosing(this.cashClosing!._id!, newCashClosing)
+            let notes = this.operationRawMaterialForm.value.note;
+            this.dataService.updateCashClosing(this.cashClosing!.id!, notes)
             .pipe(first())
             .subscribe({
                 next: () => {
@@ -444,67 +355,21 @@ export class AddEditCashClosingComponent implements OnInit{
             }});
         } else {
 
-            let requestArray = [];
-            this.addActivityLogFilter = {};
-            // const startDateOnly = new Date(this.currDate).toISOString().split('T')[0].replace(/-/g, '/');
-            const endDateOnly = new Date().toISOString().split('T')[0].replace(/-/g, '/');
-            // console.log('startDateOnly', startDateOnly);
-            this.addActivityLogFilter.section = "Acciones de Producto para Venta en tienda|||" + this.establishmentId;
-            this.removeActivityLogFilter.section = this.addActivityLogFilter.section;
-            // this.addActivityLogFilter.initialDate = startDateOnly;
-            this.addActivityLogFilter.finalDate = endDateOnly;
-            this.removeActivityLogFilter.finalDate = this.addActivityLogFilter.finalDate;
-            this.addActivityLogFilter.action = "add";
-            this.removeActivityLogFilter.action = "remove";
-
-            let lastInventoryCreationDate = this.cashClosing?.lastInventoryCreationDate;
-            if (lastInventoryCreationDate){
-                this.addActivityLogFilter.initialDate = lastInventoryCreationDate;
-            } else {
-                const newDate = new Date();
-                newDate.setDate(newDate.getDate() - 10000);
-                this.addActivityLogFilter.initialDate = new Date(newDate).toISOString().split('T')[0].replace(/-/g, '/');
-            }
-            this.removeActivityLogFilter.initialDate = this.addActivityLogFilter.initialDate;
-
-            requestArray.push(this.dataService.getAllActivityLogsByFilter(this.addActivityLogFilter));
-            requestArray.push(this.dataService.getAllActivityLogsByFilter(this.removeActivityLogFilter));
-
-            forkJoin(requestArray).subscribe({
-                next: (result: any) => {
-                    this.activityLogs = result[0].retrieveActivityLogResponse?.activityLogs;
-                    let removeActivityLog = result[1].retrieveActivityLogResponse?.activityLogs;
-                    this.activityLogs = this.activityLogs.concat(removeActivityLog);
+            let notes = this.operationRawMaterialForm.value.note;
+            this.dataService.addCashClosingV2(notes, this.establishmentId)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                    this.alertService.success('Cierre de Caja guardada', { keepAfterRouteChange: true });
+                    this.router.navigateByUrl('/cashClosing/' + this.establishmentId);
                 },
-                error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
-                complete: () => {
-                    // this.loading = false;
-
-                    this.newCashClosing = {
-                        ...this.operationRawMaterialForm.value,
-                        activityLogs: this.activityLogs,
-                        // initialDate: `${this.currDate.getFullYear()}/${this.currDate.getMonth() + 1}/${this.currDate.getDate()}`,
-                        storeID: this.establishmentId
-                    };
-
-                    this.newCashClosing.note = this.newCashClosing.note && this.newCashClosing.note.trim() ? this.newCashClosing.note.trim() : '--';
-                    this.dataService.addCashClosingV2(this.newCashClosing, queryParams)
-                    .pipe(first())
-                    .subscribe({
-                        next: () => {
-                            this.alertService.success('Cierre de Caja guardada', { keepAfterRouteChange: true });
-                            this.router.navigateByUrl('/cashClosing/' + this.establishmentId);
-                        },
-                        error: error => {
-                            let errorResponse = error.error;
-                            errorResponse = errorResponse.addEstablishmentResponse ? errorResponse.addEstablishmentResponse : errorResponse.updateEstablishmentResponse ? errorResponse.updateEstablishmentResponse : 'Error, consulte con el administrador';
-                            this.alertService.error(errorResponse.AcknowledgementDescription);
-                            this.submitting = false;
-                        }
-                    });
+                error: error => {
+                    let errorResponse = error.error;
+                    errorResponse = errorResponse.addEstablishmentResponse ? errorResponse.addEstablishmentResponse : errorResponse.updateEstablishmentResponse ? errorResponse.updateEstablishmentResponse : 'Error, consulte con el administrador';
+                    this.alertService.error(errorResponse.AcknowledgementDescription);
+                    this.submitting = false;
                 }
             });
-
         }
     }
 

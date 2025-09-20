@@ -31,7 +31,7 @@ export class ViewProviderComponent implements OnInit{
             this.dataService.getProviderById(this.id)
                 .pipe(first())
                 .subscribe((prov: any) => {
-                    let provider = prov.getProviderResponse?.provider;
+                    let provider = prov.getProviderResponse?.data[0]?.json_result || null;
                     if (provider){
                         if (provider){
                             this.provider = provider;
@@ -54,7 +54,14 @@ export class ViewProviderComponent implements OnInit{
                 this.router.navigateByUrl('/providers');
                 },
                 error: error => {
-                    this.alertService.error('Error al eliminar el proveedor, contacte con Administracion');
+                this.submitting = false;
+                let ackError = this.dataService.findJsonValue(error, 'AcknowledgementDescription');
+                let errorResponse = this.dataService.findJsonValue(error, 'error');
+                let errorMessage = 'Error al eliminar el proveedor, consulte con el administrador';
+                if (ackError && errorResponse) {
+                    errorMessage = `${ackError}: ${errorResponse}`;
+                }
+                this.alertService.error(errorMessage || 'Error al eliminar el proveedor');
                 }});
     }
 
@@ -65,7 +72,7 @@ export class ViewProviderComponent implements OnInit{
         this.elements.push({icon : "feed", name : "Descripción", value : provider.description});
         this.elements.push({icon : "info", name : "Estado", value : provider.status?.identifier});
         this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(provider.creationDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(provider.updateDate!.replaceAll("\"",""))});
+        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : provider.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(provider.updatedDate!.replaceAll("\"","")) : '--'});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : provider.creatorUser?.name ? provider.creatorUser.name : 'N/A'});
     }
 

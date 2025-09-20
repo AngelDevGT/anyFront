@@ -36,7 +36,7 @@ export class ViewProductForSaleComponent implements OnInit{
             .pipe(first())
             .subscribe({
                 next: (prod: any) => {
-                        let productForSale = prod.getProductForSaleResponse.productForSale;
+                        let productForSale = this.dataService.findJsonValue(prod, 'json_result') || {};
                         if (prod){
                             this.productForSale = productForSale;
                             this.setProductForSaleElements(productForSale);
@@ -70,7 +70,7 @@ export class ViewProductForSaleComponent implements OnInit{
         this.elements.push({icon : "feed", name : "Descripción", value : product.finishedProduct?.description});
         this.elements.push({icon : "info", name : "Estado", value : product.status?.identifier});
         this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(product.creationDate!)});
-        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(product.updateDate!)});
+        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(product.updatedDate!)});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : product.creatorUser?.name ? product.creatorUser.name : 'N/A'});
     }
 

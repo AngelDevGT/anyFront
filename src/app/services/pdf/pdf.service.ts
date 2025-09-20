@@ -58,7 +58,7 @@ export class PdfService {
                                 alignment: 'right'  
                             },
                             // {  
-                            //     text: `Pedido: ${this.rawMaterialOrder?._id}`,  
+                            //     text: `Pedido: ${this.rawMaterialOrder?.id}`,  
                             //     alignment: 'right'  
                             // }  
                         ]
@@ -120,7 +120,7 @@ export class PdfService {
                 { text: "Tipo de pago: " + rawMaterialOrder?.paymentType?.identifier! }, 
                 { text: "Estado de pago: " + rawMaterialOrder?.paymentStatus?.identifier! }, 
                 { text: "Creado: " + this.dataService.getLocalDateTimeFromUTCTime(rawMaterialOrder?.creationDate!) }, 
-                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(rawMaterialOrder?.updateDate!) }, 
+                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(rawMaterialOrder?.updatedDate!) }, 
                 {
                     text: 'Notas del pedido',
                     style: 'sectionHeader'
@@ -131,8 +131,8 @@ export class PdfService {
                 },
                 {  
                     columns: [  
-                        [{ qr: `${rawMaterialOrder?._id!}`, fit: 50 }],  
-                        [{ text: "Identificador del pedidio: " + rawMaterialOrder?._id!, alignment: 'right', italics: true }],
+                        [{ qr: `${rawMaterialOrder?.id!}`, fit: 50 }],  
+                        [{ text: "Identificador del pedidio: " + rawMaterialOrder?.id!, alignment: 'right', italics: true }],
                     ]
                 },
             ],
@@ -203,7 +203,7 @@ export class PdfService {
                                 alignment: 'right'  
                             },
                             // {  
-                            //     text: `Pedido: ${this.rawMaterialOrder?._id}`,  
+                            //     text: `Pedido: ${this.rawMaterialOrder?.id}`,  
                             //     alignment: 'right'  
                             // }  
                         ]
@@ -271,7 +271,7 @@ export class PdfService {
                     bold: true
                 }, 
                 { text: "Creado: " + this.dataService.getLocalDateTimeFromUTCTime(productForSaleOrder?.creationDate!) }, 
-                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(productForSaleOrder?.updateDate!) }, 
+                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(productForSaleOrder?.updatedDate!) }, 
                 {
                     text: 'Notas del pedido',
                     style: 'sectionHeader'
@@ -286,7 +286,7 @@ export class PdfService {
                 },
                 {  
                     columns: [  
-                        [{ qr: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?._id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, fit: 100 }],  
+                        [{ qr: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?.id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, fit: 100 }],  
                         // [{ text: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?._id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, alignment: 'right', italics: true }],
                     ]
                 },
@@ -399,7 +399,7 @@ export class PdfService {
                     bold: true
                 }, 
                 { text: "Creado: " + this.dataService.getLocalDateTimeFromUTCTime(storeSale?.creationDate!) }, 
-                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(storeSale?.updateDate!) }, 
+                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(storeSale?.updatedDate!) }, 
                 {
                     text: 'Datos del Cliente',
                     style: 'sectionHeader'
@@ -420,7 +420,7 @@ export class PdfService {
                 },
                 {  
                     columns: [  
-                        [{ qr: `https://embutidosany.store/store/sales/history/view/${storeSale?._id}`, fit: 100 }],  
+                        [{ qr: `https://embutidosany.store/store/sales/history/view/${storeSale?.id}`, fit: 100 }],  
                         [{  
                             text: `Fecha: ${new Date().toLocaleString()}`,  
                             alignment: 'right'  

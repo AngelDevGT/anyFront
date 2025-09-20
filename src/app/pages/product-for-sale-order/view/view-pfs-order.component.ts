@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, Inject, inject, OnInit} from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 
-import { AccountService, AlertService, DataService, PdfService, storeOrderStatus } from '@app/services';
+import { AccountService, AlertService, DataService, PdfService, pfsFactoryOrderStatusValues, pfsStoreOrderStatusValues, storeOrderStatus } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -72,7 +72,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
             this.dataService.getProductForSaleOrderById(this.id)
                 .pipe(first())
                 .subscribe((pfsOrder: any) =>{
-                    let productOrder = pfsOrder.getProductForSaleStoreOrderResponse?.saleStoreOrder;
+                    let productOrder = this.dataService.findJsonValue(pfsOrder, 'json_result') || {};
                     if (productOrder){
                         this.productForSaleOrder = productOrder;
                         this.setElements(this.productForSaleOrder!);
@@ -94,34 +94,34 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         if (elemStatus){
             if(this.isFactory){
                 // marcar como listo
-                if (elemStatus.id == storeOrderStatus.pendiente.id){
+                if (elemStatus.id == pfsFactoryOrderStatusValues.pendiente.status.id){
                     this.readyOption = true;
                 }
 
-                if (elemStatus.id == storeOrderStatus.listo.id){
+                if (elemStatus.id == pfsFactoryOrderStatusValues.listo.status.id){
                     this.comingOption = true;
                 }
             } else {
                 // Receive order option
-                if (elemStatus.id == storeOrderStatus.listo.id || elemStatus.id == storeOrderStatus.en_camino.id
+                if (elemStatus.id == pfsFactoryOrderStatusValues.listo.status.id ||  pfsFactoryOrderStatusValues.en_camino.status.id == elemStatus.id
                     // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id
                     ){
                         this.receiveOption = true;
                     }
-                if (elemStatus.id == storeOrderStatus.listo.id || elemStatus.id == storeOrderStatus.en_camino.id
+                if (elemStatus.id == pfsFactoryOrderStatusValues.listo.status.id || elemStatus.id == pfsFactoryOrderStatusValues.en_camino.status.id
                     // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id
                     ){
                         this.returnOption = true;
                     }
             }
-    
-            if (elemStatus.id == storeOrderStatus.pendiente.id){
+
+            if (elemStatus.id == pfsFactoryOrderStatusValues.pendiente.status.id){
                         this.deleteOption = true;
                     }
-            
-            if (!(elemStatus.id == storeOrderStatus.cancelado.id || elemStatus.id == storeOrderStatus.recibido.id || elemStatus.id == storeOrderStatus.eliminado.id)){
 
-                    if(elemStatus.id == storeOrderStatus.pendiente.id || (this.accountService.isSalesUser() || this.accountService.isAdminUser())){
+            if (!(elemStatus.id == pfsFactoryOrderStatusValues.cancelado.status.id || elemStatus.id == pfsFactoryOrderStatusValues.recibido.status.id || elemStatus.id == pfsFactoryOrderStatusValues.eliminado.status.id)){
+
+                    if(elemStatus.id == pfsFactoryOrderStatusValues.pendiente.status.id || (this.accountService.isSalesUser() || this.accountService.isAdminUser())){
                     // if(elemStatus.id == storeOrderStatus.pendiente.id || (this.accountService.isSalesUser())){
                         this.editOption = true;
                     }
@@ -141,72 +141,55 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
     onConfirmDialog(){
         this.submitting = true;
-        if(this.confirmDialogId == 1){
-            let newOrder: ManageProductForSaleStoreOrderElement = {
-                ProductForSaleStoreOrderID: this.productForSaleOrder?._id,
-                DestinyInventoryID: "65bf467e008f7e88678d3927"
+        if (this.productForSaleOrder?.id){
+            if(this.confirmDialogId == 1){
+                this.dataService.manageProductForSaleOrderStateReceived(this.productForSaleOrder?.id)
+                .pipe(first())
+                .subscribe({
+                    next: () => {
+                        this.alertService.success('Pedido recibido', { keepAfterRouteChange: true });
+                        this.navigateWithParams();
+                    },
+                    error: error => {
+                        this.errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al consumir materia prima');
+                        this.openDialog(this.errorMessage);
+                }});
+            } else if (this.confirmDialogId == 2){
+                this.dataService.manageProductForSaleOrderStateReady(this.productForSaleOrder.id)
+                .pipe(first())
+                .subscribe({
+                    next: () => {
+                        this.alertService.success('Pedido marcado como listo', { keepAfterRouteChange: true });
+                        this.navigateWithParams();
+                    },
+                    error: error => {
+                        this.errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al marcar el pedido como Listo');
+                        this.openDialog(this.errorMessage);
+                }});
+            } else if (this.confirmDialogId == 3){
+                this.dataService.updateProductForSaleOrderEnCamino(this.productForSaleOrder.id)
+                .pipe(first())
+                .subscribe({
+                    next: () => {
+                        this.alertService.success('Pedido actualizado', { keepAfterRouteChange: true });
+                        this.navigateWithParams();
+                    },
+                    error: error => {
+                        this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
+                }});
+            } else if (this.confirmDialogId == 4){
+                this.dataService.manageProductForSaleOrderStateReturned(this.productForSaleOrder?.id)
+                .pipe(first())
+                .subscribe({
+                    next: () => {
+                        this.alertService.success('Pedido devuelto', { keepAfterRouteChange: true });
+                        this.navigateWithParams();
+                    },
+                    error: error => {
+                        this.errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al devolver el pedido');
+                        this.openDialog(this.errorMessage);
+                }});
             }
-            this.dataService.manageProductForSaleOrderStateReceived(newOrder)
-            .pipe(first())
-            .subscribe({
-                next: () => {
-                    this.alertService.success('Pedido recibido', { keepAfterRouteChange: true });
-                    this.navigateWithParams();
-                },
-                error: error => {
-                    this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
-            }});
-        } else if (this.confirmDialogId == 2){
-            let newOrder: ManageProductForSaleStoreOrderElement = {
-                ProductForSaleStoreOrderID: this.productForSaleOrder?._id,
-                DestinyInventoryID: "65bf467e008f7e88678d3927"
-            }
-            this.dataService.manageProductForSaleOrderStateReady(newOrder)
-            .pipe(first())
-            .subscribe({
-                next: () => {
-                    this.alertService.success('Pedido marcado como listo', { keepAfterRouteChange: true });
-                    this.navigateWithParams();
-                },
-                error: error => {
-                    // this.errorMessage = error.error.manageProductForSaleStoreOrderResponse.AcknowledgementDescription;
-                    this.openDialog("Error al marcar el pedido como Listo: \"" + 
-                        error.error.manageProductForSaleStoreOrderResponse.AcknowledgementDescription +
-                        "\". Contacte con Administracion"
-                    );
-                    // this.alertService.error(`Error al actualizar el pedido "${error.error.manageProductForSaleStoreOrderResponse.AcknowledgementDescription}", contacte con Administracion`);
-            }});
-        } else if (this.confirmDialogId == 3){
-            let newOrder: ProductForSaleStoreOrder = {
-                ...this.productForSaleOrder,
-                storeStatus: storeOrderStatus.en_camino,
-                factoryStatus: storeOrderStatus.en_camino
-            }
-            this.dataService.updateProductForSaleOrder(newOrder)
-            .pipe(first())
-            .subscribe({
-                next: () => {
-                    this.alertService.success('Pedido actualizado', { keepAfterRouteChange: true });
-                    this.navigateWithParams();
-                },
-                error: error => {
-                    this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
-            }});
-        } else if (this.confirmDialogId == 4){
-            let newOrder: ManageProductForSaleStoreOrderElement = {
-                ProductForSaleStoreOrderID: this.productForSaleOrder?._id,
-                DestinyInventoryID: "65bf467e008f7e88678d3927"
-            }
-            this.dataService.manageProductForSaleOrderStateReturned(newOrder)
-            .pipe(first())
-            .subscribe({
-                next: () => {
-                    this.alertService.success('Pedido devuelto', { keepAfterRouteChange: true });
-                    this.navigateWithParams();
-                },
-                error: error => {
-                    this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
-            }});
         }
     }
 
@@ -289,7 +272,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
     deleteOrder() {
         this.submitting = true;
-        this.dataService.deleteProductForSaleOrder(this.productForSaleOrder)
+        this.dataService.deleteProductForSaleOrder(this.productForSaleOrder?.id)
             .pipe(first())
             .subscribe({
                 next: () => {
@@ -313,7 +296,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         // this.elements.push({icon : "shopping_cart", name : "Monto total", value : this.dataService.getFormatedPrice(Number(rmOrder.finalAmount))});
         // this.elements.push({icon : "production_quantity_limits", name : "Monto pendiente", value : this.dataService.getFormatedPrice(Number(rmOrder.pendingAmount))});
         this.elements.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(pfsOrder.creationDate!)});
-        this.elements.push({icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(pfsOrder.updateDate!.replaceAll("\"",""))});
+        this.elements.push({icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(pfsOrder.updatedDate!.replaceAll("\"",""))});
         this.elements.push({icon : "badge", name : "Creado por", value : pfsOrder.creatorUser?.name});
         this.setTableElements(pfsOrder.productForSaleStoreOrderElements);
     }

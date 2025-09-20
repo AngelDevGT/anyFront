@@ -82,15 +82,15 @@ export class AddEditProductoForSaleComponent implements OnInit{
         this.unselectedFinishedProducts = [];
         this.productForSaleElements = [];
 
-        this.dataService.getAllEstablishments()
+        this.dataService.getAllEstablishmentsByFilter({"status_id": 28})
             .pipe(
                 concatMap((establishments: any) => {
-                    this.establishmentOptions = establishments.findEstablishmentResponse?.establishment;
-                    this.establishmentOptions = this.establishmentOptions?.filter(est => est.status?.id === 2);
-                    return this.dataService.getAllFinishedProductByFilter({"status": { "id": 2}});
+                    this.establishmentOptions = this.dataService.findJsonValue(establishments, 'json_result') || [];
+                    // this.establishmentOptions = this.establishmentOptions?.filter(est => est.status?.id === 2);
+                    return this.dataService.getAllFinishedProductByFilter({"status_id": 36});
                 }),
                 concatMap((products: any) => {
-                    this.finishedProducts = products.retrieveFinishedProductResponse?.FinishedProducts;
+                    this.finishedProducts = this.dataService.findJsonValue(products, 'json_result') || [];
                     this.allFinishedProducts = this.finishedProducts;
                     if(this.id){
                         return this.dataService.getProductForSaleById(this.id);
@@ -101,7 +101,7 @@ export class AddEditProductoForSaleComponent implements OnInit{
             )
             .subscribe((prod: any) => {
                 if (prod){
-                    let productForSale = prod.getProductForSaleResponse.productForSale;
+                    let productForSale = this.dataService.findJsonValue(prod, 'json_result') || {};
                     this.currentProductForSale = productForSale;
                     this.priceValue?.patchValue(this.currentProductForSale?.price);
                     this.selectedFinishedProduct = this.currentProductForSale?.finishedProduct;
@@ -154,7 +154,7 @@ export class AddEditProductoForSaleComponent implements OnInit{
         this.unselectedFinishedProducts = [];
         this.finishedProducts = this.allFinishedProducts;
         if(establishmentId){
-            this.selectedEstablishment = this.establishmentOptions?.find(establ => String(establ._id) === establishmentId);
+            this.selectedEstablishment = this.establishmentOptions?.find(establ => String(establ.id) === establishmentId);
         }
     }
 
@@ -217,7 +217,7 @@ export class AddEditProductoForSaleComponent implements OnInit{
 
     unselectFinishedProductV2(productForSale: ProductForSale, indexToRemove: number){
         this.productForSaleElements?.splice(indexToRemove, 1);
-        this.findAndMoveFinishedProductById(false, productForSale.finishedProduct?._id);
+        this.findAndMoveFinishedProductById(false, productForSale.finishedProduct?.id);
     }
 
     onSaveFinishedProductForm(){
@@ -227,21 +227,21 @@ export class AddEditProductoForSaleComponent implements OnInit{
             ...this.finishedProductForm.value,
         };
         this.productForSaleElements?.push(newProductForSale);
-        this.findAndMoveFinishedProductById(true, this.selectedFinishedProduct?._id);
+        this.findAndMoveFinishedProductById(true, this.selectedFinishedProduct?.id);
         this.onResetFinishedProductForm();
     }
 
     findAndMoveFinishedProductById(isSelect: boolean, finishedProductId?: string){
         if (isSelect){
-            let fpResult = this.finishedProducts?.find(fp => fp._id === finishedProductId);
+            let fpResult = this.finishedProducts?.find(fp => fp.id === finishedProductId);
             if (fpResult) {
-                this.finishedProducts = this.finishedProducts?.filter(fp => fp._id !== finishedProductId);
+                this.finishedProducts = this.finishedProducts?.filter(fp => fp.id !== finishedProductId);
                 this.unselectedFinishedProducts?.push(fpResult);
             }
         } else { // unselect
-            let fpResult = this.unselectedFinishedProducts?.find(fp => fp._id === finishedProductId);
+            let fpResult = this.unselectedFinishedProducts?.find(fp => fp.id === finishedProductId);
             if (fpResult){
-                this.unselectedFinishedProducts = this.unselectedFinishedProducts?.filter(fp => fp._id !== finishedProductId);
+                this.unselectedFinishedProducts = this.unselectedFinishedProducts?.filter(fp => fp.id !== finishedProductId);
                 this.finishedProducts?.push(fpResult);
             }
         }

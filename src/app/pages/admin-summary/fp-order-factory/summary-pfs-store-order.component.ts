@@ -44,8 +44,8 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
 
     sortDataByDate(sortOpt: string){
         this.productForSaleStoreOrders = this.productForSaleStoreOrders?.sort((a,b) => {
-            const fechaA = new Date(a.updateDate!);
-            const fechaB = new Date(b.updateDate!);
+            const fechaA = new Date(a.updatedDate!);
+            const fechaB = new Date(b.updatedDate!);
             if(sortOpt === 'Desc'){
                 return fechaB.getTime() - fechaA.getTime();
             } else {
@@ -68,14 +68,14 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
 
         requestArray.push(this.dataService.getAllProducForSaleOrder());
         requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status": 1}));
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "storeOrderStatus", enableElements: "true"}));
+        requestArray.push(this.dataService.getAnyComponent({s: {type: "store_order"}}, 'getStatus'));
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.productForSaleStoreOrders = result[0].retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
                 this.allProductForSaleStoreOrders = this.productForSaleStoreOrders;
                 this.establishmentOptions = result[1].findEstablishmentResponse?.establishment;
-                this.statusOptions = result[2].retrieveCatalogGenericResponse.elements;
+                this.statusOptions = this.dataService.findJsonValue(result[2], 'json_result') || [];
                 // console.log(respuestaPeticion1, respuestaPeticion2, respuestaPeticion3);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -107,7 +107,7 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
         this.tableElementsValues = [];
         elements?.forEach((element: ProductForSaleStoreOrder) => {
             const curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha" },
+                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha" },
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name, header_name: "Tienda" },
@@ -137,7 +137,7 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
                 console.log(val);
                 if(filters.initialDate !== ""){
                     const initialDate = new Date(filters.initialDate);
-                    const orderDate = new Date(val.updateDate!);
+                    const orderDate = new Date(val.updatedDate!);
                     initialDateMatch = (initialDate.getTime() - orderDate.getTime()) <= 0 ? true : false;
                 }
                 const establishmentMatch = filters.establishment !== "" ? val.establishmentID === filters.establishment : true;
@@ -154,12 +154,12 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
                 Nombre: pfsOrd.name,
                 Comentario: pfsOrd.comment,
                 Establecimiento: pfsOrd.productForSaleStoreOrderElements![0].productForSale?.establishment?.name,
-                "Fecha Modificacion": this.dataService.getLocalDateTimeFromUTCTime(pfsOrd.updateDate!),
+                "Fecha Modificacion": this.dataService.getLocalDateTimeFromUTCTime(pfsOrd.updatedDate!),
                 "Fecha Creacion": this.dataService.getLocalDateTimeFromUTCTime(pfsOrd.creationDate!),
                 "Estado del pedido": pfsOrd.storeStatus?.identifier,
                 "Monto total": this.dataService.getFormatedPrice(Number(pfsOrd.finalAmount)),
                 "Usuario Creador": pfsOrd.creatorUser?.name,
-                ID: pfsOrd._id
+                ID: pfsOrd.id
             };
         });
         const csvOptions = {

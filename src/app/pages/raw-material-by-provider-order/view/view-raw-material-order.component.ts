@@ -1,7 +1,7 @@
 import { Component, OnInit} from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 
-import { AlertService, DataService, PdfService, statusValues, paymentStatusValues } from '@app/services';
+import { AlertService, DataService, PdfService, rawMaterialOrderStatusValues, paymentStatusValues } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import pdfMake from "pdfmake/build/pdfmake";  
@@ -56,11 +56,9 @@ export class ViewRawMaterialOrderComponent implements OnInit{
             this.dataService.getRawMaterialOrderById(this.id)
                 .pipe(first())
                 .subscribe((rmOrder: any) =>{
-                    let rawMaterialOrder = rmOrder.GetRawMaterialOrderResponse?.rawMaterial;
-                    console.log(rawMaterialOrder);
+                    let rawMaterialOrder = this.dataService.findJsonValue(rmOrder, 'json_result') || {};
                     if (rawMaterialOrder){
                         this.rawMaterialOrder = rawMaterialOrder;
-                        console.log(this.rawMaterialOrder);
                         this.setElements(this.rawMaterialOrder!);
                         this.loading = false;
                     }
@@ -71,15 +69,15 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     setElementOptions(elemStatus?: Status, elemPayment?: PaymentStatus){
         if (elemStatus && elemPayment){
             // Payment option
-            if ((elemStatus.id == statusValues.activo.status.id 
-                || elemStatus.id == statusValues.recibido.status.id || elemStatus.id == statusValues.verificado.status.id) && 
-                (elemPayment.id == paymentStatusValues.pendiente.paymentStatus.id
-                    || elemPayment.id == paymentStatusValues.abonado.paymentStatus.id)){
+            if ((elemStatus.id == rawMaterialOrderStatusValues.activo.status.id 
+                || elemStatus.id == rawMaterialOrderStatusValues.verificado.status.id) && 
+                (elemPayment.id == paymentStatusValues.pendiente.status.id
+                    || elemPayment.id == paymentStatusValues.abonado.status.id)){
                         this.paymentOption = true;
                     }
     
             // Receive order option
-            if (elemStatus.id == statusValues.activo.status.id 
+            if (elemStatus.id == rawMaterialOrderStatusValues.activo.status.id 
                 // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id
                 ){
                     this.receiveOption = true;
@@ -93,13 +91,11 @@ export class ViewRawMaterialOrderComponent implements OnInit{
             //     }
     
             // Edit option and Delete option
-            if (elemPayment.id != paymentStatusValues.pagado.paymentStatus.id && 
-                (elemStatus.id == statusValues.activo.status.id ||
-                    elemStatus.id == statusValues.en_curso.status.id ||
-                    elemStatus.id == statusValues.pendiente.status.id)){
-                        this.editOption = true;
-                        this.deleteOption = true;
-                    }
+            if (elemPayment.id != paymentStatusValues.pagado.status.id && 
+                elemStatus.id == rawMaterialOrderStatusValues.activo.status.id){
+                    this.editOption = true;
+                    this.deleteOption = true;
+                }
         }
     }
 
@@ -110,9 +106,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
         if (this.payAmount > Number(this.rawMaterialOrder?.pendingAmount)){
             this.pendingAmountInput?.setValue('0');
             this.payAmount = 0;
-            console.log("Set amount value: ", this.payAmount);
         }
-        console.log(this.payAmount);
     }
 
     setTotalAmount(){
@@ -145,75 +139,50 @@ export class ViewRawMaterialOrderComponent implements OnInit{
         this.payForm.reset();
     }
 
-    onConfirmDialog(){
-        this.submitting = true;
-        if(this.confirmDialogId == 1){
-            let newOrder: RawMaterialOrder = {
-                ...this.rawMaterialOrder,
-                ...statusValues.recibido
-            }
-            this.dataService.updateRawMaterialOrder(newOrder)
-            .pipe(first())
-            .subscribe({
-                next: () => {
-                    this.alertService.success('Pedido recibido', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/rawMaterialByProvider/order');
-                },
-                error: error => {
-                    this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
-            }});
-        } else if (this.confirmDialogId == 2){
-            let newOrder: RawMaterialOrder = {
-                ...this.rawMaterialOrder,
-                ...statusValues.verificado
-            }
-            this.dataService.updateRawMaterialOrder(newOrder)
-            .pipe(
-                concatMap((result: any) => {
-                    // this.finishedProducts = products.retrieveFinishedProductResponse?.FinishedProducts;
-                    return this.dataService.verifyRawMaterialOrder(this.rawMaterialOrder?._id!);
-                })
-            )
-            .subscribe((rel: any) => {
-                    this.alertService.success('Orden de materia prima verificada', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/rawMaterialByProvider/order');
-            });
-        }
-    }
+    // onConfirmDialog(){
+    //     this.submitting = true;
+    //     if(this.confirmDialogId == 1){
+    //         let newOrder: RawMaterialOrder = {
+    //             ...this.rawMaterialOrder,
+    //             ...rmoStatusValues.recibido
+    //         }
+    //         this.dataService.updateRawMaterialOrder(newOrder)
+    //         .pipe(first())
+    //         .subscribe({
+    //             next: () => {
+    //                 this.alertService.success('Pedido recibido', { keepAfterRouteChange: true });
+    //                 this.router.navigateByUrl('/rawMaterialByProvider/order');
+    //             },
+    //             error: error => {
+    //                 this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
+    //         }});
+    //     } else if (this.confirmDialogId == 2){
+    //         let newOrder: RawMaterialOrder = {
+    //             ...this.rawMaterialOrder
+    //         }
+    //         this.dataService.verifyRawMaterialOrder(newOrder)
+    //         .pipe(first())
+    //         .subscribe((rel: any) => {
+    //                 this.alertService.success('Orden de materia prima verificada', { keepAfterRouteChange: true });
+    //                 this.router.navigateByUrl('/rawMaterialByProvider/order');
+    //         });
+    //     }
+    // }
     
 
     onSaveForm() {
-        if(this.payAmount <= Number(this.rawMaterialOrder?.pendingAmount)){
+        if(this.payAmount <= Number(this.rawMaterialOrder?.pendingAmount) && this.rawMaterialOrder?.id && this.rawMaterialOrder?.paymentType?.id){
             this.submitting = true;
-            let newPaidAmount = Number(this.payAmount) + Number(this.rawMaterialOrder?.paidAmount);
-            let newPendingAmount = Number(this.rawMaterialOrder?.pendingAmount) - Number(this.payAmount);
-            let newPaymentStatus = newPendingAmount == 0 ? paymentStatusValues.pagado : paymentStatusValues.abonado;
-            let newAddRawMaterialOrderPaymentHistory: AddRawMaterialOrderPaymentHistory = {
-                _id: this.rawMaterialOrder?._id,
-                rawMaterialOrderPayments: [{
-                    amount: String(this.payAmount),
-                    paymentType: this.rawMaterialOrder?.paymentType?.identifier
-                }]
-            }
-            let newOrder: RawMaterialOrder = {
-                ...this.rawMaterialOrder,
-                paidAmount: String(newPaidAmount),
-                pendingAmount: String(newPendingAmount),
-                ...newPaymentStatus
-            }
-            this.dataService.addRawMaterialOrderPaymentHistory(newAddRawMaterialOrderPaymentHistory)
-            .pipe(
-                concatMap((result: any) => {
-                    delete newOrder.rawMaterialOrderPayments;
-                    return this.dataService.updateRawMaterialOrder(newOrder);
-                })
-            ).subscribe({
+            this.dataService.addRawMaterialOrderPaymentHistory(this.rawMaterialOrder.id, String(this.payAmount), this.rawMaterialOrder?.paymentType?.id)
+            .pipe(first()).subscribe({
                 next: () => {
                     this.alertService.success('Pedido actualizado', { keepAfterRouteChange: true });
                     this.router.navigateByUrl('/rawMaterialByProvider/order');
                 },
                 error: error => {
-                    this.alertService.error('Error al actualizar el pedido, contacte con Administracion');
+                    let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al actualizar el pedido de materia prima');
+                    this.alertService.error(errorMessage);
+                    this.submitting = false;
             }});
         }
     }
@@ -253,7 +222,9 @@ export class ViewRawMaterialOrderComponent implements OnInit{
                 this.router.navigateByUrl('/rawMaterialByProvider/order');
                 },
                 error: error => {
-                    this.alertService.error('Error al eliminar el pedido, contacte con Administracion');
+                    let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al eliminar el pedido de materia prima');
+                    this.alertService.error(errorMessage);
+                    this.submitting = false;
             }});
     }
 
@@ -267,7 +238,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
         // this.elements.push({icon : "shopping_cart", name : "Monto total", value : this.dataService.getFormatedPrice(Number(rmOrder.finalAmount))});
         // this.elements.push({icon : "production_quantity_limits", name : "Monto pendiente", value : this.dataService.getFormatedPrice(Number(rmOrder.pendingAmount))});
         this.elements.push({icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(rmOrder.creationDate!)});
-        this.elements.push({icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(rmOrder.updateDate!.replaceAll("\"",""))});
+        this.elements.push({icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(rmOrder.updatedDate!.replaceAll("\"",""))});
         this.elements.push({icon : "badge", name : "Creado por", value : rmOrder.creatorUser?.name ? rmOrder.creatorUser.name : 'N/A'});
         this.setTableElements(rmOrder.rawMaterialOrderElements);
         this.setTablePayments(rmOrder.rawMaterialOrderPayments);
