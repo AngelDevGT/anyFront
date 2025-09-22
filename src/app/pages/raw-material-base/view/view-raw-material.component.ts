@@ -33,10 +33,9 @@ export class ViewRawMaterialComponent implements OnInit{
                 .pipe(first())
                 .subscribe({
                     next: (rawMat: any) => {
-                        let rawMaterial = rawMat.GetRawMaterialResponse.rawMaterial;
+                        let rawMaterial = this.dataService.findJsonValue(rawMat, 'json_result');
                         if (rawMaterial){
                             this.rawMaterial = rawMaterial;
-                            console.log(this.rawMaterial);
                             this.setRawMaterialElements(rawMaterial);
                         }
                         this.loading = false;
@@ -65,7 +64,7 @@ export class ViewRawMaterialComponent implements OnInit{
         this.elements.push({icon : "info", name : "Estado", value : rawMaterial.status?.identifier});
         this.elements.push({icon : "feed", name : "Descripción", value : rawMaterial.description});
         this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(rawMaterial.creationDate!)});
-        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(rawMaterial.updateDate!)});
+        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(rawMaterial.updatedDate!)});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : rawMaterial.creatorUser?.name ? rawMaterial.creatorUser.name : 'N/A'});
     }
 

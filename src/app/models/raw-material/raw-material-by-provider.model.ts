@@ -4,12 +4,12 @@ import { User } from "../system/user.model";
 import { RawMaterialBase } from "./raw-material-base.model";
 
 export class RawMaterialByProvider {
-    _id?: string;
+    id?: string;
     rawMaterialBase?: RawMaterialBase;
     price?: string;
     provider?: Provider;
     status?: Status;
     creatorUser?: User;
     creationDate?: string;
-    updateDate?: string;
+    updatedDate?: string;
 }

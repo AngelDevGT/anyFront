@@ -79,8 +79,10 @@
                     </div>
                     <!-- <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
                     <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span> -->
-                    <div *ngFor="let cardElement of cardElements" class="card border-{{cardElement[0].value}} m-3" style="max-width: 30rem; padding: 0;">
-                        <div class="card-header py-3 text-{{cardElement[0].value}} bg-transparent border-{{cardElement[0].value}}">
+                    <div *ngFor="let cardElement of cardElements" class="card m-3" style="max-width: 30rem; padding: 0;"
+                    [ngStyle]="{'color': cardElement[0].value ? cardElement[0].value : '', 'borderColor': cardElement[0].value ? cardElement[0].value : ''}">
+                        <div class="card-header py-3 bg-transparent"
+                        [ngStyle]="{'borderColor': cardElement[0].value ? cardElement[0].value : ''}">
                           <strong>{{cardElement[1].value}}</strong>
                         </div>
                         <div class="card-body">
@@ -95,7 +97,7 @@
                             </ul>
                         </div>
                     </div>
-                    <span *ngIf="!activityLogs" class="spinner-border spinner-border-lg align-center"></span>
+                    <span *ngIf="!inventoryLogs" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>
         </mat-card-content>

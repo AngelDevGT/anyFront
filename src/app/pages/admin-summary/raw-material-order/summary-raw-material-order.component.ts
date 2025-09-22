@@ -48,8 +48,8 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
 
     sortDataByDate(sortOpt: string){
         this.rawMaterialOrders = this.rawMaterialOrders?.sort((a,b) => {
-            const fechaA = new Date(a.updateDate!);
-            const fechaB = new Date(b.updateDate!);
+            const fechaA = new Date(a.updatedDate!);
+            const fechaB = new Date(b.updatedDate!);
             if(sortOpt === 'Desc'){
                 return fechaB.getTime() - fechaA.getTime();
             } else {
@@ -70,20 +70,20 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
         let requestArray = [];
         this.rawMaterialOrders = undefined;
 
-        requestArray.push(this.dataService.getAllRawMaterialOrderByFilter({"status": 1}));
-        requestArray.push(this.dataService.getAllProvidersByFilter({"status": 1})); // providerRequest
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "status", enableElements: "true"})); 
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentType", enableElements: "true"})); 
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "paymentStatus", enableElements: "true"})); 
+        requestArray.push(this.dataService.getAllRawMaterialOrderByFilter({}));
+        requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
+        requestArray.push(this.dataService.getAnyComponent({s: {type: "raw_material_order"}}, 'getStatus')); 
+        requestArray.push(this.dataService.getAnyComponent({}, 'getPaymentTypes')); 
+        requestArray.push(this.dataService.getAnyComponent({s: {type: "payment"}}, 'getStatus')); 
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.rawMaterialOrders = result[0].retrieveRawMaterialOrderResponse?.rawMaterial;
+                this.rawMaterialOrders = this.dataService.findJsonValue(result[0], 'json_result') || [];
                 this.allRawMaterialOrders = this.rawMaterialOrders;
-                this.providerOptions = result[1].retrieveProviderResponse?.providers;
-                this.statusOptions = result[2].retrieveCatalogGenericResponse.elements;
-                this.paymentTypeOptions = result[3].retrieveCatalogGenericResponse.elements;
-                this.paymentStatusOptions = result[4].retrieveCatalogGenericResponse.elements;
+                this.providerOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.statusOptions = this.dataService.findJsonValue(result[2], 'json_result') || [];
+                this.paymentTypeOptions = this.dataService.findJsonValue(result[3], 'json_result') || [];
+                this.paymentStatusOptions = this.dataService.findJsonValue(result[4], 'json_result') || [];
                 // console.log(respuestaPeticion1, respuestaPeticion2, respuestaPeticion3);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -120,7 +120,7 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
         this.tableElementsValues = [];
         elements?.forEach((element: RawMaterialOrder) => {
             const curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha" },
+                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha" },
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: element.provider?.name, header_name: "Proveedor" },
@@ -153,13 +153,13 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
             this.rawMaterialOrders = this.allRawMaterialOrders?.filter((val) => {
                 if(filters.initialDate !== ""){
                     const initialDate = new Date(filters.initialDate);
-                    const orderDate = new Date(val.updateDate!);
+                    const orderDate = new Date(val.updatedDate!);
                     console.log(initialDate);
                     console.log(orderDate)
                     initialDateMatch = (initialDate.getTime() - orderDate.getTime()) <= 0 ? true : false;
                     console.log(initialDateMatch);
                 }
-                const providerMatch = filters.provider !== "" ? val.provider?._id === filters.provider : true;
+                const providerMatch = filters.provider !== "" ? val.provider?.id === filters.provider : true;
                 const statusMatch = filters.orderStatus !== "" ? String(val.status?.id) === filters.orderStatus : true;
                 const paymentTypeMatch = filters.paymentType !== "" ? String(val.paymentType?.id) === filters.paymentType : true;
                 const paymentStatusMatch = filters.paymentStatus !== "" ? String(val.paymentStatus?.id) === filters.paymentStatus : true;
@@ -175,7 +175,7 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
                 Nombre: rmOrd.name,
                 Comentario: rmOrd.comment,
                 Proveedor: rmOrd.provider?.name,
-                "Fecha Modificacion": this.dataService.getLocalDateTimeFromUTCTime(rmOrd.updateDate!),
+                "Fecha Modificacion": this.dataService.getLocalDateTimeFromUTCTime(rmOrd.updatedDate!),
                 "Fecha Creacion": this.dataService.getLocalDateTimeFromUTCTime(rmOrd.creationDate!),
                 "Estado del pedido": rmOrd.status?.identifier,
                 "Tipo de pago": rmOrd.paymentType?.identifier,
@@ -183,7 +183,7 @@ export class SummaryRawMaterialOrderComponent implements OnInit {
                 "Monto total": this.dataService.getFormatedPrice(Number(rmOrd.finalAmount)),
                 "Monto pendiente": this.dataService.getFormatedPrice(Number(rmOrd.pendingAmount)),
                 "Usuario Creador": rmOrd.creatorUser?.name,
-                ID: rmOrd._id
+                ID: rmOrd.id
             };
         });
         const csvOptions = {

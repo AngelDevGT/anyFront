@@ -1,6 +1,7 @@
 import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
+import { actionTypeValues } from '@app/services';
 import {MatTableDataSource} from '@angular/material/table';
 
 import { AccountService, AlertService, DataService} from '@app/services';
@@ -69,13 +70,13 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "64d7dae896457636c3f181e9"}));
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
+        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventory'));
+        requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
-                this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
+                this.inventory = this.dataService.findJsonValue(result[0], 'json_result') || {};
+                this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -87,7 +88,6 @@ export class ListFactoryInventoryFPComponent implements OnInit {
                 if(this.weightMeasureOptions)
                     this.selectedWeightMeasure = this.weightMeasureOptions[1];
                 if (this.inventory){
-                    console.log(this.inventory);
                     this.inventoryElements = this.inventory?.inventoryElements;
                     // const filteredInventoryElements = this.inventoryElements?.filter(
                     //     (value, index, arr) => arr.findIndex(obj => obj._id === value._id) === index
@@ -138,7 +138,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
             let curr_row: any = [
-                    { type: "text", value: element.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.finishedProduct?._id },
+                    { type: "text", value: element.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.finishedProduct?.id },
                     { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 20%" },
                     { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
@@ -235,89 +235,45 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     }
 
     onAddMaterialForm(){
-        this.tableElementsValues.forEach((curr_row: any) => {
-            if(curr_row[0].id === this.selectedInventoryElement?.finishedProduct?._id){
-                let buttons = curr_row[3].button;
-                buttons[0].submitting = true;
-                buttons.forEach((btn: any) => {
-                    btn.disabled = true;
-                });
-            }
-        });
-        let addToInventory: UpdateInventoryElement = {
-            inventoryID: "64d7dae896457636c3f181e9",
-            inventoryTypeID: "3",
-            elementID: this.selectedInventoryElement?.finishedProduct?._id,
-            newQuantity: String(this.modalFinalQuantity),
-        }
-        let activityLog: ActivityLog = {
-            action: "add",
-            section: this.activityLogName,
-            description: "Adicion de Producto '" + this.selectedInventoryElement?.finishedProduct?.name + "' al inventario de bodega.",
-            extra: {
-                inventoryElement: this.selectedInventoryElement,
-                reason: this.operationReasonInput?.value
-            },
-            request: addToInventory
-        }
-        this.dataService.updateInventoryElement(addToInventory)
-        .pipe(concatMap((result: any) => {
-            activityLog.response = result;
-            activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
-            return this.dataService.addActivityLog(activityLog);
-        }))
-        .subscribe({
-            next: () => {
-                this.router.navigateByUrl('/').then(() => {
-                    this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                    this.router.navigate(['/inventory/factory/finishedProduct']); 
-                });},
-            error: error => {
-                this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
-        }});    
+        this.onAddRemoveInventoryElement(actionTypeValues.add_fp_manual.actionType.id);
     }
 
     onDeleteMaterialForm(){
-        this.tableElementsValues.forEach((curr_row: any) => {
-            if(curr_row[0].id === this.selectedInventoryElement?.finishedProduct?._id){
-                let buttons = curr_row[3].button;
-                buttons[1].submitting = true;
-                buttons.forEach((btn: any) => {
-                    btn.disabled = true;
-                });
-            }
-        });
-        let deleteFromInventory: UpdateInventoryElement = {
-            inventoryID: "64d7dae896457636c3f181e9",
-            inventoryTypeID: "3",
-            elementID: this.selectedInventoryElement?.finishedProduct?._id,
-            newQuantity: String(this.modalFinalQuantity),
-        }
-        let activityLog: ActivityLog = {
-            action: "remove",
-            section: this.activityLogName,
-            description: "Retiro de Producto '" + this.selectedInventoryElement?.finishedProduct?.name + "' del inventario de bodega",
-            extra: {
-                inventoryElement: this.selectedInventoryElement,
-                reason: this.operationReasonInput?.value
-            },
-            request: deleteFromInventory
-        }
-        this.dataService.updateInventoryElement(deleteFromInventory)
-        .pipe(concatMap((result: any) => {
-            activityLog.response = result;
-            activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
-            return this.dataService.addActivityLog(activityLog);
-        }))
+        this.onAddRemoveInventoryElement(actionTypeValues.remove_fp_manual.actionType.id);
+    }
+
+    onAddRemoveInventoryElement(actionTypeId: number){
+        let inventoryType = this.inventory?.inventoryType;
+        let unitName = this.inventory?.unitName;
+        let elementId = this.selectedInventoryElement?.finishedProduct?.id;
+        let selectedMeasureId = this.selectedMeasure?.id;
+        let elementQuantity = String(this.formQuantity);
+        let reason = this.operationReasonInput?.value;
+
+        let addToInventory: any = {
+            inventoryType: inventoryType,
+            unitName: unitName,
+            elementId: elementId,
+            selectedMeasureId: selectedMeasureId,
+            elementQuantity: elementQuantity,
+            reason: reason,
+            actionTypeId: actionTypeId
+        };
+
+        this.dataService.addRemoveInventoryElement(addToInventory)
+        .pipe(first())
         .subscribe({
             next: () => {
                 this.router.navigateByUrl('/').then(() => {
                     this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
                     this.router.navigate(['/inventory/factory/finishedProduct']); 
-                });},
+                });
+            },
             error: error => {
-                this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
-        }});
+                let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error en movimiento de inventario, contacte con Administracion');
+                this.alertService.error(errorMessage);
+            }
+        });
     }
 
     receiveData(data: any){
@@ -345,7 +301,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     }
 
     goToActionsHistory(){
-        this.router.navigate(['/activityLog/view'], { queryParams: { sec: this.activityLogName } });
+        this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName } });
     }
 
     setInventoryElementElements(){

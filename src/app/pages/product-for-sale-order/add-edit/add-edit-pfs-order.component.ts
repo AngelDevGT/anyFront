@@ -121,10 +121,10 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         this.unselectedInventoryElements = [];
         this.inventoryElements = [];
 
-        requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status": {id: 1}})); // providerRequest
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
-        requestArray.push(this.dataService.getInventory({ _id: "64d7dae896457636c3f181e9"}));
-        requestArray.push(this.dataService.getAllProductForSaleByFilter({"status": { "id": 2}})); //rawMaterialByProviderRequest
+        requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status_id": 28})); // providerRequest
+        requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
+        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventory'));
+        requestArray.push(this.dataService.getAllProductForSaleByFilter({"status_id": 50})); //rawMaterialByProviderRequest
 
         if (this.id){
             this.title = 'Actualizar Pedido de Producto para Venta'
@@ -138,25 +138,26 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.establishmentOptions = result[0].findEstablishmentResponse?.establishment;
-                this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                this.filteredMeasureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                inventory = result[2].getInventoryResponse?.Inventory;
-                this.productsForSale = result[3].retrieveProductForSaleResponse?.productsForSale;
-                this.productsForSale = this.productsForSale?.filter(pfs => pfs.establishment?._id === String(this.storeOption));
-                this.filteredProductsForSale = result[3].retrieveProductForSaleResponse?.productsForSale;
-                this.filteredProductsForSale = this.filteredProductsForSale?.filter(pfs => pfs.establishment?._id === String(this.storeOption));
+                this.establishmentOptions = this.dataService.findJsonValue(result[0], 'json_result') || [];
+                this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.filteredMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                inventory = this.dataService.findJsonValue(result[2], 'json_result') || {};
+                this.productsForSale = this.dataService.findJsonValue(result[3], 'json_result') || [];
+                this.productsForSale = this.productsForSale?.filter(pfs => pfs.establishment?.id === String(this.storeOption));
+                this.filteredProductsForSale = this.dataService.findJsonValue(result[3], 'json_result') || [];
+                this.filteredProductsForSale = this.filteredProductsForSale?.filter(pfs => pfs.establishment?.id === String(this.storeOption));
                 if (this.id){
-                    this.productForSaleOrder= result[4].getProductForSaleStoreOrderResponse?.saleStoreOrder;
+                    this.productForSaleOrder= this.dataService.findJsonValue(result[4], 'json_result') || {};
                 }
                 // console.log(respuestaPeticion1, respuestaPeticion2, respuestaPeticion3);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
-                this.selectedEstablishment = this.findEstablishemtnById(this.storeOption);
+                this.selectedEstablishment = this.findEstablishmentById(this.storeOption);
                 this.filterByEstablishment(this.storeOption);
 
                 this.inventoryElementsSource = inventory.inventoryElements;
+                console.log("inventoryElementsSource", this.inventoryElementsSource);
                 this.loadProductsForSaleFromInventory();
                 if (this.productForSaleOrder){
                     this.loadRawMaterialOrder();
@@ -170,7 +171,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     loadProductsForSaleFromInventory(){
         this.inventoryElements = [];
         this.productsForSale?.map((pfsItem) => {
-            const matchingFinishedProduct = this.inventoryElementsSource?.find((invElem) => pfsItem.finishedProduct?._id === invElem?.finishedProduct?._id);
+            const matchingFinishedProduct = this.inventoryElementsSource?.find((invElem) => pfsItem.finishedProduct?.id === invElem?.finishedProduct?.id);
             if (matchingFinishedProduct){
                 this.inventoryElements?.push({
                     ...matchingFinishedProduct,
@@ -178,7 +179,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                 });             
             }
         });
-        // this.filteredProductsForSale = this.productsForSale?.filter((pfsItem) => this.inventoryElements?.some((ieItem) => pfsItem.finishedProduct?._id === ieItem.finishedProduct?._id));
+        // this.filteredProductsForSale = this.productsForSale?.filter((pfsItem) => this.inventoryElements?.some((ieItem) => pfsItem.finishedProduct?.id === ieItem.finishedProduct?.id));
     }
 
     loadRawMaterialOrder(){
@@ -192,10 +193,10 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             this.isPropertiesVisible = true;
         }
         // this.providertSelect?.patchValue(String(this.rawMaterialOrder?.provider?._id));
-        this.selectedEstablishmentSubject.next(this.productForSaleOrder?._id);
+        this.selectedEstablishmentSubject.next(this.productForSaleOrder?.id);
         this.productForSaleOrderElements = this.productForSaleOrder?.productForSaleStoreOrderElements;
         this.productForSaleOrder?.productForSaleStoreOrderElements?.forEach(pfsOrder => {
-            this.findAndMoveProductForSaleById(true, pfsOrder.productForSale?._id);
+            this.findAndMoveProductForSaleById(true, pfsOrder.productForSale?.id);
         });
     }
 
@@ -236,9 +237,8 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                         }
                     },
                     error: error => {
-                        let errorResponse = error.error;
-                        errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateRawMaterial ? errorResponse.updateRawMaterial : 'Error, consulte con el administrador';
-                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al consumir materia prima');
+                        this.alertService.error(errorMessage);
                         this.submitting = false;
                     }
                 });
@@ -256,8 +256,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         } else {
             let newProductForSaleOrder: ProductForSaleStoreOrder = {
                 ...this.orderForm.value,
-                establishmentID: this.selectedEstablishment?._id,
-                inventoryID: "64d7dae896457636c3f181e9",
+                establishment: this.selectedEstablishment,
                 productForSaleStoreOrderElements: this.productForSaleOrderElements,
                 finalAmount: this.total.toFixed(2)
             }
@@ -277,7 +276,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             date: new Date().toISOString()
         };
         this.productForSaleOrderElements?.push(newOrderElement);
-        this.findAndMoveProductForSaleById(true, this.selectedIE?.productForSale?._id);
+        this.findAndMoveProductForSaleById(true, this.selectedIE?.productForSale?.id);
         this.onResetMaterialForm();
         // this.filteredProductsForSale?.splice(this.productForSaleIndexToRemove!, 1);
     }
@@ -320,7 +319,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
     unselectInventoryElement(orderElement: ProductForSaleStoreOrderElement, indexToRemove: number){
         this.productForSaleOrderElements?.splice(indexToRemove, 1);
-        this.findAndMoveProductForSaleById(false, orderElement.productForSale?._id);
+        this.findAndMoveProductForSaleById(false, orderElement.productForSale?.id);
     }
 
 
@@ -335,21 +334,21 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         return this.measureOptions?.find(measure => String(measure.id) === measureId);
     }
 
-    findEstablishemtnById(establishmentId?: string){
-        return this.establishmentOptions?.find(establishment => String(establishment._id) === establishmentId);
+    findEstablishmentById(establishmentId?: string){
+        return this.establishmentOptions?.find(establishment => String(establishment.id) === establishmentId);
     }
 
     findAndMoveProductForSaleById(isSelect: boolean, inventoryElementId?: string){
         if (isSelect){
-            let inventoryElementResult = this.inventoryElements?.find(invElement => invElement.productForSale?._id === inventoryElementId);
+            let inventoryElementResult = this.inventoryElements?.find(invElement => invElement.productForSale?.id === inventoryElementId);
             if (inventoryElementResult) {
-                this.inventoryElements = this.inventoryElements?.filter(invElement => invElement.productForSale?._id !== inventoryElementId);
+                this.inventoryElements = this.inventoryElements?.filter(invElement => invElement.productForSale?.id !== inventoryElementId);
                 this.unselectedInventoryElements?.push(inventoryElementResult);
             }
         } else { // unselect
-            let inventoryElementResult = this.unselectedInventoryElements?.find(invElement => invElement.productForSale?._id === inventoryElementId);
+            let inventoryElementResult = this.unselectedInventoryElements?.find(invElement => invElement.productForSale?.id === inventoryElementId);
             if (inventoryElementResult){
-                this.unselectedInventoryElements = this.unselectedInventoryElements?.filter(invElement => invElement.productForSale?._id !== inventoryElementId);
+                this.unselectedInventoryElements = this.unselectedInventoryElements?.filter(invElement => invElement.productForSale?.id !== inventoryElementId);
                 this.inventoryElements?.push(inventoryElementResult);
             }
         }
@@ -378,17 +377,15 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     setEstablishment(establishment: any){
         this.productForSaleOrderElements = [];
         this.unselectedProductsForSale = [];
-        this.selectedEstablishment = this.findEstablishemtnById(establishment);
+        this.selectedEstablishment = this.findEstablishmentById(establishment);
         this.filterByEstablishment(establishment);
     }
 
     filterByEstablishment(establishmentId: string){
         if(establishmentId){
-            console.log(establishmentId);
             this.filteredProductsForSale = this.productsForSale?.filter((val) => {
-                return establishmentId === val.establishment?._id;
+                return establishmentId === val.establishment?.id;
             });
-            console.log(this.filteredProductsForSale);
         }
     }
 
@@ -425,7 +422,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
     unselectProductForSale(orderElement: ProductForSaleStoreOrderElement, indexToRemove: number){
         this.productForSaleOrderElements?.splice(indexToRemove, 1);
-        this.findAndMoveProductForSaleById(false, orderElement.productForSale?._id);
+        this.findAndMoveProductForSaleById(false, orderElement.productForSale?.id);
         // this.filteredProductsForSale?.push(orderElement.rawMaterialByProvider!);
     }
 

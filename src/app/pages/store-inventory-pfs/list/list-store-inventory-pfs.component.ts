@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
+import { actionTypeValues } from '@app/services';
 
 import { AccountService, AlertService, DataService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
@@ -24,7 +25,6 @@ import { ActivityLog } from '@app/models/system/activity-log';
 })
 export class ListStoreInventoryPFSComponent implements OnInit {
 
-    establishment?: Establishment;
     submitting = false;
     storeName?: string;
     inventory?: Inventory;
@@ -72,15 +72,13 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getInventory({ _id: "65bf467e008f7e88678d3927"}));
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
-        requestArray.push(this.dataService.getEstablishmentById(establishmentId));
+        requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventory'));
+        requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.inventory = result[0].getInventoryResponse.Inventory;
-                this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                this.establishment = result[2].getEstablishmentResponse.establishment;
+                this.inventory = this.dataService.findJsonValue(result[0], 'json_result') || {};
+                this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -91,14 +89,16 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                 this.weightMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Libra");
                 if(this.weightMeasureOptions)
                     this.selectedWeightMeasure = this.weightMeasureOptions[1];
-                if (this.inventory){
+                if (this.inventory && this.inventory.id){
                     this.inventoryElements = this.inventory?.inventoryElements;
-                    console.log(this.inventoryElements);
-                    this.inventoryElements = this.inventoryElements?.filter(invElem =>invElem.establishment?._id === String(establishmentId));
                     this.allInventoryElements = this.inventoryElements;
                     this.setTableElements(this.inventoryElements);
-                    this.storeName = this.establishment?.name;
-                    this.activityLogName = this.activityLogName + "|||" + this.establishment?._id;
+                    this.storeName = this.inventory.establishment?.name;
+                    this.activityLogName = this.activityLogName + "|||" + this.inventory.establishment?.id;
+                } else {
+                    this.inventoryElements = [];
+                    this.allInventoryElements = [];
+                    this.tableElementsValues = [];
                 }
             }
         });
@@ -141,9 +141,8 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     setTableElements(elements?: InventoryElement[]){
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
-            console.log(element);
             let curr_row: any = [
-                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?.id },
                     { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 15%" },
                     { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getConvertedPrice(Number(element.productForSale?.price), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Precio", style: "width: 15%" }
@@ -233,94 +232,139 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.modalSelectedQuantity = totalQuantity;
     }
 
-    onAddMaterialForm(){
-        this.tableElementsValues.forEach((curr_row: any) => {
-            if(curr_row[0].id === this.selectedInventoryElement?.productForSale?._id){
-                let buttons = curr_row[4].button;
-                buttons[0].submitting = true;
-                buttons.forEach((btn: any) => {
-                    btn.disabled = true;
-                });
-            }
-        });
-        let addToInventory: UpdateInventoryElement = {
-            inventoryID: "65bf467e008f7e88678d3927",
-            inventoryTypeID: "4",
-            elementID: this.selectedInventoryElement?.productForSale?._id,
-            newQuantity: String(this.modalFinalQuantity),
-        }
-        let activityLog: ActivityLog = {
-            action: "add",
-            section: this.activityLogName,
-            description: "Adicion del producto para venta '" + this.selectedInventoryElement?.productForSale?.finishedProduct?.name + "' al inventario de tienda",
-            extra: {
-                inventoryElement: this.selectedInventoryElement,
-                reason: this.operationReasonInput?.value
-            },
-            request: addToInventory
-        }
-        this.dataService.updateInventoryElement(addToInventory)
-        .pipe(concatMap((result: any) => {
-            activityLog.response = result;
-            activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
-            return this.dataService.addActivityLog(activityLog);
-        }))
-        .subscribe({
-            next: () => {
-                this.router.navigateByUrl('/').then(() => {
-                    this.alertService.success('Accion de inventario realizado correctamente', { keepAfterRouteChange: true });
-                    this.router.navigate(['/establishments/inventory/' + this.establishment?._id]); 
-                });},
-            error: error => {
-                this.alertService.error('Error en accion de inventario, contacte con Administracion');
-        }});    
-    }
+    onAddRemoveInventoryElement(actionTypeId: number){
+        let inventoryType = this.inventory?.inventoryType;
+        let unitName = this.inventory?.unitName;
+        let elementId = this.selectedInventoryElement?.productForSale?.id;
+        let selectedMeasureId = this.selectedMeasure?.id;
+        let elementQuantity = String(this.formQuantity);
+        let reason = this.operationReasonInput?.value;
 
-    onDeleteMaterialForm(){
-        this.tableElementsValues.forEach((curr_row: any) => {
-            if(curr_row[0].id === this.selectedInventoryElement?.productForSale?._id){
-                let buttons = curr_row[4].button;
-                buttons[1].submitting = true;
-                buttons.forEach((btn: any) => {
-                    btn.disabled = true;
-                });
-            }
-        });
-        let deleteFromInventory: UpdateInventoryElement = {
-            inventoryID: "65bf467e008f7e88678d3927",
-            inventoryTypeID: "4",
-            elementID: this.selectedInventoryElement?.productForSale?._id,
-            newQuantity: String(this.modalFinalQuantity),
-        }
-        let activityLog: ActivityLog = {
-            action: "remove",
-            section: this.activityLogName,
-            description: "Retiro de Producto para Venta '" + this.selectedInventoryElement?.productForSale?.finishedProduct?.name + "' del inventario de tienda",
-            extra: {
-                inventoryElement: this.selectedInventoryElement,
-                reason: this.operationReasonInput?.value
-            },
-            request: deleteFromInventory
-        }
-        this.dataService.updateInventoryElement(deleteFromInventory)
-        .pipe(concatMap((result: any) => {
-            activityLog.response = result;
-            activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
-            return this.dataService.addActivityLog(activityLog);
-        }))
+        let addToInventory: any = {
+            inventoryType: inventoryType,
+            unitName: unitName,
+            elementId: elementId,
+            selectedMeasureId: selectedMeasureId,
+            elementQuantity: elementQuantity,
+            reason: reason,
+            actionTypeId: actionTypeId
+        };
+
+        this.dataService.addRemoveInventoryElement(addToInventory)
+        .pipe(first())
         .subscribe({
             next: () => {
                 this.router.navigateByUrl('/').then(() => {
                     this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                    this.router.navigate(['/establishments/inventory/' + this.establishment?._id]); 
-                });},
+                    this.router.navigate(['/store/inventory/' + this.inventory?.establishment?.id]); 
+                });
+            },
             error: error => {
-                this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
-        }});
+                let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error en movimiento de inventario, contacte con Administracion');
+                this.alertService.error(errorMessage);
+            }
+        });
     }
 
+    onAddMaterialForm(){
+        this.onAddRemoveInventoryElement(actionTypeValues.add_pfs_manual.actionType.id);
+    }
+
+    onDeleteMaterialForm(){
+        this.onAddRemoveInventoryElement(actionTypeValues.remove_pfs_manual.actionType.id);
+    }
+
+
+    // onAddMaterialForm(){
+    //     this.tableElementsValues.forEach((curr_row: any) => {
+    //         if(curr_row[0].id === this.selectedInventoryElement?.productForSale?.id){
+    //             let buttons = curr_row[4].button;
+    //             buttons[0].submitting = true;
+    //             buttons.forEach((btn: any) => {
+    //                 btn.disabled = true;
+    //             });
+    //         }
+    //     });
+    //     let addToInventory: UpdateInventoryElement = {
+    //         inventoryID: "65bf467e008f7e88678d3927",
+    //         inventoryTypeID: "4",
+    //         elementID: this.selectedInventoryElement?.productForSale?.id,
+    //         newQuantity: String(this.modalFinalQuantity),
+    //     }
+    //     let activityLog: ActivityLog = {
+    //         action: "add",
+    //         section: this.activityLogName,
+    //         description: "Adicion del producto para venta '" + this.selectedInventoryElement?.productForSale?.finishedProduct?.name + "' al inventario de tienda",
+    //         extra: {
+    //             inventoryElement: this.selectedInventoryElement,
+    //             reason: this.operationReasonInput?.value
+    //         },
+    //         request: addToInventory
+    //     }
+    //     this.dataService.updateInventoryElement(addToInventory)
+    //     .pipe(concatMap((result: any) => {
+    //         activityLog.response = result;
+    //         activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
+    //         return this.dataService.addActivityLog(activityLog);
+    //     }))
+    //     .subscribe({
+    //         next: () => {
+    //             this.router.navigateByUrl('/').then(() => {
+    //                 this.alertService.success('Accion de inventario realizado correctamente', { keepAfterRouteChange: true });
+    //                 this.router.navigate(['/establishments/inventory/' + this.inventory?.establishment?.id]);
+    //             });
+    //         },
+    //         error: error => {
+    //             this.alertService.error('Error en accion de inventario, contacte con Administracion');
+    //     }});    
+    // }
+
+    // onDeleteMaterialForm(){
+    //     this.tableElementsValues.forEach((curr_row: any) => {
+    //         if(curr_row[0].id === this.selectedInventoryElement?.productForSale?.id){
+    //             let buttons = curr_row[4].button;
+    //             buttons[1].submitting = true;
+    //             buttons.forEach((btn: any) => {
+    //                 btn.disabled = true;
+    //             });
+    //         }
+    //     });
+    //     let deleteFromInventory: UpdateInventoryElement = {
+    //         inventoryID: "65bf467e008f7e88678d3927",
+    //         inventoryTypeID: "4",
+    //         elementID: this.selectedInventoryElement?.productForSale?.id,
+    //         newQuantity: String(this.modalFinalQuantity),
+    //     }
+    //     let activityLog: ActivityLog = {
+    //         action: "remove",
+    //         section: this.activityLogName,
+    //         description: "Retiro de Producto para Venta '" + this.selectedInventoryElement?.productForSale?.finishedProduct?.name + "' del inventario de tienda",
+    //         extra: {
+    //             inventoryElement: this.selectedInventoryElement,
+    //             reason: this.operationReasonInput?.value
+    //         },
+    //         request: deleteFromInventory
+    //     }
+    //     this.dataService.updateInventoryElement(deleteFromInventory)
+    //     .pipe(concatMap((result: any) => {
+    //         activityLog.response = result;
+    //         activityLog.status = result.updateInventoryElementResponse.AcknowledgementIndicator;
+    //         return this.dataService.addActivityLog(activityLog);
+    //     }))
+    //     .subscribe({
+    //         next: () => {
+    //             this.router.navigateByUrl('/').then(() => {
+    //                 this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
+    //                 this.router.navigate(['/establishments/inventory/' + this.inventory?.establishment?.id]);
+    //             });
+    //         },
+    //         error: error => {
+    //             this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
+    //     }});
+    // }
+
     goToActionsHistory(){
-        this.router.navigate(['/activityLog/view'], { queryParams: { sec: this.activityLogName } });
+        this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName } });
     }
 
     get operationReasonInput(){

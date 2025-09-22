@@ -51,13 +51,13 @@ export class SummaryProductForSaleInventoryFactoryComponent implements OnInit {
         this.inventoryElements = undefined;
 
         requestArray.push(this.dataService.getInventory({ _id: "65bf467e008f7e88678d3927"}));
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "status", enableElements: "true"}));
+        requestArray.push(this.dataService.getAnyComponent({s: {type: "product_for_sale"}}, 'getStatus'));
         requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status": 1}));
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.inventory = result[0].getInventoryResponse.Inventory;
-                this.statusOptions = result[1].retrieveCatalogGenericResponse.elements.slice(0, 3);
+                this.statusOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
                 this.establishmentOptions = result[2].findEstablishmentResponse?.establishment;
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -120,7 +120,7 @@ export class SummaryProductForSaleInventoryFactoryComponent implements OnInit {
         if (this.allInventoryElements){
             this.inventoryElements = this.allInventoryElements?.filter((val) => {
                 const statusMatch = filters.orderStatus !== "" ? String(val.status?.id) === filters.orderStatus : true;
-                const establishmentMatch = filters.establishment !== "" ? val.productForSale?.establishment?._id === filters.establishment : true;
+                const establishmentMatch = filters.establishment !== "" ? val.productForSale?.establishment?.id === filters.establishment : true;
                 return statusMatch && establishmentMatch;
             });
         }
@@ -133,7 +133,7 @@ export class SummaryProductForSaleInventoryFactoryComponent implements OnInit {
                 Nombre: element.finishedProduct?.name,
                 "Estado": "Activo",
                 "Usuario Creador": element.creatorUser?.name,
-                InventoryID: this.inventory?._id
+                InventoryID: this.inventory?.id
             };
         });
         const csvOptions = {

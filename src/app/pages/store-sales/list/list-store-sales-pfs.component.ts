@@ -44,22 +44,22 @@ export class ListStoreSalesPFSComponent implements OnInit {
         let establishmentId = this.route.snapshot.params['id'];
         let requestArray = [];
 
-        requestArray.push(this.dataService.getShopHistory({establecimiento: { _id: establishmentId}}));
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
+        requestArray.push(this.dataService.getAllShopHistory({establishment_id: establishmentId}));
+        requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
         requestArray.push(this.dataService.getEstablishmentById(establishmentId));
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.shopResumes = result[0].retrieveShopHistoryResponse?.FinishedProducts;
+                this.shopResumes = this.dataService.findJsonValue(result[0], 'json_result') || [];
                 this.allShopResumes = this.shopResumes;
-                this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
-                this.establishment = result[2].getEstablishmentResponse.establishment;
+                this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.establishment = this.dataService.findJsonValue(result[2], 'json_result') || {};
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
                 this.shopResumes = this.shopResumes?.sort((a,b) => {
-                    const fechaA = new Date(a.updateDate!);
-                    const fechaB = new Date(b.updateDate!);
+                    const fechaA = new Date(a.updatedDate!);
+                    const fechaB = new Date(b.updatedDate!);
                     return fechaB.getTime() - fechaA.getTime();
                 });
                 this.setTableElements(this.shopResumes);
@@ -74,7 +74,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
             this.shopResumes = this.allShopResumes?.filter((val) => {
                 if(this.searchTerm){
                     const clientMatch = val.nameClient?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const dateMatch = val.updateDate?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const dateMatch = val.updatedDate?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const noteMatch = val.nota?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     return clientMatch || dateMatch || noteMatch;
                 }
@@ -90,7 +90,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
         this.tableElementsValues = [];
         elements?.forEach((element: ShopResume) => {
             const curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha", style: "width: 10%" },
+                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha", style: "width: 10%" },
                     // { type: "text", value: element.establecimiento?.name, header_name: "Tienda", style: "width: 15%" },
                     // { type: "text", value: element.totalDiscount, header_name: "Descuento" },
                     // { type: "text", value: Number(element.total) - Number(element.totalDiscount), header_name: "Subtotal" },
@@ -103,7 +103,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
             let actionsButtons = [
                 {
                     type: "button",
-                    routerLink: "/store/sales/history/view/" + element._id,
+                    routerLink: "/store/sales/history/view/" + element.id,
                     is_absolute: true,
                     class: "btn btn-success btn-sm pb-0 mx-1",
                     icon: {
@@ -170,7 +170,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
     saveSale(){
         let saveSalePath = '/store/sales/create';
         let queryParams = {
-            strId: this.establishment?._id
+            strId: this.establishment?.id
         };
         this.router.navigate([saveSalePath], { queryParams: queryParams});
     }

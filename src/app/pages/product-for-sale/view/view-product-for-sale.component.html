@@ -11,7 +11,7 @@
             <view-object [objectElements]="elements" [imgIdentifier]="productForSale?.finishedProduct?.photo"></view-object>
             <div class="d-flex flex-wrap justify-content-center">
                 <button
-                type="button" routerLink="/productsForSale/edit/{{productForSale!._id}}" [disabled]="submitting"
+                type="button" routerLink="/productsForSale/edit/{{productForSale!.id}}" [disabled]="submitting"
                 class="btn btn-primary m-2">
                 <div class="d-flex flex-row p-1">
                     <i class="material-icons icon">edit</i>

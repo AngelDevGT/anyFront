@@ -46,6 +46,7 @@ import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/ad
 import { canActivateV2 } from "@app/helpers";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
+import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
 
 const usersModule = () => import('@app/layouts/users/users-layout.module').then(x => x.UsersModule);
 
@@ -105,7 +106,8 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'store/sales/history/view/:id', component: ViewStoreSalesPFSComponent, canActivate: [canActivateV2]},
     { path: 'store/sales/create', component: AddEditSaleComponent, canActivate: [canActivateV2]},
     { path: 'store/sales/history/edit/:id', component: AddEditSaleComponent, canActivate: [canActivateV2]},
-    { path: 'activityLog/view', component: ViewActivityLogComponent, canActivate: [canActivateV2]},
+    { path: 'activityLog/view', component: ViewInventoryLogComponent, canActivate: [canActivateV2]},
+    // { path: 'inventoryLog/view', component: ViewInventoryLogComponent, canActivate: [canActivateV2]},
     { path: 'cashClosing/:id', component: ListCashClosingComponent, canActivate: [canActivateV2]},
     { path: 'cashClosing/view/:id', component: ViewCashClosingComponent, canActivate: [canActivateV2]},
     { path: 'cashClosing/create/:id', component: AddEditCashClosingComponent, canActivate: [canActivateV2]},

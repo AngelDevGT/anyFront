@@ -42,11 +42,11 @@ export class ListFinishedProductComponent implements OnInit {
 
     retriveProducts(){
         this.products = undefined;
-        this.dataService.getAllFinishedProductByFilter({"status": { "id": 2}})
+        this.dataService.getAllFinishedProductByFilter({"status_id": 36})
             .pipe(first())
             .subscribe({
                 next: (products: any) => {
-                    this.products = products.retrieveFinishedProductResponse?.FinishedProducts;
+                    this.products = this.dataService.findJsonValue(products, 'json_result') || [];
                     this.allProducts = this.products;
                     this.getCards();
                 }
@@ -65,11 +65,11 @@ export class ListFinishedProductComponent implements OnInit {
                         {name:'Descripcion:', value: currProduct.description},
                         {name:'Medida:', value: currProduct.measure?.identifier},
                         {name:'Fecha creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.creationDate!)},
-                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.updateDate!)}
+                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.updatedDate!)}
                     ],
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/finishedProducts/view/' + currProduct._id},
-                        {title: 'Editar', value: 'edit_note', link: '/finishedProducts/edit/' + currProduct._id},
+                        {title: 'Ver', value: 'visibility', link: '/finishedProducts/view/' + currProduct.id},
+                        {title: 'Editar', value: 'edit_note', link: '/finishedProducts/edit/' + currProduct.id},
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currProduct._id},
                     ]
                 }

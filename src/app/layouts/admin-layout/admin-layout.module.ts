@@ -71,6 +71,7 @@ import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-f
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DATE_FORMATS } from '@angular/material/core';
+import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 export const MY_DATE_FORMATS = {
@@ -150,6 +151,7 @@ export const MY_DATE_FORMATS = {
       ViewStoreSalesPFSComponent,
       AddEditSaleComponent,
       ViewActivityLogComponent,
+      ViewInventoryLogComponent,
       ListCashClosingComponent,
       ViewCashClosingComponent,
       AddEditCashClosingComponent,

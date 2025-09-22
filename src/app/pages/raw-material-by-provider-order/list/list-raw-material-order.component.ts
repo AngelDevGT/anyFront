@@ -3,7 +3,7 @@ import { first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, DataService, paymentStatusValues, statusValues} from '@app/services';
+import { AccountService, AlertService, DataService, paymentStatusValues, rawMaterialOrderStatusValues} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -39,8 +39,8 @@ export class ListRawMaterialOrderComponent implements OnInit {
 
     sortDataByDate(sortOpt: string){
         this.rawMaterialOrders = this.rawMaterialOrders?.sort((a,b) => {
-            const fechaA = new Date(a.updateDate!);
-            const fechaB = new Date(b.updateDate!);
+            const fechaA = new Date(a.updatedDate!);
+            const fechaB = new Date(b.updatedDate!);
             if(sortOpt === 'Desc'){
                 return fechaB.getTime() - fechaA.getTime();
             } else {
@@ -57,13 +57,13 @@ export class ListRawMaterialOrderComponent implements OnInit {
 
     retriveRawMaterialOrders(){
         this.rawMaterialOrders = undefined;
-        this.dataService.getAllRawMaterialOrderByFilter({"status": 1})
+        this.dataService.getAllRawMaterialOrderByFilter({})
             .pipe(first())
             .subscribe({
                 next: (rmOrders: any) => {
-                    this.rawMaterialOrders = rmOrders.retrieveRawMaterialOrderResponse?.rawMaterial;
+                    this.rawMaterialOrders = this.dataService.findJsonValue(rmOrders, 'json_result') || [];
                     this.rawMaterialOrders = this.rawMaterialOrders?.filter((rmOrder: RawMaterialOrder) => {
-                        return rmOrder.status?.id !== statusValues.eliminado.status.id;
+                        return rmOrder.status?.id !== rawMaterialOrderStatusValues.eliminado.status.id;
                     });
                     this.allRawMaterialOrders = this.rawMaterialOrders;
                     this.sortDataByDate(this.sortOpts[0]);
@@ -95,7 +95,7 @@ export class ListRawMaterialOrderComponent implements OnInit {
         elements?.forEach((element: RawMaterialOrder) => {
             const curr_row =
             [
-                { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!), header_name: "Fecha", style: "width: 10%"},
+                { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!), header_name: "Fecha", style: "width: 10%"},
                 { type: "text", value: element.name, header_name: "Nombre", style: "width: 15%" },
                 { type: "text", value: element.provider?.name, header_name: "Proveedor", style: "width: 15%" },
                 { type: "text", value: element.status?.identifier, header_name: "Estado del pedido", style: "width: 10%" },
@@ -107,7 +107,7 @@ export class ListRawMaterialOrderComponent implements OnInit {
             let actionsButtons = [
                 {
                     type: "button",
-                    routerLink: "view/" + element._id,
+                    routerLink: "view/" + element.id,
                     class: "btn btn-success btn-sm pb-0 mx-1",
                     icon: {
                         class: "material-icons",

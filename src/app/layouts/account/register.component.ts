@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { first } from 'rxjs/operators';
+import { concatMap, first } from 'rxjs/operators';
 
 import { AccountService, AlertService, DataService } from '@app/services';
 import { Role } from '@app/models';
@@ -29,10 +29,10 @@ export class RegisterComponent implements OnInit {
 
     ngOnInit() {
         this.loadingRoles = true;
-        this.dataService.getAllConstantsByFilter({fc_id_catalog: "roles", enableElements: "true"})
+        this.dataService.getAnyComponent({ r: {status: 1}}, 'getRoles')
             .pipe(first())
             .subscribe((roles: any) =>{
-                this.roleOptions = roles.retrieveCatalogGenericResponse.elements;
+                this.roleOptions = this.dataService.findJsonValue(roles, 'json_result');
                 this.loadingRoles = false;
             });
         this.registerForm = this.formBuilder.group({
@@ -66,7 +66,13 @@ export class RegisterComponent implements OnInit {
             role: this.roleOptions?.find(role => role.identifier === "Indefinido")
         }
         this.accountService.register(newUser)
-            .pipe(first())
+            .pipe(concatMap((result: any) => {
+                return this.accountService.getUserByEmailV2(newUser.email!);
+            }), concatMap((usr: any) => {
+                let user = usr.retrieveUsersResponse?.users;
+                newUser = { ...newUser, ext_id: user[0]._id };
+                return this.accountService.registerV3(newUser);
+            }))
             .subscribe({
                 next: (user) => {
                     this.alertService.success('Se ha registrado correctamente', { keepAfterRouteChange: true });

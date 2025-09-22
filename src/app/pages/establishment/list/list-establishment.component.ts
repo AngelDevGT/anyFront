@@ -41,11 +41,11 @@ export class ListEstablishmentComponent implements OnInit {
 
     retriveEstablishments(){
         this.establishments = undefined;
-        this.dataService.getAllEstablishments()
+        this.dataService.getAllEstablishmentsByFilter({status_id: 28})
             .pipe(first())
             .subscribe({
                 next: (establishments: any) => {
-                    this.establishments = establishments.findEstablishmentResponse?.establishment;
+                    this.establishments = establishments.retrieveEstablishmentsResponse?.data[0]?.json_result || [];
                     this.allEstablishments = this.establishments;
                     this.setTableElements(this.establishments);
                 }
@@ -82,7 +82,7 @@ export class ListEstablishmentComponent implements OnInit {
                     button: [
                         {
                             type: "button",
-                            routerLink: "inventory/" + element._id,
+                            routerLink: "inventory/" + element.id,
                             class: "btn btn-outline-primary m-1",
                             icon: {
                                 class: "material-icons",
@@ -92,7 +92,7 @@ export class ListEstablishmentComponent implements OnInit {
                         },
                         {
                             type: "button",
-                            routerLink: "/store/sales/history/" + element._id,
+                            routerLink: "/store/sales/history/" + element.id,
                             is_absolute: true,
                             class: "btn btn-outline-success m-1",
                             icon: {
@@ -105,7 +105,7 @@ export class ListEstablishmentComponent implements OnInit {
                             type: "button",
                             routerLink: "/productsForSale/order",
                             is_absolute: true,
-                            query_params: {opt: "store", store: element._id, name: element.name},
+                            query_params: {opt: "store", store: element.id, name: element.name},
                             class: "btn btn-outline-secondary m-1",
                             icon: {
                                 class: "material-icons",
@@ -115,7 +115,7 @@ export class ListEstablishmentComponent implements OnInit {
                         },
                         {
                             type: "button",
-                            routerLink: "/cashClosing/" + element._id,
+                            routerLink: "/cashClosing/" + element.id,
                             is_absolute: true,
                             class: "btn btn-outline-danger m-1",
                             icon: {
@@ -139,7 +139,7 @@ export class ListEstablishmentComponent implements OnInit {
                     button: [
                         {
                             type: "button",
-                            routerLink: "view/" + element._id,
+                            routerLink: "view/" + element.id,
                             query_params: {opt: this.viewOption},
                             class: "btn btn-outline-success m-1",
                             icon: {
@@ -150,7 +150,7 @@ export class ListEstablishmentComponent implements OnInit {
                         },
                         {
                             type: "button",
-                            routerLink: "edit/" + element._id,
+                            routerLink: "edit/" + element.id,
                             query_params: {opt: this.viewOption},
                             is_absolute: false,
                             class: "btn btn-outline-primary m-1",
@@ -163,7 +163,7 @@ export class ListEstablishmentComponent implements OnInit {
                         {
                             type: "button",
                             routerLink: "/productsForSale",
-                            query_params: { store: element._id },
+                            query_params: { store: element.id },
                             is_absolute: true,
                             class: "btn btn-outline-danger m-1",
                             icon: {

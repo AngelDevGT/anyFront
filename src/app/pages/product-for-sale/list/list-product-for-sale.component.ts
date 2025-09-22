@@ -51,10 +51,10 @@ export class ListProductForSaleComponent implements OnInit {
         this.productsForSale = undefined;
         let requestArray = [];
         if(this.storeID){
-            requestArray.push(this.dataService.getAllProductForSaleByFilter({"establishment": { "_id": this.storeID}}));
+            requestArray.push(this.dataService.getAllProductForSaleByFilter({"establishment_id": this.storeID, status_id: 50}));
             forkJoin(requestArray).subscribe({
                 next: (result: any) => {
-                    this.productsForSale = result[0].retrieveProductForSaleResponse?.productsForSale;
+                    this.productsForSale = this.dataService.findJsonValue(result[0], 'json_result') || [];
                     this.allProductsForSale = this.productsForSale;
                 },
                 error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -80,11 +80,11 @@ export class ListProductForSaleComponent implements OnInit {
                         {name:'Medida:', value: element.finishedProduct?.measure?.identifier},
                         {name:'Descripcion:', value: element.finishedProduct?.description},
                         {name:'Fecha creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
-                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!)}
+                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!)}
                     ],
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/productsForSale/view/' + element._id},
-                        {title: 'Editar', value: 'edit_note', link: '/productsForSale/edit/' + element._id},
+                        {title: 'Ver', value: 'visibility', link: '/productsForSale/view/' + element.id},
+                        {title: 'Editar', value: 'edit_note', link: '/productsForSale/edit/' + element.id},
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currProduct._id},
                     ]
                 };

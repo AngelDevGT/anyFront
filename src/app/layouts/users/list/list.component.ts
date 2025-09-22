@@ -3,7 +3,7 @@ import { first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService} from '@app/services';
+import { AccountService, AlertService, DataService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { User } from '@app/models/system/user.model';
@@ -21,7 +21,7 @@ export class ListComponent implements OnInit {
     entries = [5, 10, 20, 50];
     tableElementsValues?: any;
 
-    constructor(private accountService: AccountService, private alertService: AlertService) {}
+    constructor(private accountService: AccountService, private alertService: AlertService, private dataService: DataService) {}
 
     ngOnInit() {
         this.retriveUsers();
@@ -34,7 +34,7 @@ export class ListComponent implements OnInit {
             .pipe(first())
             .subscribe({
                 next: (users: any) => {
-                    this.users = users.retrieveUsersResponse?.users;
+                    this.users = this.dataService.findJsonValue(users, 'json_result') || [];
                     this.allUsers = this.users;
                     this.setTableElements(this.users);
                 }
@@ -94,7 +94,7 @@ export class ListComponent implements OnInit {
                     button: [
                         {
                             type: "button",
-                            routerLink: "view/" + element._id,
+                            routerLink: "view/" + element.id,
                             class: "btn btn-success btn-sm pb-0 mx-1",
                             icon: {
                                 class: "material-icons",
@@ -103,7 +103,7 @@ export class ListComponent implements OnInit {
                         },
                         {
                             type: "button",
-                            routerLink: "edit/" + element._id,
+                            routerLink: "edit/" + element.id,
                             class: "btn btn-primary btn-sm pb-0 mx-1",
                             icon: {
                                 class: "material-icons",

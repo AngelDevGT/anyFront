@@ -1,0 +1,11 @@
+{
+  "/api": {
+    "target": "https://any-function-sql.azurewebsites.net",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api": "/api/V3"
+    },
+    "logLevel": "debug"
+  }
+}

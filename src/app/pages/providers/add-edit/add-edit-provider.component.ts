@@ -49,7 +49,7 @@ export class AddEditProviderComponent implements OnInit{
             this.dataService.getProviderById(this.id)
                 .pipe(first())
                 .subscribe((prov: any) => {
-                    let provider = prov.getProviderResponse?.provider;
+                    let provider = prov.getProviderResponse?.data[0]?.json_result || null;
                     if (provider){
                         this.providerForm.patchValue(provider);
                         this.currentProvider = provider;
@@ -76,9 +76,13 @@ export class AddEditProviderComponent implements OnInit{
                     this.router.navigateByUrl('/providers');
                 },
                 error: error => {
-                    let errorResponse = error.error;
-                    errorResponse = errorResponse.addProviderResponse ? errorResponse.addProviderResponse : errorResponse.updateEstablishmentResponse ? errorResponse.updateEstablishmentResponse : 'Error, consulte con el administrador';
-                    this.alertService.error(errorResponse.AcknowledgementDescription);
+                    let errorResponse = this.dataService.findJsonValue(error, 'error');
+                    let ackError = this.dataService.findJsonValue(error, 'AcknowledgementDescription');
+                    let errorMessage = 'Error al guardar el proveedor, consulte con el administrador';
+                    if (ackError && errorResponse) {
+                        errorMessage = `${ackError}: ${errorResponse}`;
+                    }
+                    this.alertService.error(errorMessage);
                     this.submitting = false;
                 }
             })

@@ -229,7 +229,7 @@
                         <span class="px-1">VERIFICAR</span>
                     </div>
                 </button>
-                <button *ngIf="!deleteOption && activeOption"
+                <button *ngIf="!deleteOption && (activeOption || verifyOption)"
                 type="button" (click)="actionOrder(1)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
                 class="btn btn-danger m-2">
                     <div class="d-flex flex-row p-1">

@@ -32,11 +32,11 @@ export class ListCashClosingComponent implements OnInit {
 
     retriveCashClosing(){
         this.cashClosings = undefined;
-        this.dataService.getAllCashClosingV2ByFilter({storeID: this.establishmentId})
+        this.dataService.listCashClosingByFilter({establishment_id: this.establishmentId})
             .pipe(first())
             .subscribe({
                 next: (cashClosings: any) => {
-                    this.cashClosings = cashClosings.retrieveStoreCashClosingResponse?.StoreCashClosing;
+                    this.cashClosings = this.dataService.findJsonValue(cashClosings, 'json_result') || [];
                     this.cashClosings = this.cashClosings?.sort((a,b) => {
                         const fechaA = new Date(a.creationDate!);
                         const fechaB = new Date(b.creationDate!);
@@ -75,7 +75,7 @@ export class ListCashClosingComponent implements OnInit {
                 button: [
                     {
                         type: "button",
-                        routerLink: "/cashClosing/view/" + element._id,
+                        routerLink: "/cashClosing/view/" + element.id,
                         query_params: { store: this.establishmentId },
                         is_absolute: true,
                         class: "btn btn-success btn-sm mx-1",

@@ -35,7 +35,7 @@ export class ViewEstablishmentComponent implements OnInit{
             this.dataService.getEstablishmentById(this.id)
                 .pipe(first())
                 .subscribe((establ: any) =>{
-                    let establishment = establ.getEstablishmentResponse.establishment;
+                    let establishment = establ.getEstablishmentResponse.data[0]?.json_result || null;
                     if (establishment){
                         this.establishment = establishment;
                         this.setEstablishmentElements(this.establishment!);
@@ -56,17 +56,23 @@ export class ViewEstablishmentComponent implements OnInit{
                 this.router.navigateByUrl('/establishments');
                 },
                 error: error => {
-                    this.alertService.error('Error al eliminar el establecimiento, contacte con Administracion');
+                this.submitting = false;
+                let ackError = this.dataService.findJsonValue(error, 'AcknowledgementDescription');
+                let errorResponse = this.dataService.findJsonValue(error, 'error');
+                let errorMessage = 'Error al eliminar el establecimiento, consulte con el administrador';
+                if (ackError && errorResponse) {
+                    errorMessage = `${ackError}: ${errorResponse}`;
+                }
+                this.alertService.error(errorMessage || 'Error al eliminar el establecimiento');
             }});
     }
 
     setEstablishmentElements(establishment: Establishment){
-      console.log(establishment)
         this.elements.push({icon : "pin_drop", name : "Direccion", value : establishment.address});
         this.elements.push({icon : "description", name : "Descripción", value : establishment.description});
         this.elements.push({icon : "info", name : "Estado", value : establishment.status?.identifier});
         this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(establishment.creationDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(establishment.updateDate!.replaceAll("\"",""))});
+        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : establishment.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(establishment.updatedDate!.replaceAll("\"","")) : '--'});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : establishment.creatorUser?.name ? establishment.creatorUser.name : 'N/A'});
     }
 
@@ -104,7 +110,7 @@ export class ViewEstablishmentComponent implements OnInit{
                 margin: [0, 5],
               },
               {
-                text: `Fecha de Actualización: ${this.establishment?.updateDate || 'N/A'}`,
+                text: `Fecha de Actualización: ${this.establishment?.updatedDate || 'N/A'}`,
                 margin: [0, 5],
               },
               {

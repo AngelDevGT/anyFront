@@ -75,13 +75,13 @@ export class ViewActivityLogComponent implements OnInit {
         this.activityLogs = undefined;
 
         requestArray.push(this.dataService.getAllActivityLogsByFilter(activityLogFilter));
-        requestArray.push(this.accountService.getAllUsersByFilter({ status: { id: 2 }}));
+        requestArray.push(this.accountService.getAllUsersByFilter({ status_id: 2 }));
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.activityLogs = result[0].retrieveActivityLogResponse?.activityLogs;
                 this.allActivityLogs = this.activityLogs;
-                this.userOptions = result[1].retrieveUsersResponse?.users;
+                this.userOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {

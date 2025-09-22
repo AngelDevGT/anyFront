@@ -5,17 +5,18 @@ import { User } from "../user-bk1.model";
 import { ItemsList } from "./item-list.model";
 
 export interface ShopResume {
-    _id?: string;
+    id?: string;
     nameClient?: string;
     nota?: string;
     delivery?: string;
     nitClient?: string;
     establecimiento?: Establishment;
+    establishment?: Establishment;
     status?: Status;
     total?: string;
     totalDiscount?: string;
     creationDate?: string;
-    updateDate?: string;
+    updatedDate?: string;
     itemsList?: ItemsList[];
     creatorUser?: User;
     paymentType?: PaymentType;

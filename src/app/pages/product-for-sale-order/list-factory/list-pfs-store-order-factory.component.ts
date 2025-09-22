@@ -77,8 +77,8 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
 
     sortDataByDate(sortOpt: string){
         this.establishmentOrders = this.establishmentOrders?.sort((a,b) => {
-            const fechaA = new Date(a.updateDate!);
-            const fechaB = new Date(b.updateDate!);
+            const fechaA = new Date(a.updatedDate!);
+            const fechaB = new Date(b.updatedDate!);
             if(sortOpt === 'Desc'){
                 return fechaB.getTime() - fechaA.getTime();
             } else {
@@ -95,12 +95,12 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
 
         let requestArray = [];
         requestArray.push(this.dataService.getAllProducForSaleOrder()); // providerRequest
-        requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status": 1})); // paymentTypeRequest
+        requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status_id": 28})); // paymentTypeRequest
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.allProductForSaleOrdes = result[0].retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
-                this.establishmentOptions = result[1].findEstablishmentResponse?.establishment;
+                this.allProductForSaleOrdes = this.dataService.findJsonValue(result[0], 'json_result') || [];
+                this.establishmentOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -147,7 +147,7 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
 
             if(element.factoryStatus?.id === storeOrderStatus.eliminado.id || element.storeStatus?.id === storeOrderStatus.eliminado.id) return;  
             let curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha", rows_bg_color: element.storeStatus?.bg_color, rows_color: element.storeStatus?.color},
+                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha", rows_bg_color: element.storeStatus?.bg_color, rows_color: element.storeStatus?.color},
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name, header_name: "Tienda" },
@@ -157,7 +157,7 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
             let actionsButtons = [
                 {
                     type: "button",
-                    routerLink: "/productsForSale/order/view/" + element._id,
+                    routerLink: "/productsForSale/order/view/" + element.id,
                     query_params: {opt: this.viewOption},
                     class: "btn btn-success btn-sm pb-0 mx-1",
                     icon: {
@@ -209,7 +209,7 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
         if (this.establishmentOptions){
             this.establishmentOptions.forEach(establishment => {
                 const establishmentOrders = this.allProductForSaleOrdes?.filter((order) => {
-                    return order.establishmentID === establishment._id;
+                    return order.establishment?.id === establishment.id;
                 });
 
                 let productForSaleOrdersStats = {
@@ -223,22 +223,22 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
 
                 establishmentOrders?.forEach((order) => {
                     productForSaleOrdersStats.total++;
-                    if(order.storeStatus?.id == 1){
+                    if(order.storeStatus?.id == 19){
                         productForSaleOrdersStats.pending++;
-                    } else if(order.storeStatus?.id == 2){
+                    } else if(order.storeStatus?.id == 20){
                         productForSaleOrdersStats.onWay++;
-                    } else if(order.storeStatus?.id == 7){
+                    } else if(order.storeStatus?.id == 21){
                         productForSaleOrdersStats.ready++;
-                    } else if(order.storeStatus?.id == 3){
+                    } else if(order.storeStatus?.id == 22){
                         productForSaleOrdersStats.received++;
-                    } else if(order.storeStatus?.id == 6){
+                    } else if(order.storeStatus?.id == 26){
                         productForSaleOrdersStats.devuelto++;
                     }
                 });
                 
                 const newCard = {
                     title: establishment.name,
-                    id: establishment._id,
+                    id: establishment.id,
                     ...productForSaleOrdersStats
                 };
                 this.cards.push(newCard);

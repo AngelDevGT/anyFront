@@ -52,7 +52,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
     }
 
     setEstablishment(establishmentId: string){
-        this.selectedEstablishment = this.establishmentOptions?.find(establishment => establishment._id === establishmentId);
+        this.selectedEstablishment = this.establishmentOptions?.find(establishment => establishment.id === establishmentId);
         // this.storeOption = establishmentId;
         if(this.selectedEstablishment){
             this.retrieveProductForSaleStoreOrders(establishmentId);
@@ -67,8 +67,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
 
     sortDataByDate(sortOpt: string){
         this.productForSaleOrdes = this.productForSaleOrdes?.sort((a,b) => {
-            const fechaA = new Date(a.updateDate!);
-            const fechaB = new Date(b.updateDate!);
+            const fechaA = new Date(a.updatedDate!);
+            const fechaB = new Date(b.updatedDate!);
             if(sortOpt === 'Desc'){
                 return fechaB.getTime() - fechaA.getTime();
             } else {
@@ -79,27 +79,15 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.setTableElements(this.productForSaleOrdes);
     }
 
-    retriveEstablishments(){
-        this.loadingEstablishments = true;
-        this.dataService.getAllEstablishmentsByFilter({"status": 1})
-        .pipe(first())
-        .subscribe({
-            next: (establishments: any) => {
-                this.establishmentOptions = establishments.findEstablishmentResponse?.establishment;
-                this.loadingEstablishments = false;
-            }
-        });
-    }
-
     retrieveProductForSaleStoreOrders(storeId?: string){
         this.productForSaleOrdes = undefined;
         this.loadingOrders = true;
         if(storeId){
-            this.dataService.getAllProductForSaleOrderByFilter({ establishmentID: storeId})
+            this.dataService.getAllProductForSaleOrderByFilter({ establishment_id: storeId})
             .pipe(first())
             .subscribe({
                 next: (pfsOrders: any) => {
-                    this.productForSaleOrdes = pfsOrders.retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
+                    this.productForSaleOrdes = this.dataService.findJsonValue(pfsOrders, 'json_result') || [];
                     this.allProductForSaleOrdes = this.productForSaleOrdes;
                     this.sortDataByDate(this.sortOpts[0]);
                     this.loadingOrders = false;
@@ -111,7 +99,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
             .pipe(first())
             .subscribe({
                 next: (pfsOrders: any) => {
-                    this.productForSaleOrdes = pfsOrders.retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
+                    this.productForSaleOrdes = this.dataService.findJsonValue(pfsOrders, 'json_result') || [];
                     this.allProductForSaleOrdes = this.productForSaleOrdes;
                     this.sortDataByDate(this.sortOpts[0]);
                     this.loadingOrders = false;
@@ -156,17 +144,17 @@ export class ListProductForSaleOrderComponent implements OnInit {
 
             if(element.factoryStatus?.id === storeOrderStatus.eliminado.id || element.storeStatus?.id === storeOrderStatus.eliminado.id) return;  
             let curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updateDate!), header_name: "Fecha", rows_bg_color: element.storeStatus?.bg_color, rows_color: element.storeStatus?.color},
+                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha", rows_bg_color: element.storeStatus?.bg_color, rows_color: element.storeStatus?.color},
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
-                    { type: "text", value: element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name, header_name: "Tienda" },
+                    { type: "text", value: element.establishment?.name, header_name: "Tienda" },
                     this.viewOption === "factory" ? { type: "text", value: element.factoryStatus?.identifier, header_name: "Estado del pedido en fabrica", style: "width: 20%" } : { type: "text", value: element.storeStatus?.identifier, header_name: "Estado del pedido en tienda", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total" }
                   ]
             let actionsButtons = [
                 {
                     type: "button",
-                    routerLink: "view/" + element._id,
+                    routerLink: "view/" + element.id,
                     query_params: {opt: this.viewOption},
                     class: "btn btn-success btn-sm pb-0 mx-1",
                     icon: {

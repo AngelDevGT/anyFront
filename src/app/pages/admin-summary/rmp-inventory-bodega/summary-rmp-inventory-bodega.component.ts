@@ -51,14 +51,14 @@ export class SummaryRawMaterialByProviderInventoryBodegaComponent implements OnI
         this.inventoryElements = undefined;
 
         requestArray.push(this.dataService.getAllInventoryByFilter({ status: { id: 2 }, inventoryType: { id: 2 }}));
-        requestArray.push(this.dataService.getAllProvidersByFilter({"status": 1})); // providerRequest
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "status", enableElements: "true"})); 
+        requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
+        requestArray.push(this.dataService.getAnyComponent({s: {type: "raw_material_by_provider"}}, 'getStatus')); 
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
-                this.providerOptions = result[1].retrieveProviderResponse?.providers;
-                this.statusOptions = result[2].retrieveCatalogGenericResponse.elements;
+                this.providerOptions = result[1].retrieveProviderResponse?.data[0]?.json_result || null;
+                this.statusOptions = this.dataService.findJsonValue(result[2], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -122,7 +122,7 @@ export class SummaryRawMaterialByProviderInventoryBodegaComponent implements OnI
         let filters = this.productForm.value;
         if (this.allInventoryElements){
             this.inventoryElements = this.allInventoryElements?.filter((val) => {
-                const providerMatch = filters.provider !== "" ? val.rawMaterialByProvider?.provider?._id === filters.provider : true;
+                const providerMatch = filters.provider !== "" ? val.rawMaterialByProvider?.provider?.id === filters.provider : true;
                 const statusMatch = filters.orderStatus !== "" ? String(val.status?.id) === filters.orderStatus : true;
                 return providerMatch && statusMatch ;
             });
@@ -137,7 +137,7 @@ export class SummaryRawMaterialByProviderInventoryBodegaComponent implements OnI
                 Proveedor: element.rawMaterialByProvider?.provider?.name,
                 "Estado del pedido": element.status?.identifier,
                 "Usuario Creador": element.creatorUser?.name,
-                InventoryID: this.inventory?._id
+                InventoryID: this.inventory?.id
             };
         });
         const csvOptions = {

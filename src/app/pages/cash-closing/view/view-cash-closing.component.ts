@@ -79,15 +79,14 @@ export class ViewCashClosingComponent implements OnInit{
             this.dataService.getCashClosingById(this.id)
                 .pipe(first())
                 .subscribe((cashCls: any) =>{
-                    let cashClosing = cashCls.getStoreCashClosingResponse?.rawMaterial;
+                    let cashClosing = this.dataService.findJsonValue(cashCls, 'json_result') || {};
                     if (cashClosing){
                         this.cashClosing = cashClosing;
-                        console.log(this.cashClosing);
-                        if(this.cashClosing?.status?.id == 2){
+                        if(this.cashClosing?.status?.id == 55){
                             this.activeOption = true;
-                        } else if (this.cashClosing?.status?.id == 3){
+                        } else if (this.cashClosing?.status?.id == 56){
                             this.deleteOption = true;
-                        } else if (this.cashClosing?.status?.id == 10){
+                        } else if (this.cashClosing?.status?.id == 57){
                             this.verifyOption = true;
                         }
                         this.setElements(this.cashClosing!);
@@ -132,11 +131,11 @@ export class ViewCashClosingComponent implements OnInit{
         this.totalAmountCashClosing = 0;
         this.totalRemainingCashClosing = 0;
         cashClosing.saleStoreOrders?.forEach((element: ProductForSaleStoreOrder) => {
-            if(element.storeStatus?.id == 3){ //Recibido
+            if(element.storeStatus?.id == 22){ //Recibido
                 this.totalAmountStoreOrders[0] += Number(element.finalAmount || 0);
-            } else if(element.storeStatus?.id == 1){ //Pendiente
+            } else if(element.storeStatus?.id == 19){ //Pendiente
                 this.totalAmountStoreOrders[1] += Number(element.finalAmount || 0);
-            } else if(element.storeStatus?.id == 7){ //Listo
+            } else if(element.storeStatus?.id == 21){ //Listo
                 this.totalAmountStoreOrders[2] += Number(element.finalAmount || 0);
             } 
             const curr_row =
@@ -157,7 +156,7 @@ export class ViewCashClosingComponent implements OnInit{
                     {icon : "person", name : "Tienda", value : element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name},
                     {icon : "info", name : "Estado del pedido", value : element.storeStatus?.identifier},
                     {icon : "calendar_today", name : "Creado", value : this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
-                    {icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!.replaceAll("\"",""))},
+                    {icon : "calendar_today", name : "Actualizado", value : this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!.replaceAll("\"",""))},
                     {icon : "badge", name : "Creado por", value : element.creatorUser?.name},
                     {icon : "payments", name : "Total", value : this.dataService.getFormatedPrice(Number(element?.finalAmount || 0))},
                 ]
@@ -169,7 +168,7 @@ export class ViewCashClosingComponent implements OnInit{
                 const currTotal = Number(element.productForSale?.price || 0) * Number(element.quantity || 0);
                 this.totalAmountInventoryCapture += currTotal;
                 const curr_row = [
-                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?.id },
                     { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
                     { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
@@ -183,7 +182,7 @@ export class ViewCashClosingComponent implements OnInit{
                 const currTotal = Number(element.productForSale?.price || 0) * Number(element.quantity || 0);
                 this.totalAmountLastInventory += currTotal;
                 const curr_row = [
-                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?._id },
+                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?.id },
                     { type: "text", value: element.measure?.identifier, header_name: "Medida", style: "width: 15%" },
                     { type: "text", value: element.quantity, header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.productForSale?.price)), header_name: "Precio", style: "width: 15%" },
@@ -228,7 +227,7 @@ export class ViewCashClosingComponent implements OnInit{
             this.totalAmountShopResumes += (Number(element.total || 0) - Number(element.delivery || 0));
             const curr_row =
             { 
-                accordion_name: this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"","")),
+                accordion_name: this.dataService.getLocalDateTimeFromUTCTime(element!.updatedDate!.replaceAll("\"","")),
                 table_elements_values: 
                     element.itemsList?.map((elem: ItemsList) => {
                         return [
@@ -244,7 +243,7 @@ export class ViewCashClosingComponent implements OnInit{
                     {icon : "person", name : "Cliente", value : element?.nameClient},
                     {icon : "tag", name : "NIT", value : element?.nitClient},
                     {icon : "feed", name : "Notas", value : element?.nota ? element?.nota : '--'},
-                    {icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(element!.updateDate!.replaceAll("\"",""))},
+                    {icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(element!.updatedDate!.replaceAll("\"",""))},
                 ],
                 elements_bottom: [
                     {icon : "add", name : "Subtotal", value : this.dataService.getFormatedPrice(Number(element.total || 0) - Number(element.delivery || 0) + Number(element.totalDiscount || 0))},
@@ -297,7 +296,7 @@ export class ViewCashClosingComponent implements OnInit{
     onConfirmDialog(){
         this.submitting = true;
         if(this.confirmDialogId == 1){
-            this.dataService.deleteCashClosing(this.cashClosing!._id!, this.cashClosing!)
+            this.dataService.deleteCashClosing(this.cashClosing!.id!)
             .pipe(first())
             .subscribe({
                 next: () => {
@@ -308,7 +307,7 @@ export class ViewCashClosingComponent implements OnInit{
                     this.alertService.error('Error al eliminar el cierre de caja, contacte con Administracion');
             }});
         } else if (this.confirmDialogId == 2){
-            this.dataService.verifyCashClosing(this.cashClosing!._id!, this.cashClosing!)
+            this.dataService.verifyCashClosing(this.cashClosing!.id!)
             .pipe(first())
             .subscribe({
                 next: () => {
@@ -322,7 +321,7 @@ export class ViewCashClosingComponent implements OnInit{
     }
 
     editCashClosing(){
-        this.router.navigate(['/cashClosing/edit/' + this.cashClosing?._id], {
+        this.router.navigate(['/cashClosing/edit/' + this.cashClosing?.id], {
             queryParams: {
                 store: this.establishmentId
             }

@@ -67,7 +67,7 @@
                     </div>
                 </button>
                 <button *ngIf="editOption"
-                    type="button" (click)="editOrder(productForSaleOrder?._id)" [disabled]="submitting"
+                    type="button" (click)="editOrder(productForSaleOrder?.id)" [disabled]="submitting"
                     class="btn btn-primary m-2">
                     <div class="d-flex flex-row p-1">
                         <i class="material-icons icon">edit</i>

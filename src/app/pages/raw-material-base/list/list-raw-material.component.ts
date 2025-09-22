@@ -42,11 +42,11 @@ export class ListRawMaterialComponent implements OnInit {
 
     retriveRawMaterials(){
         this.rawMaterials = undefined;
-        this.dataService.getAllRawMaterialsByFilter({"status": { "id": 2}})
+        this.dataService.getAllRawMaterialsByFilter({"status_id": 32})
             .pipe(first())
             .subscribe({
                 next: (rawMaterials: any) => {
-                    this.rawMaterials = rawMaterials.retrieveRawMaterialResponse?.rawMaterial;
+                    this.rawMaterials = this.dataService.findJsonValue(rawMaterials, 'json_result') || [];
                     this.allRawMaterials = this.rawMaterials;
                     this.getCards();
                 }
@@ -64,11 +64,11 @@ export class ListRawMaterialComponent implements OnInit {
                         {name:'Descripcion:', value: element.description},
                         {name:'Medida:', value: element.measure?.identifier},
                         {name:'Creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
-                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!)},
+                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!)},
                     ],
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/rawMaterials/view/' + element._id},
-                        {title: 'Editar', value: 'edit_note', link: '/rawMaterials/edit/' + element._id},
+                        {title: 'Ver', value: 'visibility', link: '/rawMaterials/view/' + element.id},
+                        {title: 'Editar', value: 'edit_note', link: '/rawMaterials/edit/' + element.id},
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currRawMaterial._id},
                     ]
                 };

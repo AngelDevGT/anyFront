@@ -50,12 +50,12 @@ export class SummaryRawMaterialByProviderInventoryFactoryComponent implements On
         this.inventoryElements = undefined;
 
         requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "64d7240f838808573bd7e9ee"}));
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "status", enableElements: "true"})); 
+        requestArray.push(this.dataService.getAnyComponent({s: {type: "raw_material"}}, 'getStatus')); 
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
-                this.statusOptions = result[1].retrieveCatalogGenericResponse.elements.slice(0, 3);
+                this.statusOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -131,7 +131,7 @@ export class SummaryRawMaterialByProviderInventoryFactoryComponent implements On
                 Nombre: element.rawMaterialBase?.name,
                 "Estado": "Activo",
                 "Usuario Creador": element.creatorUser?.name,
-                InventoryID: this.inventory?._id
+                InventoryID: this.inventory?.id
             };
         });
         const csvOptions = {

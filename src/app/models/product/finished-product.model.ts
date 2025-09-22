@@ -3,7 +3,7 @@ import { Status } from "../auxiliary/status.model";
 import { User } from "../system/user.model";
 
 export class FinishedProduct {
-    _id?: string;
+    id?: string;
     name?: string;
     description?: string;
     measure?: Measure;
@@ -11,5 +11,5 @@ export class FinishedProduct {
     status?: Status;
     creatorUser?: User;
     creationDate?: string;
-    updateDate?: string;
+    updatedDate?: string;
 }

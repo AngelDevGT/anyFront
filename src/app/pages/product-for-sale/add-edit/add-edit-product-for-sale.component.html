@@ -17,7 +17,7 @@
                                 <mat-label>Tienda</mat-label>
                                 <mat-select matInput disableOptionCentering formControlName="establishment"
                                     [ngClass]="{ 'is-invalid': f['establishment'].errors }" (valueChange)="selectedEstablishmentSubject.next($event)">
-                                    <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment._id}}">{{establishment.name}} ({{establishment.address}})</mat-option>
+                                    <mat-option *ngFor="let establishment of establishmentOptions" value="{{establishment.id}}">{{establishment.name}} ({{establishment.address}})</mat-option>
                                 </mat-select>
                                 <div class="invalid-feedback" *ngIf="f['establishment'].errors">
                                     <div *ngIf="f['establishment'].errors['required']">

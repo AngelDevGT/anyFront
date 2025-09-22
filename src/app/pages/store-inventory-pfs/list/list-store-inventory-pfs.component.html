@@ -1,14 +1,14 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;" class="my-4">
-            <mat-card-title><strong *ngIf="storeName">{{storeName}}</strong>: Inventario de Producto Para Venta</mat-card-title>
+            <mat-card-title><strong *ngIf="storeName">{{storeName}}: </strong>Inventario de Producto Para Venta</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div *ngIf="this.inventoryElements" class="container">
                 <div class="row justify-content-center">
                     <div class="d-flex flex-wrap justify-content-md-end justify-content-end pb-0">
                         <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
-                            <button type="button" (click)="goToActionsHistory()" class="btn btn-outline-secondary align-self-start py-2">
+                            <button *ngIf="inventory && inventory.id" type="button" (click)="goToActionsHistory()" class="btn btn-outline-secondary align-self-start py-2">
                                 <div class="d-flex flex-row p-1">
                                     <i class="material-icons icon">history</i>
                                     <span class="px-1">Historial de acciones</span>
@@ -41,7 +41,7 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize" (sentData)="receiveData($event)"></responsive-table>
+                    <responsive-table [tableElements]="tableElementsValues" [pageSize]="pageSize" (sentData)="receiveData($event)"></responsive-table>
                 </div>
             </div>
             <div class="row justify-content-center">

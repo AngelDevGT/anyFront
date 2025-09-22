@@ -31,13 +31,11 @@ export class ViewUserComponent implements OnInit{
             this.accountService.getUserById(this.id)
                 .pipe(first())
                 .subscribe((usr: any) => {
-                    let user = usr.retrieveUsersResponse?.users;
+                    let user = this.dataService.findJsonValue(usr, 'json_result') || {};
                     if (user){
-                        if ( user.length > 0){
-                            this.user = user[0];
-                            this.setUserElements(this.user!);
-                            this.loading = false;
-                        }
+                        this.user = user;
+                        this.setUserElements(this.user!);
+                        this.loading = false;
                     }
                 });
         }
@@ -67,7 +65,7 @@ export class ViewUserComponent implements OnInit{
     }
 
     isMine(){
-        return this.accountService.isLoginUser(this.user?._id!);
+        return this.accountService.isLoginUser(this.user?.id!);
     }
 
     setUserElements(user: User){

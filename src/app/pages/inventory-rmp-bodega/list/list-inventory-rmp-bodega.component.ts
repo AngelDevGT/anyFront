@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
+import { actionTypeValues } from '@app/services';
 
 import { AccountService, AlertService, DataService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
@@ -70,12 +71,12 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         let requestArray = [];
 
         requestArray.push(this.dataService.getInventory({ _id: "64d7b118440275e2da6384c5"}));
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "measure", enableElements: "true"})); // measureRequest
+        requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
                 this.inventory = result[0].getInventoryResponse?.Inventory;
-                this.measureOptions = result[1].retrieveCatalogGenericResponse.elements;
+                this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -139,7 +140,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
             const curr_row = [
-                    { type: "text", value: element.rawMaterialByProvider?.rawMaterialBase?.name, header_name: "Producto", style: "width: 25%", id: element.rawMaterialByProvider?._id },
+                    { type: "text", value: element.rawMaterialByProvider?.rawMaterialBase?.name, header_name: "Producto", style: "width: 25%", id: element.rawMaterialByProvider?.id },
                     { type: "text", value: element.rawMaterialByProvider?.provider?.name, header_name: "Proveedor", style: "width: 15%" },
                     { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 15%" },
                     { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 15%" },
@@ -196,7 +197,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
                         ]
                     }
             ];
-                // id: element.rawMaterialByProvider?._id
+                // id: element.rawMaterialByProvider?.id
             this.tableElementsValues.push(curr_row);
         });
     }
@@ -286,7 +287,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
 
     onMoveMaterialForm(){
         this.tableElementsValues.forEach((curr_row: any) => {
-            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?._id){
+            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?.id){
                 let buttons = curr_row[4].button;
                 buttons[0].submitting = true;
                 buttons.forEach((btn: any) => {
@@ -295,7 +296,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
             }
         });
         let newMoveStoreToFactory: MovementWarehouseToFactory = {
-            rawMaterialByProviderID: this.selectedInventoryElement?.rawMaterialByProvider?._id,
+            rawMaterialByProviderID: this.selectedInventoryElement?.rawMaterialByProvider?.id,
             factoryInventoryID: "64d7240f838808573bd7e9ee",
             quantity: String(this.formQuantity),
             measure: this.selectedMeasure
@@ -328,7 +329,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
 
     onDeleteMaterialForm(){
         this.tableElementsValues.forEach((curr_row: any) => {
-            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?._id){
+            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?.id){
                 let buttons = curr_row[4].button;
                 buttons[2].submitting = true;
                 buttons.forEach((btn: any) => {
@@ -339,7 +340,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         let deleteFromInventory: UpdateInventoryElement = {
             inventoryID: "64d7b118440275e2da6384c5",
             inventoryTypeID: "2",
-            elementID: this.selectedInventoryElement?.rawMaterialByProvider?._id,
+            elementID: this.selectedInventoryElement?.rawMaterialByProvider?.id,
             newQuantity: String(this.modalFinalQuantity),
         }
         let activityLog: ActivityLog = {
@@ -372,7 +373,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
 
     onAddMaterialForm(){
         this.tableElementsValues.forEach((curr_row: any) => {
-            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?._id){
+            if(curr_row[0].id === this.selectedInventoryElement?.rawMaterialByProvider?.id){
                 let buttons = curr_row[4].button;
                 buttons[1].submitting = true;
                 buttons.forEach((btn: any) => {
@@ -383,7 +384,7 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         let addToInventory: UpdateInventoryElement = {
             inventoryID: "64d7b118440275e2da6384c5",
             inventoryTypeID: "2",
-            elementID: this.selectedInventoryElement?.rawMaterialByProvider?._id,
+            elementID: this.selectedInventoryElement?.rawMaterialByProvider?.id,
             newQuantity: String(this.modalFinalQuantity),
         }
         let activityLog: ActivityLog = {

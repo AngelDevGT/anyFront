@@ -40,7 +40,7 @@ export class AddEditEstablishmentComponent implements OnInit{
             this.dataService.getEstablishmentById(this.id)
                 .pipe(first())
                 .subscribe((establ: any) => {
-                    let establishment = establ.getEstablishmentResponse.establishment;
+                    let establishment = establ.getEstablishmentResponse.data[0]?.json_result || null;
                     if (establishment){
                         this.establishmentForm.patchValue(establishment);       
                         this.loading = false;
@@ -58,7 +58,7 @@ export class AddEditEstablishmentComponent implements OnInit{
         this.alertService.clear();
 
         this.submitting = true;
-        this.saveUser()
+        this.saveEstablishment()
             .pipe(first())
             .subscribe({
                 next: () => {
@@ -66,15 +66,15 @@ export class AddEditEstablishmentComponent implements OnInit{
                     this.router.navigateByUrl('/establishments');
                 },
                 error: error => {
-                    let errorResponse = error.error;
-                    errorResponse = errorResponse.addEstablishmentResponse ? errorResponse.addEstablishmentResponse : errorResponse.updateEstablishmentResponse ? errorResponse.updateEstablishmentResponse : 'Error, consulte con el administrador';
-                    this.alertService.error(errorResponse.AcknowledgementDescription);
+                    let ackError = this.dataService.findJsonValue(error, 'AcknowledgementDescription');
+                    let errorResponse = this.dataService.findJsonValue(error, 'error');
+                    this.alertService.error(ackError || errorResponse || 'Error al guardar la tienda');
                     this.submitting = false;
                 }
             })
     }
 
-    private saveUser() {
+    private saveEstablishment() {
         // create or update user based on id param
         return this.id
             ? this.dataService.updateEstablishment(this.id!, this.establishmentForm.value)

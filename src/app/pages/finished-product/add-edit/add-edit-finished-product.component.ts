@@ -69,7 +69,7 @@ export class AddEditFinishedProductComponent implements OnInit{
 
         let requestArray = [];
 
-        requestArray.push(this.dataService.getAllConstantsByFilter({fc_id_catalog: "unitBase", enableElements: "true"})); // measureRequest
+        requestArray.push(this.dataService.getAnyComponent({}, 'getUnitBase')); // measureRequest
         if (this.id){
             this.title = 'Actualizar Producto Terminado';
             requestArray.push(this.dataService.getFinishedProductById(this.id));
@@ -77,9 +77,9 @@ export class AddEditFinishedProductComponent implements OnInit{
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.measureOptions = result[0].retrieveCatalogGenericResponse.elements;
+                this.measureOptions = this.dataService.findJsonValue(result[0], 'json_result') || {};
                 if (this.id){
-                    this.currentProduct = result[1].getFinishedProductResponse.FinishedProduct;
+                    this.currentProduct = this.dataService.findJsonValue(result[1], 'json_result') || {};
                 }
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -169,9 +169,13 @@ export class AddEditFinishedProductComponent implements OnInit{
                         this.router.navigateByUrl('/finishedProducts');
                     },
                     error: error => {
-                        let errorResponse = error.error;
-                        errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateRawMaterial ? errorResponse.updateRawMaterial : 'Error, consulte con el administrador';
-                        this.alertService.error(errorResponse.AcknowledgementDescription);
+                        let errorResponse = this.dataService.findJsonValue(error, 'error');
+                        let ackError = this.dataService.findJsonValue(error, 'AcknowledgementDescription');
+                        let errorMessage = 'Error al guardar el producto terminado, consulte con el administrador';
+                        if (ackError && errorResponse) {
+                            errorMessage = `${ackError}: ${errorResponse}`;
+                        }
+                        this.alertService.error(errorMessage);
                         this.submitting = false;
                     }
             });

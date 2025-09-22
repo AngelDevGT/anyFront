@@ -84,14 +84,14 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
         this.rawMaterials = [];
         this.allRawMaterials = this.rawMaterials;
 
-        this.dataService.getAllProvidersByFilter({"status": { "id": 2}})
+        this.dataService.getAllProvidersByFilter({"status_id": 30})
             .pipe(
                 concatMap((providers: any) => {
-                    this.providerOptions = providers.retrieveProviderResponse?.providers;
-                    return this.dataService.getAllRawMaterialsByFilter({"status": { "id": 2}});
+                    this.providerOptions = this.dataService.findJsonValue(providers, 'json_result') || [];
+                    return this.dataService.getAllRawMaterialsByFilter({"status_id": 32});
                 }),
                 concatMap((rawMaterials: any) => {
-                    this.rawMaterials = rawMaterials.retrieveRawMaterialResponse?.rawMaterial;
+                    this.rawMaterials = this.dataService.findJsonValue(rawMaterials, 'json_result') || [];
                     this.allRawMaterials = this.rawMaterials;
                     if(this.id){
                         return this.dataService.getRawMaterialByProviderById(this.id);
@@ -102,7 +102,7 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
             )
             .subscribe((rawMat: any) => {
                 if (rawMat){
-                    let rawMaterial = rawMat.GetRawMaterialByProviderResponse.rawMaterialBase;
+                    let rawMaterial = this.dataService.findJsonValue(rawMat, 'json_result') || {};
                     this.currentRawMaterial = rawMaterial;
                     this.priceValue?.patchValue(this.currentRawMaterial?.price);
                     this.selectedRawMaterial = this.currentRawMaterial?.rawMaterialBase;
@@ -128,9 +128,13 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
                     this.router.navigateByUrl('/rawMaterialsByProvider');
                 },
                 error: error => {
-                    let errorResponse = error.error;
-                    errorResponse = errorResponse.addProductResponse ? errorResponse.addProductResponse : errorResponse.updateProductResponse ? errorResponse.updateProductResponse : 'Error, consulte con el administrador';
-                    this.alertService.error(errorResponse.AcknowledgementDescription);
+                    let errorResponse = this.dataService.findJsonValue(error, 'error');
+                    let ackError = this.dataService.findJsonValue(error, 'AcknowledgementDescription');
+                    let errorMessage = 'Error al guardar la materia prima por proveedor, consulte con el administrador';
+                    if (ackError && errorResponse) {
+                        errorMessage = `${ackError}: ${errorResponse}`;
+                    }
+                    this.alertService.error(errorMessage);
                     this.submitting = false;
                 }
             });
@@ -146,7 +150,7 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
 
     setProvider(providerId: string){
         if(providerId){
-            this.selectedProvider = this.providerOptions?.find(prov => String(prov._id) === providerId);
+            this.selectedProvider = this.providerOptions?.find(prov => String(prov.id) === providerId);
         }
     }
 
