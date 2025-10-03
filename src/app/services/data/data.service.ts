@@ -1241,14 +1241,14 @@ export class DataService {
             "$1": product.price,
             "$2": id
         });
-        return this.http.post(`${environment.apiUrlV3}/updateProductForSale`, params);
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSale`, params);
     }
 
     deleteProductForSale(params: any) {
         let deleteUser = JSON.stringify({
             id: params.id
         });
-        return this.http.post(`${environment.apiUrlV3}/deleteProductForSale`, deleteUser);
+        return this.http.patch(`${environment.apiUrlV3}/deleteProductForSale`, deleteUser);
     }
 
     /** PRODUCT FOR SALE ORDER */
