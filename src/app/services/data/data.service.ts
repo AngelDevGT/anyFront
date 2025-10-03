@@ -1233,7 +1233,7 @@ export class DataService {
             "$1": products,
             "$2": this.accountService.userValue.uuid
         });
-        return this.http.post(`${environment.apiUrlV3}/addManyProductForSale`, params);
+        return this.http.patch(`${environment.apiUrlV3}/addManyProductForSale`, params);
     }
 
     updateProductForSale(id: string, product: ProductForSale){
