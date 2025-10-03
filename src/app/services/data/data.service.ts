@@ -1238,20 +1238,17 @@ export class DataService {
 
     updateProductForSale(id: string, product: ProductForSale){
         let params = JSON.stringify({
-            updateProductForSale: {
-                "_id": id,
-                ...product
-            }});
+            "$1": product.price,
+            "$2": id
+        });
         return this.http.post(`${environment.apiUrlV3}/updateProductForSale`, params);
     }
 
     deleteProductForSale(params: any) {
         let deleteUser = JSON.stringify({
-            updateProductForSale: {
-                ...params,
-                ...deleteStatus
-            }});
-        return this.http.post(`${environment.apiUrlV3}/updateProductForSale`, deleteUser);
+            id: params.id
+        });
+        return this.http.post(`${environment.apiUrlV3}/deleteProductForSale`, deleteUser);
     }
 
     /** PRODUCT FOR SALE ORDER */
