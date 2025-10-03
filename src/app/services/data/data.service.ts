@@ -1229,14 +1229,10 @@ export class DataService {
     }
 
     addMultiProductForSale(products: ProductForSale[]){
-        for (let i = 0; i < products.length; i++) {
-            products[i].status = { id: productForSaleStatusValues.activo.status.id };
-            products[i].creatorUser = { id: this.accountService.userValue.uuid };
-        }
         let params = JSON.stringify({
-            products_for_sale:
-                products
-            });
+            "$1": products,
+            "$2": this.accountService.userValue.uuid
+        });
         return this.http.post(`${environment.apiUrlV3}/addManyProductForSale`, params);
     }
 
