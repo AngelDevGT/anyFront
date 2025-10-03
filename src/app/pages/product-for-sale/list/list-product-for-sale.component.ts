@@ -83,8 +83,8 @@ export class ListProductForSaleComponent implements OnInit {
                         {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!)}
                     ],
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/productsForSale/view/' + element.id + '?store=' + this.storeID},
-                        {title: 'Editar', value: 'edit_note', link: '/productsForSale/edit/' + element.id + '?store=' + this.storeID},
+                        {title: 'Ver', value: 'visibility', link: '/productsForSale/view/' + element.id, params: { store: this.storeID }},
+                        {title: 'Editar', value: 'edit_note', link: '/productsForSale/edit/' + element.id, params: { store: this.storeID }},
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currProduct._id},
                     ]
                 };

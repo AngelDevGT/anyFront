@@ -25,7 +25,7 @@
       <div class="d-flex justify-content-center">
         <ul class="social mb-0 list-inline mt-3">
           <li *ngFor="let button of cardElements['buttons']" class="list-inline-item">
-            <a routerLink="{{button.link}}" class="social-link">
+            <a routerLink="{{button.link}}" [queryParams]="button.params || {}" class="social-link">
               <mat-icon class="material-icons-outlined" [title]="button.title">
                 {{button.value}}
               </mat-icon>
