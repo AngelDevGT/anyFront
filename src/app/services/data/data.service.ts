@@ -1230,7 +1230,7 @@ export class DataService {
 
     addMultiProductForSale(products: ProductForSale[]){
         let params = JSON.stringify({
-            "$1": products,
+            "$1": JSON.stringify(products),
             "$2": this.accountService.userValue.uuid
         });
         return this.http.patch(`${environment.apiUrlV3}/addManyProductForSale`, params);
