@@ -21,6 +21,7 @@ export class ViewProductForSaleComponent implements OnInit{
     loading = false;
     elements: any = [];
     cardPhoto = undefined;
+    storeID = '';
 
     constructor(private dataService: DataService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router) {
@@ -28,6 +29,9 @@ export class ViewProductForSaleComponent implements OnInit{
 
     ngOnInit(): void {
         this.id = this.route.snapshot.params['id'];
+        this.route.queryParams.subscribe(params => {
+            this.storeID = params['store'];
+        });
 
         this.loading = true;
 
@@ -55,7 +59,9 @@ export class ViewProductForSaleComponent implements OnInit{
             .subscribe({
                 next: () => {
                 this.alertService.success('Producto para venta eliminado', { keepAfterRouteChange: true });
-                this.router.navigateByUrl('/productsForSale');
+                this.router.navigate(['/productsForSale'], { 
+                    queryParams: { store: this.storeID } 
+                });
                 },
                 error: error => {
                     this.alertService.error('Error al eliminar el producto para venta, contacte con Administracion');

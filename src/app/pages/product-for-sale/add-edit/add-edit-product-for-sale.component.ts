@@ -126,7 +126,9 @@ export class AddEditProductoForSaleComponent implements OnInit{
             .subscribe({
                 next: () => {
                     this.alertService.success('Producto para Venta guardado', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/productsForSale');
+                    this.router.navigate(['/productsForSale'], { 
+                        queryParams: { store: this.selectedEstablishment?.id } 
+                    });
                 },
                 error: error => {
                     let errorResponse = error.error;
