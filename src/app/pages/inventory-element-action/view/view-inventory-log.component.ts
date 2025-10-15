@@ -118,7 +118,7 @@ export class ViewInventoryLogComponent implements OnInit {
 
         requestArray.push(this.dataService.getAllInventoryLogsByFilter(activityLogFilter, catalogFilter));
         if (this.userOptions == undefined) {
-            requestArray.push(this.accountService.getAllUsersByFilter({ status_id: 7 }));
+            requestArray.push(this.accountService.getAllUsersByFilter({ status_id: 2 }));
         }
 
         forkJoin(requestArray).subscribe({
