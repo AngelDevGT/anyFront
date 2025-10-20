@@ -1285,9 +1285,11 @@ export class DataService {
 
     updateProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
         let params = JSON.stringify({
-            "$1": pfsOrder.name,
-            "$2": pfsOrder.comment,
-            "$3": pfsOrder.id    
+            "$1": pfsOrder.id,
+            "$2": JSON.stringify({
+                ...pfsOrder
+            }),
+            "$3": JSON.stringify(pfsOrder.productForSaleStoreOrderElements)
         });
         return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrder`, params);
     }
