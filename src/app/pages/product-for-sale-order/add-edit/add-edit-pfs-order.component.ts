@@ -185,7 +185,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     loadRawMaterialOrder(){
         // this.setProvider(this.rawMaterialOrder?.provider?._id);
         this.orderForm.patchValue(this.productForSaleOrder!);
-        if(this.productForSaleOrder?.storeStatus?.id === 1){
+        if(this.productForSaleOrder?.storeStatus?.id === 19){
             this.areTablesVisible = true;
         }
         if(this.accountService.isAdminUser() || this.accountService.isSalesUser()){
