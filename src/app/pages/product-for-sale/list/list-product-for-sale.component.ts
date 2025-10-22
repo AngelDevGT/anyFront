@@ -80,7 +80,7 @@ export class ListProductForSaleComponent implements OnInit {
                         {name:'Medida:', value: element.finishedProduct?.measure?.identifier},
                         {name:'Descripcion:', value: element.finishedProduct?.description},
                         {name:'Fecha creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
-                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!)}
+                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)}
                     ],
                     buttons: [
                         {title: 'Ver', value: 'visibility', link: '/productsForSale/view/' + element._id},

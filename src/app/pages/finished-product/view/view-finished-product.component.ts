@@ -66,7 +66,7 @@ export class ViewFinishedProductComponent implements OnInit{
         this.elements.push({icon : "feed", name : "Descripción", value : product.description});
         this.elements.push({icon : "info", name : "Estado", value : product.status?.identifier});
         this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(product.creationDate!)});
-        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(product.updateDate!)});
+        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(product.creationDate!)});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : product.creatorUser?.name ? product.creatorUser.name : 'N/A'});
     }
 

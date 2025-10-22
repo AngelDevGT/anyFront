@@ -100,7 +100,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
                         {name:'Precio:', value: this.dataService.getFormatedPrice(Number(element.price))},
                         {name:'Medida:', value: element.rawMaterialBase?.measure?.identifier},
                         {name:'Descripcion:', value: element.rawMaterialBase?.description},
-                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!)},
+                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
                     ],
                     buttons: [
                         {title: 'Ver', value: 'visibility', link: '/rawMaterialsByProvider/view/' + element._id},

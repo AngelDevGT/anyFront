@@ -68,7 +68,7 @@ export class ViewRawMaterialByProviderComponent implements OnInit{
         this.elements.push({icon : "feed", name : "Descripción", value : rawMaterial.rawMaterialBase?.description});
         this.elements.push({icon : "info", name : "Estado", value : rawMaterial.status?.identifier});
         this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(rawMaterial.creationDate!)});
-        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(rawMaterial.updateDate!)});
+        this.elements.push({icon : "edit_calendar", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(rawMaterial.creationDate!)});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : rawMaterial.creatorUser?.name ? rawMaterial.creatorUser.name : 'N/A'});
     }
 

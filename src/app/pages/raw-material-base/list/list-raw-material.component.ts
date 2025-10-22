@@ -64,7 +64,7 @@ export class ListRawMaterialComponent implements OnInit {
                         {name:'Descripcion:', value: element.description},
                         {name:'Medida:', value: element.measure?.identifier},
                         {name:'Creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
-                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updateDate!)},
+                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
                     ],
                     buttons: [
                         {title: 'Ver', value: 'visibility', link: '/rawMaterials/view/' + element._id},

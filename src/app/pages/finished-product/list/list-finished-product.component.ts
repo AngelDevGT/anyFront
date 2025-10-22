@@ -65,7 +65,7 @@ export class ListFinishedProductComponent implements OnInit {
                         {name:'Descripcion:', value: currProduct.description},
                         {name:'Medida:', value: currProduct.measure?.identifier},
                         {name:'Fecha creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.creationDate!)},
-                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.updateDate!)}
+                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.creationDate!)}
                     ],
                     buttons: [
                         {title: 'Ver', value: 'visibility', link: '/finishedProducts/view/' + currProduct._id},
