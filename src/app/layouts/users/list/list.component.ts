@@ -54,7 +54,7 @@ export class ListComponent implements OnInit {
                 const emailMatch = val.email!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                 const statusMatch = val.status!.identifier!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                 const roleMatch = val.role!.identifier!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                const phoneMatch = val.phone!.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                const phoneMatch = String(val.phone!).toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                 return nameMatch || emailMatch || statusMatch || roleMatch || phoneMatch;
             }
             return true;

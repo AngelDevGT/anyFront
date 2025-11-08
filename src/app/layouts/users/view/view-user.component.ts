@@ -1,9 +1,10 @@
 import { Component, OnInit} from '@angular/core';
-import { first } from 'rxjs/operators';
+import { concatMap, first } from 'rxjs/operators';
 
 import { AccountService, AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { User } from '@app/models/system/user.model';
+import { concat } from 'rxjs';
 
 @Component({ 
     selector: 'page-view-user',
@@ -44,8 +45,10 @@ export class ViewUserComponent implements OnInit{
 
     deleteUser() {
         this.submitting = true;
-        this.accountService.deleteUser(this.user)
-            .pipe(first())
+        this.accountService.deleteUserV3(this.user!.id!)
+            .pipe(concatMap((result: any) => {
+                return this.accountService.deleteUser(this.user);
+            }))
             .subscribe({
                 next: (logOut) => {
                     if(logOut){
@@ -55,9 +58,10 @@ export class ViewUserComponent implements OnInit{
                         this.router.navigateByUrl('/users');
                     }
                     },
-                    error: error => {
-                        this.alertService.error('Error al eliminar el proveedor, contacte con Administracion');
-                    }});
+                error: error => {
+                    this.alertService.error('Error al eliminar el usuario, contacte con Administracion');
+                }
+            });
     }
 
     isAdmin(){

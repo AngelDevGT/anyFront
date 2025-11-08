@@ -478,6 +478,13 @@ export class AccountService {
         return this.http.patch(`${environment.apiUrlV3}/updateUser`, modifyUser);
     }
 
+    deleteUserV3(id: string) {
+        let modifyUser = JSON.stringify({
+            "$1": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteUser`, modifyUser);
+    }
+
     deleteUser(params: any) {
         let deleteUser = JSON.stringify({
             updateUser: {
