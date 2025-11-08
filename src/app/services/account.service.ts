@@ -488,6 +488,7 @@ export class AccountService {
     deleteUser(params: any) {
         let deleteUser = JSON.stringify({
             updateUser: {
+                "_id": params.ext_id,
                 ...params,
                 ...deleteStatus
             }});
