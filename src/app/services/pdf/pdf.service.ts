@@ -131,7 +131,7 @@ export class PdfService {
                 },
                 {  
                     columns: [  
-                        [{ qr: `${rawMaterialOrder?.id!}`, fit: 50 }],  
+                        // [{ qr: `${rawMaterialOrder?.id!}`, fit: 50 }],  
                         [{ text: "Identificador del pedidio: " + rawMaterialOrder?.id!, alignment: 'right', italics: true }],
                     ]
                 },
@@ -280,16 +280,16 @@ export class PdfService {
                       text: productForSaleOrder?.comment!,
                       margin: [0, 0 ,0, 15]
                 },
-                {
-                    text: 'Codigo QR del pedido',
-                    style: 'sectionHeader'
-                },
-                {  
-                    columns: [  
-                        [{ qr: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?.id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, fit: 100 }],  
-                        // [{ text: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?._id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, alignment: 'right', italics: true }],
-                    ]
-                },
+                // {
+                //     text: 'Codigo QR del pedido',
+                //     style: 'sectionHeader'
+                // },
+                // {  
+                //     columns: [  
+                //         [{ qr: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?.id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, fit: 100 }],  
+                //         // [{ text: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?._id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, alignment: 'right', italics: true }],
+                //     ]
+                // },
             ],
             styles: {  
                 sectionHeader: {  
@@ -414,19 +414,19 @@ export class PdfService {
                       text: storeSale?.nota ? storeSale?.nota : "--",
                       margin: [0, 0 ,0, 15]
                 },
-                {
-                    text: 'Codigo QR de la venta',
-                    style: 'sectionHeader'
-                },
-                {  
-                    columns: [  
-                        [{ qr: `https://embutidosany.store/store/sales/history/view/${storeSale?.id}`, fit: 100 }],  
-                        [{  
-                            text: `Fecha: ${new Date().toLocaleString()}`,  
-                            alignment: 'right'  
-                        }],
-                    ]
-                },
+                // {
+                //     text: 'Codigo QR de la venta',
+                //     style: 'sectionHeader'
+                // },
+                // {  
+                //     columns: [  
+                //         [{ qr: `https://embutidosany.store/store/sales/history/view/${storeSale?.id}`, fit: 100 }],  
+                //         [{  
+                //             text: `Fecha: ${new Date().toLocaleString()}`,  
+                //             alignment: 'right'  
+                //         }],
+                //     ]
+                // },
             ],
             styles: {  
                 sectionHeader: {  
