@@ -18,6 +18,7 @@ import { InventoryElement } from '@app/models/inventory/inventory-element.model'
 import { ShopResume } from '@app/models/store/shop-resume.model';
 import { ItemsList } from '@app/models/store/item-list.model';
 import { ActivityLog } from '@app/models/system/activity-log';
+import { InventoryElementAction } from '@app/models/inventory/inventory-element-action.model';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({ 
@@ -194,28 +195,26 @@ export class ViewCashClosingComponent implements OnInit{
         let totalActivityLogsAmountAdded = 0;
         let totalActivityLogsAmountRemoved = 0;
         let modifiedAmount = 0;
-        cashClosing.activityLogs?.forEach((element: ActivityLog) => {
-            let modifiedQuantity = 0;
-            if (element.action == "add"){
-                modifiedQuantity = Number(element?.request?.newQuantity || 0) - Number(element.extra?.inventoryElement?.quantity || 0);
-                modifiedAmount = modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
-                totalActivityLogsAmountAdded += modifiedAmount;
-            } else if (element.action == "remove"){
-                modifiedQuantity = Number(element.extra?.inventoryElement?.quantity || 0) - Number(element?.request?.newQuantity || 0);
-                modifiedAmount = modifiedQuantity * Number(element.extra?.inventoryElement?.productForSale?.price || 0);
-                totalActivityLogsAmountRemoved += modifiedAmount;
-            } else {
-                return;
+        let filteredInventoryElementActions = cashClosing.inventoryElementActions?.filter((element: InventoryElementAction) => {
+                    return element.actionType?.type == 'REMOVE_PFS_MANUAL' || element.actionType?.type == 'ADD_PFS_MANUAL';
+                });
+
+        filteredInventoryElementActions?.forEach((element: InventoryElementAction) => {
+            const totalAmount = Number(element.quantity || 0) * Number(element.price || 0);
+
+            if (element.actionType?.type == 'ADD_PFS_MANUAL'){
+                totalActivityLogsAmountAdded += totalAmount;
+            } else if (element.actionType?.type == 'REMOVE_PFS_MANUAL'){
+                totalActivityLogsAmountRemoved += totalAmount;
             }
+
             const curr_row = [
+                { type: "text", value: element.actionType?.action, header_name: "Accion" },
                 { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: "Fecha" },
-                { type: "text", value: this.dataService.getLogActionName(element.action), header_name: "Accion" },
-                { type: "text", value: element.extra?.reason, header_name: "Motivo" },
-                // { type: "text", value: element.description, header_name: "Descripcion" },
-                { type: "text", value: element.extra?.inventoryElement?.productForSale?.finishedProduct?.name, header_name: "Producto" },
-                { type: "text", value: `${modifiedQuantity} (${element.extra?.inventoryElement?.measure?.identifier})`, header_name: "Cantidad modificada" },
-                { type: "text", value: this.dataService.getFormatedPrice(Number(element.extra?.inventoryElement?.productForSale?.price)), header_name: "Precio" },
-                { type: "text", value: this.dataService.getFormatedPrice(Number(modifiedAmount)), header_name: "Total" },
+                { type: "text", value: element.reason, header_name: "Razon" },
+                { type: "text", value: element.element?.name, header_name: "Elemento" },
+                { type: "text", value: `${element.quantity} ${element.measure?.identifier}(s)`, header_name: "Cantidad" },
+                { type: "text", value: this.dataService.getFormatedPrice(totalAmount), header_name: "Total" },
             ];
             this.tableActivityLogs.push(curr_row);
         });
