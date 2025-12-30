@@ -116,11 +116,12 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
             this.establishmentOrders = this.allEstablishmentOrders?.filter((val) => {
                 if(this.searchTerm){
                     const nameMatch = val.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const commentMatch = val.comment?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const providerMatch = val.productForSaleStoreOrderElements![0].productForSale?.establishment?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    // const commentMatch = val.comment?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    // const providerMatch = val.productForSaleStoreOrderElements![0].productForSale?.establishment?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     // const finalAmountMatch = val.finalAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     // const pendingAmountMatch = val.pendingAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return nameMatch || commentMatch || providerMatch;
+                    const stateMatch = val.storeStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    return nameMatch || stateMatch;
                 }
                 return true;
             });
