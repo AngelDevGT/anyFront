@@ -120,7 +120,7 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
                     // const providerMatch = val.productForSaleStoreOrderElements![0].productForSale?.establishment?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     // const finalAmountMatch = val.finalAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     // const pendingAmountMatch = val.pendingAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const stateMatch = val.storeStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const stateMatch = val.factoryStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     return nameMatch || stateMatch;
                 }
                 return true;
