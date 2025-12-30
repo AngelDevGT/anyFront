@@ -117,7 +117,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
                     // const providerMatch = val.productForSaleStoreOrderElements![0].productForSale?.establishment?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     // const finalAmountMatch = val.finalAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     // const pendingAmountMatch = val.pendingAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const stateMatch = val.storeStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const stateMatch = this.viewOption === "factory" ? val.factoryStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase()) : val.storeStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     return nameMatch || stateMatch;
                 }
                 return true;
