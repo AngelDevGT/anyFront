@@ -173,6 +173,16 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                                 icon: "remove_circle"
                             },
                             text: "Eliminar"
+                        },
+                        {
+                            type: "button",
+                            data_bs_target: "#returnToWarehouseModal",
+                            class: "btn btn-warning mx-1",
+                            icon: {
+                                class: "material-icons",
+                                icon: "warehouse"
+                            },
+                            text: "Devolver a bodega"
                         }
                     ]
                 });
@@ -272,6 +282,10 @@ export class ListStoreInventoryPFSComponent implements OnInit {
 
     onDeleteMaterialForm(){
         this.onAddRemoveInventoryElement(actionTypeValues.remove_pfs_manual.actionType.id);
+    }
+
+    onReturnToWarehouseForm(){
+        this.onAddRemoveInventoryElement(actionTypeValues.remove_pfs_by_devolution.actionType.id);
     }
 
 

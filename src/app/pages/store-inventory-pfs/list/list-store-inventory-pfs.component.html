@@ -55,7 +55,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="addInventoryRawMaterialModalLabel">AGREGAR materia prima a inventario de BODEGA</h1>
+                <h1 class="modal-title fs-5" id="addInventoryRawMaterialModalLabel">AGREGAR producto a inventario de TIENDA</h1>
                 <button type="button" class="btn-close" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -132,7 +132,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="removeInventoryRawMaterialModalLabel">ELIMINAR materia prima a inventario de BODEGA</h1>
+                <h1 class="modal-title fs-5" id="removeInventoryRawMaterialModalLabel">ELIMINAR producto de inventario de TIENDA</h1>
                 <button type="button" class="btn-close" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -200,6 +200,77 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-danger" (click)="onDeleteMaterialForm()" [disabled]="!productForSaleForm.valid" data-bs-dismiss="modal">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="returnToWarehouseModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="returnToWarehouseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="returnToWarehouseModalLabel">DEVOLVER producto de inventario de TIENDA</h1>
+                <button type="button" class="btn-close" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form [formGroup]="productForSaleForm">
+                    <div class="d-flex flex-wrap justify-content-center">
+                        <div class="col-12 p-3">
+                            <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedInventoryElement?.productForSale?.finishedProduct?.photo"></view-object>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center col-12 p-3">
+                            <div class="pb-4 col-6 col-lg-3">
+                                <strong>Cantidad a devolver: </strong>
+                            </div>
+                            <div class="px-2">
+                                <mat-form-field class="custom-input" appearance="outline">
+                                    <mat-label>Cantidad</mat-label>
+                                    <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
+                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="restQuantityValue($event)" />
+                                    <div class="invalid-feedback" *ngIf="r['quantity'].errors">
+                                        <div *ngIf="r['quantity'].hasError('required')">
+                                            Cantidad requerida
+                                        </div>
+                                        <div *ngIf="r['quantity'].hasError('pattern')">
+                                            Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                                <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
+                                    <mat-label>Motivo</mat-label>
+                                    <textarea id="reason-form-crear-comunidad" type="text" formControlName="reason" matInput
+                                        [ngClass]="{ 'is-invalid': r['reason'].errors }"></textarea>
+                                    <div class="invalid-feedback" *ngIf="r['reason'].errors">
+                                        <div *ngIf="r['reason'].hasError('required')">
+                                            Motivo requerido
+                                        </div>
+                                        <div *ngIf="r['reason'].errors['maxlength']">
+                                            El motivo debe tener maximo 50 caracteres
+                                        </div>
+                                    </div>
+                                </mat-form-field>
+                            </div>
+                            <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
+                                <div class="subtotal">
+                                    <p class="subtotal-title">Cantidad Disponible ({{ inventoryUnitBase?.name }})</p>
+                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity }}</p>
+                                </div>
+                                <div class="total">
+                                    <p class="total-title">Cantidad a devolver ({{ inventoryUnitBase?.name }})</p>
+                                    <p class="total-amount">{{ modalSelectedQuantity | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="total">
+                                    <p class="total-title">Cantidad final inventario ({{ inventoryUnitBase?.name }})</p>
+                                    <p class="total-amount">{{ modalFinalQuantity | number: '1.2-2' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeProductForSaleDialog()" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" (click)="onReturnToWarehouseForm()" [disabled]="!productForSaleForm.valid" data-bs-dismiss="modal">Devolver a bodega</button>
             </div>
         </div>
     </div>

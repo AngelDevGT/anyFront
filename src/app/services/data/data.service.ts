@@ -105,7 +105,8 @@ export const actionTypeValues = {
     remove_pfs_by_sale: { actionType: {id: 14}},
     add_fp_by_devolution: { actionType: {id: 15}},
     add_pfs_manual: { actionType: {id: 12}},
-    add_pfs_by_cancelation: { actionType: {id: 16}}
+    add_pfs_by_cancelation: { actionType: {id: 16}},
+    remove_pfs_by_devolution: { actionType: {id: 17}}
 }
 
 export const statusValues = {
