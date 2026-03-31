@@ -44,6 +44,15 @@
                                 <textarea id="description-form-crear-comunidad" type="text" formControlName="description" matInput
                                     [ngClass]="{ 'is-invalid': f['description'].errors }"></textarea>
                             </mat-form-field>
+                            <div class="col-sm-12 col-md-12 my-2 px-2">
+                                <mat-card class="mat-elevation-z2 p-3" style="border-left: 4px solid orange;">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <mat-checkbox formControlName="receivePendingOrdersEnabled" class="orange-checkbox">
+                                        </mat-checkbox>
+                                        <span style="font-size: 0.95rem;">Recibir pedidos pendientes desde tienda</span>
+                                    </div>
+                                </mat-card>
+                            </div>
                         </div>
                         <div class="col-sm-12 text-center p-2">
                             <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting || establishmentForm.invalid"

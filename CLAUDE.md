@@ -72,6 +72,43 @@ Organized by domain: `establishment/`, `providers/`, `raw-material-*/`, `finishe
 - `system/` — `User`, `Provider`, `ActivityLog`
 - `raw-material/`, `product/`, `inventory/`, `store/` — domain-specific interfaces
 
+### Database (`src/database/`)
+
+The backend is a thin Azure Function App that delegates all business logic to a PostgreSQL database. When understanding or modifying data behavior, refer to these files first:
+
+- **`definitions.sql`** — full table schema (PostgreSQL). Key tables:
+  - `status` — shared status catalog; every domain entity references it by `status_id`. Status IDs are also hardcoded as constants in `DataService`.
+  - `inventory` / `inventory_element` / `inventory_element_action` — generic inventory system. `inventory_type` and `unit_name` discriminate between factory raw material, bodega, and store inventories.
+  - `action_type` — catalog of inventory movements (add, remove, transfer, etc.).
+  - `product_for_sale` — links a `finished_product` to an `establishment` with a price.
+  - `product_for_sale_store_order` / `product_for_sale_store_order_element` — store purchase orders from factory.
+  - `shop_sale` / `shop_sale_element` — retail sales at the store.
+  - `cash_closing` — stores snapshots of inventory and sales as `jsonb` columns for period closing.
+  - `raw_material_order` / `raw_material_order_element` — purchase orders from providers.
+
+- **`store_procedures.sql`** — PostgreSQL stored procedures that encapsulate all business logic (inventory normalization to base units, transfers between inventories, etc.). API endpoints call these procedures directly — there is no additional application-layer logic.
+
+- **`data.sql`** — Seeds the `sql_queries` table, which is the core API routing mechanism. Each row maps an endpoint path to a raw SQL query or stored procedure call. The Azure Function backend receives a path, looks up the matching row, and executes the SQL. **This file is the source of truth for all available API endpoints and their exact response shapes.** Key endpoints by domain:
+  - Catalog: `/getStatus`, `/getMeasure`, `/getUnitBase`, `/getRoles`, `/getPaymentTypes`
+  - Establishments: `/retrieveEstablishments`, `/getEstablishment`, `/addEstablishment`, `/updateEstablishment`, `/deleteEstablishment`
+  - Users: `/retrieveUsers`, `/getUser`, `/registerUser`, `/createUser`, `/updateUser`, `/deleteUser`
+  - Providers: `/retrieveProviders`, `/getProviderById`, `/addProvider`, `/updateProvider`, `/deleteProvider`
+  - Raw materials: `/retrieveRawMaterial`, `/getRawMaterial`, `/addRawMaterial`, `/UpdateRawMaterial`, `/deleteRawMaterial`
+  - Raw material by provider: `/retrieveRawMaterialByProvider`, `/getRawMaterialByProvider`, `/addRawMaterialByProvider`, `/updateRawMaterialByProvider`, `/deleteRawMaterialByProvider`
+  - Raw material orders: `/listRawMaterialOrder`, `/getRawMaterialOrder`, `/retrieveRawMaterialOrder`, `/addRawMaterialOrder`, `/updateRawMaterialOrder`, `/updateRawMaterialOrderElements`, `/deleteRawMaterialOrder`, `/verifyRawMaterialOrder`, `/addRawMaterialOrderPaymentHistory`
+  - Finished products: `/retrieveFinishedProduct`, `/getFinishedProduct`, `/addFinishedProduct`, `/updateFinishedProduct`, `/deleteFinishedProduct`
+  - Products for sale: `/retrieveProductsForSale`, `/getProductForSale`, `/addProductForSale`, `/addManyProductForSale`, `/updateProductForSale`, `/deleteProductForSale`
+  - Store orders (PFS): `/listProductForSaleStoreOrder`, `/getProductForSaleStoreOrder`, `/addProductForSaleStoreOrder`, `/updateProductForSaleStoreOrder`, `/updateProductForSaleStoreOrderEnCamino`, `/deleteProductForSaleStoreOrder`, `/manageProductForSaleStoreOrder`
+  - Inventory: `/retrieveRawMaterialInventory`, `/retrieveFinishedProductInventory`, `/retrieveProductForSaleInventory`, `/addRemoveInventoryElement`, `/multiAddRemoveInventoryElement`
+  - Activity logs: `/retriveRawMaterialInventoryActions`, `/retriveFinishedProductInventoryActions`, `/retriveProductForSaleInventoryActions`
+  - Shop sales: `/listShopSale`, `/getShopSale`, `/registerShop`, `/UpdateShopHistory`, `/cancelShopHistory`
+  - Cash closing: `/listStoreCashClosing`, `/retrieveStoreCashClosing`, `/getNewStoreCashClosing`, `/addStoreCashClosing`, `/updateStoreCashClosing`, `/verifyCashClosing`, `/deleteStoreCashClosing`
+
+**Key design patterns:**
+- All quantities are normalized to a base unit (`unit_base_quantity` in `measure`) before storage.
+- `inventory_element.element_fk` is a polymorphic UUID that points to `raw_material` or `finished_product` depending on `element_type`.
+- `cash_closing` denormalizes state into `jsonb` snapshots at close time.
+
 ### Styling
 
 SCSS throughout. Bootstrap 5 + Angular Material 15 for UI. Global styles in `src/styles.scss` and `src/scss/`. Component styles use `.scss` files co-located with each component.

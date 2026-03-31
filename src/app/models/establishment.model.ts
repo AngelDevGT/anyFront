@@ -6,6 +6,7 @@ export class Establishment {
     name?: string;
     address?: string;
     description?: string;
+    receivePendingOrdersEnabled?: boolean;
     creationDate?: string; //sistema
     updatedDate?: string; //sistema
     creatorUser?: User; //sistema

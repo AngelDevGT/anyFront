@@ -58,6 +58,15 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     inventoryElementsSource?: InventoryElement[];
     inventoryElements?: InventoryElement[];
     unselectedInventoryElements?: InventoryElement[];
+    pfsSearchTerm?: string;
+
+    get filteredInventoryElements(): InventoryElement[] | undefined {
+        if (!this.pfsSearchTerm) return this.inventoryElements;
+        const term = this.pfsSearchTerm.toLowerCase();
+        return this.inventoryElements?.filter(el =>
+            el.finishedProduct?.name?.toLowerCase().includes(term)
+        );
+    }
     total = 0;
     modalQuantity = 0;
     modalSelectedQuantity = 0;

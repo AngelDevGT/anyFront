@@ -74,6 +74,7 @@ export class ViewEstablishmentComponent implements OnInit{
         this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(establishment.creationDate!.replaceAll("\"",""))});
         this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : establishment.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(establishment.updatedDate!.replaceAll("\"","")) : '--'});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : establishment.creatorUser?.name ? establishment.creatorUser.name : 'N/A'});
+        this.elements.push({icon : establishment.receivePendingOrdersEnabled ? "move_to_inbox" : "outbox", name : "Recibir pedidos pendientes", value : establishment.receivePendingOrdersEnabled ? "Habilitado" : "Deshabilitado"});
     }
 
     generatePDF() {  

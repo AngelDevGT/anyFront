@@ -98,6 +98,7 @@ export class AddEditEstablishmentComponent implements OnInit{
             Validators.maxLength(50),
             ]),
             description: new FormControl(''),
+            receivePendingOrdersEnabled: new FormControl(false),
         });
     }
 

@@ -15,6 +15,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import {MatAutocompleteModule} from '@angular/material/autocomplete';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatListModule} from '@angular/material/list';
+import {MatCheckboxModule} from '@angular/material/checkbox';
 
 import { AdminLayoutRoutes } from "./admin-layout.routing";
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -106,6 +107,7 @@ export const MY_DATE_FORMATS = {
     MatAutocompleteModule,
     MatMenuModule,
     MatListModule,
+    MatCheckboxModule,
     MatDialogModule,
     MatExpansionModule,
   ],

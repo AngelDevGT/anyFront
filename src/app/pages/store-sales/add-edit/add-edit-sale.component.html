@@ -61,6 +61,20 @@
                             <div *ngIf="!isEditOption" class="row justify-content-center col-12">
                                 <div class="p-3 col-sm-12 col-md-6">
                                     <h2 class="text-center text-muted">Producto disponible</h2>
+                                    <div class="d-flex justify-content-center my-2">
+                                        <mat-form-field appearance="outline" class="col-md-6 col-sm-12">
+                                            <mat-label>Buscar</mat-label>
+                                            <input type="text" matInput
+                                                [value]="saleSearchTerm || ''"
+                                                (input)="saleSearchTerm = $any($event.target).value"
+                                                [matAutocomplete]="saleAuto" />
+                                            <mat-autocomplete #saleAuto (optionSelected)="saleSearchTerm = $event.option.value">
+                                                <mat-option *ngFor="let el of filteredInventoryElements" [value]="el.productForSale?.finishedProduct?.name">
+                                                    {{ el.productForSale?.finishedProduct?.name }}
+                                                </mat-option>
+                                            </mat-autocomplete>
+                                        </mat-form-field>
+                                    </div>
                                     <div class="table-container my-custom-scrollbar">
                                         <table class="table table-striped">
                                             <thead>
@@ -74,7 +88,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr *ngFor="let inventoryElement of inventoryElements; let i = index">
+                                                <tr *ngFor="let inventoryElement of filteredInventoryElements; let i = index">
                                                     <td>{{inventoryElement.productForSale?.finishedProduct?.name}}</td>
                                                     <td>{{inventoryElement.measure?.identifier}}</td>
                                                     <td>{{inventoryElement.quantity}}</td>

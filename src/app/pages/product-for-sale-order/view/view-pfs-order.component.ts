@@ -46,6 +46,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     confirmDialogId = 0;
     storeName = '';
     errorMessage = '';
+    confirmReceiveOption = false;
     
 
     constructor(private dataService: DataService, private alertService: AlertService, private accountService: AccountService,
@@ -90,7 +91,8 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         });
     }
 
-    setElementOptions(elemStatus?: Status){
+    setElementOptions(pfsOrder: ProductForSaleStoreOrder){
+        const elemStatus = pfsOrder.factoryStatus;
         if (elemStatus){
             if(this.isFactory){
                 // marcar como listo
@@ -112,6 +114,9 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                     // && elemPayment.id == paymentStatusValues.pagado.paymentStatus.id
                     ){
                         this.returnOption = true;
+                    }
+                if (pfsOrder.establishment?.receivePendingOrdersEnabled && elemStatus.id == pfsFactoryOrderStatusValues.pendiente.status.id){
+                        this.confirmReceiveOption = true;
                     }
             }
 
@@ -189,6 +194,18 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                         this.errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al devolver el pedido');
                         this.openDialog(this.errorMessage);
                 }});
+            } else if (this.confirmDialogId == 5){
+                this.dataService.confirmAndReceivePFSOrder(this.productForSaleOrder?.id)
+                .pipe(first())
+                .subscribe({
+                    next: () => {
+                        this.alertService.success('Pedido confirmado y recibido', { keepAfterRouteChange: true });
+                        this.navigateWithParams();
+                    },
+                    error: error => {
+                        this.errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al confirmar y recibir el pedido');
+                        this.openDialog(this.errorMessage);
+                }});
             }
         }
     }
@@ -210,6 +227,10 @@ export class ViewProductForSaleOrderComponent implements OnInit{
             case 4:
                 this.confirmDialogTitle = 'Devolver pedido';
                 this.confirmDialogText = '¿Deseas DEVOLVER el pedido?';
+                break;
+            case 5:
+                this.confirmDialogTitle = 'Confirmar y recibir pedido';
+                this.confirmDialogText = '¿Deseas CONFIRMAR y marcar el pedido como RECIBIDO?';
                 break;
             default:
                 break;
@@ -285,9 +306,9 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     }
 
     setElements(pfsOrder: ProductForSaleStoreOrder){
-        this.setElementOptions(pfsOrder.factoryStatus);
+        this.setElementOptions(pfsOrder);
         this.elements.push({icon : "receipt_long", name : "Notas", value : pfsOrder.comment});
-        this.elements.push({icon : "person", name : "Establecimiento", value : pfsOrder.productForSaleStoreOrderElements![0].productForSale?.establishment?.name});
+        this.elements.push({icon : "person", name : "Establecimiento", value : pfsOrder.establishment?.name});
         if(this.isFactory){
             this.elements.push({icon : "info", name : "Estado del pedido", value : pfsOrder.factoryStatus?.identifier});
         } else {

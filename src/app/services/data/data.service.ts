@@ -106,7 +106,8 @@ export const actionTypeValues = {
     add_fp_by_devolution: { actionType: {id: 15}},
     add_pfs_manual: { actionType: {id: 12}},
     add_pfs_by_cancelation: { actionType: {id: 16}},
-    remove_pfs_by_devolution: { actionType: {id: 17}}
+    remove_pfs_by_devolution: { actionType: {id: 17}},
+    add_fp_by_devolution_from_store: { actionType: {id: 18}}
 }
 
 export const statusValues = {
@@ -660,6 +661,7 @@ export class DataService {
                 name: establishment.name,
                 address: establishment.address,
                 description: establishment.description,
+                receive_pending_orders_enabled: establishment.receivePendingOrdersEnabled ?? false,
                 status_id: establishmentStatusValues.activo.status.id,
                 creator_user_id: this.accountService.userValue.uuid
             });
@@ -671,6 +673,7 @@ export class DataService {
             name: establishment.name,
             address: establishment.address,
             description: establishment.description,
+            receive_pending_orders_enabled: establishment.receivePendingOrdersEnabled ?? false,
             id: id
         });
         return this.http.patch(`${environment.apiUrlV3}/updateEstablishment`, params);
@@ -1173,6 +1176,19 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/addRemoveInventoryElement`, parameters);
     }
 
+    returnPFSToWarehouse(params: any) {
+        let parameters = JSON.stringify({
+            "$1": params.inventoryType,
+            "$2": params.unitName,
+            "$3": params.elementId,
+            "$4": params.measureId,
+            "$5": params.quantity,
+            "$6": this.accountService.userValue.uuid,
+            "$7": params.reason
+        });
+        return this.http.patch(`${environment.apiUrlV3}/returnPFSToWarehouse`, parameters);
+    }
+
     multiAddRemoveInventoryElement(params: any) {
         let parameters = JSON.stringify({
             "$1": JSON.stringify(params)
@@ -1325,6 +1341,14 @@ export class DataService {
             "$3": this.accountService.userValue.uuid
         });
         return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrder`, params);
+    }
+
+    confirmAndReceivePFSOrder(pfsOrderId: string){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/confirmAndReceivePFSOrder`, params);
     }
 
     manageProductForSaleOrderStateReturned(pfsOrderId: string){

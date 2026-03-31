@@ -161,8 +161,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                             icon: {
                                 class: "material-icons",
                                 icon: "add_circle"
-                            },
-                            text: "Agregar"
+                            }
                         },
                         {
                             type: "button",
@@ -171,8 +170,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                             icon: {
                                 class: "material-icons",
                                 icon: "remove_circle"
-                            },
-                            text: "Eliminar"
+                            }
                         },
                         {
                             type: "button",
@@ -180,9 +178,8 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                             class: "btn btn-warning mx-1",
                             icon: {
                                 class: "material-icons",
-                                icon: "warehouse"
-                            },
-                            text: "Devolver a bodega"
+                                icon: "undo"
+                            }
                         }
                     ]
                 });
@@ -259,17 +256,18 @@ export class ListStoreInventoryPFSComponent implements OnInit {
             reason: reason,
             actionTypeId: actionTypeId
         };
-
+        this.submitting = true;
         this.dataService.addRemoveInventoryElement(addToInventory)
         .pipe(first())
         .subscribe({
             next: () => {
                 this.router.navigateByUrl('/').then(() => {
                     this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                    this.router.navigate(['/store/inventory/' + this.inventory?.establishment?.id]); 
+                    this.router.navigate(['/store/inventory/' + this.inventory?.establishment?.id]);
                 });
             },
             error: error => {
+                this.submitting = false;
                 let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error en movimiento de inventario, contacte con Administracion');
                 this.alertService.error(errorMessage);
             }
@@ -285,7 +283,31 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     }
 
     onReturnToWarehouseForm(){
-        this.onAddRemoveInventoryElement(actionTypeValues.remove_pfs_by_devolution.actionType.id);
+        let params = {
+            inventoryType: this.inventory?.inventoryType,
+            unitName: this.inventory?.unitName,
+            elementId: this.selectedInventoryElement?.productForSale?.id,
+            measureId: this.selectedMeasure?.id,
+            quantity: this.formQuantity,
+            reason: this.operationReasonInput?.value
+        };
+
+        this.submitting = true;
+        this.dataService.returnPFSToWarehouse(params)
+        .pipe(first())
+        .subscribe({
+            next: () => {
+                this.router.navigateByUrl('/').then(() => {
+                    this.alertService.success('Devolución a bodega realizada correctamente', { keepAfterRouteChange: true });
+                    this.router.navigate(['/store/inventory/' + this.inventory?.establishment?.id]);
+                });
+            },
+            error: error => {
+                this.submitting = false;
+                let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error en devolución a bodega, contacte con Administracion');
+                this.alertService.error(errorMessage);
+            }
+        });
     }
 
 

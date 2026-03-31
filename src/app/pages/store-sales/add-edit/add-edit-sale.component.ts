@@ -36,6 +36,16 @@ export class AddEditSaleComponent implements OnInit{
     inventory?: Inventory;
     inventoryElements?: InventoryElement[];
     allInventoryElements?: InventoryElement[];
+    saleSearchTerm?: string;
+
+    get filteredInventoryElements(): InventoryElement[] | undefined {
+        if (!this.saleSearchTerm) return this.inventoryElements;
+        const term = this.saleSearchTerm.toLowerCase();
+        return this.inventoryElements?.filter(el =>
+            el.productForSale?.finishedProduct?.name?.toLowerCase().includes(term)
+        );
+    }
+
     rawMaterialForm!: FormGroup;
     rawMaterialOrder?: RawMaterialOrder;
     selectedMeasure?: Measure;
