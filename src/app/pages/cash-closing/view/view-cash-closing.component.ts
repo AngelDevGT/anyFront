@@ -196,7 +196,7 @@ export class ViewCashClosingComponent implements OnInit{
         let totalActivityLogsAmountRemoved = 0;
         let modifiedAmount = 0;
         let filteredInventoryElementActions = cashClosing.inventoryElementActions?.filter((element: InventoryElementAction) => {
-                    return element.actionType?.type == 'REMOVE_PFS_MANUAL' || element.actionType?.type == 'ADD_PFS_MANUAL';
+                    return element.actionType?.type == 'REMOVE_PFS_MANUAL' || element.actionType?.type == 'ADD_PFS_MANUAL' || element.actionType?.type == 'RETURN_PFS_BY_DEVOLUTION';
                 });
 
         filteredInventoryElementActions?.forEach((element: InventoryElementAction) => {
@@ -204,7 +204,7 @@ export class ViewCashClosingComponent implements OnInit{
 
             if (element.actionType?.type == 'ADD_PFS_MANUAL'){
                 totalActivityLogsAmountAdded += totalAmount;
-            } else if (element.actionType?.type == 'REMOVE_PFS_MANUAL'){
+            } else if (element.actionType?.type == 'REMOVE_PFS_MANUAL' || element.actionType?.type == 'RETURN_PFS_BY_DEVOLUTION'){
                 totalActivityLogsAmountRemoved += totalAmount;
             }
 
