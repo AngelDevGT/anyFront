@@ -1238,6 +1238,12 @@ where i.inventory_type = ''raw_material''','inventory','POST'),
         LEFT JOIN status srm ON srm.id = rm.status_id
         WHERE ie.element_type = ''packaging_material''
           AND ie.inventory_id = i.id
+          AND EXISTS (
+              SELECT 1 FROM raw_material_by_provider rmbp
+              WHERE rmbp.raw_material_base_id = rm.id
+                AND rmbp.raw_material_by_provider_type_id = 2
+                AND rmbp.status_id <> 35
+          )
     )
 ) AS json_result
 FROM inventory i
@@ -1583,9 +1589,42 @@ join finished_product fp on ie.element_fk = fp.id','inventory_element_action','P
 from inventory_element_action iea
 left join inventory_element ie on ie.id = iea.source_inventory_element_id
 left join inventory i on i.id = ie.inventory_id
-left join measure m on m.id = iea.measure_id 
+left join measure m on m.id = iea.measure_id
 left join "user" u on u.id = iea.creator_user_id
-left join action_type at on at.id = iea.action_type_id 
+left join action_type at on at.id = iea.action_type_id
+join raw_material rm on ie.element_fk = rm.id','inventory_element_action','POST'),
+	 ('retrivePackagingMaterialInventoryActions','/retrivePackagingMaterialInventoryActions','SELECT json_agg(
+    json_build_object(
+    	''id'', iea.id,
+    	''creationDate'', iea.creation_date,
+    	''reason'', iea."comment",
+    	''element'', json_build_object(
+    		''name'', rm."name"
+    	),
+    	''measure'', json_build_object(
+            ''identifier'', m.name,
+            ''unitBase'', json_build_object(
+                ''quantity'', m.unit_base_quantity
+            )
+        ),
+    	''quantity'', iea.quantity,
+    	''creatorUser'', json_build_object(
+            ''name'', u.username,
+            ''email'', u.email
+        ),
+        ''actionType'', json_build_object(
+        	''color'', at.color,
+        	''action'', at.action,
+            ''name'', at."name"
+        )
+    )
+) as json_result
+from inventory_element_action iea
+left join inventory_element ie on ie.id = iea.source_inventory_element_id
+left join inventory i on i.id = ie.inventory_id
+left join measure m on m.id = iea.measure_id
+left join "user" u on u.id = iea.creator_user_id
+left join action_type at on at.id = iea.action_type_id
 join raw_material rm on ie.element_fk = rm.id','inventory_element_action','POST');
 INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
 	 ('deleteEstablishment','/deleteEstablishment','update establishment

@@ -57,6 +57,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
     activityLogName = "Acciones de Materia Prima en Inventario de Bodega";
     materialType = 1;
     pageTitle = "Inventario de Materia Prima";
+    inventoryRoute = '/inventory/factory/rawMaterial';
 
     constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router, private route: ActivatedRoute) {}
 
@@ -74,6 +75,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
         if (this.materialType === 2) {
             this.pageTitle = "Inventario de Material de Empaque";
             this.activityLogName = "Acciones de Material de Empaque en Inventario de Bodega";
+            this.inventoryRoute = '/inventory/warehouse/packagingMaterial';
         }
 
         this.inventory = undefined;
@@ -277,7 +279,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
             .subscribe({
                 next: () => {
                     this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/inventory/factory/rawMaterial');
+                    this.router.navigateByUrl(this.inventoryRoute);
                 },
                 error: error => {
                     this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
@@ -312,7 +314,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
             next: () => {
                 this.router.navigateByUrl('/').then(() => {
                     this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                    this.router.navigate(['/inventory/factory/rawMaterial']); 
+                    this.router.navigate([this.inventoryRoute]);
                 });
             },
             error: error => {

@@ -113,6 +113,9 @@ export class ViewInventoryLogComponent implements OnInit {
             case 'finished_product':
                 catalogFilter = 'retriveFinishedProductInventoryActions';
                 break;
+            case 'packaging_material':
+                catalogFilter = 'retrivePackagingMaterialInventoryActions';
+                break;
             default:
                 catalogFilter = 'default_catalog';
                 break;
