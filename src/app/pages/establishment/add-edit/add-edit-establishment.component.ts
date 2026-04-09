@@ -21,6 +21,10 @@ export class AddEditEstablishmentComponent implements OnInit{
     title!: string;
     loading = false;
     submitting = false;
+    establishmentTypeOptions = [
+        { id: 1, name: 'Productos' },
+        { id: 2, name: 'Abarrotes' }
+    ];
 
     constructor(private dataService: DataService, public _builder: FormBuilder, 
         private route: ActivatedRoute, private router: Router,
@@ -99,6 +103,7 @@ export class AddEditEstablishmentComponent implements OnInit{
             ]),
             description: new FormControl(''),
             receivePendingOrdersEnabled: new FormControl(false),
+            establishmentTypeId: new FormControl(1, [Validators.required]),
         });
     }
 

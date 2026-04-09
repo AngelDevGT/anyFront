@@ -28,8 +28,8 @@ export class SummaryRawMaterialByProviderInventoryBodegaComponent implements OnI
     productForm!: FormGroup;
     maxDate: Date = new Date();
     searchTerm?: string;
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
     tableElementsValues?: any;
 

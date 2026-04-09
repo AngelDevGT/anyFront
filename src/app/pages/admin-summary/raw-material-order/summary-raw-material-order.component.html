@@ -145,7 +145,7 @@
                             </div>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.rawMaterialOrders" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <responsive-table *ngIf="this.rawMaterialOrders" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'summary-rm-orders'"></responsive-table>
                     <span *ngIf="!rawMaterialOrders" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>

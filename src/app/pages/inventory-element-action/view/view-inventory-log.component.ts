@@ -25,6 +25,7 @@ export class ViewInventoryLogComponent implements OnInit {
     allInventoryLogs?: InventoryElementAction[];
     inventoryType?: string;
     unitName?: string;
+    productType?: number;
     section?: string;
     title?: string;
     dateRange?: string;
@@ -33,8 +34,8 @@ export class ViewInventoryLogComponent implements OnInit {
     logForm!: FormGroup;
     maxDate: Date = new Date();
     searchTerm?: string;
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
 
     constructor(private dataService: DataService, private route: ActivatedRoute, private accountService: AccountService, 
@@ -48,6 +49,7 @@ export class ViewInventoryLogComponent implements OnInit {
         this.route.queryParams.subscribe(params => {
             this.inventoryType = params['type'];
             this.unitName = params['unit'];
+            this.productType = params['productType'] ? Number(params['productType']) : undefined;
             // this.section = params['sec'];
             // this.title = this.section?.split('|||')[0];
         });
@@ -131,6 +133,12 @@ export class ViewInventoryLogComponent implements OnInit {
             },
             error: (e) =>  this.alertService.error(this.dataService.findJsonValue(e, 'AcknowledgementDescription')),
             complete: () => {
+                if (this.productType !== undefined) {
+                    this.inventoryLogs = this.allInventoryLogs?.filter(log =>
+                        (log.element?.finishedProductTypeId ?? 1) === this.productType
+                    );
+                    this.allInventoryLogs = this.inventoryLogs;
+                }
                 this.setCardElements(this.inventoryLogs);
             }
         });

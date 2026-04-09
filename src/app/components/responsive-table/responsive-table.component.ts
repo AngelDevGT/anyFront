@@ -11,9 +11,21 @@ import { DataService } from '@app/services';
 export class ResponsiveTableComponent implements OnInit, OnChanges {
     @Input() tableElements: any;
     @Input() pageSize: number = 0;
+    @Input() pageKey?: string;
     @Output() sentData = new EventEmitter<any>();
-    
-    page = 1;
+
+    private _page = 1;
+
+    get page(): number {
+        return this._page;
+    }
+
+    set page(value: number) {
+        this._page = value;
+        if (this.pageKey) {
+            sessionStorage.setItem(this.pageKey, String(value));
+        }
+    }
 
     rows?: any[];
     headers?: any[];
@@ -23,6 +35,10 @@ export class ResponsiveTableComponent implements OnInit, OnChanges {
     }
 
     ngOnInit() {
+        if (this.pageKey) {
+            const saved = sessionStorage.getItem(this.pageKey);
+            if (saved) this._page = Number(saved);
+        }
         this.updateTableElements();
     }
 

@@ -15,7 +15,7 @@ import { Measure } from '@app/models';
 import { UnitBase } from '@app/models/auxiliary/unit-base.model';
 import { BehaviorSubject, forkJoin } from 'rxjs';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
 import { ActivityLog } from '@app/models/system/activity-log';
 
@@ -49,15 +49,23 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
     modalFinalQuantity = 0;
     modalUnitBaseTotalQuantity = 0;
     searchTerm?: string;
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
     tableElementsValues?: any;
+    materialType = 1;
+    pageTitle = 'Inventario de Materia Prima por Proveedor (Bodega)';
     activityLogName = "Acciones de Materia Prima por Proveedor en Inventario de Bodega";
 
-    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router) {}
+    constructor(private accountService: AccountService, private dataService: DataService,
+        private alertService: AlertService, private router: Router, private route: ActivatedRoute) {}
 
     ngOnInit() {
+        this.materialType = this.route.snapshot.data['materialType'] ?? 1;
+        if (this.materialType === 2) {
+            this.pageTitle = 'Inventario de Material de Empaque';
+            this.activityLogName = 'Acciones de Material de Empaque en Inventario de Bodega';
+        }
 
         this.selectedMeasureTableSubject.subscribe(value => {
             this.setMeasure(String(value));
@@ -88,7 +96,9 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
                     this.selectedWeightMeasure = this.weightMeasureOptions[1];
                 // console.log('complete')
                 if (this.inventory){
-                    this.inventoryElements = this.inventory?.inventoryElements;
+                    this.inventoryElements = this.inventory?.inventoryElements?.filter(
+                        el => (el.rawMaterialByProvider?.rawMaterialByProviderTypeId ?? 1) === this.materialType
+                    );
                     this.allInventoryElements = this.inventoryElements;
                     this.setTableElements(this.inventoryElements);
                 }

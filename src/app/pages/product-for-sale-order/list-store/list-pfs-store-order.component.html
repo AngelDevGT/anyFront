@@ -47,7 +47,7 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.productForSaleOrdes" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <responsive-table *ngIf="this.productForSaleOrdes" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'pfs-store-orders-' + storeOption"></responsive-table>
                     <span *ngIf="loadingOrders||loadingEstablishments" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>

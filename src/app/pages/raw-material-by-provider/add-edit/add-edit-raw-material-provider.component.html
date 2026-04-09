@@ -90,7 +90,7 @@
                             <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||rawMaterialForm.invalid||!selectedRawMaterial"
                                 class="btn btn-outline-success btn-lg">
                                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                                Guardar Materia Prima
+                                {{ materialType === 2 ? 'Guardar Material de Empaque' : 'Guardar Materia Prima' }}
                             </button>
                         </div>
                     </div>

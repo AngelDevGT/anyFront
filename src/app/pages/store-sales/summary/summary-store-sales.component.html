@@ -1,0 +1,97 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-content class="custom-mat-card-content">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="d-lg-none col-md-2 d-flex align-items-center justify-content-center">
+                        <div class="inbtn">
+                            <button
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#filter-options"
+                            aria-controls="filter-options"
+                            aria-expanded="false"
+                            class="btn btn-outline-primary">
+                                <div class="d-flex flex-row p-1">
+                                    <i class="material-icons">filter_alt</i>
+                                    <span>Filtros</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="filter-options" class="panel-collapse collapse col-md-12 d-lg-block px-2">
+                        <form [formGroup]="filterForm" (ngSubmit)="filterElements()">
+                            <div class="d-flex flex-wrap justify-content-center pt-3">
+                                <div class="col-md-3 col-sm-12 select-filter">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Rango de fechas</mat-label>
+                                        <mat-date-range-input [rangePicker]="picker" [max]="maxDate">
+                                            <input matStartDate formControlName="startDate" matInput>
+                                            <input matEndDate formControlName="endDate" matInput>
+                                        </mat-date-range-input>
+                                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                                        <mat-date-range-picker touchUi #picker disabled="false"></mat-date-range-picker>
+                                    </mat-form-field>
+                                </div>
+                                <div class="col-md-1 col-sm-12 select-filter pb-4 align-self-center">
+                                    <button type="submit" class="btn btn-outline-secondary waves-effect pb-0">
+                                        <i class="material-icons">search</i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>
+
+<div *ngIf="sales" class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;" class="my-3">
+            <mat-card-title>Resumen General</mat-card-title>
+            <mat-card-subtitle>{{ dateRange }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="container">
+                <div class="row justify-content-center text-center py-2">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card p-3">
+                            <span class="text-muted small">Total Ventas</span>
+                            <strong class="fs-5">{{ grandTotalSales }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card p-3">
+                            <span class="text-muted small">Monto Total</span>
+                            <strong class="fs-5">{{ dataService.getFormatedPrice(grandTotal) }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card p-3">
+                            <span class="text-muted small">Descuento Total</span>
+                            <strong class="fs-5">{{ dataService.getFormatedPrice(grandTotalDiscount) }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>
+
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;" class="my-3">
+            <mat-card-title>Resumen por Tienda</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <responsive-table *ngIf="tableElementsValues" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'store-sales-summary'"></responsive-table>
+                    <span *ngIf="!sales" class="spinner-border spinner-border-lg align-center"></span>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

@@ -47,6 +47,7 @@ import { canActivateV2 } from "@app/helpers";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
+import { SummaryStoreSalesComponent } from "@app/pages/store-sales/summary/summary-store-sales.component";
 
 const usersModule = () => import('@app/layouts/users/users-layout.module').then(x => x.UsersModule);
 
@@ -59,6 +60,12 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'finishedProducts/create', component: AddEditFinishedProductComponent , canActivate: [canActivateV2]},
     { path: 'finishedProducts/edit/:id', component: AddEditFinishedProductComponent , canActivate: [canActivateV2]},
     { path: 'finishedProducts/view/:id', component: ViewFinishedProductComponent, canActivate: [canActivateV2]},
+    { path: 'abarrotes', component: ListFinishedProductComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
+    { path: 'abarrotes/create', component: AddEditFinishedProductComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
+    { path: 'abarrotes/edit/:id', component: AddEditFinishedProductComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
+    { path: 'abarrotes/view/:id', component: ViewFinishedProductComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
+    { path: 'inventory/factory/abarrote', component: ListFactoryInventoryFPComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
+    { path: 'abarroteCreation', component: AddEditProductCreationComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
     { path: 'productsForSale/order', component: ListProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'finishedProduct/order', component: ListFinishedProductOrderInFactoryComponent, canActivate: [canActivateV2]},
     { path: 'productsForSale/order/create', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
@@ -88,7 +95,12 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'rawMaterialsByProvider/create', component: AddEditRawMateriaByProviderComponent, canActivate: [canActivateV2]},
     { path: 'rawMaterialsByProvider/view/:id', component: ViewRawMaterialByProviderComponent, canActivate: [canActivateV2]},
     { path: 'rawMaterialsByProvider/edit/:id', component: AddEditRawMateriaByProviderComponent, canActivate: [canActivateV2]},
+    { path: 'empaques', component: ListRawMaterialByProviderComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
+    { path: 'empaques/create', component: AddEditRawMateriaByProviderComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
+    { path: 'empaques/view/:id', component: ViewRawMaterialByProviderComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
+    { path: 'empaques/edit/:id', component: AddEditRawMateriaByProviderComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
     { path: 'inventory/warehouse/rawMaterialByProvider', component: ListWarehouseInventoryRMPComponent, canActivate: [canActivateV2]},
+    { path: 'inventory/warehouse/packagingMaterial', component: ListFactoryInventoryRMComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
     { path: 'inventory/factory/rawMaterial', component: ListFactoryInventoryRMComponent, canActivate: [canActivateV2]},
     { path: 'inventory/factory/finishedProduct', component: ListFactoryInventoryFPComponent, canActivate: [canActivateV2]},
     { path: 'store', component: ListEstablishmentComponent, canActivate: [canActivateV2]},
@@ -102,6 +114,7 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'summary/inventory/factory/finishedProduct', component: SummaryFinishedProductInventoryFactoryComponent, canActivate: [canActivateV2]},
     { path: 'summary/productForSale/store/order', component: SummaryProductForSaleOrderComponent, canActivate: [canActivateV2]},
     { path: 'summary/inventory/store/productForSale', component: SummaryProductForSaleInventoryFactoryComponent, canActivate: [canActivateV2]},
+    { path: 'store/sales/summary', component: SummaryStoreSalesComponent, canActivate: [canActivateV2]},
     { path: 'store/sales/history/:id', component: ListStoreSalesPFSComponent, canActivate: [canActivateV2]},
     { path: 'store/sales/history/view/:id', component: ViewStoreSalesPFSComponent, canActivate: [canActivateV2]},
     { path: 'store/sales/create', component: AddEditSaleComponent, canActivate: [canActivateV2]},

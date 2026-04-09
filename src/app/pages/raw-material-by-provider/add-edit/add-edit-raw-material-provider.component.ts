@@ -49,6 +49,8 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
 
     id?: string;
     title!: string;
+    materialType = 1;
+    basePath = '/rawMaterialsByProvider';
     loading = false;
     submitting = false;
     hasErrors = false;
@@ -71,14 +73,16 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
     ngOnInit(): void {
 
         this.id = this.route.snapshot.params['id'];
+        this.materialType = this.route.snapshot.data['materialType'] ?? 1;
+        this.basePath = this.materialType === 2 ? '/empaques' : '/rawMaterialsByProvider';
 
         this.loading = true;
 
         this.rawMaterialForm = this.createFormGroup();
-        this.title = 'Crear Materia Prima por Proveedor';
+        this.title = this.materialType === 2 ? 'Crear Material de Empaque' : 'Crear Materia Prima por Proveedor';
 
         if (this.id){
-            this.title = 'Actualizar Materia Prima por Proveedor';
+            this.title = this.materialType === 2 ? 'Actualizar Material de Empaque' : 'Actualizar Materia Prima por Proveedor';
         }
 
         this.rawMaterials = [];
@@ -121,11 +125,27 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
         this.alertService.clear();
         this.submitting = true;
         this.saveRawMaterial()
-            .pipe(first())
+            .pipe(
+                first(),
+                concatMap((result: any) => {
+                    if (this.materialType === 2 && !this.id) {
+                        return this.dataService.addRemoveInventoryElement({
+                            inventoryType: 'packaging_material',
+                            unitName: 'bodega',
+                            elementId: this.selectedRawMaterial?.id,
+                            selectedMeasureId: this.selectedRawMaterial?.measure?.id,
+                            elementQuantity: '0',
+                            reason: 'Registro inicial de material de empaque',
+                            actionTypeId: 2
+                        });
+                    }
+                    return of(result);
+                })
+            )
             .subscribe({
                 next: () => {
-                    this.alertService.success('Materia Prima Por Proveedor guardado', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/rawMaterialsByProvider');
+                    this.alertService.success('Guardado correctamente', { keepAfterRouteChange: true });
+                    this.router.navigateByUrl(this.basePath);
                 },
                 error: error => {
                     let errorResponse = this.dataService.findJsonValue(error, 'error');
@@ -180,7 +200,8 @@ export class AddEditRawMateriaByProviderComponent implements OnInit{
         let newRawMaterial = {
             ...this.rawMaterialForm.value,
             rawMaterialBase: this.selectedRawMaterial,
-            provider: this.selectedProvider
+            provider: this.selectedProvider,
+            rawMaterialByProviderTypeId: this.materialType
         };
         return this.dataService.addRawMaterialByProvider(newRawMaterial);
     }

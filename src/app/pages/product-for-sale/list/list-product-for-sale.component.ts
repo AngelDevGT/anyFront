@@ -95,14 +95,14 @@ export class ListProductForSaleComponent implements OnInit {
     }
 
     search(value: any): void {
-        if (this.productsForSale){
+        if (this.allProductsForSale){
             this.productsForSale = this.allProductsForSale?.filter((val) => {
                 if(this.searchTerm){
                     const nameMatch = val.finishedProduct?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const measureMatch = val.finishedProduct?.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const descriptionMatch = val.finishedProduct?.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const establishmentMatch = val.establishment?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const priceMatch = val.price?.includes(this.searchTerm);
+                    const priceMatch = String(val.price ?? '').includes(this.searchTerm);
                     return nameMatch || measureMatch || descriptionMatch || establishmentMatch || priceMatch;
                 }
                 return true;

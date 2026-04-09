@@ -45,13 +45,13 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     modalFinalQuantity = 0;
     modalUnitBaseTotalQuantity = 0;
     searchTerm?: string;
-    entries = [5, 10, 20, 50];
+    entries = this.dataService.tableEntries;
     selectedMeasureTable?: Measure;
     weightMeasureOptions?: Measure[];
     selectedMeasureTableSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     selectedWeightMeasure?: Measure;
     selectedWeightMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
-    pageSize = 5;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
     tableElementsValues?: any;
     activityLogName = "Acciones de Producto para Venta en tienda";

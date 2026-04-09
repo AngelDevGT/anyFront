@@ -16,9 +16,9 @@ export class ListComponent implements OnInit {
     users?: User[];
     allUsers?: User[];
     searchTerm?: string;
-    pageSize = 5;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
-    entries = [5, 10, 20, 50];
+    entries = this.dataService.tableEntries;
     tableElementsValues?: any;
 
     constructor(private accountService: AccountService, private alertService: AlertService, private dataService: DataService) {}

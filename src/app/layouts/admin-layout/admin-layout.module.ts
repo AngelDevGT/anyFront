@@ -62,6 +62,7 @@ import { ListStoreInventoryPFSComponent } from "@app/pages/store-inventory-pfs/l
 import { ListStoreSalesPFSComponent } from "@app/pages/store-sales/list/list-store-sales-pfs.component";
 import { ViewStoreSalesPFSComponent } from "@app/pages/store-sales/view/view-store-sales-pfs.component";
 import { AddEditSaleComponent } from "@app/pages/store-sales/add-edit/add-edit-sale.component";
+import { SummaryStoreSalesComponent } from "@app/pages/store-sales/summary/summary-store-sales.component";
 import { SummaryProductForSaleOrderComponent } from "@app/pages/admin-summary/fp-order-factory/summary-pfs-store-order.component";
 import { SummaryProductForSaleInventoryFactoryComponent } from "@app/pages/admin-summary/pfs-inventory-store/summary-pfs-inventory-store.component";
 import { ViewActivityLogComponent } from "@app/pages/activity-log/view/view-activity-log.component";
@@ -152,6 +153,7 @@ export const MY_DATE_FORMATS = {
       ListStoreSalesPFSComponent,
       ViewStoreSalesPFSComponent,
       AddEditSaleComponent,
+      SummaryStoreSalesComponent,
       ViewActivityLogComponent,
       ViewInventoryLogComponent,
       ListCashClosingComponent,

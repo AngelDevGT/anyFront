@@ -15,7 +15,7 @@ import { Measure } from '@app/models';
 import { UnitBase } from '@app/models/auxiliary/unit-base.model';
 import { BehaviorSubject, forkJoin } from 'rxjs';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
 import { ActivityLog } from '@app/models/system/activity-log';
 
@@ -49,15 +49,27 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     modalSelectedQuantity = 0;
     modalUnitBaseTotalQuantity = 0;
     searchTerm?: string;
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
     tableElementsValues?: any;
     activityLogName = "Acciones de Producto en Inventario de Bodega";
+    productType = 1;
+    inventoryRoute = '/inventory/factory/finishedProduct';
+    pageTitle = 'Inventario de Productos';
+    addModalTitle = 'AGREGAR producto terminado a inventario de FABRICA';
+    removeModalTitle = 'ELIMINAR producto terminado de inventario de FABRICA';
 
-    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router, private route: ActivatedRoute) {}
 
     ngOnInit() {
+
+        this.productType = this.route.snapshot.data['productType'] ?? 1;
+        this.inventoryRoute = this.productType === 2 ? '/inventory/factory/abarrote' : '/inventory/factory/finishedProduct';
+        this.activityLogName = this.productType === 2 ? "Acciones de Abarrote en Inventario de Bodega" : "Acciones de Producto en Inventario de Bodega";
+        this.pageTitle = this.productType === 2 ? 'Inventario de Abarrotes' : 'Inventario de Productos';
+        this.addModalTitle = this.productType === 2 ? 'AGREGAR abarrote a inventario de BODEGA' : 'AGREGAR producto terminado a inventario de FABRICA';
+        this.removeModalTitle = this.productType === 2 ? 'ELIMINAR abarrote de inventario de BODEGA' : 'ELIMINAR producto terminado de inventario de FABRICA';
 
         this.selectedMeasureTableSubject.subscribe(value => {
             this.setMeasure(String(value));
@@ -88,11 +100,9 @@ export class ListFactoryInventoryFPComponent implements OnInit {
                 if(this.weightMeasureOptions)
                     this.selectedWeightMeasure = this.weightMeasureOptions[1];
                 if (this.inventory){
-                    this.inventoryElements = this.inventory?.inventoryElements;
-                    // const filteredInventoryElements = this.inventoryElements?.filter(
-                    //     (value, index, arr) => arr.findIndex(obj => obj._id === value._id) === index
-                    // )
-                    // this.inventoryElements = filteredInventoryElements;
+                    this.inventoryElements = this.inventory?.inventoryElements?.filter(
+                        el => (el.finishedProduct?.finishedProductTypeId ?? 1) === this.productType
+                    );
                     this.allInventoryElements = this.inventoryElements;
                     this.setTableElements(this.inventoryElements);
                 }
@@ -266,7 +276,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
             next: () => {
                 this.router.navigateByUrl('/').then(() => {
                     this.alertService.success('Movimiento de inventario realizado correctamente', { keepAfterRouteChange: true });
-                    this.router.navigate(['/inventory/factory/finishedProduct']); 
+                    this.router.navigate([this.inventoryRoute]);
                 });
             },
             error: error => {
@@ -301,7 +311,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     }
 
     goToActionsHistory(){
-        this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName } });
+        this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName, productType: this.productType } });
     }
 
     setInventoryElementElements(){

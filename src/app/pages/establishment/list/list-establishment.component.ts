@@ -16,8 +16,8 @@ export class ListEstablishmentComponent implements OnInit {
     establishments?: Establishment[];
     allEstablishments?: Establishment[];
     searchTerm?: string;
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
     title = '';
     viewOption = '';

@@ -32,7 +32,7 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.establishments" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <responsive-table *ngIf="this.establishments" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'establishments-list'"></responsive-table>
                     <span *ngIf="!establishments" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>

@@ -22,6 +22,7 @@ export class SidebarComponent implements OnInit {
 
   ngOnInit() {
     this.menuItems = this.accountService.getUserMenuItems();
+    // console.log('Menu items loaded for sidebar:', this.menuItems);
   }
 
   navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }){

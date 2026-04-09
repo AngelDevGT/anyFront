@@ -465,7 +465,7 @@ export class AddEditSaleComponent implements OnInit{
             total = 0;
             subtotal = 0;
         }
-        this.selectedQuantity = totalQuantity;
+        this.selectedQuantity = parseFloat(totalQuantity.toFixed(2));
         this.modalSubtotal = subtotal;
         this.modalTotalDiscount = totalDiscount;
         this.modalTotal = total;

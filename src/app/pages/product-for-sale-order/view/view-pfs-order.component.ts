@@ -31,8 +31,8 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     submitting = false;
     loading = false;
     elements: any = [];
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     tableElementsValues?: any;
     receiveOption = false;
     readyOption = false;

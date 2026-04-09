@@ -108,6 +108,15 @@ export class ConsumeRawMaterialComponent implements OnInit{
     modalSelectedQuantity = 0;
     unselectedInventoryElements?: InventoryElement[];
     modalFinishedProductQuantity = 0;
+    rmSearchTerm?: string;
+
+    get filteredInventoryElements(): InventoryElement[] | undefined {
+        if (!this.rmSearchTerm) return this.inventoryElements;
+        const term = this.rmSearchTerm.toLowerCase();
+        return this.inventoryElements?.filter(el =>
+            el.rawMaterialBase?.name?.toLowerCase().includes(term)
+        );
+    }
     finishedProductMeasureQuantity = 0;
     modalFinishedProductSelectedMeasure?: Measure;
     activityLogName = "Acciones de Materia Prima en Inventario de Bodega";
@@ -241,7 +250,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
                 measureId: fpcElement.measure?.id,
                 quantity: fpcElement.quantity,
                 creatorUserId: this.accountService.userValue.uuid,
-                comment: "Consumo de Materia Prima en inventario de bodega",
+                comment: this.orderForm.get('comment')?.value,
                 actionTypeId: actionTypeValues.remove_rm_by_consume.actionType.id,
             };
         });
@@ -602,6 +611,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
         return new FormGroup({
             measure: new FormControl('', [Validators.required]),
             quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            comment: new FormControl('', [Validators.required, Validators.maxLength(254)]),
         });
     }
 

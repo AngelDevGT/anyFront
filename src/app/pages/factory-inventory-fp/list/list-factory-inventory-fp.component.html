@@ -1,7 +1,7 @@
 <div class="genericCard pt-3">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Inventario de Productos</mat-card-title>
+            <mat-card-title>{{pageTitle}}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <div class="container">
@@ -49,7 +49,7 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize" (sentData)="receiveData($event)"></responsive-table>
+                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'factory-inv-fp'" (sentData)="receiveData($event)"></responsive-table>
                     <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>
@@ -61,7 +61,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="addInventoryRawMaterialModalLabel">AGREGAR producto terminado a inventario de FABRICA</h1>
+                <h1 class="modal-title fs-5" id="addInventoryRawMaterialModalLabel">{{addModalTitle}}</h1>
                 <button type="button" class="btn-close" (click)="closeFinishedProductlDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -119,15 +119,15 @@
                             <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                                 <div class="subtotal">
                                     <p class="subtotal-title">Cantidad Disponible ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity }}</p>
+                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad a agregar ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="total-amount">{{ modalSelectedQuantity }}</p>
+                                    <p class="total-amount">{{ modalSelectedQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad final inventario ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="total-amount">{{ modalFinalQuantity }}</p>
+                                    <p class="total-amount">{{ modalFinalQuantity | number: '1.2-2' }}</p>
                                 </div>
                             </div>
                         </div>
@@ -146,7 +146,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="removeInventoryRawMaterialModalLabel">ELIMINAR producto terminado de inventario de FABRICA</h1>
+                <h1 class="modal-title fs-5" id="removeInventoryRawMaterialModalLabel">{{removeModalTitle}}</h1>
                 <button type="button" class="btn-close" (click)="closeFinishedProductlDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -202,15 +202,15 @@
                             <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                                 <div class="subtotal">
                                     <p class="subtotal-title">Cantidad Disponible ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity }}</p>
+                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad a eliminar ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="total-amount">{{ modalSelectedQuantity }}</p>
+                                    <p class="total-amount">{{ modalSelectedQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad final inventario ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="total-amount">{{ modalFinalQuantity }}</p>
+                                    <p class="total-amount">{{ modalFinalQuantity | number: '1.2-2' }}</p>
                                 </div>
                             </div>
                         </div>

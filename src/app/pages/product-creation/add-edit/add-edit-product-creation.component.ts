@@ -109,6 +109,11 @@ export class AddEditProductCreationComponent implements OnInit{
     finishedProductMeasureQuantity = 0;
     modalFinishedProductSelectedMeasure?: Measure;
     activityLogName = "Acciones de Producto en Inventario de Bodega";
+    productType = 1;
+    inventoryRoute = '/inventory/factory/finishedProduct';
+    productLabel = 'Producto terminado';
+    productFabricadoLabel = 'Producto terminado fabricado';
+    registerLabel = 'Registrar Producto Terminado';
 
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
@@ -124,7 +129,12 @@ export class AddEditProductCreationComponent implements OnInit{
 
     ngOnInit(): void {
 
-        this.title = 'Registrar Producto Terminado en Inventario';
+        this.productType = this.route.snapshot.data['productType'] ?? 1;
+        this.inventoryRoute = this.productType === 2 ? '/inventory/factory/abarrote' : '/inventory/factory/finishedProduct';
+        this.title = this.productType === 2 ? 'Registrar Abarrote en Inventario' : 'Registrar Producto Terminado en Inventario';
+        this.productLabel = this.productType === 2 ? 'Abarrote' : 'Producto terminado';
+        this.productFabricadoLabel = this.productType === 2 ? 'Abarrote registrado' : 'Producto terminado fabricado';
+        this.registerLabel = this.productType === 2 ? 'Registrar Abarrote' : 'Registrar Producto Terminado';
         this.id = this.route.snapshot.params['id'];
         this.route.queryParams.subscribe(params => {
             this.editOption = params['opt'];
@@ -168,7 +178,8 @@ export class AddEditProductCreationComponent implements OnInit{
                 // inventory = result[2].getInventoryResponse?.Inventory;
                 // this.filteredRawMaterials = result[2].retrieveRawMaterialByProviderResponse?.rawMaterial;
                 // this.finishedProducts = result[3].retrieveFinishedProductResponse.FinishedProducts;
-                this.finishedProducts = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                const allProducts = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.finishedProducts = allProducts.filter((p: any) => (p.finishedProductTypeId ?? 1) === this.productType);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -246,7 +257,7 @@ export class AddEditProductCreationComponent implements OnInit{
         .subscribe({
             next: () => {
                 this.alertService.success('Producto(s) registrado(s) en inventario correctamente', { keepAfterRouteChange: true });
-                this.router.navigateByUrl('/inventory/factory/finishedProduct');
+                this.router.navigateByUrl(this.inventoryRoute);
             },
             error: error => {
                 let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al registrar producto(s) en inventario');

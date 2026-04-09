@@ -26,12 +26,12 @@ export class ListProductForSaleOrderComponent implements OnInit {
     loadingEstablishments = false;
     searchTerm?: string;
     pageTitle?: string;
-    entries = [5, 10, 20, 50];
+    entries = this.dataService.tableEntries;
     sortOpts = ['Desc', 'Asc'];
     selectedSortOpt = this.sortOpts[0];
     viewOption = '';
     storeOption = '';
-    pageSize = 5;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
     tableElementsValues?: any;
     storeName = '';

@@ -1308,12 +1308,12 @@ BEGIN
         VALUES (
             _sale_properties->>'nameClient',
             _sale_properties->>'nota',
-            (_sale_properties->>'delivery')::NUMERIC,
+            ROUND((_sale_properties->>'delivery')::NUMERIC, 2),
             (_sale_properties->>'nitClient')::VARCHAR(10),
             _establishment_id,
 			_status_id,
-			(_sale_properties->>'total')::NUMERIC,
-            (_sale_properties->>'totalDiscount')::NUMERIC,
+			ROUND((_sale_properties->>'total')::NUMERIC, 2),
+            ROUND((_sale_properties->>'totalDiscount')::NUMERIC, 2),
             (_sale_properties->'paymentType'->>'id')::INT,
             _creator_user_id
         )
@@ -1323,13 +1323,13 @@ BEGIN
         LOOP
 
 			_price := (_item->>'price')::NUMERIC;
-			_subtotal := (_item->>'subtotal')::NUMERIC;
-			_total := (_item->>'total')::NUMERIC;
-			_total_discount := (_item->>'totalDiscount')::NUMERIC;
+			_subtotal := ROUND((_item->>'subtotal')::NUMERIC, 2);
+			_total := ROUND((_item->>'total')::NUMERIC, 2);
+			_total_discount := ROUND((_item->>'totalDiscount')::NUMERIC, 2);
 			_product_for_sale_id := (_item -> 'productForSale' ->> 'id')::UUID;
-			_quantity := (_item ->> 'quantity')::NUMERIC;
+			_quantity := ROUND((_item ->> 'quantity')::NUMERIC, 2);
             _measure_id := (_item -> 'measure' ->> 'id')::INT;
-			_discount := (_item->>'discount')::NUMERIC;
+			_discount := ROUND((_item->>'discount')::NUMERIC, 2);
 
             --Registrar venta
 			call add_remove_inventory_element(

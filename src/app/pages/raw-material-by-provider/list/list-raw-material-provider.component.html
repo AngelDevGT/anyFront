@@ -1,7 +1,7 @@
 <div class="genericCard">
     <mat-card>
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>Ingreso de proveedores</mat-card-title>
+            <mat-card-title>{{ pageTitle }}</mat-card-title>
         </mat-card-header>
         <div *ngIf="!cards" class="d-flex justify-content-center align-items-center py-3">
             <span class="spinner-border spinner-border-lg me-1"></span>
@@ -18,7 +18,7 @@
                                 > <!-- relative route "add" = "/users/add" -->
                                 <div class="d-flex flex-row p-1">
                                     <i class="material-icons icon">add</i>
-                                    <span>Crear Materia Prima</span>
+                                    <span>{{ materialType === 2 ? 'Crear Material de Empaque' : 'Crear Materia Prima' }}</span>
                                 </div>
                             </button>
                         </div>

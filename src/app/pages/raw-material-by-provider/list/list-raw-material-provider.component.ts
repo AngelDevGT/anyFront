@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
 import { DataService } from '@app/services';
+import { ActivatedRoute } from '@angular/router';
 import {
 AbstractControl,
 FormBuilder,
@@ -35,12 +36,18 @@ export class ListRawMaterialByProviderComponent implements OnInit {
     selectedProviderSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     selectedProvider?: Provider;
     providerOptions?: Provider[];
+    materialType = 1;
+    pageTitle = 'Ingreso de proveedores';
+    basePath = '/rawMaterialsByProvider';
 
     cards?: any[];
 
-    constructor(private dataService: DataService, public _builder: FormBuilder) {}
+    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute) {}
 
     ngOnInit() {
+        this.materialType = this.route.snapshot.data['materialType'] ?? 1;
+        this.basePath = this.materialType === 2 ? '/empaques' : '/rawMaterialsByProvider';
+        this.pageTitle = this.materialType === 2 ? 'Material de Empaque' : 'Ingreso de proveedores';
         this.retriveRawMaterials();
 
         this.selectedProviderSubject.subscribe(value => {
@@ -71,6 +78,8 @@ export class ListRawMaterialByProviderComponent implements OnInit {
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
+                this.rawMaterials = this.rawMaterials?.filter(rm => (rm.rawMaterialByProviderTypeId ?? 1) === this.materialType);
+                this.allRawMaterials = this.rawMaterials;
                 this.getCards();
             }
         });
@@ -102,8 +111,8 @@ export class ListRawMaterialByProviderComponent implements OnInit {
                         {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!)},
                     ],
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/rawMaterialsByProvider/view/' + element.id},
-                        {title: 'Editar', value: 'edit_note', link: '/rawMaterialsByProvider/edit/' + element.id},
+                        {title: 'Ver', value: 'visibility', link: this.basePath + '/view/' + element.id},
+                        {title: 'Editar', value: 'edit_note', link: this.basePath + '/edit/' + element.id},
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currRawMaterial._id},
                     ]
                 };
@@ -119,7 +128,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
                     const nameMatch = val.rawMaterialBase?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const measureMatch = val.rawMaterialBase?.measure?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const descriptionMatch = val.rawMaterialBase?.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const priceMatch = val.price?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
+                    const priceMatch = String(val.price ?? '').toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const providerMatch = val.provider?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     return nameMatch || measureMatch || descriptionMatch || priceMatch || providerMatch;
                 }

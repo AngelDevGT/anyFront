@@ -1,6 +1,5 @@
 import { Component, OnInit} from '@angular/core';
-import { from, of } from 'rxjs';
-import { concatMap, first, last } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
 
 import { AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -20,6 +19,7 @@ export class ViewRawMaterialByProviderComponent implements OnInit{
     loading = false;
     elements: any = [];
     cardPhoto = undefined;
+    basePath = '/rawMaterialsByProvider';
 
     constructor(private dataService: DataService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router) {
@@ -27,6 +27,8 @@ export class ViewRawMaterialByProviderComponent implements OnInit{
 
     ngOnInit(): void {
         this.id = this.route.snapshot.params['id'];
+        const materialType = this.route.snapshot.data['materialType'] ?? 1;
+        this.basePath = materialType === 2 ? '/empaques' : '/rawMaterialsByProvider';
 
         this.loading = true;
 
@@ -53,8 +55,8 @@ export class ViewRawMaterialByProviderComponent implements OnInit{
             .pipe(first())
             .subscribe({
                 next: () => {
-                this.alertService.success('Materia Prima Por Proveedor eliminada', { keepAfterRouteChange: true });
-                this.router.navigateByUrl('/rawMaterialsByProvider');
+                this.alertService.success('Eliminado correctamente', { keepAfterRouteChange: true });
+                this.router.navigateByUrl(this.basePath);
                 },
                 error: error => {
                     this.alertService.error(`Error al eliminar la materia prima por proveedor"${error.error.updateRawMaterialResponse.AcknowledgementDescription}", contacte con Administracion.`);

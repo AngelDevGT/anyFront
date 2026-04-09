@@ -99,7 +99,7 @@
                             </div>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'summary-rmp-inv-bodega'"></responsive-table>
                     <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>

@@ -154,9 +154,12 @@ export class AddEditProductoForSaleComponent implements OnInit{
     setEstablishment(establishmentId: string){
         this.productForSaleElements = [];
         this.unselectedFinishedProducts = [];
-        this.finishedProducts = this.allFinishedProducts;
         if(establishmentId){
             this.selectedEstablishment = this.establishmentOptions?.find(establ => String(establ.id) === establishmentId);
+            const typeId = this.selectedEstablishment?.establishmentTypeId ?? 1;
+            this.finishedProducts = this.allFinishedProducts?.filter(fp => (fp.finishedProductTypeId ?? 1) === typeId);
+        } else {
+            this.finishedProducts = this.allFinishedProducts;
         }
     }
 

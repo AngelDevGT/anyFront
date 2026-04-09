@@ -18,8 +18,8 @@ export class ListProviderComponent implements OnInit {
     searchTerm?: string;
     page = 1;
     isDeleting = false;
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     tableElementsValues?: any;
 
     constructor(private dataService: DataService, private alertService: AlertService) {}

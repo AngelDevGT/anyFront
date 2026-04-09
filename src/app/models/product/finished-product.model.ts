@@ -12,4 +12,5 @@ export class FinishedProduct {
     creatorUser?: User;
     creationDate?: string;
     updatedDate?: string;
+    finishedProductTypeId?: number;
 }

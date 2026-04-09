@@ -134,6 +134,15 @@ CREATE TABLE public."user" (
 );
 
 
+-- public.establishment_type definition
+
+CREATE TABLE public.establishment_type (
+	id int4 NOT NULL,
+	"name" varchar(50) NOT NULL,
+	CONSTRAINT establishment_type_pkey PRIMARY KEY (id)
+);
+
+
 -- public.establishment definition
 
 -- Drop table
@@ -150,12 +159,27 @@ CREATE TABLE public.establishment (
 	creation_date timestamp DEFAULT timezone('UTC'::text, CURRENT_TIMESTAMP) NOT NULL,
 	updated_date timestamp NULL,
 	receive_pending_orders_enabled bool DEFAULT false NOT NULL,
+	establishment_type_id int4 NOT NULL DEFAULT 1,
 	CONSTRAINT establishment_pkey PRIMARY KEY (id),
 	CONSTRAINT finished_product_fk_creator_user_id FOREIGN KEY (creator_user_id) REFERENCES public."user"(id),
-	CONSTRAINT finished_product_fk_status_id FOREIGN KEY (status_id) REFERENCES public.status(id)
+	CONSTRAINT finished_product_fk_status_id FOREIGN KEY (status_id) REFERENCES public.status(id),
+	CONSTRAINT establishment_fk_type_id FOREIGN KEY (establishment_type_id) REFERENCES public.establishment_type(id)
 );
 
 -- Migration: ALTER TABLE public.establishment ADD COLUMN receive_pending_orders_enabled bool DEFAULT false NOT NULL;
+-- Migration: CREATE TABLE public.establishment_type (id int4 NOT NULL, "name" varchar(50) NOT NULL, CONSTRAINT establishment_type_pkey PRIMARY KEY (id));
+-- Migration: INSERT INTO public.establishment_type (id, name) VALUES (1, 'producto'), (2, 'abarrote');
+-- Migration: ALTER TABLE public.establishment ADD COLUMN establishment_type_id int4 NOT NULL DEFAULT 1;
+-- Migration: ALTER TABLE public.establishment ADD CONSTRAINT establishment_fk_type_id FOREIGN KEY (establishment_type_id) REFERENCES public.establishment_type(id);
+
+
+-- public.finished_product_type definition
+
+CREATE TABLE public.finished_product_type (
+	id int4 NOT NULL,
+	"name" varchar(50) NOT NULL,
+	CONSTRAINT finished_product_type_pkey PRIMARY KEY (id)
+);
 
 
 -- public.finished_product definition
@@ -174,11 +198,19 @@ CREATE TABLE public.finished_product (
 	creation_date timestamp DEFAULT timezone('UTC'::text, CURRENT_TIMESTAMP) NOT NULL,
 	updated_date timestamp NULL,
 	unit_base_id int4 NOT NULL,
+	finished_product_type_id int4 NOT NULL DEFAULT 1,
 	CONSTRAINT finished_product_pkey PRIMARY KEY (id),
 	CONSTRAINT finished_product_fk_creator_user_id FOREIGN KEY (creator_user_id) REFERENCES public."user"(id),
 	CONSTRAINT finished_product_fk_status_id FOREIGN KEY (status_id) REFERENCES public.status(id),
-	CONSTRAINT finished_product_fk_unit_base_id FOREIGN KEY (unit_base_id) REFERENCES public.unit_base(id)
+	CONSTRAINT finished_product_fk_unit_base_id FOREIGN KEY (unit_base_id) REFERENCES public.unit_base(id),
+	CONSTRAINT finished_product_fk_type_id FOREIGN KEY (finished_product_type_id) REFERENCES public.finished_product_type(id)
 );
+
+-- Migration:
+-- CREATE TABLE public.finished_product_type (id int4 NOT NULL, "name" varchar(50) NOT NULL, CONSTRAINT finished_product_type_pkey PRIMARY KEY (id));
+-- INSERT INTO public.finished_product_type (id, name) VALUES (1, 'embutido'), (2, 'abarrote');
+-- ALTER TABLE public.finished_product ADD COLUMN finished_product_type_id int4 NOT NULL DEFAULT 1;
+-- ALTER TABLE public.finished_product ADD CONSTRAINT finished_product_fk_type_id FOREIGN KEY (finished_product_type_id) REFERENCES public.finished_product_type(id);
 
 
 -- public.inventory definition
@@ -377,6 +409,15 @@ CREATE TABLE public.raw_material (
 );
 
 
+-- public.raw_material_by_provider_type definition
+
+CREATE TABLE public.raw_material_by_provider_type (
+	id int4 NOT NULL,
+	"name" varchar(50) NOT NULL,
+	CONSTRAINT raw_material_by_provider_type_pkey PRIMARY KEY (id)
+);
+-- Migration: INSERT INTO public.raw_material_by_provider_type (id, "name") VALUES (1, 'alimento'), (2, 'empaque');
+
 -- public.raw_material_by_provider definition
 
 -- Drop table
@@ -390,14 +431,18 @@ CREATE TABLE public.raw_material_by_provider (
 	raw_material_base_id uuid NOT NULL,
 	status_id int4 NOT NULL,
 	creator_user_id uuid NOT NULL,
+	raw_material_by_provider_type_id int4 NOT NULL DEFAULT 1,
 	creation_date timestamp DEFAULT timezone('UTC'::text, CURRENT_TIMESTAMP) NOT NULL,
 	updated_date timestamp NULL,
 	CONSTRAINT raw_material_by_provider_pkey PRIMARY KEY (id),
 	CONSTRAINT raw_material_by_provider_fk_creator_user_id FOREIGN KEY (creator_user_id) REFERENCES public."user"(id),
 	CONSTRAINT raw_material_by_provider_fk_provider_id FOREIGN KEY (provider_id) REFERENCES public.provider(id),
 	CONSTRAINT raw_material_by_provider_fk_raw_material_base_id FOREIGN KEY (raw_material_base_id) REFERENCES public.raw_material(id),
-	CONSTRAINT raw_material_by_provider_fk_status_id FOREIGN KEY (status_id) REFERENCES public.status(id)
+	CONSTRAINT raw_material_by_provider_fk_status_id FOREIGN KEY (status_id) REFERENCES public.status(id),
+	CONSTRAINT raw_material_by_provider_fk_type_id FOREIGN KEY (raw_material_by_provider_type_id) REFERENCES public.raw_material_by_provider_type(id)
 );
+-- Migration: ALTER TABLE public.raw_material_by_provider ADD COLUMN raw_material_by_provider_type_id int4 NOT NULL DEFAULT 1;
+-- Migration: ALTER TABLE public.raw_material_by_provider ADD CONSTRAINT raw_material_by_provider_fk_type_id FOREIGN KEY (raw_material_by_provider_type_id) REFERENCES public.raw_material_by_provider_type(id);
 
 
 -- public.raw_material_order definition

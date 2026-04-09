@@ -70,6 +70,7 @@ export class ViewEstablishmentComponent implements OnInit{
     setEstablishmentElements(establishment: Establishment){
         this.elements.push({icon : "pin_drop", name : "Direccion", value : establishment.address});
         this.elements.push({icon : "description", name : "Descripción", value : establishment.description});
+        this.elements.push({icon : "storefront", name : "Tipo de tienda", value : establishment.establishmentTypeId === 2 ? "Abarrotes" : "Productos"});
         this.elements.push({icon : "info", name : "Estado", value : establishment.status?.identifier});
         this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(establishment.creationDate!.replaceAll("\"",""))});
         this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : establishment.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(establishment.updatedDate!.replaceAll("\"","")) : '--'});

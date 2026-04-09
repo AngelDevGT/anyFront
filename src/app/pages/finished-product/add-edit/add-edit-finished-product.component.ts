@@ -41,6 +41,8 @@ export class AddEditFinishedProductComponent implements OnInit{
     title!: string;
     loading = true;
     submitting = false;
+    productType = 1;
+    basePath = '/finishedProducts';
     maxFileSize = 10485760;
     listMaxLength = {
         name : 50,
@@ -63,15 +65,17 @@ export class AddEditFinishedProductComponent implements OnInit{
     ngOnInit(): void {
 
         this.id = this.route.snapshot.params['id'];
+        this.productType = this.route.snapshot.data['productType'] ?? 1;
+        this.basePath = this.productType === 2 ? '/abarrotes' : '/finishedProducts';
 
         this.productForm = this.createFormGroup();
-        this.title = 'Crear Producto Terminado';
+        this.title = this.productType === 2 ? 'Crear Abarrote' : 'Crear Producto Terminado';
 
         let requestArray = [];
 
         requestArray.push(this.dataService.getAnyComponent({}, 'getUnitBase')); // measureRequest
         if (this.id){
-            this.title = 'Actualizar Producto Terminado';
+            this.title = this.productType === 2 ? 'Actualizar Abarrote' : 'Actualizar Producto Terminado';
             requestArray.push(this.dataService.getFinishedProductById(this.id));
         }
 
@@ -147,7 +151,7 @@ export class AddEditFinishedProductComponent implements OnInit{
             ).subscribe({
                 next: () => {
                     this.alertService.success('Producto terminado guardado', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/finishedProducts');
+                    this.router.navigateByUrl(this.basePath);
                 },
                 error: error => {
                     let errorResponse = error.error;
@@ -166,7 +170,7 @@ export class AddEditFinishedProductComponent implements OnInit{
                 .subscribe({
                     next: () => {
                         this.alertService.success('Producto terminado guardado', { keepAfterRouteChange: true });
-                        this.router.navigateByUrl('/finishedProducts');
+                        this.router.navigateByUrl(this.basePath);
                     },
                     error: error => {
                         let errorResponse = this.dataService.findJsonValue(error, 'error');
@@ -206,7 +210,8 @@ export class AddEditFinishedProductComponent implements OnInit{
         }
         let newProduct = {
             ...this.productForm.value,
-            measure: this.selectedMeasure
+            measure: this.selectedMeasure,
+            finishedProductTypeId: this.productType
         }
         return this.dataService.addFinishedProduct(newProduct, imgName);
     }

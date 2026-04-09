@@ -9,13 +9,27 @@
             <div *ngIf="loading" class="text-center m-5">
                 <span class="spinner-border spinner-border-lg align-center"></span>
             </div>
-            <form *ngIf="!loading">
+            <form *ngIf="!loading" [formGroup]="orderForm">
                 <div class="container">
                     <div class="row justify-content-center">
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
                             <div *ngIf="!isEditOption" class="row justify-content-center col-12">
                                 <div class="p-3 col-sm-12 col-md-6">
                                     <h2 class="text-center text-muted">Materia prima disponible</h2>
+                                    <div class="d-flex justify-content-center my-2">
+                                        <mat-form-field appearance="outline" class="col-md-6 col-sm-12">
+                                            <mat-label>Buscar</mat-label>
+                                            <input type="text" matInput
+                                                [value]="rmSearchTerm || ''"
+                                                (input)="rmSearchTerm = $any($event.target).value"
+                                                [matAutocomplete]="rmAuto" />
+                                            <mat-autocomplete #rmAuto (optionSelected)="rmSearchTerm = $event.option.value">
+                                                <mat-option *ngFor="let el of filteredInventoryElements" [value]="el.rawMaterialBase?.name">
+                                                    {{ el.rawMaterialBase?.name }}
+                                                </mat-option>
+                                            </mat-autocomplete>
+                                        </mat-form-field>
+                                    </div>
                                     <div class="table-container my-custom-scrollbar">
                                         <table class="table table-bordered border-danger">
                                             <thead>
@@ -28,7 +42,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr *ngFor="let invElement of inventoryElements; let i = index">
+                                                <tr *ngFor="let invElement of filteredInventoryElements; let i = index">
                                                     <td>{{invElement.rawMaterialBase?.name}}</td>
                                                     <td>{{invElement.measure?.identifier}}</td>
                                                     <td>{{invElement.quantity}}</td>
@@ -80,11 +94,23 @@
                                         </table>
                                     </div>
                                 </div>
-                                <mat-divider></mat-divider>
+                                <!-- <mat-divider></mat-divider> -->
                             </div>
                         </div>
+                        <div class="d-flex flex-wrap justify-content-center col-12 px-3 pb-2">
+                            <mat-form-field class="col-sm-12 col-md-12 custom-input" appearance="outline">
+                                <mat-label>Comentario</mat-label>
+                                <textarea formControlName="comment" matInput maxlength="254"
+                                    [ngClass]="{ 'is-invalid': f['comment'].errors && f['comment'].touched }"></textarea>
+                                <mat-hint align="end">{{orderForm.get('comment')?.value?.length || 0}} / 254</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['comment'].errors && f['comment'].touched">
+                                    <div *ngIf="f['comment'].hasError('required')">Comentario requerido</div>
+                                    <div *ngIf="f['comment'].hasError('maxlength')">Máximo 254 caracteres</div>
+                                </div>
+                            </mat-form-field>
+                        </div>
                         <div class="col-sm-12 text-center p-2">
-                            <button *ngIf="!isReceiveOption" id="boton-form-crear-comunidad" type="button" (click)="onSaveForm()" [disabled]="submitting||!finishedProductCreationConsumedElements||finishedProductCreationConsumedElements.length<=0"
+                            <button *ngIf="!isReceiveOption" id="boton-form-crear-comunidad" type="button" (click)="onSaveForm()" [disabled]="submitting||!finishedProductCreationConsumedElements||finishedProductCreationConsumedElements.length<=0||f['comment'].invalid"
                                 class="btn btn-outline-success btn-lg">
                                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                                 Consumir materia prima

@@ -536,6 +536,9 @@ export const measureUnits =
 @Injectable({ providedIn: 'root' })
 export class DataService {
 
+    readonly tableEntries = [5, 10, 20, 50, 100];
+    readonly defaultPageSize = 50;
+
     constructor( private router: Router, private http: HttpClient, private accountService: AccountService ) {
     }
 
@@ -662,6 +665,7 @@ export class DataService {
                 address: establishment.address,
                 description: establishment.description,
                 receive_pending_orders_enabled: establishment.receivePendingOrdersEnabled ?? false,
+                establishment_type_id: establishment.establishmentTypeId ?? 1,
                 status_id: establishmentStatusValues.activo.status.id,
                 creator_user_id: this.accountService.userValue.uuid
             });
@@ -674,6 +678,7 @@ export class DataService {
             address: establishment.address,
             description: establishment.description,
             receive_pending_orders_enabled: establishment.receivePendingOrdersEnabled ?? false,
+            establishment_type_id: establishment.establishmentTypeId ?? 1,
             id: id
         });
         return this.http.patch(`${environment.apiUrlV3}/updateEstablishment`, params);
@@ -963,7 +968,8 @@ export class DataService {
             provider_id: rawMaterial.provider?.id,
             raw_material_base_id: rawMaterial.rawMaterialBase?.id,
             status_id: rawMaterialByProviderStatusValues.activo.status.id,
-            creator_user_id: this.accountService.userValue.uuid
+            creator_user_id: this.accountService.userValue.uuid,
+            raw_material_by_provider_type_id: rawMaterial.rawMaterialByProviderTypeId ?? 1
         });
         return this.http.put(`${environment.apiUrlV3}/addRawMaterialByProvider`, params);
     }
@@ -1015,7 +1021,8 @@ export class DataService {
             photo: product.photo,
             status_id: finishedProductStatusValues.activo.status.id,
             unit_base_id: product.measure?.id,
-            creator_user_id: this.accountService.userValue.uuid
+            creator_user_id: this.accountService.userValue.uuid,
+            finished_product_type_id: product.finishedProductTypeId ?? 1
         });
         return this.http.put(`${environment.apiUrlV3}/addFinishedProduct`, params);
     }
@@ -1376,6 +1383,11 @@ export class DataService {
     }
 
     /** SALES */
+    getShopSaleSummary(params: any) {
+        let parameters = JSON.stringify({ ss: { ...params } });
+        return this.http.post(`${environment.apiUrlV3}/listShopSaleSummary`, parameters);
+    }
+
     getAllShopHistory(params: any) {
         let parameters = JSON.stringify({
             ss: {

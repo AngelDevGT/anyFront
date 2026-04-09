@@ -45,7 +45,7 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table [tableElements]="tableElementsValues" [pageSize]="pageSize" (sentData)="receiveData($event)"></responsive-table>
+                    <responsive-table [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'store-inv-pfs'" (sentData)="receiveData($event)"></responsive-table>
                 </div>
             </div>
             <div class="row justify-content-center">
@@ -109,7 +109,7 @@
                             <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                                 <div class="subtotal">
                                     <p class="subtotal-title">Cantidad Disponible ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity }}</p>
+                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad a agregar ({{ inventoryUnitBase?.name }})</p>
@@ -186,7 +186,7 @@
                             <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                                 <div class="subtotal">
                                     <p class="subtotal-title">Cantidad Disponible ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity }}</p>
+                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad a eliminar ({{ inventoryUnitBase?.name }})</p>
@@ -257,7 +257,7 @@
                             <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                                 <div class="subtotal">
                                     <p class="subtotal-title">Cantidad Disponible ({{ inventoryUnitBase?.name }})</p>
-                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity }}</p>
+                                    <p class="subtotal-amount">{{ this.modalUnitBaseTotalQuantity | number: '1.2-2' }}</p>
                                 </div>
                                 <div class="total">
                                     <p class="total-title">Cantidad a devolver ({{ inventoryUnitBase?.name }})</p>

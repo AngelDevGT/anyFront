@@ -31,7 +31,7 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.shopResumes" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <responsive-table *ngIf="this.shopResumes" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'store-sales-list'"></responsive-table>
                     <span *ngIf="!shopResumes" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>

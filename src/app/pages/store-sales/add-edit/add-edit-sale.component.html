@@ -59,9 +59,9 @@
                             <!-- *ngIf="selectedProviderSubject.value" -->
                             <!-- <div *ngIf="selectedProviderSubject.value" class="row justify-content-center col-12"> -->
                             <div *ngIf="!isEditOption" class="row justify-content-center col-12">
-                                <div class="p-3 col-sm-12 col-md-6">
+                                <div class="p-3 col-sm-12 col-md-5">
                                     <h2 class="text-center text-muted">Producto disponible</h2>
-                                    <div class="d-flex justify-content-center my-2">
+                                    <div class="d-flex justify-content-center my-2" style="height: 72px;">
                                         <mat-form-field appearance="outline" class="col-md-6 col-sm-12">
                                             <mat-label>Buscar</mat-label>
                                             <input type="text" matInput
@@ -112,17 +112,18 @@
                                         </table>
                                     </div>
                                 </div>
-                                <div *ngIf="!isEditOption" class="table-responsive p-3 col-sm-12 col-md-6">
+                                <div *ngIf="!isEditOption" class="table-responsive p-3 col-sm-12 col-md-7">
                                     <h2 class="text-center text-muted">Producto seleccionado</h2>
+                                    <div class="d-none d-md-block my-2" style="height: 72px;"></div>
                                     <div class="table-container my-custom-scrollbar">
                                         <table class="table table-striped">
                                             <thead>
                                                 <tr>
-                                                    <th style="width: 30%">Nombre</th>
+                                                    <th style="width: 35%">Nombre</th>
                                                     <th style="width: 10%">Medida</th>
                                                     <th style="width: 10%">Precio</th>
-                                                    <th style="width: 15%">Cantidad</th>
-                                                    <th style="width: 10%">Descuento total</th>
+                                                    <th style="width: 10%">Cantidad</th>
+                                                    <th style="width: 10%">Descuento</th>
                                                     <th style="width: 10%">Total</th>
                                                     <th style="width: 15%">Acciones</th>
                                                 </tr>
@@ -277,7 +278,7 @@
                                 <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                                     <div class="subtotal">
                                         <p class="subtotal-title">Cantidad Disponible ({{ selectedIE?.measure?.identifier }})</p>
-                                        <p class="subtotal-amount">{{ this.selectedIE?.quantity }}</p>
+                                        <p class="subtotal-amount">{{ this.selectedIE?.quantity | number: '1.2-2' }}</p>
                                     </div>
                                     <div class="total">
                                         <p class="total-title">Cantidad Seleccionada ({{ selectedIE?.measure?.identifier }})</p>

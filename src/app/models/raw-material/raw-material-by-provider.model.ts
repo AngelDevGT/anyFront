@@ -5,6 +5,7 @@ import { RawMaterialBase } from "./raw-material-base.model";
 
 export class RawMaterialByProvider {
     id?: string;
+    rawMaterialByProviderTypeId?: number;
     rawMaterialBase?: RawMaterialBase;
     price?: string;
     provider?: Provider;

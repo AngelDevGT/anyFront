@@ -32,7 +32,7 @@
                             </mat-form-field>
                         </div>
                     </div>
-                    <responsive-table *ngIf="this.cashClosings" [tableElements]="tableElementsValues" [pageSize]="pageSize"></responsive-table>
+                    <responsive-table *ngIf="this.cashClosings" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'cash-closing-list'"></responsive-table>
                     <span *ngIf="!cashClosings" class="spinner-border spinner-border-lg align-center"></span>
                 </div>
             </div>

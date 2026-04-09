@@ -33,8 +33,8 @@ export class ListStoreSalesPFSComponent implements OnInit {
     modalSelectedQuantity = 0;
     modalUnitBaseTotalQuantity = 0;
     searchTerm?: string;
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
     tableElementsValues?: any;
 
@@ -90,7 +90,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
         this.tableElementsValues = [];
         elements?.forEach((element: ShopResume) => {
             const curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha", style: "width: 10%" },
+                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha", style: "width: 10%", rows_bg_color: element.status?.bg_color, rows_color: element.status?.color },
                     // { type: "text", value: element.establecimiento?.name, header_name: "Tienda", style: "width: 15%" },
                     // { type: "text", value: element.totalDiscount, header_name: "Descuento" },
                     // { type: "text", value: Number(element.total) - Number(element.totalDiscount), header_name: "Subtotal" },

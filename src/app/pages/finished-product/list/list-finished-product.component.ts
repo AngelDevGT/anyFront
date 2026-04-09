@@ -10,6 +10,7 @@ FormControl,
 } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { FinishedProduct } from '@app/models/product/finished-product.model';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({ 
     selector: 'page-list-finished-product',
@@ -33,16 +34,24 @@ export class ListFinishedProductComponent implements OnInit {
     filteredCreatorUserOptions?: Observable<string[]>;
 
     cards?: any[];
+    productType = 1;
+    basePath = '/finishedProducts';
+    pageTitle = 'Productos';
+    createLabel = 'Crear Producto';
 
-    constructor(private dataService: DataService, public _builder: FormBuilder) {}
+    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute) {}
 
     ngOnInit() {
+        this.productType = this.route.snapshot.data['productType'] ?? 1;
+        this.basePath = this.productType === 2 ? '/abarrotes' : '/finishedProducts';
+        this.pageTitle = this.productType === 2 ? 'Abarrotes' : 'Productos';
+        this.createLabel = this.productType === 2 ? 'Crear Abarrote' : 'Crear Producto';
         this.retriveProducts();
     }
 
     retriveProducts(){
         this.products = undefined;
-        this.dataService.getAllFinishedProductByFilter({"status_id": 36})
+        this.dataService.getAllFinishedProductByFilter({"status_id": 36, "finished_product_type_id": this.productType})
             .pipe(first())
             .subscribe({
                 next: (products: any) => {
@@ -68,8 +77,8 @@ export class ListFinishedProductComponent implements OnInit {
                         {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(currProduct.updatedDate!)}
                     ],
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/finishedProducts/view/' + currProduct.id},
-                        {title: 'Editar', value: 'edit_note', link: '/finishedProducts/edit/' + currProduct.id},
+                        {title: 'Ver', value: 'visibility', link: this.basePath + '/view/' + currProduct.id},
+                        {title: 'Editar', value: 'edit_note', link: this.basePath + '/edit/' + currProduct.id},
                         // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currProduct._id},
                     ]
                 }

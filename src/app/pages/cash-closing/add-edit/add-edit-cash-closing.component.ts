@@ -40,8 +40,8 @@ export class AddEditCashClosingComponent implements OnInit{
     loading = false;
     elementsByUpdate: any = [];
     elementsByCreate: any = [];
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     tableShopResumes?: any = [];
     tableSaleStoreOrders?: any = [];
     tableInventoryCapture?: any = [];

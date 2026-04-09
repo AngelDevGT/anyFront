@@ -13,8 +13,8 @@ export class ListCashClosingComponent implements OnInit {
     cashClosings?: CashClosing[];
     allCashClosings?: CashClosing[];
     searchTerm?: string;
-    entries = [5, 10, 20, 50];
-    pageSize = 5;
+    entries = this.dataService.tableEntries;
+    pageSize = this.dataService.defaultPageSize;
     page = 1;
     title = '';
     tableElementsValues?: any;
