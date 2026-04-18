@@ -112,6 +112,9 @@ export class ViewInventoryLogComponent implements OnInit {
                 break;
             case 'finished_product':
                 catalogFilter = 'retriveFinishedProductInventoryActions';
+                if (this.productType !== undefined) {
+                    activityLogFilter.fp = { finished_product_type_id: this.productType };
+                }
                 break;
             case 'packaging_material':
                 catalogFilter = 'retrivePackagingMaterialInventoryActions';
@@ -136,12 +139,6 @@ export class ViewInventoryLogComponent implements OnInit {
             },
             error: (e) =>  this.alertService.error(this.dataService.findJsonValue(e, 'AcknowledgementDescription')),
             complete: () => {
-                if (this.productType !== undefined) {
-                    this.inventoryLogs = this.allInventoryLogs?.filter(log =>
-                        (log.element?.finishedProductTypeId ?? 1) === this.productType
-                    );
-                    this.allInventoryLogs = this.inventoryLogs;
-                }
                 this.setCardElements(this.inventoryLogs);
             }
         });

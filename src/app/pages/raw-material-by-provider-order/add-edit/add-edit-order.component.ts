@@ -123,7 +123,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
         requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
         requestArray.push(this.dataService.getAnyComponent({}, 'getPaymentTypes')); // paymentTypeRequest
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
-        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34})); //rawMaterialByProviderRequest
+        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34, "raw_material_by_provider_type_id": 1})); //rawMaterialByProviderRequest
 
         if (this.id){
             requestArray.push(this.dataService.getRawMaterialOrderById(this.id));

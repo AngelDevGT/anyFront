@@ -44,12 +44,16 @@ The default route (`''`) loads `AdminLayoutModule`. All admin routes are defined
 - **`DataService`** (`src/app/services/data/data.service.ts`) — monolithic 47KB API gateway for all HTTP operations. All domain CRUD (providers, raw materials, products, inventory, orders, store sales, cash closing) lives here. Each domain has status ID constants defined within the service (e.g., `establishmentStatusValues`).
 - **`AccountService`** (`src/app/services/account.service.ts`) — auth state, JWT handling, role-based menu config (60+ items), and path permission definitions.
 - **`AlertService`** (`src/app/services/alert.service.ts`) — toast notifications via RxJS Subject. Use `alertService.success()`, `.error()`, `.info()`, `.warn()`.
+- **`SessionService`** (`src/app/services/session/session.service.ts`) — legacy auth service, superseded by `AccountService`. Do not use for new code.
+- **`HeadersService`** (`src/app/services/headers/headers.service.ts`) — legacy header helper, superseded by `JwtInterceptor`. Do not use for new code.
 
 ### API & Environments
 
+Environment files live in `src/environments/enviroment.ts` and `enviroment.prod.ts` (note: intentional typo in filename — missing the 'n').
+
 Two API endpoint versions in use:
 - `apiUrlV2` — Azure Function App (authenticated via JWT interceptor)
-- `apiUrlV3` — separate Azure endpoint (dev only; routed via `proxy.conf.json` as `/api`)
+- `apiUrlV3` — separate Azure endpoint. `proxy.conf.json` rewrites `/api` → `https://any-function-sql.azurewebsites.net/api/V3` for local dev; to use the proxy, set `apiUrlV3: '/api'` in `enviroment.ts` and run `ng serve --proxy-config proxy.conf.json`.
 
 API responses follow the pattern: `response.data[0].json_result` or domain-specific wrappers like `retrieveEstablishmentsResponse?.data[0]?.json_result`.
 

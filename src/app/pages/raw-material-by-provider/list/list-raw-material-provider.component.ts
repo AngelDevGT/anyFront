@@ -66,7 +66,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
         this.rawMaterials = undefined;
 
         let requestArray = [];
-        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34}));
+        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34, "raw_material_by_provider_type_id": this.materialType}));
         requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
 
         forkJoin(requestArray).subscribe({
