@@ -1027,37 +1027,46 @@ left join status s on ss.status_id = s.id
 left join payment_type pt on ss.payment_type_id = pt.id
 left join "user" u on ss.creator_user_id = u.id
 left join establishment e on ss.establishment_id = e.id','shop_sale','POST'),
-	 ('retrieveProductsForSale','/retrieveProductsForSale','SELECT json_agg(
+	 ('retrieveProductsForSale','/retrieveProductsForSale','WITH products_ordered AS (
+    SELECT pfs.id, pfs.creation_date, pfs.updated_date, pfs.price,
+           fp.id AS fp_id, fp.name AS fp_name, fp.photo, fp.description,
+           ub.name AS ub_name, ub."type" AS ub_type,
+           s.name AS s_name, s."type" AS s_type,
+           e.id AS e_id, e.name AS e_name
+    FROM product_for_sale pfs
+    LEFT JOIN finished_product fp ON pfs.finished_product_id = fp.id
+    LEFT JOIN unit_base ub ON fp.unit_base_id = ub.id
+    LEFT JOIN establishment e ON e.id = pfs.establishment_id
+    LEFT JOIN status s ON s.id = pfs.status_id
+    ORDER BY pfs.creation_date ASC
+)
+SELECT json_agg(
     json_build_object(
-        ''id'', pfs.id,
-        ''creationDate'', pfs.creation_date,
-	    ''updatedDate'', coalesce(pfs.updated_date, pfs.creation_date),
-        ''price'', pfs.price,
+        ''id'', po.id,
+        ''creationDate'', po.creation_date,
+        ''updatedDate'', coalesce(po.updated_date, po.creation_date),
+        ''price'', po.price,
         ''finishedProduct'', json_build_object(
-            ''id'', fp.id,
-            ''name'', fp.name,
-            ''photo'', fp.photo,
-            ''description'', fp.description,
+            ''id'', po.fp_id,
+            ''name'', po.fp_name,
+            ''photo'', po.photo,
+            ''description'', po.description,
             ''measure'', json_build_object(
-                ''identifier'', ub.name,
-                ''type'', ub."type"
+                ''identifier'', po.ub_name,
+                ''type'', po.ub_type
             )
         ),
         ''status'', json_build_object(
-            ''name'', s.name,
-            ''type'', s."type"
+            ''name'', po.s_name,
+            ''type'', po.s_type
         ),
         ''establishment'', json_build_object(
-            ''id'', e.id,
-            ''name'', e.name
+            ''id'', po.e_id,
+            ''name'', po.e_name
         )
     )
 ) AS json_result
-FROM product_for_sale pfs
-LEFT JOIN finished_product fp ON pfs.finished_product_id = fp.id
-LEFT JOIN unit_base ub ON fp.unit_base_id = ub.id
-LEFT JOIN establishment e ON e.id = pfs.establishment_id
-LEFT JOIN status s ON s.id = pfs.status_id','product_for_sale','POST'),
+FROM products_ordered po','product_for_sale','POST'),
 	 ('deleteStoreCashClosing','/deleteStoreCashClosing','delete from cash_closing
 where id = $1','cash_closing','PATCH'),
 	 ('retrieveStoreCashClosing','/retrieveStoreCashClosing','SELECT json_build_object(
