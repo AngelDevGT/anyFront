@@ -344,7 +344,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
     }
 
     goToActionsHistory(){
-        this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName } });
+        this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName, materialType: this.materialType } });
     }
 
     receiveData(data: any){

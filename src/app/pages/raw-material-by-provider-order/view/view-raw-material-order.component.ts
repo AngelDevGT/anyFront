@@ -24,6 +24,8 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     rawMaterialOrder?: RawMaterialOrder;
     submitting = false;
     loading = false;
+    materialType = 1;
+    basePath = '/rawMaterialByProvider/order';
     elements: any = [];
     entries = this.dataService.tableEntries;
     pageSize = this.dataService.defaultPageSize;
@@ -48,6 +50,8 @@ export class ViewRawMaterialOrderComponent implements OnInit{
 
         this.payForm = this.createPayFormGroup();
 
+        this.materialType = this.route.snapshot.data['materialType'] ?? 1;
+        this.basePath = this.materialType === 2 ? '/empaques/order' : '/rawMaterialByProvider/order';
         this.id = this.route.snapshot.params['id'];
 
         this.loading = true;
@@ -177,10 +181,10 @@ export class ViewRawMaterialOrderComponent implements OnInit{
             .pipe(first()).subscribe({
                 next: () => {
                     this.alertService.success('Pedido actualizado', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/rawMaterialByProvider/order');
+                    this.router.navigateByUrl(this.basePath);
                 },
                 error: error => {
-                    let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al actualizar el pedido de materia prima');
+                    let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al actualizar el pedido');
                     this.alertService.error(errorMessage);
                     this.submitting = false;
             }});
@@ -188,10 +192,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     }
 
     receiveOrder(_id?: string){
-        // this.confirmDialogTitle = 'Recibir Pedido';
-        // this.confirmDialogText = '¿Deseas marcar el pedido como recibido?';
-        // this.confirmDialogId = 1;
-        this.router.navigate(['/rawMaterialByProvider/order/edit/' + _id], {
+        this.router.navigate([this.basePath + '/edit/' + _id], {
             queryParams: {
                 opt: 'receive'
             }
@@ -199,7 +200,7 @@ export class ViewRawMaterialOrderComponent implements OnInit{
     }
 
     editOrder(_id?: string){
-        this.router.navigate(['/rawMaterialByProvider/order/edit/' + _id], {
+        this.router.navigate([this.basePath + '/edit/' + _id], {
             queryParams: {
                 opt: 'edit'
             }
@@ -219,10 +220,10 @@ export class ViewRawMaterialOrderComponent implements OnInit{
             .subscribe({
                 next: () => {
                 this.alertService.success('Pedido eliminado', { keepAfterRouteChange: true });
-                this.router.navigateByUrl('/rawMaterialByProvider/order');
+                this.router.navigateByUrl(this.basePath);
                 },
                 error: error => {
-                    let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al eliminar el pedido de materia prima');
+                    let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al eliminar el pedido');
                     this.alertService.error(errorMessage);
                     this.submitting = false;
             }});

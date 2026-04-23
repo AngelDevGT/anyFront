@@ -26,6 +26,7 @@ export class ViewInventoryLogComponent implements OnInit {
     inventoryType?: string;
     unitName?: string;
     productType?: number;
+    materialType?: number;
     section?: string;
     title?: string;
     dateRange?: string;
@@ -50,6 +51,7 @@ export class ViewInventoryLogComponent implements OnInit {
             this.inventoryType = params['type'];
             this.unitName = params['unit'];
             this.productType = params['productType'] ? Number(params['productType']) : undefined;
+            this.materialType = params['materialType'] ? Number(params['materialType']) : undefined;
             // this.section = params['sec'];
             // this.title = this.section?.split('|||')[0];
         });

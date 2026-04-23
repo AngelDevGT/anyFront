@@ -1074,6 +1074,7 @@ export class DataService {
             "$1": JSON.stringify({
                 ...rmOrder,
                 description: rmOrder.comment,
+                rawMaterialByProviderTypeId: rmOrder.rawMaterialByProviderTypeId ?? 1,
                 creatorUser: { id: this.accountService.userValue.uuid }
             }),
             "$2": JSON.stringify(rmOrder.rawMaterialOrderElements)

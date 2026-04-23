@@ -463,6 +463,7 @@ CREATE TABLE public.raw_material_order (
 	payment_status_id int4 NOT NULL,
 	status_id int4 NOT NULL,
 	creator_user_id uuid NOT NULL,
+	raw_material_by_provider_type_id int4 NOT NULL DEFAULT 1,
 	creation_date timestamp DEFAULT timezone('UTC'::text, CURRENT_TIMESTAMP) NOT NULL,
 	updated_date timestamp NULL,
 	CONSTRAINT raw_material_order_pkey PRIMARY KEY (id),
@@ -470,7 +471,8 @@ CREATE TABLE public.raw_material_order (
 	CONSTRAINT raw_material_order_fk_payment_status_id FOREIGN KEY (payment_status_id) REFERENCES public.status(id),
 	CONSTRAINT raw_material_order_fk_payment_type_id FOREIGN KEY (payment_type_id) REFERENCES public.payment_type(id),
 	CONSTRAINT raw_material_order_fk_provider_id FOREIGN KEY (provider_id) REFERENCES public.provider(id),
-	CONSTRAINT raw_material_order_fk_status_id FOREIGN KEY (status_id) REFERENCES public.status(id)
+	CONSTRAINT raw_material_order_fk_status_id FOREIGN KEY (status_id) REFERENCES public.status(id),
+	CONSTRAINT raw_material_order_rmbp_type_fkey FOREIGN KEY (raw_material_by_provider_type_id) REFERENCES public.raw_material_by_provider_type(id)
 );
 
 

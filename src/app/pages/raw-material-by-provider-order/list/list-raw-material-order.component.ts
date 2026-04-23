@@ -9,8 +9,9 @@ import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import { BehaviorSubject } from 'rxjs';
 import { MatSelectChange } from '@angular/material/select';
+import { ActivatedRoute } from '@angular/router';
 
-@Component({ 
+@Component({
     templateUrl: 'list-raw-material-order.component.html',
     styleUrls: ['list-raw-material-order.component.scss']
 })
@@ -24,8 +25,12 @@ export class ListRawMaterialOrderComponent implements OnInit {
     pageSize = this.dataService.defaultPageSize;
     page = 1;
     tableElementsValues?: any;
+    materialType = 1;
+    basePath = '/rawMaterialByProvider/order';
+    pageTitle = 'Pedidos de Materia Prima';
 
-    constructor(private dataService: DataService, private alertService: AlertService) {
+    constructor(private dataService: DataService, private alertService: AlertService,
+        private route: ActivatedRoute) {
         // this.selectedSortOptSubject.subscribe(value => {
         //     this.sortDataByDate(value);
         // });
@@ -52,12 +57,15 @@ export class ListRawMaterialOrderComponent implements OnInit {
     }
 
     ngOnInit() {
+        this.materialType = this.route.snapshot.data['materialType'] ?? 1;
+        this.basePath = this.materialType === 2 ? '/empaques/order' : '/rawMaterialByProvider/order';
+        this.pageTitle = this.materialType === 2 ? 'Pedidos de Material de Empaque' : 'Pedidos de Materia Prima';
         this.retriveRawMaterialOrders();
     }
 
     retriveRawMaterialOrders(){
         this.rawMaterialOrders = undefined;
-        this.dataService.getAllRawMaterialOrderByFilter({})
+        this.dataService.getAllRawMaterialOrderByFilter({raw_material_by_provider_type_id: this.materialType})
             .pipe(first())
             .subscribe({
                 next: (rmOrders: any) => {

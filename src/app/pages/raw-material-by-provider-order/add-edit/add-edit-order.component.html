@@ -65,7 +65,21 @@
                             <!-- <div *ngIf="selectedProviderSubject.value" class="row justify-content-center col-12"> -->
                             <div *ngIf="!isEditOption && selectedProviderSubject.value" class="row justify-content-center col-12">
                                 <div class="p-3 col-sm-12 col-md-6">
-                                    <h2 class="text-center text-muted">Materia prima disponible</h2>
+                                    <h2 class="text-center text-muted">{{ materialType === 2 ? 'Material de empaque disponible' : 'Materia prima disponible' }}</h2>
+                                    <div class="d-flex justify-content-center my-2" style="height: 72px;">
+                                        <mat-form-field appearance="outline" class="col-md-6 col-sm-12">
+                                            <mat-label>Buscar</mat-label>
+                                            <input type="text" matInput
+                                                [value]="rmSearchTerm || ''"
+                                                (input)="rmSearchTerm = $any($event.target).value"
+                                                [matAutocomplete]="rmAuto" />
+                                            <mat-autocomplete #rmAuto (optionSelected)="rmSearchTerm = $event.option.value">
+                                                <mat-option *ngFor="let rm of filteredRawMaterialsBySearch" [value]="rm.rawMaterialBase?.name">
+                                                    {{ rm.rawMaterialBase?.name }}
+                                                </mat-option>
+                                            </mat-autocomplete>
+                                        </mat-form-field>
+                                    </div>
                                     <div class="table-container my-custom-scrollbar">
                                         <table class="table table-striped">
                                             <thead>
@@ -78,7 +92,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr *ngFor="let rawMaterial of filteredRawMaterials; let i = index">
+                                                <tr *ngFor="let rawMaterial of filteredRawMaterialsBySearch; let i = index">
                                                     <td>{{rawMaterial.rawMaterialBase?.name}}</td>
                                                     <td>{{rawMaterial.rawMaterialBase?.measure?.identifier}}</td>
                                                     <td>Q{{rawMaterial.price}}</td>
@@ -102,7 +116,8 @@
                                     </div>
                                 </div>
                                 <div class="table-responsive p-3 col-sm-12 col-md-6">
-                                    <h2 class="text-center text-muted">Materia prima seleccionada</h2>
+                                    <h2 class="text-center text-muted">{{ materialType === 2 ? 'Material de empaque seleccionado' : 'Materia prima seleccionada' }}</h2>
+                                    <div class="d-none d-md-block my-2" style="height: 72px;"></div>
                                     <div class="table-container my-custom-scrollbar">
                                         <table class="table table-striped">
                                             <thead>

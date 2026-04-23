@@ -427,7 +427,8 @@ BEGIN
             final_amount,
             payment_status_id,
             status_id,
-            creator_user_id
+            creator_user_id,
+            raw_material_by_provider_type_id
         )
         VALUES (
             order_properties->>'name',
@@ -439,7 +440,8 @@ BEGIN
             (order_properties->>'finalAmount')::NUMERIC,
             payment_status_id,
             status_id,
-            (order_properties->'creatorUser'->>'id')::UUID
+            (order_properties->'creatorUser'->>'id')::UUID,
+            COALESCE((order_properties->>'rawMaterialByProviderTypeId')::INT, 1)
         )
         RETURNING id INTO _new_order_id;
 
@@ -1723,9 +1725,13 @@ DECLARE
 	new_payment_status_id INT := 3;
 	paid_status_id INT := 5;
     partial_status_id INT := 4;
+    _order_type_id INT;
+    _element_type VARCHAR;
+    _inventory_type VARCHAR;
+    _inventory_note VARCHAR;
 BEGIN
-    -- Obtener estado actual del pedido
-    SELECT status_id INTO current_status_id
+    -- Obtener estado actual y tipo del pedido
+    SELECT status_id, raw_material_by_provider_type_id INTO current_status_id, _order_type_id
     FROM raw_material_order
     WHERE id = order_id
     FOR UPDATE;
@@ -1735,12 +1741,23 @@ BEGIN
         RAISE EXCEPTION 'No se puede modificar el inventario: el estado del pedido no se encuentra ACTIVO.';
     END IF;
 
+    -- Determinar tipo de inventario según tipo de pedido
+    IF _order_type_id = 2 THEN
+        _element_type := 'packaging_material';
+        _inventory_type := 'packaging_material';
+        _inventory_note := 'Registro de material de empaque a partir de verificación de orden';
+    ELSE
+        _element_type := 'raw_material';
+        _inventory_type := 'bodega';
+        _inventory_note := 'Registro de materia prima a partir de verificación de orden';
+    END IF;
+
     -- Llamar al procedimiento para actualizar la orden
     CALL update_raw_material_order_elements(order_id, order_properties, order_elements);
 
     -- Iterar sobre los elementos de la orden para registrar en inventario
     FOR element_id, element_measure_id, element_quantity IN
-        SELECT 
+        SELECT
             rm.id,
             rmoe.measure_id,
             rmoe.quantity
@@ -1751,13 +1768,13 @@ BEGIN
     LOOP
         -- Llamar al procedimiento que registra en inventario
         CALL add_inventory_element(
-            'raw_material',
-            'bodega',
+            _element_type,
+            _inventory_type,
             element_id,
             element_measure_id,
             element_quantity,
             creator_user_id,
-            'Registro de materia prima a partir de verificación de orden',
+            _inventory_note,
             1
         );
     END LOOP;

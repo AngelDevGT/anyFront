@@ -72,6 +72,8 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
     isEditOption?: Boolean = false;
     isReceiveOption?: Boolean = false;
     title!: string;
+    materialType = 1;
+    basePath = '/rawMaterialByProvider/order';
     confirmDialogTitle = '...';
     confirmDialogText = '...';
     warningDialogText?: string;
@@ -85,6 +87,15 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
     measureOptions?: Measure[];
     filteredMeasureOptions?: Measure[];
     rawMaterialIndexToRemove?: number;
+    rmSearchTerm?: string;
+
+    get filteredRawMaterialsBySearch(): RawMaterialByProvider[] | undefined {
+        if (!this.rmSearchTerm) return this.filteredRawMaterials;
+        const term = this.rmSearchTerm.toLowerCase();
+        return this.filteredRawMaterials?.filter(rm =>
+            rm.rawMaterialBase?.name?.toLowerCase().includes(term)
+        );
+    }
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
@@ -102,7 +113,9 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
     ngOnInit(): void {
 
-        this.title = 'Crear Pedido de Materia Prima';
+        this.materialType = this.route.snapshot.data['materialType'] ?? 1;
+        this.basePath = this.materialType === 2 ? '/empaques/order' : '/rawMaterialByProvider/order';
+        this.title = this.materialType === 2 ? 'Crear Pedido de Material de Empaque' : 'Crear Pedido de Materia Prima';
         this.id = this.route.snapshot.params['id'];
         this.route.queryParams.subscribe(params => {
             this.editOption = params['opt'];
@@ -123,7 +136,7 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
         requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
         requestArray.push(this.dataService.getAnyComponent({}, 'getPaymentTypes')); // paymentTypeRequest
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
-        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34, "raw_material_by_provider_type_id": 1})); //rawMaterialByProviderRequest
+        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34, "raw_material_by_provider_type_id": this.materialType})); //rawMaterialByProviderRequest
 
         if (this.id){
             requestArray.push(this.dataService.getRawMaterialOrderById(this.id));
@@ -158,13 +171,14 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
 
     setEditOptions(){
         if(this.editOption != null){
+            const label = this.materialType === 2 ? 'Material de Empaque' : 'Materia Prima';
             switch(this.editOption){
                 case 'edit':
-                    this.title = 'Actualizar Pedido de Materia Prima';
+                    this.title = `Actualizar Pedido de ${label}`;
                     this.isEditOption = true;
                     break;
                 case 'receive':
-                    this.title = 'Recibir y Validar Pedido de Materia Prima';
+                    this.title = `Recibir y Validar Pedido de ${label}`;
                     this.isReceiveOption = true;
                     break;
             }
@@ -206,11 +220,11 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
             .pipe(first())
                 .subscribe({
                     next: () => {
-                        this.alertService.success('Orden de materia prima guardada', { keepAfterRouteChange: true });
-                        this.router.navigateByUrl('/rawMaterialByProvider/order');
+                        this.alertService.success('Orden guardada', { keepAfterRouteChange: true });
+                        this.router.navigateByUrl(this.basePath);
                     },
                     error: error => {
-                        let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al guardar el pedido de materia prima');
+                        let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al guardar el pedido');
                         this.alertService.error(errorMessage);
                         this.submitting = false;
                 }
@@ -254,7 +268,8 @@ export class AddEditRawMaterialByProviderOrderComponent implements OnInit{
                 rawMaterialOrderElements: this.rawMaterialOrderElements,
                 pendingAmount: this.total.toFixed(2),
                 paidAmount: "0",
-                finalAmount: this.total.toFixed(2)
+                finalAmount: this.total.toFixed(2),
+                rawMaterialByProviderTypeId: this.materialType
             }
             return this.dataService.addRawMaterialOrder(newRawMaterialOrder);
         }

@@ -22,4 +22,5 @@ export class RawMaterialOrder {
     creatorUser?: User;
     creationDate?: string;
     updatedDate?: string;
+    rawMaterialByProviderTypeId?: number;
 }

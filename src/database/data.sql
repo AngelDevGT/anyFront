@@ -490,7 +490,8 @@ INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,
         ''provider'', json_build_object(
             ''name'', p.name,
             ''id'', p.id
-        )
+        ),
+        ''rawMaterialByProviderTypeId'', rmo.raw_material_by_provider_type_id
     )
 ) AS json_result
 FROM raw_material_order rmo
