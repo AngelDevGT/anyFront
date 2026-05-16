@@ -199,6 +199,12 @@
                                                         <td>Q{{orderElement.totalPrice}}</td>
                                                         <td style="white-space: nowrap">
                                                             <button
+                                                                type="button" (click)="selectInventoryElementForEdit(orderElement, i)"
+                                                                class="btn btn-primary btn-sm pb-0 mx-1"
+                                                                data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
+                                                                    <i class="material-icons">edit</i>
+                                                            </button>
+                                                            <button
                                                                 type="button" (click)="unselectInventoryElement(orderElement, i)"
                                                                 class="btn btn-danger btn-sm pb-0 mx-1">
                                                                     <i class="material-icons">cancel</i>
@@ -236,8 +242,8 @@
 <div class="modal fade" id="rawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="rawMaterialModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div *ngIf="selectedPFS" class="modal-header">
-                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{this.selectedPFS.finishedProduct?.name}}</h1>
+            <div *ngIf="selectedIE" class="modal-header">
+                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{selectedIE.finishedProduct?.name}}</h1>
                 <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -293,7 +299,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!productForSaleForm.valid || modalSelectedQuantity<=0" data-bs-dismiss="modal">Agregar</button>
+                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!productForSaleForm.valid || modalSelectedQuantity<=0" data-bs-dismiss="modal">{{ isEditMode ? 'Modificar' : 'Agregar' }}</button>
             </div>
         </div>
     </div>

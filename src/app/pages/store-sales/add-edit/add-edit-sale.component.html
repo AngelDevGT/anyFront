@@ -148,6 +148,12 @@
                                                     </td> -->
                                                     <td style="white-space: nowrap">
                                                         <button
+                                                            type="button" (click)="selectItemListForEdit(itemList, i)"
+                                                            class="btn btn-primary btn-sm pb-0 mx-1"
+                                                            data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
+                                                                <i class="material-icons">edit</i>
+                                                        </button>
+                                                        <button
                                                             type="button" (click)="unselectItemList(itemList, i)"
                                                             class="btn btn-danger btn-sm pb-0 mx-1">
                                                                 <i class="material-icons">cancel</i>
@@ -308,7 +314,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">Agregar</button>
+                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">{{ isEditMode ? 'Modificar' : 'Agregar' }}</button>
             </div>
         </div>
     </div>

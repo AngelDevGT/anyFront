@@ -97,6 +97,8 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     areTablesVisible = false;
     isPropertiesVisible = false;
     warningMessage = '';
+    isEditMode = false;
+    editingIndex?: number;
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private alertService: AlertService, private router: Router, private accountService: AccountService) {
@@ -223,6 +225,8 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         this.currentMeasureQuantity = 0;
         this.modalQuantity = 0;
         this.elements = [];
+        this.isEditMode = false;
+        this.editingIndex = undefined;
     }
 
     onSaveForm() {
@@ -275,19 +279,53 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     }
 
     onSaveMaterialForm(){
-        let newOrderElement: ProductForSaleStoreOrderElement = {
-            productForSale: this.selectedIE?.productForSale,
-            ...this.productForSaleForm.value,
-            price: this.currentMeasurePrice,
-            measure: this.selectedMeasure,
-            quantity: String(this.modalQuantity),
-            totalPrice: this.modalTotal,
-            date: new Date().toISOString()
-        };
-        this.productForSaleOrderElements?.push(newOrderElement);
-        this.findAndMoveProductForSaleById(true, this.selectedIE?.productForSale?.id);
+        if (this.isEditMode && this.editingIndex !== undefined) {
+            let updatedOrderElement: ProductForSaleStoreOrderElement = {
+                productForSale: this.selectedIE?.productForSale,
+                ...this.productForSaleForm.value,
+                price: this.currentMeasurePrice,
+                measure: this.selectedMeasure,
+                quantity: String(this.modalQuantity),
+                totalPrice: this.modalTotal,
+                date: new Date().toISOString()
+            };
+            this.productForSaleOrderElements![this.editingIndex] = updatedOrderElement;
+        } else {
+            let newOrderElement: ProductForSaleStoreOrderElement = {
+                productForSale: this.selectedIE?.productForSale,
+                ...this.productForSaleForm.value,
+                price: this.currentMeasurePrice,
+                measure: this.selectedMeasure,
+                quantity: String(this.modalQuantity),
+                totalPrice: this.modalTotal,
+                date: new Date().toISOString()
+            };
+            this.productForSaleOrderElements?.push(newOrderElement);
+            this.findAndMoveProductForSaleById(true, this.selectedIE?.productForSale?.id);
+        }
         this.onResetMaterialForm();
-        // this.filteredProductsForSale?.splice(this.productForSaleIndexToRemove!, 1);
+    }
+
+    selectInventoryElementForEdit(orderElement: ProductForSaleStoreOrderElement, index: number){
+        const invElement = this.unselectedInventoryElements?.find(
+            el => el.productForSale?.id === orderElement.productForSale?.id
+        );
+        if (!invElement) return;
+
+        this.isEditMode = true;
+        this.editingIndex = index;
+        this.selectedIE = invElement;
+        this.elements = [];
+        this.setInventoryElementElements(invElement);
+        this.filteredMeasureOptions = this.measureOptions?.filter(
+            item => invElement.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!)
+        );
+        this.measureSelect?.setValue(String(orderElement.measure?.id));
+        this.changeMeasure(String(orderElement.measure?.id));
+        this.productForSaleForm.get('quantity')?.setValue(orderElement.quantity);
+        this.modalQuantity = Number(orderElement.quantity);
+        this.calculateModalQuantity();
+        this.calculateModalTotals();
     }
 
     // onReceiveDialog(){

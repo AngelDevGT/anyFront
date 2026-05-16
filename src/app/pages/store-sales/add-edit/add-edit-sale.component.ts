@@ -94,6 +94,8 @@ export class AddEditSaleComponent implements OnInit{
     discountMeasureValue: any = [];
     activityLogName = "Acciones de Producto para Venta en tienda";
     activityLog?: ActivityLog;
+    isEditMode = false;
+    editingIndex?: number;
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
@@ -198,6 +200,8 @@ export class AddEditSaleComponent implements OnInit{
         this.modalDiscount = 0;
         this.modalQuantity = 0;
         this.elements = [];
+        this.isEditMode = false;
+        this.editingIndex = undefined;
     }
 
     onSaveForm() {
@@ -245,19 +249,54 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     onSaveMaterialForm(){
-        let newItemList: ItemsList = {
-            productForSale: this.selectedIE?.productForSale,
-            ...this.rawMaterialForm.value,
-            price: this.currentMeasurePrice,
-            measure: this.selectedMeasure,
-            subtotal: this.modalSubtotal,
-            totalDiscount: this.modalTotalDiscount,
-            total: this.modalTotal,
-        };
-        this.itemsList?.push(newItemList);
-        this.findAndMoveInventoryElementById(true, this.selectedIE?.productForSale?.id);
+        if (this.isEditMode && this.editingIndex !== undefined) {
+            let updatedItem: ItemsList = {
+                productForSale: this.selectedIE?.productForSale,
+                ...this.rawMaterialForm.value,
+                price: this.currentMeasurePrice,
+                measure: this.selectedMeasure,
+                subtotal: this.modalSubtotal,
+                totalDiscount: this.modalTotalDiscount,
+                total: this.modalTotal,
+            };
+            this.itemsList![this.editingIndex] = updatedItem;
+        } else {
+            let newItemList: ItemsList = {
+                productForSale: this.selectedIE?.productForSale,
+                ...this.rawMaterialForm.value,
+                price: this.currentMeasurePrice,
+                measure: this.selectedMeasure,
+                subtotal: this.modalSubtotal,
+                totalDiscount: this.modalTotalDiscount,
+                total: this.modalTotal,
+            };
+            this.itemsList?.push(newItemList);
+            this.findAndMoveInventoryElementById(true, this.selectedIE?.productForSale?.id);
+        }
         this.onResetMaterialForm();
-        // this.filteredRawMaterials?.splice(this.rawMaterialIndexToRemove!, 1);
+    }
+
+    selectItemListForEdit(itemList: ItemsList, index: number){
+        const invElement = this.unselectedInventoryElements?.find(
+            el => el.productForSale?.id === itemList.productForSale?.id
+        );
+        if (!invElement) return;
+
+        this.isEditMode = true;
+        this.editingIndex = index;
+        this.selectedIE = invElement;
+        this.elements = [];
+        this.setInventoryElemElements(this.selectedIE);
+        this.filteredMeasureOptions = this.measureOptions?.filter(
+            item => this.selectedIE?.productForSale?.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!)
+        );
+        this.measureSelect?.setValue(String(itemList.measure?.id));
+        this.changeMeasure(String(itemList.measure?.id));
+        this.rawMaterialForm.get('quantity')?.setValue(itemList.quantity);
+        this.rawMaterialForm.get('discount')?.setValue(itemList.discount ?? '0');
+        this.modalQuantity = Number(itemList.quantity);
+        this.modalDiscount = Number(itemList.discount) || 0;
+        this.calculateModalTotals();
     }
 
     selectMeasure(measureId?: string){
