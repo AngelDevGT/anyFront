@@ -262,6 +262,14 @@ const menuItemsOptions: any = [
       },
       {
         root_class: 'list-group list-group-flush',
+        router_link: '/consumePackagingMaterial',
+        link_class: 'list-group-item py-2 ripple',
+        link_name: 'Consumir material de empaque',
+        icon_name: 'arrow_right',
+        icon_class: 'material-icons icon',
+      },
+      {
+        root_class: 'list-group list-group-flush',
         router_link: '/productCreation',
         link_class: 'list-group-item py-2 ripple',
         link_name: 'Registrar productos en inventario',

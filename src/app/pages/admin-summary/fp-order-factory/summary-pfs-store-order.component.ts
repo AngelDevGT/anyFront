@@ -67,16 +67,15 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
         this.productForSaleStoreOrders = undefined;
 
         requestArray.push(this.dataService.getAllProducForSaleOrder());
-        requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status": 1}));
+        requestArray.push(this.dataService.getAnyComponent({s: {id: 28}}, 'retrieveEstablishments'));
         requestArray.push(this.dataService.getAnyComponent({s: {type: "store_order"}}, 'getStatus'));
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.productForSaleStoreOrders = result[0].retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
+                this.productForSaleStoreOrders = this.dataService.findJsonValue(result[0], 'json_result') || [];
                 this.allProductForSaleStoreOrders = this.productForSaleStoreOrders;
-                this.establishmentOptions = result[1].findEstablishmentResponse?.establishment;
+                this.establishmentOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
                 this.statusOptions = this.dataService.findJsonValue(result[2], 'json_result') || [];
-                // console.log(respuestaPeticion1, respuestaPeticion2, respuestaPeticion3);
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
@@ -110,7 +109,7 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
                     { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha" },
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
-                    { type: "text", value: element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name, header_name: "Tienda" },
+                    { type: "text", value: element.establishment?.name, header_name: "Tienda" },
                     { type: "text", value: element.storeStatus?.identifier, header_name: "Estado del pedido" },
                     { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total" }
             ];
@@ -130,17 +129,15 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
 
     filterElements(){
         let filters = this.productForm.value;
-        console.log(filters);
         let initialDateMatch = true;
         if (this.allProductForSaleStoreOrders){
             this.productForSaleStoreOrders = this.allProductForSaleStoreOrders?.filter((val) => {
-                console.log(val);
                 if(filters.initialDate !== ""){
                     const initialDate = new Date(filters.initialDate);
                     const orderDate = new Date(val.updatedDate!);
                     initialDateMatch = (initialDate.getTime() - orderDate.getTime()) <= 0 ? true : false;
                 }
-                const establishmentMatch = filters.establishment !== "" ? val.establishmentID === filters.establishment : true;
+                const establishmentMatch = filters.establishment !== "" ? val.establishment?.id === filters.establishment : true;
                 const statusMatch = filters.orderStatus !== "" ? String(val.storeStatus?.id) === filters.orderStatus : true;
                 return establishmentMatch && statusMatch && initialDateMatch;
             });

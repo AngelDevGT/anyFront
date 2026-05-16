@@ -131,7 +131,7 @@
                                                     <th style="width: 40%">Nombre</th>
                                                     <th style="width: 20%">Medida</th>
                                                     <th style="width: 20%">Cantidad</th>
-                                                    <th style="width: 20%">Eliminar</th>
+                                                    <th style="width: 20%">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -140,6 +140,12 @@
                                                     <td>{{fppElement.measure?.identifier}}</td>
                                                     <td>{{fppElement.quantity}}</td>
                                                     <td style="white-space: nowrap">
+                                                        <button
+                                                            type="button" (click)="selectFinishedProductForEdit(fppElement, i)"
+                                                            class="btn btn-primary btn-sm pb-0 mx-1"
+                                                            data-bs-toggle="modal" data-bs-target="#finishedProductModal">
+                                                                <i class="material-icons">edit</i>
+                                                        </button>
                                                         <button
                                                             type="button" (click)="unselectFinishedProduct(fppElement, i)"
                                                             class="btn btn-danger btn-sm pb-0 mx-1">
@@ -217,7 +223,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="closeFinishedProductoDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" (click)="onSaveFinishedProductForm()" [disabled]="!finishedProductForm.valid" data-bs-dismiss="modal">Agregar</button>
+                <button type="button" class="btn btn-primary" (click)="onSaveFinishedProductForm()" [disabled]="!finishedProductForm.valid" data-bs-dismiss="modal">{{ isFPEditMode ? 'Modificar' : 'Agregar' }}</button>
             </div>
         </div>
     </div>

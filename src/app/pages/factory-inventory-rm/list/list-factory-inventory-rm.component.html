@@ -15,32 +15,38 @@
                                 </div>
                             </button> -->
                         </div>
-                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
-                            <button type="button" (click)="goToActionsHistory()" class="btn btn-outline-secondary align-self-start py-2">
-                                <div class="d-flex flex-row p-1">
-                                    <i class="material-icons icon">history</i>
-                                    <span class="px-1">Historial de acciones</span>
-                                </div>
-                            </button>
-                            <div class="select-filter mx-2">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Buscar</mat-label>
-                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
-                                </mat-form-field>
+                        <div class="d-flex flex-nowrap align-items-center gap-2 justify-content-md-end pb-0">
+                            <div class="d-flex gap-2 flex-shrink-0">
+                                <button type="button" (click)="goToActionsHistory()" class="btn btn-outline-secondary py-2">
+                                    <div class="d-flex flex-row p-1">
+                                        <i class="material-icons icon">history</i>
+                                        <span class="px-1">Historial de acciones</span>
+                                    </div>
+                                </button>
+                                <button type="button" (click)="exportToExcel()" class="btn btn-success py-2">
+                                    <div class="d-flex flex-row p-1">
+                                        <i class="material-icons icon">download</i>
+                                        <span class="px-1">Exportar</span>
+                                    </div>
+                                </button>
                             </div>
-                            <mat-form-field class="col-lg-2 col-sm-12 mx-2" appearance="outline">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Buscar</mat-label>
+                                <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
+                            </mat-form-field>
+                            <mat-form-field style="width: 130px" appearance="outline">
                                 <mat-label>Unidades</mat-label>
                                 <mat-select matInput disableOptionCentering (valueChange)="selectedUnitMeasureSubject.next($event)">
                                     <mat-option *ngFor="let measure of unitMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
                                 </mat-select>
                             </mat-form-field>
-                            <mat-form-field class="col-lg-2 col-sm-12 mx-2" appearance="outline">
+                            <mat-form-field style="width: 110px" appearance="outline">
                                 <mat-label>Peso</mat-label>
                                 <mat-select matInput disableOptionCentering (valueChange)="selectedWeightMeasureSubject.next($event)">
                                     <mat-option *ngFor="let measure of weightMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
                                 </mat-select>
                             </mat-form-field>
-                            <mat-form-field class="col-lg-2 col-2" appearance="outline">
+                            <mat-form-field style="width: 70px" appearance="outline">
                                 <mat-select matInput disableOptionCentering [(value)]="pageSize">
                                     <mat-option *ngFor="let entry of entries" [value]="entry">
                                         {{ entry }}

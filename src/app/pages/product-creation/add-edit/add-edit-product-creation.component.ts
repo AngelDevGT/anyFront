@@ -108,6 +108,8 @@ export class AddEditProductCreationComponent implements OnInit{
     modalFinishedProductQuantity = 0;
     finishedProductMeasureQuantity = 0;
     modalFinishedProductSelectedMeasure?: Measure;
+    isFPEditMode = false;
+    fpEditingIndex?: number;
     activityLogName = "Acciones de Producto en Inventario de Bodega";
     productType = 1;
     inventoryRoute = '/inventory/factory/finishedProduct';
@@ -233,6 +235,8 @@ export class AddEditProductCreationComponent implements OnInit{
         this.modalFinishedProductQuantity = 0;
         this.finishedProductMeasureQuantity = 0;
         this.modalFinishedProductsElements = [];
+        this.isFPEditMode = false;
+        this.fpEditingIndex = undefined;
     }
 
     onSaveForm() {
@@ -281,16 +285,45 @@ export class AddEditProductCreationComponent implements OnInit{
     }
 
     onSaveFinishedProductForm(){
-        console.log("selectedFinishedProduct: " + this.selectedFinishedProduct);
-        let newFinishedProductCreationProducedElement: FinishedProductCreationProducedElement = {
-            finishedProductID: this.selectedFinishedProduct?.id,
-            finishedProductName: this.selectedFinishedProduct?.name,
-            measure: this.modalFinishedProductSelectedMeasure,
-            quantity: String(this.modalFinishedProductQuantity)
+        if (this.isFPEditMode && this.fpEditingIndex !== undefined) {
+            let updatedElement: FinishedProductCreationProducedElement = {
+                finishedProductID: this.selectedFinishedProduct?.id,
+                finishedProductName: this.selectedFinishedProduct?.name,
+                measure: this.modalFinishedProductSelectedMeasure,
+                quantity: String(this.modalFinishedProductQuantity)
+            };
+            this.finishedProductCreationProducedElements![this.fpEditingIndex] = updatedElement;
+        } else {
+            let newFinishedProductCreationProducedElement: FinishedProductCreationProducedElement = {
+                finishedProductID: this.selectedFinishedProduct?.id,
+                finishedProductName: this.selectedFinishedProduct?.name,
+                measure: this.modalFinishedProductSelectedMeasure,
+                quantity: String(this.modalFinishedProductQuantity)
+            };
+            this.finishedProductCreationProducedElements?.push(newFinishedProductCreationProducedElement);
+            this.findAndMoveFinishedProductById(true, this.selectedFinishedProduct?.id);
         }
-        this.finishedProductCreationProducedElements?.push(newFinishedProductCreationProducedElement);
-        this.findAndMoveFinishedProductById(true, this.selectedFinishedProduct?.id);
         this.onResetFinishedProductForm();
+    }
+
+    selectFinishedProductForEdit(fppElement: FinishedProductCreationProducedElement, index: number){
+        const finishedProduct = this.unselectedFinishedProductElements?.find(
+            fp => fp.id === fppElement.finishedProductID
+        );
+        if (!finishedProduct) return;
+
+        this.isFPEditMode = true;
+        this.fpEditingIndex = index;
+        this.selectedFinishedProduct = finishedProduct;
+        this.modalFinishedProductsElements = [];
+        this.setFinishedProductsElements(finishedProduct);
+        this.filteredFinishedProductMeasureOptions = this.finishedProductMeasureOptions?.filter(
+            item => finishedProduct.measure?.identifier?.includes(item.unitBase?.name!)
+        );
+        this.modalFinishedProductMeasureSelect?.setValue(String(fppElement.measure?.id));
+        this.changeFinishedProductMeasure(String(fppElement.measure?.id));
+        this.finishedProductForm.get('quantity')?.setValue(fppElement.quantity);
+        this.modalFinishedProductQuantity = Number(fppElement.quantity);
     }
 
     setMeasure(measureId: string){

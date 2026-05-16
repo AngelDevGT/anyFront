@@ -49,12 +49,13 @@ export class SummaryFinishedProductInventoryFactoryComponent implements OnInit {
         let requestArray = [];
         this.inventoryElements = undefined;
 
-        requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "64d7dae896457636c3f181e9"}));
-        requestArray.push(this.dataService.getAnyComponent({s: {type: "finished_product"}}, 'getStatus')); 
+        const inventoryQuery = 'retrieveFinishedProductInventory';
+        requestArray.push(this.dataService.getInventoryByType({}, inventoryQuery));
+        requestArray.push(this.dataService.getAnyComponent({s: {type: "inventory"}}, 'getStatus')); 
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
+                this.inventory = this.dataService.findJsonValue(result[0], 'json_result') || {};
                 this.statusOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),

@@ -12,12 +12,20 @@
                 <div class="row justify-content-center">
                     <div class="d-flex flex-wrap justify-content-md-end justify-content-end pb-0">
                         <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
-                            <button *ngIf="inventory && inventory.id" type="button" (click)="goToActionsHistory()" class="btn btn-outline-secondary align-self-start py-2">
-                                <div class="d-flex flex-row p-1">
-                                    <i class="material-icons icon">history</i>
-                                    <span class="px-1">Historial de acciones</span>
-                                </div>
-                            </button>
+                            <div class="d-flex gap-2 align-self-start me-2">
+                                <button *ngIf="inventory && inventory.id" type="button" (click)="goToActionsHistory()" class="btn btn-outline-secondary py-2">
+                                    <div class="d-flex flex-row p-1">
+                                        <i class="material-icons icon">history</i>
+                                        <span class="px-1">Historial de acciones</span>
+                                    </div>
+                                </button>
+                                <button type="button" (click)="exportToExcel()" class="btn btn-success py-2">
+                                    <div class="d-flex flex-row p-1">
+                                        <i class="material-icons icon">download</i>
+                                        <span class="px-1">Exportar</span>
+                                    </div>
+                                </button>
+                            </div>
                             <div class="select-filter mx-2">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Buscar</mat-label>
@@ -36,7 +44,7 @@
                                     <mat-option *ngFor="let measure of weightMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
                                 </mat-select>
                             </mat-form-field>
-                            <mat-form-field class="col-lg-2 col-2 mx-2" appearance="outline">
+                            <mat-form-field class="col-lg-1 col-1 mx-2" appearance="outline">
                                 <mat-select matInput disableOptionCentering [(value)]="pageSize">
                                     <mat-option *ngFor="let entry of entries" [value]="entry">
                                         {{ entry }}

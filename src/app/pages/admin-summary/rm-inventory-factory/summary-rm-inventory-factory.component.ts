@@ -49,12 +49,14 @@ export class SummaryRawMaterialByProviderInventoryFactoryComponent implements On
         let requestArray = [];
         this.inventoryElements = undefined;
 
-        requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "64d7240f838808573bd7e9ee"}));
+        const inventoryQuery = 'retrieveRawMaterialInventory';
+        requestArray.push(this.dataService.getInventoryByType({}, inventoryQuery));
+        // requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "64d7240f838808573bd7e9ee"}));
         requestArray.push(this.dataService.getAnyComponent({s: {type: "raw_material"}}, 'getStatus')); 
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.inventory = result[0].retrieveInventoryResponse?.Inventorys[0];
+                this.inventory = this.dataService.findJsonValue(result[0], 'json_result') || {};
                 this.statusOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -118,7 +120,7 @@ export class SummaryRawMaterialByProviderInventoryFactoryComponent implements On
         let filters = this.productForm.value;
         if (this.allInventoryElements){
             this.inventoryElements = this.allInventoryElements?.filter((val) => {
-                const statusMatch = filters.orderStatus !== "" ? String(val.status?.id) === filters.orderStatus : true;
+                const statusMatch = filters.orderStatus !== "" ? String(val.rawMaterialBase?.status?.id) === filters.orderStatus : true;
                 return statusMatch ;
             });
         }

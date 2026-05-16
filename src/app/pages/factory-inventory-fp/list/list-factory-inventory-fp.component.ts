@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import { actionTypeValues } from '@app/services';
 import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, DataService} from '@app/services';
+import { AccountService, AlertService, DataService, ExcelService } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -60,7 +60,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     addModalTitle = 'AGREGAR producto terminado a inventario de FABRICA';
     removeModalTitle = 'ELIMINAR producto terminado de inventario de FABRICA';
 
-    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router, private route: ActivatedRoute) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router, private route: ActivatedRoute, private excelService: ExcelService) {}
 
     ngOnInit() {
 
@@ -312,6 +312,10 @@ export class ListFactoryInventoryFPComponent implements OnInit {
 
     goToActionsHistory(){
         this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName, productType: this.productType } });
+    }
+
+    exportToExcel(){
+        this.excelService.exportTableToExcel(this.tableElementsValues, this.pageTitle);
     }
 
     setInventoryElementElements(){

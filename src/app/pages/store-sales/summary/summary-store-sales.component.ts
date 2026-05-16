@@ -58,10 +58,15 @@ export class SummaryStoreSalesComponent implements OnInit {
         const endLabel = endDateObject.toLocaleDateString('es-GT');
         this.dateRange = `${startLabel} - ${endLabel}`;
 
-        const params = {
-            'creation_date$gte': formattedStart,
-            'creation_date$lte': formattedEnd
-        };
+        const params = JSON.stringify({
+            ss: {
+                'creation_date$gte': formattedStart,
+                'creation_date$lte': formattedEnd
+            },
+            s: {
+                name: "Activo"
+            }
+        });
 
         this.sales = undefined;
         this.tableElementsValues = undefined;
@@ -110,8 +115,8 @@ export class SummaryStoreSalesComponent implements OnInit {
             const row = [
                 { type: 'text', value: entry.name, header_name: 'Tienda', style: 'width: 35%' },
                 { type: 'text', value: entry.salesCount, header_name: 'Ventas', style: 'width: 15%' },
-                { type: 'text', value: this.dataService.getFormatedPrice(entry.total), header_name: 'Monto Total', style: 'width: 25%' },
-                { type: 'text', value: this.dataService.getFormatedPrice(entry.totalDiscount), header_name: 'Descuento Total', style: 'width: 25%' },
+                { type: 'text', value: this.dataService.getFormatedPriceWithSeparators(entry.total), header_name: 'Monto Total', style: 'width: 25%' },
+                { type: 'text', value: this.dataService.getFormatedPriceWithSeparators(entry.totalDiscount), header_name: 'Descuento Total', style: 'width: 25%' },
             ];
             this.tableElementsValues.push(row);
         });

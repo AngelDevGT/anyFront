@@ -749,6 +749,10 @@ export class DataService {
         return "Q. " + price.toFixed(2);
     }
 
+    getFormatedPriceWithSeparators(price: number): string {
+        return 'Q. ' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     getDecimalFromText(num?: string){
         return (Number(num) || 0).toFixed(2);
     }
@@ -1385,8 +1389,7 @@ export class DataService {
 
     /** SALES */
     getShopSaleSummary(params: any) {
-        let parameters = JSON.stringify({ ss: { ...params } });
-        return this.http.post(`${environment.apiUrlV3}/listShopSaleSummary`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listShopSaleSummary`, params);
     }
 
     getAllShopHistory(params: any) {

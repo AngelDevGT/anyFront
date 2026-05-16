@@ -111,6 +111,7 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'store/inventory/:id', component: ListStoreInventoryPFSComponent, canActivate: [canActivateV2]},
     { path: 'productCreation', component: AddEditProductCreationComponent, canActivate: [canActivateV2]},
     { path: 'consumeRawMaterial', component: ConsumeRawMaterialComponent, canActivate: [canActivateV2]},
+    { path: 'consumePackagingMaterial', component: ConsumeRawMaterialComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
     { path: 'users', loadChildren: usersModule, canActivate: [canActivateV2]},
     { path: 'summary/rawMaterialByProvider/order', component: SummaryRawMaterialOrderComponent, canActivate: [canActivateV2]},
     { path: 'summary/inventory/warehouse/rawMaterialByProvider', component: SummaryRawMaterialByProviderInventoryBodegaComponent, canActivate: [canActivateV2]},

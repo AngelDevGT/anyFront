@@ -31,15 +31,7 @@
                                             </mat-select>
                                         </mat-form-field>
                                     </div>
-                                    <div class="col-md-2 select-filter">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Estado</mat-label>
-                                            <mat-select matInput disableOptionCentering formControlName="orderStatus">
-                                                <mat-option *ngFor="let status of statusOptions" value="{{status.id}}">{{status.identifier}}</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-                                    <div class="col-md-1 select-filter pb-4 align-self-center">
+<div class="col-md-1 select-filter pb-4 align-self-center">
                                         <button
                                         type="submit"
                                         class="btn btn-outline-secondary waves-effect pb-0">

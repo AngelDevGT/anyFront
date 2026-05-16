@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { actionTypeValues } from '@app/services';
 
-import { AccountService, AlertService, DataService} from '@app/services';
+import { AccountService, AlertService, DataService, ExcelService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -59,7 +59,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
     pageTitle = "Inventario de Materia Prima";
     inventoryRoute = '/inventory/factory/rawMaterial';
 
-    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router, private route: ActivatedRoute) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router, private route: ActivatedRoute, private excelService: ExcelService) {}
 
     ngOnInit() {
 
@@ -345,6 +345,10 @@ export class ListFactoryInventoryRMComponent implements OnInit {
 
     goToActionsHistory(){
         this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName, materialType: this.materialType } });
+    }
+
+    exportToExcel(){
+        this.excelService.exportTableToExcel(this.tableElementsValues, this.pageTitle);
     }
 
     receiveData(data: any){

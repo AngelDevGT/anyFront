@@ -15,7 +15,7 @@
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
                             <div *ngIf="!isEditOption" class="row justify-content-center col-12">
                                 <div class="p-3 col-sm-12 col-md-6">
-                                    <h2 class="text-center text-muted">Materia prima disponible</h2>
+                                    <h2 class="text-center text-muted">{{ materialType === 2 ? 'Material de empaque disponible' : 'Materia prima disponible' }}</h2>
                                     <div class="d-flex justify-content-center my-2">
                                         <mat-form-field appearance="outline" class="col-md-6 col-sm-12">
                                             <mat-label>Buscar</mat-label>
@@ -66,7 +66,7 @@
                                     </div>
                                 </div>
                                 <div class="table-responsive p-3 col-sm-12 col-md-6">
-                                    <h2 class="text-center text-muted">Materia prima seleccionada</h2>
+                                    <h2 class="text-center text-muted">{{ materialType === 2 ? 'Material de empaque seleccionado' : 'Materia prima seleccionada' }}</h2>
                                     <div class="table-container my-custom-scrollbar">
                                         <table class="table table-bordered border-danger table-hover">
                                             <thead>
@@ -74,7 +74,7 @@
                                                     <th style="width: 40%">Nombre</th>
                                                     <th style="width: 20%">Medida</th>
                                                     <th style="width: 20%">Cantidad</th>
-                                                    <th style="width: 20%">Eliminar</th>
+                                                    <th style="width: 20%">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -83,6 +83,12 @@
                                                     <td>{{fpcElement.measure?.identifier}}</td>
                                                     <td>{{fpcElement.quantity}}</td>
                                                     <td style="white-space: nowrap">
+                                                        <button
+                                                            type="button" (click)="selectInventoryElementForEdit(fpcElement, i)"
+                                                            class="btn btn-primary btn-sm pb-0 mx-1"
+                                                            data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
+                                                                <i class="material-icons">edit</i>
+                                                        </button>
                                                         <button
                                                             type="button" (click)="unselectInventoryElement(fpcElement, i)"
                                                             class="btn btn-danger btn-sm pb-0 mx-1">
@@ -113,7 +119,7 @@
                             <button *ngIf="!isReceiveOption" id="boton-form-crear-comunidad" type="button" (click)="onSaveForm()" [disabled]="submitting||!finishedProductCreationConsumedElements||finishedProductCreationConsumedElements.length<=0||f['comment'].invalid"
                                 class="btn btn-outline-success btn-lg">
                                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                                Consumir materia prima
+                                {{ materialType === 2 ? 'Consumir material de empaque' : 'Consumir materia prima' }}
                             </button>
                             <!-- <button *ngIf="isReceiveOption" (click)="onReceiveDialog()" type="button" [disabled]="submitting||orderForm.invalid||!rawMaterialOrderElements||rawMaterialOrderElements.length<=0" 
                             data-bs-toggle="modal" data-bs-target="#confirmModal" class="btn btn-outline-success">
@@ -134,8 +140,8 @@
 <div class="modal fade" id="rawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="rawMaterialModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div *ngIf="selectedRMP" class="modal-header">
-                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{this.selectedRMP.rawMaterialBase?.name}}</h1>
+            <div *ngIf="selectedIE" class="modal-header">
+                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{selectedIE.rawMaterialBase?.name}}</h1>
                 <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -182,7 +188,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">Agregar</button>
+                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">{{ isEditMode ? 'Modificar' : 'Agregar' }}</button>
             </div>
         </div>
     </div>

@@ -109,6 +109,8 @@ export class ConsumeRawMaterialComponent implements OnInit{
     unselectedInventoryElements?: InventoryElement[];
     modalFinishedProductQuantity = 0;
     rmSearchTerm?: string;
+    isEditMode = false;
+    editingIndex?: number;
 
     get filteredInventoryElements(): InventoryElement[] | undefined {
         if (!this.rmSearchTerm) return this.inventoryElements;
@@ -120,6 +122,8 @@ export class ConsumeRawMaterialComponent implements OnInit{
     finishedProductMeasureQuantity = 0;
     modalFinishedProductSelectedMeasure?: Measure;
     activityLogName = "Acciones de Materia Prima en Inventario de Bodega";
+    materialType = 1;
+    redirectRoute = '/inventory/factory/rawMaterial';
 
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
@@ -135,7 +139,14 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
     ngOnInit(): void {
 
-        this.title = 'Consumir materia prima de inventario';
+        this.materialType = this.route.snapshot.data['materialType'] ?? 1;
+        if (this.materialType === 2) {
+            this.title = 'Consumir material de empaque de inventario';
+            this.activityLogName = 'Acciones de Material de Empaque en Inventario de Bodega';
+            this.redirectRoute = '/inventory/warehouse/packagingMaterial';
+        } else {
+            this.title = 'Consumir materia prima de inventario';
+        }
         this.id = this.route.snapshot.params['id'];
         this.route.queryParams.subscribe(params => {
             this.editOption = params['opt'];
@@ -160,9 +171,10 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
         let requestArray = [];
 
+        const inventoryQuery = this.materialType === 2 ? 'retrievePackagingMaterialInventory' : 'retrieveRawMaterialInventory';
         requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
-        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveRawMaterialInventory'));
+        requestArray.push(this.dataService.getInventoryByType({}, inventoryQuery));
         // requestArray.push(this.dataService.getAllFinishedProductByFilter({ status: { id: 2}}));
 
         // if (this.id){
@@ -195,13 +207,14 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
     setEditOptions(){
         if(this.editOption != null){
+            const materialLabel = this.materialType === 2 ? 'Material de Empaque' : 'Materia Prima';
             switch(this.editOption){
                 case 'edit':
-                    this.title = 'Actualizar Pedido de Materia Prima';
+                    this.title = `Actualizar Pedido de ${materialLabel}`;
                     this.isEditOption = true;
                     break;
                 case 'receive':
-                    this.title = 'Recibir Pedido de Materia Prima';
+                    this.title = `Recibir Pedido de ${materialLabel}`;
                     this.isReceiveOption = true;
                     break;
             }
@@ -227,6 +240,8 @@ export class ConsumeRawMaterialComponent implements OnInit{
         this.modalQuantity = 0;
         this.currentMeasureQuantity = 0;
         this.elements = [];
+        this.isEditMode = false;
+        this.editingIndex = undefined;
     }
 
     onResetFinishedProductForm(){
@@ -255,16 +270,23 @@ export class ConsumeRawMaterialComponent implements OnInit{
             };
         });
 
+        const successMessage = this.materialType === 2
+            ? 'Material(es) de empaque consumido(s) correctamente'
+            : 'Materia(s) prima(s) consumida(s) correctamente';
+        const errorMessage = this.materialType === 2
+            ? 'Error al consumir material de empaque'
+            : 'Error al consumir materia prima';
+
         this.dataService.multiAddRemoveInventoryElement(inventoryElementsToConsume)
             .pipe(first())
                 .subscribe({
                     next: () => {
-                        this.alertService.success('Materia(s) prima(s) consumida(s) correctamente', { keepAfterRouteChange: true });
-                        this.router.navigateByUrl('/inventory/factory/rawMaterial');
+                        this.alertService.success(successMessage, { keepAfterRouteChange: true });
+                        this.router.navigateByUrl(this.redirectRoute);
                     },
                     error: error => {
-                        let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error al consumir materia prima');
-                        this.alertService.error(errorMessage);
+                        let errorResponse = this.dataService.getErrorMessageResponse(error, errorMessage);
+                        this.alertService.error(errorResponse);
                         this.submitting = false;
                     }
                 });
@@ -309,19 +331,46 @@ export class ConsumeRawMaterialComponent implements OnInit{
     // }
 
     onSaveMaterialForm(){
-        // console.log(this.selectedIE);
-        let newFinishedProductCreationConsumedElement: FinishedProductCreationConsumedElement = {
-            rawMaterialID: this.selectedIE?.rawMaterialBase?.id,
-            rawMaterialName: this.selectedIE?.rawMaterialBase?.name,
-            measure: this.modalSelectedMeasure,
-            quantity: this.modalQuantity.toFixed(2)
+        if (this.isEditMode && this.editingIndex !== undefined) {
+            let updatedElement: FinishedProductCreationConsumedElement = {
+                rawMaterialID: this.selectedIE?.rawMaterialBase?.id,
+                rawMaterialName: this.selectedIE?.rawMaterialBase?.name,
+                measure: this.modalSelectedMeasure,
+                quantity: this.modalQuantity.toFixed(2)
+            };
+            this.finishedProductCreationConsumedElements![this.editingIndex] = updatedElement;
+        } else {
+            let newFinishedProductCreationConsumedElement: FinishedProductCreationConsumedElement = {
+                rawMaterialID: this.selectedIE?.rawMaterialBase?.id,
+                rawMaterialName: this.selectedIE?.rawMaterialBase?.name,
+                measure: this.modalSelectedMeasure,
+                quantity: this.modalQuantity.toFixed(2)
+            };
+            this.finishedProductCreationConsumedElements?.push(newFinishedProductCreationConsumedElement);
+            this.findAndMoveInventoryElementById(true, this.selectedIE?.rawMaterialBase?.id);
         }
-        // console.log(newFinishedProductCreationConsumedElement);
-        this.finishedProductCreationConsumedElements?.push(newFinishedProductCreationConsumedElement);
-        // console.log(this.finishedProductCreationConsumedElements);
-        this.findAndMoveInventoryElementById(true, this.selectedIE?.rawMaterialBase?.id);
-        // console.log(this.unselectedInventoryElements);
         this.onResetMaterialForm();
+    }
+
+    selectInventoryElementForEdit(fpcElement: FinishedProductCreationConsumedElement, index: number){
+        const invElement = this.unselectedInventoryElements?.find(
+            el => el.rawMaterialBase?.id === fpcElement.rawMaterialID
+        );
+        if (!invElement) return;
+
+        this.isEditMode = true;
+        this.editingIndex = index;
+        this.selectedIE = invElement;
+        this.elements = [];
+        this.setInventoryElementElements(invElement);
+        this.filteredMeasureOptions = this.measureOptions?.filter(
+            item => invElement.rawMaterialBase?.measure?.identifier?.includes(item.unitBase?.name!)
+        );
+        this.modalMeasureSelect?.setValue(String(fpcElement.measure?.id));
+        this.changeMeasure(String(fpcElement.measure?.id));
+        this.rawMaterialForm.get('quantity')?.setValue(fpcElement.quantity);
+        this.modalQuantity = Number(fpcElement.quantity);
+        this.calculateModalQuantity();
     }
 
     setMeasure(measureId: string){

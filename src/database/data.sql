@@ -1843,6 +1843,93 @@ SELECT json_build_object(
 ) AS json_result
 FROM inventory i
 LEFT JOIN establishment e ON e.id::text = i.unit_name','inventory','POST');
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('retrieveAllProductForSaleInventory','/retrieveAllProductForSaleInventory','WITH inventory_elements_ordered AS (
+    SELECT
+        ie.inventory_id,
+        ie.id AS ie_id,
+        ie.element_type,
+        ie.quantity,
+        pfs.id AS pfs_id,
+        pfs.price AS pfs_price,
+        pfs.creation_date AS pfs_creation_date,
+        fp.id AS fp_id,
+        fp.name AS fp_name,
+        fp.photo AS fp_photo,
+        m.id AS m_id,
+        m.name AS m_name,
+        m.unit_base_quantity,
+        ub.id AS ub_id,
+        ub.name AS ub_name,
+        sie.id AS sie_id,
+        sie.name AS sie_name,
+        srm.id AS srm_id,
+        srm.name AS srm_name
+    FROM inventory_element ie
+    JOIN product_for_sale pfs ON ie.element_fk = pfs.id
+    LEFT JOIN finished_product fp ON fp.id = pfs.finished_product_id
+    LEFT JOIN status sie ON sie.id = pfs.status_id
+    LEFT JOIN measure m ON m.id = ie.measure_id
+    LEFT JOIN unit_base ub ON ub.id = m.unit_base_id
+    LEFT JOIN status srm ON srm.id = fp.status_id
+    WHERE ie.element_type = ''product_for_sale''
+      AND sie."name" = ''Activo''
+)
+SELECT json_agg(
+    json_build_object(
+        ''id'', i.id,
+        ''inventoryType'', i.inventory_type,
+        ''unitName'', i.unit_name,
+        ''creationDate'', i.creation_date,
+        ''establishment'', json_build_object(
+            ''id'', e.id,
+            ''name'', e."name"
+        ),
+        ''inventoryElements'', (
+            SELECT COALESCE(json_agg(
+                json_build_object(
+                    ''id'', oe.ie_id,
+                    ''element_type'', oe.element_type,
+                    ''quantity'', oe.quantity,
+                    ''status'', json_build_object(
+                        ''identifier'', oe.sie_name,
+                        ''id'', oe.sie_id
+                    ),
+                    ''measure'', json_build_object(
+                        ''id'', oe.m_id,
+                        ''identifier'', oe.m_name,
+                        ''unitBase'', json_build_object(
+                            ''quantity'', oe.unit_base_quantity,
+                            ''name'', oe.ub_name,
+                            ''id'', oe.ub_id
+                        )
+                    ),
+                    ''productForSale'', json_build_object(
+                        ''id'', oe.pfs_id,
+                        ''price'', oe.pfs_price,
+                        ''finishedProduct'', json_build_object(
+                            ''id'', oe.fp_id,
+                            ''name'', oe.fp_name,
+                            ''photo'', oe.fp_photo,
+                            ''status'', json_build_object(
+                                ''id'', oe.srm_id,
+                                ''identifier'', oe.srm_name
+                            ),
+                            ''measure'', json_build_object(
+                                ''identifier'', oe.ub_name
+                            )
+                        )
+                    )
+                ) ORDER BY oe.pfs_creation_date ASC
+            ), ''[]''::json)
+            FROM inventory_elements_ordered oe
+            WHERE oe.inventory_id = i.id
+        )
+    )
+) AS json_result
+FROM inventory i
+INNER JOIN establishment e ON e.id::text = i.unit_name
+INNER JOIN status se ON se.id = e.status_id AND se."name" = ''Activo''','inventory','POST');
 INSERT INTO public.finished_product_type (id, "name") VALUES
     (1, 'embutido'),
     (2, 'abarrote');
@@ -2108,6 +2195,11 @@ INSERT INTO public."role" (status,name,paths) VALUES
           "name": "/consumeRawMaterial",
           "route": "/consumeRawMaterial",
           "matchPattern": "^/consumeRawMaterial$"
+        },
+        {
+          "name": "/consumePackagingMaterial",
+          "route": "/consumePackagingMaterial",
+          "matchPattern": "^/consumePackagingMaterial$"
         },
         {
           "name": "/productCreation",
@@ -2444,6 +2536,11 @@ INSERT INTO public."role" (status,name,paths) VALUES
           "matchPattern": "^/consumeRawMaterial$"
         },
         {
+          "name": "/consumePackagingMaterial",
+          "route": "/consumePackagingMaterial",
+          "matchPattern": "^/consumePackagingMaterial$"
+        },
+        {
           "name": "/productCreation",
           "route": "/productCreation",
           "matchPattern": "^/productCreation$"
@@ -2724,6 +2821,11 @@ INSERT INTO public."role" (status,name,paths) VALUES
           "name": "/consumeRawMaterial",
           "route": "/consumeRawMaterial",
           "matchPattern": "^/consumeRawMaterial$"
+        },
+        {
+          "name": "/consumePackagingMaterial",
+          "route": "/consumePackagingMaterial",
+          "matchPattern": "^/consumePackagingMaterial$"
         },
         {
           "name": "/productCreation",

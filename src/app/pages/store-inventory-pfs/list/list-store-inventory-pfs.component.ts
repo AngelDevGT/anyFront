@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { actionTypeValues } from '@app/services';
 
-import { AccountService, AlertService, DataService} from '@app/services';
+import { AccountService, AlertService, DataService, ExcelService } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -56,7 +56,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     tableElementsValues?: any;
     activityLogName = "Acciones de Producto para Venta en tienda";
 
-    constructor(private accountService: AccountService, private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private excelService: ExcelService) {}
 
     ngOnInit() {
 
@@ -401,6 +401,11 @@ export class ListStoreInventoryPFSComponent implements OnInit {
 
     goToActionsHistory(){
         this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName } });
+    }
+
+    exportToExcel(){
+        const title = (this.storeName ? this.storeName + ' ' : '') + 'Inventario de Producto Para Venta';
+        this.excelService.exportTableToExcel(this.tableElementsValues, title);
     }
 
     get operationReasonInput(){
