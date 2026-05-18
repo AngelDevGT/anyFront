@@ -145,7 +145,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                     { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?.id },
                     { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 15%" },
                     { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 15%" },
-                    { type: "text", value: this.dataService.getConvertedPrice(Number(element.productForSale?.price), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Precio", style: "width: 15%" }
+                    { type: "text", value: this.dataService.getConvertedPrice(Number(element.productForSale?.price), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Precio", style: "width: 15%", exportValue: this.dataService.getConvertedPriceRaw(Number(element.productForSale?.price), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), exportFormat: '"Q. "#,##0.00' }
             ];
             if(this.isAdmin()){
                 curr_row.push({

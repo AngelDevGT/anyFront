@@ -815,14 +815,18 @@ export class DataService {
         return "Sin Definir"
     }
 
-    getConvertedPrice(price: number, unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure){
-        let formattedPrice = price;
+    getConvertedPriceRaw(price: number, unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure): number {
         if(prevMeasure?.unitBase?.name == unitMeasure?.unitBase?.name){
-            formattedPrice =  Number((price * (Number(unitMeasure?.unitBase!.quantity) || 1)).toFixed(2));
-        } else if(prevMeasure?.unitBase?.name == weightMeasure?.unitBase?.name){
-            formattedPrice = Number((price * (Number(weightMeasure?.unitBase!.quantity) || 1)).toFixed(2));
+            return Number((price * (Number(unitMeasure?.unitBase!.quantity) || 1)).toFixed(2));
         }
-        return this.getFormatedPrice(formattedPrice);
+        if(prevMeasure?.unitBase?.name == weightMeasure?.unitBase?.name){
+            return Number((price * (Number(weightMeasure?.unitBase!.quantity) || 1)).toFixed(2));
+        }
+        return price;
+    }
+
+    getConvertedPrice(price: number, unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure){
+        return this.getFormatedPrice(this.getConvertedPriceRaw(price, unitMeasure, weightMeasure, prevMeasure));
     }
 
     getConvertedMeasure(quantity: number, unitMeasure?: Measure, weightMeasure?: Measure, prevMeasure?: Measure){
