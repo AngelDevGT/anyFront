@@ -21,6 +21,12 @@ import { AddRawMaterialOrderPaymentHistory } from '@app/models/raw-material/add-
 import { ActivityLog } from '@app/models/system/activity-log';
 import { CashClosing } from '@app/models/store/cash-closing.model';
 import { ShopResume } from '@app/models/store/shop-resume.model';
+import { StoreExpense } from '@app/models/store/store-expense.model';
+
+export const storeExpenseStatusValues = {
+    activo: { status: {id: 58}},
+    eliminado: { status: {id: 59}}
+}
 
 export const establishmentStatusValues = {
     activo: { status: {id: 28}},
@@ -1439,6 +1445,56 @@ export class DataService {
             "$2": this.accountService.userValue.uuid
         });
         return this.http.patch(`${environment.apiUrlV3}/cancelShopHistory`, deleteShopHistory);
+    }
+
+    /** STORE EXPENSES */
+
+    getAllStoreExpenses(params: any) {
+        let parameters = JSON.stringify({
+            se: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/listStoreExpense`, parameters);
+    }
+
+    getStoreExpenseById(params: any) {
+        let parameters = JSON.stringify({
+            se: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/getStoreExpense`, parameters);
+    }
+
+    addStoreExpense(expense: StoreExpense) {
+        let parameters = JSON.stringify({
+            "$1": expense.title,
+            "$2": expense.comment,
+            "$3": expense.totalAmount,
+            "$4": expense.nit || 'C/F',
+            "$5": expense.supplier,
+            "$6": expense.establishmentId,
+            "$7": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addStoreExpense`, parameters);
+    }
+
+    updateStoreExpense(expense: StoreExpense) {
+        let parameters = JSON.stringify({
+            "$1": expense.title,
+            "$2": expense.comment,
+            "$3": expense.totalAmount,
+            "$4": expense.nit || 'C/F',
+            "$5": expense.supplier,
+            "$6": expense.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateStoreExpense`, parameters);
+    }
+
+    deleteStoreExpense(id: string) {
+        let parameters = JSON.stringify({
+            "$1": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteStoreExpense`, parameters);
     }
 
     /** LOGS */

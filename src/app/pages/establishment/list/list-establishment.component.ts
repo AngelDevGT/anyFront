@@ -113,6 +113,17 @@ export class ListEstablishmentComponent implements OnInit {
                             },
                             text: "Pedidos"
                         },
+                        // {
+                        //     type: "button",
+                        //     routerLink: "/store/expenses/" + element.id,
+                        //     is_absolute: true,
+                        //     class: "btn btn-outline-warning m-1",
+                        //     icon: {
+                        //         class: "material-icons",
+                        //         icon: "money_off"
+                        //     },
+                        //     text: "Gastos"
+                        // },
                         {
                             type: "button",
                             routerLink: "/cashClosing/" + element.id,

@@ -48,6 +48,9 @@ import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-f
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
 import { SummaryStoreSalesComponent } from "@app/pages/store-sales/summary/summary-store-sales.component";
+import { ListStoreExpensesComponent } from "@app/pages/store-expenses/list/list-store-expenses.component";
+import { AddEditExpenseComponent } from "@app/pages/store-expenses/add-edit/add-edit-expense.component";
+import { ViewExpenseComponent } from "@app/pages/store-expenses/view/view-expense.component";
 
 const usersModule = () => import('@app/layouts/users/users-layout.module').then(x => x.UsersModule);
 
@@ -126,6 +129,10 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'store/sales/history/edit/:id', component: AddEditSaleComponent, canActivate: [canActivateV2]},
     { path: 'activityLog/view', component: ViewInventoryLogComponent, canActivate: [canActivateV2]},
     // { path: 'inventoryLog/view', component: ViewInventoryLogComponent, canActivate: [canActivateV2]},
+    { path: 'store/expenses/:id', component: ListStoreExpensesComponent, canActivate: [canActivateV2]},
+    { path: 'store/expenses/view/:id', component: ViewExpenseComponent, canActivate: [canActivateV2]},
+    { path: 'store/expenses/create', component: AddEditExpenseComponent, canActivate: [canActivateV2]},
+    { path: 'store/expenses/edit/:id', component: AddEditExpenseComponent, canActivate: [canActivateV2]},
     { path: 'cashClosing/:id', component: ListCashClosingComponent, canActivate: [canActivateV2]},
     { path: 'cashClosing/view/:id', component: ViewCashClosingComponent, canActivate: [canActivateV2]},
     { path: 'cashClosing/create/:id', component: AddEditCashClosingComponent, canActivate: [canActivateV2]},

@@ -1,0 +1,82 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>{{title}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading" [formGroup]="expenseForm" (ngSubmit)="onSaveForm()">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="d-flex flex-wrap justify-content-center col-md-12">
+
+                            <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
+                                <mat-label>Título</mat-label>
+                                <input type="text" formControlName="title" matInput
+                                    [ngClass]="{ 'is-invalid': f['title'].errors && f['title'].touched }" />
+                                <div class="invalid-feedback" *ngIf="f['title'].errors && f['title'].touched">
+                                    <div *ngIf="f['title'].errors['required']">Título requerido</div>
+                                    <div *ngIf="f['title'].errors['maxlength']">Máximo 40 caracteres</div>
+                                </div>
+                            </mat-form-field>
+
+                            <mat-form-field class="col-sm-12 col-md-3 custom-input" appearance="outline">
+                                <mat-label>Monto Total (Q)</mat-label>
+                                <input type="text" formControlName="totalAmount" matInput
+                                    [ngClass]="{ 'is-invalid': f['totalAmount'].errors && f['totalAmount'].touched }" />
+                                <div class="invalid-feedback" *ngIf="f['totalAmount'].errors && f['totalAmount'].touched">
+                                    <div *ngIf="f['totalAmount'].errors['required']">Monto requerido</div>
+                                    <div *ngIf="f['totalAmount'].errors['pattern']">
+                                        Solo números positivos con máximo 2 decimales. <strong>Ej: 150.50</strong>
+                                    </div>
+                                </div>
+                            </mat-form-field>
+
+                            <div class="col-12"></div>
+
+                            <mat-form-field class="col-sm-12 col-md-3 custom-input" appearance="outline">
+                                <mat-label>NIT</mat-label>
+                                <input type="text" formControlName="nit" matInput
+                                    [ngClass]="{ 'is-invalid': f['nit'].errors && f['nit'].touched }" />
+                                <div class="invalid-feedback" *ngIf="f['nit'].errors && f['nit'].touched">
+                                    <div *ngIf="f['nit'].errors['maxlength']">Máximo 10 caracteres</div>
+                                </div>
+                            </mat-form-field>
+
+                            <mat-form-field class="col-sm-12 col-md-3 custom-input" appearance="outline">
+                                <mat-label>Proveedor</mat-label>
+                                <input type="text" formControlName="supplier" matInput
+                                    [ngClass]="{ 'is-invalid': f['supplier'].errors && f['supplier'].touched }" />
+                                <div class="invalid-feedback" *ngIf="f['supplier'].errors && f['supplier'].touched">
+                                    <div *ngIf="f['supplier'].errors['maxlength']">Máximo 20 caracteres</div>
+                                </div>
+                            </mat-form-field>
+
+                            <div class="col-12"></div>
+
+                            <mat-form-field class="col-sm-12 col-md-6 custom-input" appearance="outline">
+                                <mat-label>Comentario</mat-label>
+                                <textarea formControlName="comment" matInput rows="3"
+                                    [ngClass]="{ 'is-invalid': f['comment'].errors && f['comment'].touched }"></textarea>
+                                <div class="invalid-feedback" *ngIf="f['comment'].errors && f['comment'].touched">
+                                    <div *ngIf="f['comment'].errors['maxlength']">Máximo 100 caracteres</div>
+                                </div>
+                            </mat-form-field>
+
+                        </div>
+                        <div class="col-sm-12 text-center p-3">
+                            <button type="submit" [disabled]="submitting || expenseForm.invalid"
+                                class="btn btn-outline-success btn-lg">
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                Guardar Gasto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

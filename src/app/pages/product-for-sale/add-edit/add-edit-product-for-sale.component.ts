@@ -37,6 +37,15 @@ export class AddEditProductoForSaleComponent implements OnInit{
     unselectedFinishedProducts?: FinishedProduct[];
     allFinishedProducts?: FinishedProduct[];
     selectedFinishedProduct?: FinishedProduct;
+    fpSearchTerm?: string;
+
+    get filteredFinishedProducts(): FinishedProduct[] | undefined {
+        if (!this.fpSearchTerm) return this.finishedProducts;
+        const term = this.fpSearchTerm.toLowerCase();
+        return this.finishedProducts?.filter(fp =>
+            fp.name?.toLowerCase().includes(term)
+        );
+    }
 
     elements: any = [];
     cardPhoto = undefined;

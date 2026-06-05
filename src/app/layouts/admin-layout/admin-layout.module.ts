@@ -74,6 +74,9 @@ import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/con
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DATE_FORMATS } from '@angular/material/core';
 import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
+import { ListStoreExpensesComponent } from "@app/pages/store-expenses/list/list-store-expenses.component";
+import { AddEditExpenseComponent } from "@app/pages/store-expenses/add-edit/add-edit-expense.component";
+import { ViewExpenseComponent } from "@app/pages/store-expenses/view/view-expense.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 export const MY_DATE_FORMATS = {
@@ -160,6 +163,9 @@ export const MY_DATE_FORMATS = {
       ViewCashClosingComponent,
       AddEditCashClosingComponent,
       ListFinishedProductOrderInFactoryComponent,
+      ListStoreExpensesComponent,
+      AddEditExpenseComponent,
+      ViewExpenseComponent,
       // UsersLayoutComponent
   ],
   providers: [
