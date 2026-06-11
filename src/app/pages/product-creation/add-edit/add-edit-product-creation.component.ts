@@ -112,6 +112,15 @@ export class AddEditProductCreationComponent implements OnInit{
     fpEditingIndex?: number;
     activityLogName = "Acciones de Producto en Inventario de Bodega";
     productType = 1;
+    fpSearchTerm?: string;
+
+    get filteredFinishedProducts(): FinishedProduct[] | undefined {
+        if (!this.fpSearchTerm) return this.finishedProducts;
+        const term = this.fpSearchTerm.toLowerCase();
+        return this.finishedProducts?.filter(fp =>
+            fp.name?.toLowerCase().includes(term)
+        );
+    }
     inventoryRoute = '/inventory/factory/finishedProduct';
     productLabel = 'Producto terminado';
     productFabricadoLabel = 'Producto terminado fabricado';
