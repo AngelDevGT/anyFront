@@ -421,6 +421,7 @@ export class AddEditCashClosingComponent implements OnInit{
     recalcularCierreCaja() {
         const sobrante = Number(this.operationRawMaterialForm?.value?.sobrante || 0);
         this.totalIngresos = this.totalAmountShopResumes
+            + this.totalDiscountShopResumes
             + this.totalDeliveryShopResumes
             + this.totalCreditPaymentsCash
             + sobrante;
@@ -428,7 +429,7 @@ export class AddEditCashClosingComponent implements OnInit{
             + this.totalDepositSales
             + this.totalDeliveryDeposit
             + this.totalStoreExpenses
-            + this.totalCreditSales;
+            + this.totalCreditSalesFull;
         this.totalEfectivo = this.totalIngresos - this.totalEgresos;
         this.newCreditBalance = this.previousCreditBalance + this.totalCreditSalesFull - this.totalCreditPaymentsTotal;
     }

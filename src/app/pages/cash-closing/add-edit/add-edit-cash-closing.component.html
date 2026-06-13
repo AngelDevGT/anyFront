@@ -337,7 +337,7 @@
                                 <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
                                     <div class="subtotal">
                                         <p class="subtotal-title">(+) Total vendido</p>
-                                        <p class="subtotal-amount">Q. {{ totalAmountShopResumes | number: '1.2-2' }}</p>
+                                        <p class="subtotal-amount">Q. {{ (totalAmountShopResumes + totalDiscountShopResumes) | number: '1.2-2' }}</p>
                                     </div>
                                     <div class="subtotal">
                                         <p class="subtotal-title">(+) Total envíos</p>
@@ -383,7 +383,7 @@
                                     </div>
                                     <div class="subtotal">
                                         <p class="subtotal-title">(-) Créditos nuevos</p>
-                                        <p class="subtotal-amount">Q. {{ totalCreditSales | number: '1.2-2' }}</p>
+                                        <p class="subtotal-amount">Q. {{ totalCreditSalesFull | number: '1.2-2' }}</p>
                                     </div>
                                     <hr>
                                     <div class="total">

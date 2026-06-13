@@ -364,8 +364,8 @@ export class ViewCashClosingComponent implements OnInit{
             - totalActivityLogsAmountAdded
             + totalActivityLogsAmountRemoved;
         this.sobrante = Number(cashClosing.sobrante || 0);
-        this.totalIngresos = this.totalAmountShopResumes + this.totalDeliveryShopResumes + this.totalCreditPaymentsCash + this.sobrante;
-        this.totalEgresos = this.totalDiscountShopResumes + this.totalDepositSales + this.totalDeliveryDeposit + this.totalStoreExpenses + this.totalCreditSales;
+        this.totalIngresos = this.totalAmountShopResumes + this.totalDiscountShopResumes + this.totalDeliveryShopResumes + this.totalCreditPaymentsCash + this.sobrante;
+        this.totalEgresos = this.totalDiscountShopResumes + this.totalDepositSales + this.totalDeliveryDeposit + this.totalStoreExpenses + this.totalCreditSalesFull;
         this.totalEfectivo = this.totalIngresos - this.totalEgresos;
         this.newCreditBalance = Number(cashClosing.creditBalance || 0);
     }
