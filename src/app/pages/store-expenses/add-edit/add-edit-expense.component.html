@@ -23,7 +23,7 @@
                                 </div>
                             </mat-form-field>
 
-                            <mat-form-field class="col-sm-12 col-md-3 custom-input" appearance="outline">
+                            <mat-form-field *ngIf="!isEditOption" class="col-sm-12 col-md-3 custom-input" appearance="outline">
                                 <mat-label>Monto Total (Q)</mat-label>
                                 <input type="text" formControlName="totalAmount" matInput
                                     [ngClass]="{ 'is-invalid': f['totalAmount'].errors && f['totalAmount'].touched }" />

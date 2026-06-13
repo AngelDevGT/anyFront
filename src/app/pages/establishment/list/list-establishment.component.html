@@ -1,41 +1,29 @@
-<div class="genericCard pt-3">
-    <mat-card class="mat-elevation-z8">
-        <mat-card-header style="justify-content: center;">
-            <mat-card-title>{{title}}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="d-flex flex-wrap justify-content-md-end justify-contentend pb-0">
-                        <div *ngIf="!isInventory">
-                            <button type="button" routerLink="create" class="btn btn-outline-success m-2">
-                                <!-- relative route "add" = "/users/add" -->
-                                <div class="d-flex flex-row p-1">
-                                    <i class="material-icons icon">add</i>
-                                    <span>Crear Tienda</span>
-                                </div>
-                            </button>
-                        </div>
-                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
-                            <div class="select-filter mx-2">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Buscar</mat-label>
-                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
-                                </mat-form-field>
-                            </div>
-                            <mat-form-field class="col-lg-2 col-2" appearance="outline">
-                                <mat-select matInput disableOptionCentering [(value)]="pageSize">
-                                    <mat-option *ngFor="let entry of entries" [value]="entry">
-                                        {{ entry }}
-                                    </mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                        </div>
-                    </div>
-                    <responsive-table *ngIf="this.establishments" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'establishments-list'"></responsive-table>
-                    <span *ngIf="!establishments" class="spinner-border spinner-border-lg align-center"></span>
-                </div>
-            </div>
-        </mat-card-content>
-    </mat-card>
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h4 class="page-title">{{title}}</h4>
+      <p class="page-subtitle" *ngIf="isInventory">Gestiona el inventario y operaciones de las tiendas</p>
+      <p class="page-subtitle" *ngIf="!isInventory">Administra las tiendas registradas</p>
+    </div>
+    <button *ngIf="!isInventory" type="button" routerLink="create" class="btn-add">
+      <i class="material-icons">add</i>
+      Crear Tienda
+    </button>
+  </div>
+
+  <div class="content-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="material-icons search-icon">search</i>
+        <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search($event)" />
+      </div>
+    </div>
+
+    <data-table *ngIf="establishments" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"></data-table>
+    <div *ngIf="!establishments" class="loading-wrap">
+      <span class="spinner-border spinner-border-lg"></span>
+    </div>
+  </div>
+
 </div>

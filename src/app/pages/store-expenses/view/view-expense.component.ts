@@ -56,7 +56,7 @@ export class ViewExpenseComponent implements OnInit {
     }
 
     editExpense() {
-        this.router.navigateByUrl('/store/expenses/edit/' + this.id);
+        this.router.navigateByUrl('/store/expenses/history/edit/' + this.id);
     }
 
     deleteExpense() {
@@ -67,7 +67,7 @@ export class ViewExpenseComponent implements OnInit {
             .subscribe({
                 next: () => {
                     this.alertService.success('Gasto eliminado', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/store/expenses/' + this.expense?.establishment?.id);
+                    this.router.navigateByUrl('/store/expenses/history/' + this.expense?.establishment?.id);
                 },
                 error: error => {
                     const msg = this.dataService.getErrorMessageResponse(error, 'Error al eliminar el gasto');

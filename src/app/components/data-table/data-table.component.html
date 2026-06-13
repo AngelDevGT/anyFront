@@ -1,0 +1,93 @@
+<div class="dt-wrap">
+  <div class="dt-table-container">
+    <table class="dt-table">
+
+      <thead>
+        <tr>
+          <th *ngFor="let h of headers">{{ h.header_name }}</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let row of pagedRows">
+          <td *ngFor="let cell of row">
+
+            <!-- Avatar + text -->
+            <div *ngIf="cell.type === 'avatar_text'" class="dt-avatar-cell">
+              <div class="dt-avatar" [style.background]="getAvatarColor(cell.value)">
+                {{ getInitials(cell.value) }}
+              </div>
+              <span class="dt-cell-name">{{ cell.value }}</span>
+            </div>
+
+            <!-- Plain text -->
+            <span *ngIf="cell.type === 'text'" class="dt-cell-text">{{ cell.value }}</span>
+
+            <!-- Badge -->
+            <span *ngIf="cell.type === 'badge'"
+                  class="dt-badge"
+                  [ngClass]="cell.bg_color ? '' : badgeClass(cell.identifier)"
+                  [style.background]="cell.bg_color || null"
+                  [style.color]="cell.color || null">
+              <span class="dt-badge-dot"></span>{{ cell.value }}
+            </span>
+
+            <!-- Modal buttons -->
+            <div *ngIf="cell.type === 'modal_button'" class="dt-actions">
+              <button *ngFor="let btn of cell.button"
+                      type="button"
+                      class="dt-action-btn"
+                      [ngClass]="[btn.colorClass, btn.title ? 'dt-action-btn--labeled' : '']"
+                      data-bs-toggle="modal"
+                      [attr.data-bs-target]="btn.data_bs_target"
+                      (click)="emitModalAction(btn.data_bs_target, cell.data)">
+                <i class="material-icons">{{ btn.icon.icon }}</i>
+                <span *ngIf="btn.title" class="dt-btn-label">{{ btn.title }}</span>
+              </button>
+            </div>
+
+            <!-- Action buttons -->
+            <div *ngIf="cell.type === 'button'" class="dt-actions">
+              <button *ngFor="let btn of cell.button"
+                      type="button"
+                      class="dt-action-btn"
+                      [ngClass]="[btn.colorClass, btn.title ? 'dt-action-btn--labeled' : '']"
+                      (click)="navigate(btn.routerLink, btn.query_params, btn.is_absolute)">
+                <i class="material-icons">{{ btn.icon.icon }}</i>
+                <span *ngIf="btn.title" class="dt-btn-label">{{ btn.title }}</span>
+              </button>
+            </div>
+
+          </td>
+        </tr>
+
+        <tr *ngIf="rows.length === 0">
+          <td [attr.colspan]="headers.length + 1" class="dt-empty">
+            No hay registros
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="dt-footer">
+    <div class="dt-footer-info">
+      <span>Filas por página</span>
+      <select class="dt-page-select" [(ngModel)]="pageSize" (change)="page = 1">
+        <option *ngFor="let s of pageSizes" [ngValue]="s">{{ s }}</option>
+      </select>
+      <span>registros</span>
+    </div>
+    <ngb-pagination
+      [pageSize]="pageSize"
+      [maxSize]="3"
+      [rotate]="true"
+      [ellipses]="true"
+      [collectionSize]="rows.length"
+      [(page)]="page"
+      [boundaryLinks]="true">
+    </ngb-pagination>
+  </div>
+</div>

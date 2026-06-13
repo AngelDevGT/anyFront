@@ -1,14 +1,8 @@
-import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
-import {map, startWith} from 'rxjs/operators';
-import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, DataService, paymentStatusValues, rawMaterialOrderStatusValues} from '@app/services';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Establishment } from '@app/models/establishment.model';
+import { AlertService, DataService, rawMaterialOrderStatusValues} from '@app/services';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
-import { BehaviorSubject } from 'rxjs';
-import { MatSelectChange } from '@angular/material/select';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
@@ -19,42 +13,18 @@ export class ListRawMaterialOrderComponent implements OnInit {
     rawMaterialOrders?: RawMaterialOrder[];
     allRawMaterialOrders?: RawMaterialOrder[];
     searchTerm?: string;
-    entries = this.dataService.tableEntries;
     sortOpts = ['Desc', 'Asc'];
     selectedSortOpt = this.sortOpts[0];
     pageSize = this.dataService.defaultPageSize;
-    page = 1;
     tableElementsValues?: any;
     materialType = 1;
     basePath = '/rawMaterialByProvider/order';
     pageTitle = 'Pedidos de Materia Prima';
+    availableStatuses: string[] = [];
+    statusFilter: string | null = null;
 
-    constructor(private dataService: DataService, private alertService: AlertService,
-        private route: ActivatedRoute) {
-        // this.selectedSortOptSubject.subscribe(value => {
-        //     this.sortDataByDate(value);
-        // });
-    }
-
-    sortOptSelect(event: MatSelectChange){
-        if(event.value){
-            this.sortDataByDate(event.value);
-        }
-    }
-
-    sortDataByDate(sortOpt: string){
-        this.rawMaterialOrders = this.rawMaterialOrders?.sort((a,b) => {
-            const fechaA = new Date(a.updatedDate!);
-            const fechaB = new Date(b.updatedDate!);
-            if(sortOpt === 'Desc'){
-                return fechaB.getTime() - fechaA.getTime();
-            } else {
-                return fechaA.getTime() - fechaB.getTime();
-            }
-        });
-        this.allRawMaterialOrders = this.rawMaterialOrders;
-        this.setTableElements(this.rawMaterialOrders);
-    }
+    constructor(private readonly dataService: DataService, private readonly alertService: AlertService,
+        private readonly route: ActivatedRoute) {}
 
     ngOnInit() {
         this.materialType = this.route.snapshot.data['materialType'] ?? 1;
@@ -63,81 +33,96 @@ export class ListRawMaterialOrderComponent implements OnInit {
         this.retriveRawMaterialOrders();
     }
 
-    retriveRawMaterialOrders(){
+    sortDataByDate(sortOpt: string) {
+        this.selectedSortOpt = sortOpt;
+        this.rawMaterialOrders = this.rawMaterialOrders?.sort((a, b) => {
+            const fechaA = new Date(a.updatedDate!).getTime();
+            const fechaB = new Date(b.updatedDate!).getTime();
+            return sortOpt === 'Desc' ? fechaB - fechaA : fechaA - fechaB;
+        });
+        this.setTableElements(this.rawMaterialOrders);
+    }
+
+    retriveRawMaterialOrders() {
         this.rawMaterialOrders = undefined;
         this.dataService.getAllRawMaterialOrderByFilter({raw_material_by_provider_type_id: this.materialType})
             .pipe(first())
             .subscribe({
                 next: (rmOrders: any) => {
-                    this.rawMaterialOrders = this.dataService.findJsonValue(rmOrders, 'json_result') || [];
-                    this.rawMaterialOrders = this.rawMaterialOrders?.filter((rmOrder: RawMaterialOrder) => {
-                        return rmOrder.status?.id !== rawMaterialOrderStatusValues.eliminado.status.id;
-                    });
+                    this.rawMaterialOrders = (this.dataService.findJsonValue(rmOrders, 'json_result') || [])
+                        .filter((rmOrder: RawMaterialOrder) =>
+                            rmOrder.status?.id !== rawMaterialOrderStatusValues.eliminado.status.id
+                        );
                     this.allRawMaterialOrders = this.rawMaterialOrders;
+                    this.availableStatuses = [...new Set(
+                        (this.allRawMaterialOrders || []).map(e => e.status?.identifier).filter((s): s is string => !!s)
+                    )];
                     this.sortDataByDate(this.sortOpts[0]);
                 }
             });
     }
 
-    search(value: any): void {
-        if (this.allRawMaterialOrders){
-            this.rawMaterialOrders = this.allRawMaterialOrders?.filter((val) => {
-                if(this.searchTerm){
-                    const nameMatch = val.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const commentMatch = val.comment?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const providerMatch = val.provider?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const paymentTypeMatch = val.paymentType?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const paymentStatusMatch = val.paymentStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const finalAmountMatch = val.finalAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const pendingAmountMatch = val.pendingAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return nameMatch || commentMatch || providerMatch || paymentTypeMatch || paymentStatusMatch;
-                }
-                return true;
-            });
-        }
-        this.setTableElements(this.rawMaterialOrders);
+    filterByStatus(status: string | null) {
+        this.statusFilter = status;
+        this.search(null);
     }
 
-    setTableElements(elements?: RawMaterialOrder[]){
+    search(value: any): void {
+        if (this.allRawMaterialOrders) {
+            this.rawMaterialOrders = this.allRawMaterialOrders.filter((val) => {
+                const textMatch = !this.searchTerm ||
+                    val.name?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    val.comment?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    val.provider?.name?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    val.paymentType?.identifier?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    val.paymentStatus?.identifier?.toLowerCase().includes(this.searchTerm.toLowerCase());
+                const statusMatch = !this.statusFilter || val.status?.identifier === this.statusFilter;
+                return textMatch && statusMatch;
+            });
+        }
+        this.sortDataByDate(this.selectedSortOpt);
+    }
+
+    setTableElements(elements?: RawMaterialOrder[]) {
         this.tableElementsValues = [];
         elements?.forEach((element: RawMaterialOrder) => {
-            const curr_row =
-            [
-                { type: "text", value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!), header_name: "Fecha", style: "width: 10%"},
-                { type: "text", value: element.name, header_name: "Nombre", style: "width: 15%" },
-                { type: "text", value: element.provider?.name, header_name: "Proveedor", style: "width: 15%" },
-                { type: "text", value: element.status?.identifier, header_name: "Estado del pedido", style: "width: 10%" },
-                { type: "text", value: element.paymentType?.identifier, header_name: "Tipo de pago", style: "width: 10%" },
-                { type: "text", value: element.paymentStatus?.identifier, header_name: "Estado de pago", style: "width: 10%" },
-                { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total", style: "width: 10%" },
-                { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente", style: "width: 10%" }
-            ];
-            let actionsButtons = [
+            const curr_row = [
+                { type: 'text', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!), header_name: 'Fecha' },
+                { type: 'text', value: element.name, header_name: 'Nombre' },
+                { type: 'text', value: element.provider?.name, header_name: 'Proveedor' },
                 {
-                    type: "button",
-                    routerLink: "view/" + element.id,
-                    class: "btn btn-success btn-sm pb-0 mx-1",
-                    icon: {
-                        class: "material-icons",
-                        icon: "visibility"
-                    }
+                    type: 'badge',
+                    value: (element.status?.text || element.status?.identifier) ?? '--',
+                    identifier: element.status?.identifier?.toLowerCase(),
+                    bg_color: element.status?.bg_color,
+                    color: element.status?.color,
+                    header_name: 'Estado del pedido'
+                },
+                { type: 'text', value: element.paymentType?.identifier, header_name: 'Tipo de pago' },
+                {
+                    type: 'badge',
+                    value: (element.paymentStatus?.text || element.paymentStatus?.identifier) ?? '--',
+                    identifier: element.paymentStatus?.identifier?.toLowerCase(),
+                    bg_color: element.paymentStatus?.bg_color,
+                    color: element.paymentStatus?.color,
+                    header_name: 'Estado de pago'
+                },
+                { type: 'text', value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: 'Monto total' },
+                { type: 'text', value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: 'Monto pendiente' },
+                {
+                    type: 'button',
+                    header_name: 'Acciones',
+                    button: [
+                        {
+                            type: 'button',
+                            routerLink: 'view/' + element.id,
+                            colorClass: 'dt-btn-view',
+                            icon: { class: 'material-icons', icon: 'visibility' }
+                        }
+                    ]
                 }
             ];
-
-            let rowButtons = {
-                type: "button",
-                style: "white-space: nowrap",
-                value: undefined,
-                header_name: "Acciones",
-                button: [
-                    ...actionsButtons
-                ]
-            }
-
-            curr_row.push(rowButtons);
-
             this.tableElementsValues.push(curr_row);
         });
     }
-
 }

@@ -1,0 +1,306 @@
+.dt-wrap {
+  width: 100%;
+}
+
+// ── Table container ───────────────────────────────────────
+.dt-table-container {
+  overflow-x: auto;
+}
+
+.dt-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+
+  th,
+  td {
+    padding: 12px 16px;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  // Header
+  thead tr {
+    background: #f3f4f6;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  thead th {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4b5563;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  // Rows
+  tbody tr {
+    border-bottom: 1px solid #f1f3f5;
+    transition: background 0.1s;
+
+    &:hover {
+      background: #fafafa;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  tbody td {
+    font-size: 14px;
+    color: #555;
+  }
+}
+
+// ── Checkbox column ───────────────────────────────────────
+.dt-col-check {
+  width: 44px;
+  padding-left: 14px !important;
+  padding-right: 4px !important;
+}
+
+.dt-checkbox {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #ff6e20;
+}
+
+// ── Avatar + name cell ────────────────────────────────────
+.dt-avatar-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dt-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.dt-cell-name {
+  font-weight: 600;
+  color: #1a1a2e;
+  white-space: nowrap;
+}
+
+.dt-cell-text {
+  color: #666;
+}
+
+// ── Status badge ──────────────────────────────────────────
+.dt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  .dt-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+}
+
+// Activos / positivos → verde
+.dt-badge-activo,
+.dt-badge-active,
+.dt-badge-recibido,
+.dt-badge-entregado,
+.dt-badge-pagado,
+.dt-badge-listo      { background: #d4f5d4; color: #155e22; }
+
+// Abonado → verde claro
+.dt-badge-abonado    { background: #d8f3e0; color: #1a6b3a; }
+
+// Verificado → azul
+.dt-badge-verificado { background: #d0e8ff; color: #0a4fa8; }
+
+// En camino / En curso → naranja suave
+.dt-badge-en-camino,
+.dt-badge-en-curso   { background: #fff0d9; color: #7a4000; }
+
+// Pendiente → ámbar
+.dt-badge-pendiente,
+.dt-badge-pending    { background: #fff3cd; color: #5a4000; }
+
+// Inactivo / Devuelto → gris
+.dt-badge-inactivo,
+.dt-badge-inactive,
+.dt-badge-devuelto   { background: #e9ecef; color: #495057; }
+
+// Eliminado / Cancelado → rojo
+.dt-badge-eliminado,
+.dt-badge-deleted,
+.dt-badge-cancelado  { background: #fde8e8; color: #b71c1c; }
+
+// ── Action buttons ────────────────────────────────────────
+.dt-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.dt-action-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border: 1.5px solid;
+
+  .material-icons {
+    font-size: 16px;
+  }
+
+  &.dt-action-btn--labeled {
+    width: auto;
+    padding: 0 10px;
+    gap: 5px;
+  }
+
+  .dt-btn-label {
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  &.dt-btn-view {
+    color: #198754;
+    border-color: #198754;
+    &:hover { background: #198754; color: #fff; }
+  }
+
+  &.dt-btn-edit {
+    color: #0d6efd;
+    border-color: #0d6efd;
+    &:hover { background: #0d6efd; color: #fff; }
+  }
+
+  &.dt-btn-delete {
+    color: #dc3545;
+    border-color: #dc3545;
+    &:hover { background: #dc3545; color: #fff; }
+  }
+
+  &.dt-btn-warning {
+    color: #aa4400;
+    border-color: #aa4400;
+    &:hover { background: #aa4400; color: #fff; }
+  }
+
+  &.dt-btn-secondary {
+    color: #545b62;
+    border-color: #545b62;
+    &:hover { background: #545b62; color: #fff; }
+  }
+
+  &.dt-btn-info {
+    color: #0773a0;
+    border-color: #0773a0;
+    &:hover { background: #0773a0; color: #fff; }
+  }
+}
+
+// ── Footer ────────────────────────────────────────────────
+.dt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid #f1f3f5;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dt-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.dt-page-select {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #444;
+  background: #fff;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #ff6e20;
+  }
+}
+
+.dt-empty {
+  text-align: center;
+  padding: 40px;
+  color: #aaa;
+  font-size: 14px;
+}
+
+// ── Pagination styling ────────────────────────────────────
+::ng-deep .dt-wrap ngb-pagination .pagination {
+  margin: 0;
+  gap: 4px;
+
+  .page-item .page-link {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    background: #fff;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      background: #f0f0f0;
+      color: #333;
+      border-color: #ccc;
+    }
+  }
+
+  .page-item.active .page-link {
+    background: #be4b00;
+    border-color: #be4b00;
+    color: #fff;
+  }
+
+  .page-item.disabled .page-link {
+    color: #bbb;
+    border-color: #eee;
+    background: #fafafa;
+  }
+}

@@ -167,22 +167,16 @@ export class ListFactoryInventoryFPComponent implements OnInit {
                             {
                                 type: "button",
                                 data_bs_target: "#addInventoryRawMaterialModal",
-                                class: "btn btn-success mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "add_circle"
-                                },
-                                text: "Agregar"
+                                colorClass: "dt-btn-view",
+                                icon: { class: "material-icons", icon: "add_circle" },
+                                title: "Agregar"
                             },
                             {
                                 type: "button",
                                 data_bs_target: "#removeInventoryRawMaterialModal",
-                                class: "btn btn-danger mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "remove_circle"
-                                },
-                                text: "Eliminar"
+                                colorClass: "dt-btn-delete",
+                                icon: { class: "material-icons", icon: "remove_circle" },
+                                title: "Eliminar"
                             }
                         ]
                     });

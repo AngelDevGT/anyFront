@@ -1,14 +1,11 @@
-import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
-import {map, startWith} from 'rxjs/operators';
-import {MatTableDataSource} from '@angular/material/table';
 
 import { AccountService, AlertService, DataService} from '@app/services';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { ActivatedRoute } from '@angular/router';
 
-@Component({ 
+@Component({
     templateUrl: 'list-establishment.component.html',
     styleUrls: ['list-establishment.component.scss']
 })
@@ -16,30 +13,26 @@ export class ListEstablishmentComponent implements OnInit {
     establishments?: Establishment[];
     allEstablishments?: Establishment[];
     searchTerm?: string;
-    entries = this.dataService.tableEntries;
     pageSize = this.dataService.defaultPageSize;
-    page = 1;
     title = '';
     viewOption = '';
     isInventory = false;
     tableElementsValues?: any;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute,private alertService: AlertService, private accountService: AccountService) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private accountService: AccountService) {}
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
         });
-
         this.title = 'Tiendas';
-  
-        if (this.viewOption && this.viewOption === "inventory"){
+        if (this.viewOption && this.viewOption === 'inventory') {
             this.isInventory = true;
         }
         this.retriveEstablishments();
     }
 
-    retriveEstablishments(){
+    retriveEstablishments() {
         this.establishments = undefined;
         this.dataService.getAllEstablishmentsByFilter({status_id: 28})
             .pipe(first())
@@ -53,13 +46,13 @@ export class ListEstablishmentComponent implements OnInit {
     }
 
     search(value: any): void {
-        if (this.allEstablishments){
-            this.establishments = this.allEstablishments?.filter((val) => {
-                if(this.searchTerm){
-                    const nameMatch = val.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const addressMatch = val.address?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const descriptionMatch = val.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return nameMatch || addressMatch || descriptionMatch;
+        if (this.allEstablishments) {
+            this.establishments = this.allEstablishments.filter((val) => {
+                if (this.searchTerm) {
+                    const term = this.searchTerm.toLowerCase();
+                    return val.name?.toLowerCase().includes(term) ||
+                           val.address?.toLowerCase().includes(term) ||
+                           val.description?.toLowerCase().includes(term);
                 }
                 return true;
             });
@@ -67,143 +60,52 @@ export class ListEstablishmentComponent implements OnInit {
         this.setTableElements(this.establishments);
     }
 
-    setTableElements(elements: any){
+    setTableElements(elements: any) {
         this.tableElementsValues = [];
         const userEmail = this.accountService.userEmail;
-        const userRole = this.accountService.userRole;
         elements?.forEach((element: any) => {
-            let curr_row;
-            let buttonsRow = {};
-            if(this.isInventory){
+            let curr_row: any[];
+            let buttonsRow: any;
+            if (this.isInventory) {
                 buttonsRow = {
-                    type: "button_text_icon",
-                    style: "white-space: nowrap",
-                    header_name: "Acciones",
+                    type: 'button',
+                    header_name: 'Acciones',
                     button: [
-                        {
-                            type: "button",
-                            routerLink: "inventory/" + element.id,
-                            class: "btn btn-outline-primary m-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "inventory_2"
-                            },
-                            text: "Inventario"
-                        },
-                        {
-                            type: "button",
-                            routerLink: "/store/sales/history/" + element.id,
-                            is_absolute: true,
-                            class: "btn btn-outline-success m-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "shopping_bag"
-                            },
-                            text: "Ventas"
-                        },
-                        {
-                            type: "button",
-                            routerLink: "/productsForSale/order",
-                            is_absolute: true,
-                            query_params: {opt: "store", store: element.id, name: element.name},
-                            class: "btn btn-outline-secondary m-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "local_shipping"
-                            },
-                            text: "Pedidos"
-                        },
-                        // {
-                        //     type: "button",
-                        //     routerLink: "/store/expenses/" + element.id,
-                        //     is_absolute: true,
-                        //     class: "btn btn-outline-warning m-1",
-                        //     icon: {
-                        //         class: "material-icons",
-                        //         icon: "money_off"
-                        //     },
-                        //     text: "Gastos"
-                        // },
-                        {
-                            type: "button",
-                            routerLink: "/cashClosing/" + element.id,
-                            is_absolute: true,
-                            class: "btn btn-outline-danger m-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "dns"
-                            },
-                            text: "Caja"
-                        }
+                        { type: 'button', routerLink: 'inventory/' + element.id, colorClass: 'dt-btn-edit', icon: { class: 'material-icons', icon: 'inventory_2' }, title: 'Inventario' },
+                        { type: 'button', routerLink: '/store/sales/history/' + element.id, is_absolute: true, colorClass: 'dt-btn-view', icon: { class: 'material-icons', icon: 'shopping_bag' }, title: 'Ventas' },
+                        { type: 'button', routerLink: '/productsForSale/order', is_absolute: true, query_params: { opt: 'store', store: element.id, name: element.name }, colorClass: 'dt-btn-secondary', icon: { class: 'material-icons', icon: 'local_shipping' }, title: 'Pedidos' },
+                        { type: 'button', routerLink: '/store/expenses/history/' + element.id, is_absolute: true, colorClass: 'dt-btn-warning', icon: { class: 'material-icons', icon: 'money_off' }, title: 'Gastos' },
+                        { type: 'button', routerLink: '/cashClosing/' + element.id, is_absolute: true, colorClass: 'dt-btn-delete', icon: { class: 'material-icons', icon: 'dns' }, title: 'Caja' }
                     ]
                 };
                 curr_row = [
-                    { type: "text", value: element.name, header_name: "Nombre", style: "width: 20%;" },
-                    { type: "text", value: element.address, header_name: "Direccion", style: "width: 20%;" },
+                    { type: 'text', value: element.name, header_name: 'Nombre' },
+                    { type: 'text', value: element.address, header_name: 'Direccion' },
                     buttonsRow
                 ];
             } else {
                 buttonsRow = {
-                    type: "button_text_icon",
-                    style: "white-space: nowrap",
-                    header_name: "Acciones",
+                    type: 'button',
+                    header_name: 'Acciones',
                     button: [
-                        {
-                            type: "button",
-                            routerLink: "view/" + element.id,
-                            query_params: {opt: this.viewOption},
-                            class: "btn btn-outline-success m-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "visibility"
-                            },
-                            text: "Ver"
-                        },
-                        {
-                            type: "button",
-                            routerLink: "edit/" + element.id,
-                            query_params: {opt: this.viewOption},
-                            is_absolute: false,
-                            class: "btn btn-outline-primary m-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "edit"
-                            },
-                            text: "Editar"
-                        },
-                        {
-                            type: "button",
-                            routerLink: "/productsForSale",
-                            query_params: { store: element.id },
-                            is_absolute: true,
-                            class: "btn btn-outline-danger m-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "shopping_bag"
-                            },
-                            text: "Productos"
-                        }
+                        { type: 'button', routerLink: 'view/' + element.id, query_params: { opt: this.viewOption }, colorClass: 'dt-btn-view', icon: { class: 'material-icons', icon: 'visibility' }, title: 'Ver' },
+                        { type: 'button', routerLink: 'edit/' + element.id, query_params: { opt: this.viewOption }, colorClass: 'dt-btn-edit', icon: { class: 'material-icons', icon: 'edit' }, title: 'Editar' },
+                        { type: 'button', routerLink: '/productsForSale', query_params: { store: element.id }, is_absolute: true, colorClass: 'dt-btn-delete', icon: { class: 'material-icons', icon: 'shopping_bag' }, title: 'Productos' }
                     ]
                 };
                 curr_row = [
-                    { type: "text", value: element.name, header_name: "Nombre", style: "width: 20%;" },
-                    { type: "text", value: element.address, header_name: "Direccion", style: "width: 20%;" },
-                    { type: "text", value: element.description, header_name: "Descripcion", style: "width: 20%;" },
+                    { type: 'text', value: element.name, header_name: 'Nombre' },
+                    { type: 'text', value: element.address, header_name: 'Direccion' },
+                    { type: 'text', value: element.description, header_name: 'Descripcion' },
                     buttonsRow
                 ];
-            };
+            }
             const emails = this.accountService.extractEmails(element.description);
-            // if(false){
-            if(this.accountService.isAdminUser()){
+            if (this.accountService.isAdminUser()) {
                 this.tableElementsValues.push(curr_row);
-            } else if(emails.length > 0){
-                if(userEmail){
-                    if(emails.includes(userEmail)){
-                        this.tableElementsValues.push(curr_row);
-                    }
-                }
+            } else if (emails.length > 0 && userEmail && emails.includes(userEmail)) {
+                this.tableElementsValues.push(curr_row);
             }
         });
     }
-
 }

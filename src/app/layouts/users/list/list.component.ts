@@ -1,11 +1,6 @@
-import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
-import {map, startWith} from 'rxjs/operators';
-import {MatTableDataSource} from '@angular/material/table';
-
-import { AccountService, AlertService, DataService} from '@app/services';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { AccountService, AlertService, DataService } from '@app/services';
 import { User } from '@app/models/system/user.model';
 
 @Component({ 
@@ -21,7 +16,7 @@ export class ListComponent implements OnInit {
     entries = this.dataService.tableEntries;
     tableElementsValues?: any;
 
-    constructor(private accountService: AccountService, private alertService: AlertService, private dataService: DataService) {}
+    constructor(private readonly accountService: AccountService, private readonly alertService: AlertService, private readonly dataService: DataService) {}
 
     ngOnInit() {
         this.retriveUsers();
@@ -39,12 +34,6 @@ export class ListComponent implements OnInit {
                     this.setTableElements(this.users);
                 }
             });
-    }
-
-    private _filter(value: string, options: string[]): string[] {
-        const filterValue = value.toLowerCase();
-
-        return options.filter(option => option.toLowerCase().includes(filterValue));
     }
 
     search(value: any): void {
@@ -82,33 +71,33 @@ export class ListComponent implements OnInit {
         this.tableElementsValues = [];
         elements?.forEach((element) => {
             const curr_row = [
-                { type: "text", value: element.name, header_name: "Nombre" },
+                { type: "avatar_text", value: element.name, header_name: "Nombre" },
+                { type: "text", value: element.phone, header_name: "Teléfono" },
                 { type: "text", value: element.email, header_name: "Correo" },
-                { type: "text", value: element.status?.identifier, header_name: "Estado" },
                 { type: "text", value: element.role?.identifier, header_name: "Rol" },
-                { type: "text", value: element.phone, header_name: "Telefono" },
+                {
+                    type: "badge",
+                    value: element.status?.text || element.status?.identifier,
+                    identifier: element.status?.identifier?.toLowerCase(),
+                    bg_color: element.status?.bg_color,
+                    color: element.status?.color,
+                    header_name: "Estado"
+                },
                 {
                     type: "button",
-                    style: "white-space: nowrap",
                     header_name: "Acciones",
                     button: [
                         {
                             type: "button",
                             routerLink: "view/" + element.id,
-                            class: "btn btn-success btn-sm pb-0 mx-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "visibility"
-                            }
+                            colorClass: "dt-btn-view",
+                            icon: { class: "material-icons", icon: "visibility" }
                         },
                         {
                             type: "button",
                             routerLink: "edit/" + element.id,
-                            class: "btn btn-primary btn-sm pb-0 mx-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "edit"
-                            }
+                            colorClass: "dt-btn-edit",
+                            icon: { class: "material-icons", icon: "edit" }
                         }
                     ]
                 }

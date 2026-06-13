@@ -157,29 +157,23 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                         {
                             type: "button",
                             data_bs_target: "#addInventoryRawMaterialModal",
-                            class: "btn btn-success mx-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "add_circle"
-                            }
+                            colorClass: "dt-btn-view",
+                            icon: { class: "material-icons", icon: "add_circle" },
+                            title: "Agregar"
                         },
                         {
                             type: "button",
                             data_bs_target: "#removeInventoryRawMaterialModal",
-                            class: "btn btn-danger mx-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "remove_circle"
-                            }
+                            colorClass: "dt-btn-delete",
+                            icon: { class: "material-icons", icon: "remove_circle" },
+                            title: "Eliminar"
                         },
                         {
                             type: "button",
                             data_bs_target: "#returnToWarehouseModal",
-                            class: "btn btn-warning mx-1",
-                            icon: {
-                                class: "material-icons",
-                                icon: "undo"
-                            }
+                            colorClass: "dt-btn-warning",
+                            icon: { class: "material-icons", icon: "undo" },
+                            title: "Devolver"
                         }
                     ]
                 });

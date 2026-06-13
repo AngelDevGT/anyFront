@@ -1,14 +1,18 @@
-<!-- Sidenav -->
-<!-- <app-sidebar></app-sidebar> -->
-<!-- nav -->
-<app-sidebar>
-</app-sidebar>
-<app-navbar>
-</app-navbar>
-<main>
+<app-sidebar></app-sidebar>
+
+<!-- Mobile-only top bar -->
+<div class="mobile-topbar d-lg-none">
+  <button class="mobile-menu-btn" (click)="toggleMobileSidebar()" type="button" aria-label="Abrir menú">
+    <i class="material-icons">menu</i>
+  </button>
+  <a href="/home" class="mobile-brand">
+    <img src="assets/img/brand/embutidos_any_900x150_white.png" height="30" alt="Embutidos Any">
+  </a>
+</div>
+
+<main [class.main-collapsed]="isSidebarCollapsed">
   <div class="main-container">
-      <!-- Pages -->
-      <div class="px-4 pt-2"><alert></alert></div>
-      <router-outlet></router-outlet>
+    <div class="px-4 pt-2"><alert></alert></div>
+    <router-outlet></router-outlet>
   </div>
 </main>

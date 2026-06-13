@@ -1,115 +1,334 @@
-#sidebarMenuSmall {
-
-  @media (min-width: 991.98px) {
-    display: none !important; 
-  }
-
-}
-
-#sidebarMenuLarge {
-
-  @media (max-width: 991.97px) {
-    display: none;
-  }
-
+.mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1030;
+  border: none;
+  padding: 0;
+  cursor: default;
 }
 
 .sidebar {
   position: fixed;
   top: 0;
-  bottom: 0;
   left: 0;
-  padding: 50px 0 0; /* Height of navbar */
-  box-shadow: 0 2px 5px 0 rgb(0 0 0 / 5%), 0 2px 10px 0 rgb(0 0 0 / 5%);
+  height: 100vh;
   width: 240px;
-  z-index: 1;
+  background-color: #1e2128;
+  z-index: 1031;
+  transition: width 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.35);
 
-  .position-sticky {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+  // Desktop: hide on mobile by default
+  @media (max-width: 991.97px) {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    width: 240px !important;
+
+    &.mobile-open {
+      transform: translateX(0);
+    }
   }
-}
 
-@media (max-width: 991.98px) {
-  .sidebar {
-    width: 100%;
-    padding: 50px 0 0;
-  }
-}
-.sidebar .active {
-  border-radius: 5px;
-  box-shadow: 0 2px 5px 0 rgb(0 0 0 / 16%), 0 2px 10px 0 rgb(0 0 0 / 12%);
+  // Collapsed icon-only mode — desktop only
+  @media (min-width: 991.98px) {
+    &.sidebar-collapsed {
+      width: 64px;
 
-}
+      .menu-text,
+      .chevron-icon {
+        display: none;
+      }
 
-.sidebar-sticky {
-  position: relative;
-  top: 0;
-  height: calc(100vh - 48px);
-  padding-top: 0.5rem;
-  overflow-x: hidden;
-  overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
-}
+      .sidebar-btn,
+      .sidebar-child-btn,
+      .user-action-btn {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+      }
 
-.sidebar-row {
-  .icon{
-    padding: 0 2% 0 2%;
-  }
-}
+      .menu-icon {
+        margin-right: 0;
+      }
 
-button {
-  // background-color: #ffeebb;
-  color: #555;
-  border-radius: 7px;
-}
+      .sidebar-user {
+        padding: 8px 0;
 
-button[type="button"]:hover,
-a:hover{
-  background-color: #ffbb63;
-  color: #fff;
-  border-radius: 7px;
-}
+        .user-info {
+          justify-content: center;
+          padding: 8px 0;
+        }
 
-.panel {
-  border: 0 none;
-  box-shadow: none;
-  margin: 0;
-  background: inherit;
-}
-
-.principal-bottom {
-  width: 100%;
-}
-
-
-button[type="button"] {
-  color: #555;
-  border-width: 0;
-}
-
-
-.panel {
-  border: 0 none;
-  box-shadow: none;
-  background: inherit;
-}
-
-
-li {
-  display: block;
-  width: 100%;
-  a {
-    padding: 30px;
-    color: #5f5f5f;
-    .glyphicon, .fa {
-      margin-right: 8px;
+        .user-details {
+          display: none;
+        }
+      }
     }
   }
 }
 
+// Brand header
+.sidebar-brand {
+  height: 50px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
 
-.ripple{
-  margin-left: 3%;
+  .brand-link {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  .brand-full {
+    height: 28px;
+    max-width: 150px;
+    object-fit: contain;
+  }
+
+  .brand-icon {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    border-radius: 50%;
+  }
 }
 
+// Mobile close button (inside sidebar-brand)
+.toggle-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s, background-color 0.15s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .material-icons {
+    font-size: 20px;
+  }
+}
+
+// Floating desktop toggle — sits on the right edge of the sidebar
+.sidebar-toggle-float {
+  position: fixed;
+  top: 68px;
+  left: calc(240px - 13px);
+  width: 26px;
+  height: 26px;
+  background: #2a2f3a;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 1032;
+  transition: left 0.25s ease, background-color 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+
+  &.collapsed {
+    left: calc(64px - 13px);
+  }
+
+  &:hover {
+    background: #ffbb63;
+    color: #fff;
+    border-color: #ffbb63;
+  }
+
+  .material-icons {
+    font-size: 15px;
+    line-height: 1;
+  }
+}
+
+// Scrollable menu area
+.sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 0;
+
+  &::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+  }
+}
+
+.menu-group {
+  margin-bottom: 1px;
+}
+
+.sidebar-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 9px 14px;
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+    color: #fff;
+  }
+
+  &[aria-expanded="true"] {
+    color: #ffbb63;
+    background-color: rgba(255, 187, 99, 0.1);
+
+    .chevron-icon {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.sidebar-child-btn {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.15);
+  border: none;
+  color: rgba(255, 255, 255, 0.58);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 7px 14px 7px 20px;
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: rgba(255, 187, 99, 0.12);
+    color: #ffbb63;
+  }
+}
+
+.menu-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 24px;
+  margin-right: 10px;
+}
+
+.child-icon {
+  font-size: 16px;
+  width: 18px;
+}
+
+.menu-text {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s ease;
+  margin-left: 4px;
+}
+
+// User section at bottom
+.sidebar-user {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 0 4px;
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    padding: 6px 14px;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .user-avatar-icon {
+    font-size: 28px;
+    color: rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+  }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-role {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.user-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-action-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+    color: #fff;
+  }
+
+  &.logout-btn:hover {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #ff6b6b;
+  }
+}

@@ -1,149 +1,90 @@
-.genericCard {
-    /* margin-top: 10px; */
-    margin: 20px;
-}
+.page-wrapper { padding: 24px; }
 
-.custom-input{
-    padding: 0 10px;
-}
-
-// img{
-//     max-width: 250px;
-//     max-height: 250px;
-// }
-
-.responsive {
-    width: 90%;
-    height: auto;
-    align-self: center;
-}
-
-.form-group{
-    margin-bottom: 10px;
-    padding-top: 5px;
-    padding-bottom: 5px;
-}
-
-.example-container {
-    display: flex;
-    flex-direction: column;
-    max-height: 500px;
-    min-width: 300px;
-  }
-  
-  .mat-table {
-    overflow: auto;
-    max-height: 500px;
-  }
-  
-  .mobile-label {
-    display: none;
-  }
-  
-  @media(max-width: 600px) {
-    .mobile-label {
-      width: 80px;
-      display: inline-block;
-          font-weight: bold;
-    }
-  
-    .mat-header-row {
-      display: none;
-    }
-  
-    .mat-row { 
-      flex-direction: column;
-      align-items: start;
-      padding: 8px 24px;
-    }
-  }
-  
-  .select-filter{
-    padding: 0 5px;
-}
-
-.responsive {
-  width: 90%;
-  height: auto;
-  align-self: center;
-}
-
-.form-group{
-  margin-bottom: 10px;
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
-
-.my-custom-scrollbar {
-  position: relative;
-  // max-height: 250px;
-  overflow: auto;
-  display: block;
-  width: 100%;
-}
-
-.table-container {
-position: relative;
-max-height: 300px; /* ajusta esto según tus necesidades */
-overflow: auto;
-width: 100%;
-}
-
-.table {
-width: 100%;
-/* otros estilos de tabla que puedas tener */
-}
-
-.subtotal-text{
-  color: gray;
-  font-size: large;
-  align-self: center;
-}
-
-.total-text{
-  color: black;
-  font-size: x-large;
-}
-
-
-.subtotal,
-.descuento,
-.total {
+.page-header {
   display: flex;
-  justify-content: space-between; /* Alinea los elementos a la izquierda y derecha */
-  width: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin: 0 0 2px; }
+.page-subtitle { font-size: 13px; color: #888; margin: 0; }
+
+.btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: #c94e00;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  &:hover { background: #a83e00; color: #fff; }
+  .material-icons { font-size: 18px; }
 }
 
-.subtotal-amount{
-  color: gray;
-  font-size: medium;
-  text-align: right; /* Alinea el texto a la derecha */
+.content-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  overflow: hidden;
 }
 
-.total-amount {
-  color: black;
-  font-size: large;
-  text-align: right; /* Alinea el texto a la derecha */
-}
-
-/* Opcional: Estilo para los títulos si deseas ajustar la apariencia */
-.subtotal-title{
-  color: gray;
-  font-size: medium;
-  font-weight: bold;
-}
-
-.total-title {
-  color: black;
-  font-size: large;
-  font-weight: bold;
-}
-
-.input-with-text {
+.table-toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.input-text {
-  margin-right: 2px; /* Espacio entre el texto 'Q' y el input */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f7f7f7;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 220px;
+  &:focus-within { border-color: #ff6e20; background: #fff; }
 }
+.search-icon { font-size: 18px; color: #aaa; flex-shrink: 0; }
+.search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: #333;
+  width: 100%;
+  &::placeholder { color: #bbb; }
+}
+
+.toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: #fff;
+  color: #555;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  &:hover, &:focus { border-color: #c94e00; color: #c94e00; background: #fff; box-shadow: none; outline: none; }
+}
+
+.loading-wrap { display: flex; justify-content: center; padding: 48px; color: #aaa; }

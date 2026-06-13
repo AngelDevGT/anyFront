@@ -106,6 +106,45 @@ table {
   }
 }
 
+// Status badge
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  .badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+}
+
+.badge-activo,
+.badge-active,
+.badge-recibido,
+.badge-entregado,
+.badge-pagado,
+.badge-listo      { background: #d4f5d4; color: #1a7f2a; }
+.badge-abonado    { background: #d8f3e0; color: #1a6b3a; }
+.badge-verificado { background: #d0e8ff; color: #0a4fa8; }
+.badge-en-camino,
+.badge-en-curso   { background: #fff0d9; color: #6b3400; }
+.badge-pendiente,
+.badge-pending    { background: #fff3cd; color: #5a4000; }
+.badge-inactivo,
+.badge-inactive,
+.badge-devuelto   { background: #e9ecef; color: #3d4349; }
+.badge-eliminado,
+.badge-deleted,
+.badge-cancelado  { background: #fde8e8; color: #b71c1c; }
+
 // body style
 
 // body               {

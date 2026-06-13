@@ -1407,7 +1407,7 @@ export class DataService {
             ss: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/listShopSale`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listShopSaleV2`, parameters);
     }
 
     getShopHistoryById(params: any) {
@@ -1415,7 +1415,7 @@ export class DataService {
             ss: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/getShopSale`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/getShopSaleV2`, parameters);
     }
 
     registerShop(params: ShopResume) {
@@ -1426,7 +1426,24 @@ export class DataService {
             "$2": JSON.stringify(params.itemsList),
             "$3": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/registerShop`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/registerShopV3`, parameters);
+    }
+
+    addShopSalePayment(shopSaleId: string, amount: string, paymentTypeId: string, paymentTarget: string = 'ORDER') {
+        let params = JSON.stringify({
+            "$1": shopSaleId,
+            "$2": amount,
+            "$3": paymentTypeId,
+            "$4": paymentTarget
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV3`, params);
+    }
+
+    getShopSalePayments(shopSaleId: string) {
+        let params = JSON.stringify({
+            ssp: { shop_sale_id: shopSaleId }
+        });
+        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV2`, params);
     }
 
     updateShopHistory(params: ShopResume) {
@@ -1578,14 +1595,38 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosing`, params);
     }
 
+    getCashClosingByIdV2(id: string) {
+        let params = JSON.stringify({cc: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV2`, params);
+    }
+
     addCashClosingV2(notes: string, establishment_id: string){
         let params = JSON.stringify({
             "$1": notes,
             "$2": establishment_id,
             "$3": this.accountService.userValue.uuid
         });
-        
         return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosing`, params);
+    }
+
+    addCashClosingV3(notes: string, establishment_id: string, sobrante: number = 0){
+        let params = JSON.stringify({
+            "$1": notes,
+            "$2": establishment_id,
+            "$3": this.accountService.userValue.uuid,
+            "$4": sobrante
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV3`, params);
+    }
+
+    addCashClosingV4(notes: string, establishment_id: string, sobrante: number = 0){
+        let params = JSON.stringify({
+            "$1": notes,
+            "$2": establishment_id,
+            "$3": this.accountService.userValue.uuid,
+            "$4": sobrante
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV4`, params);
     }
 
     updateCashClosing(id: string, note: string){

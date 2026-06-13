@@ -166,43 +166,31 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
                             {
                                 type: "button",
                                 data_bs_target: "#moveInventoryRawMaterialModal",
-                                class: "btn btn-primary mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "content_paste_go"
-                                },
-                                text: "Mover"
+                                colorClass: "dt-btn-edit",
+                                icon: { class: "material-icons", icon: "content_paste_go" },
+                                title: "Mover"
                             },
                             {
                                 type: "button",
                                 data_bs_target: "#addInventoryRawMaterialModal",
-                                class: "btn btn-success mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "add_circle"
-                                },
-                                text: "Agregar"
+                                colorClass: "dt-btn-view",
+                                icon: { class: "material-icons", icon: "add_circle" },
+                                title: "Agregar"
                             },
                             {
                                 type: "button",
                                 data_bs_target: "#removeInventoryRawMaterialModal",
-                                class: "btn btn-danger mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "remove_circle"
-                                },
-                                text: "Eliminar"
+                                colorClass: "dt-btn-delete",
+                                icon: { class: "material-icons", icon: "remove_circle" },
+                                title: "Eliminar"
                             }
                         ] : [
                             {
                                 type: "button",
                                 data_bs_target: "#moveInventoryRawMaterialModal",
-                                class: "btn btn-primary mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "content_paste_go"
-                                },
-                                text: "Mover"
+                                colorClass: "dt-btn-edit",
+                                icon: { class: "material-icons", icon: "content_paste_go" },
+                                title: "Mover"
                             }
                         ]
                     }

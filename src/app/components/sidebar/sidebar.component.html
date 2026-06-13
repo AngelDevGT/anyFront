@@ -1,55 +1,111 @@
-<nav id="sidebarMenuLarge" class="collapse d-lg-block sidebar bg-white">
-  <div class="position-sticky">
-    <div class="list-group list-group-flush mx-3 mt-4">
-      <div *ngFor="let subMenu of menuItems" class="list-group-item p-0">
-        <!-- <button 
-        *ngIf="!subMenu.is_tree"
-        type="{{subMenu.button_type}}"
-        class="{{subMenu.button_class}}"
-        routerLink="{{subMenu.button_router_link}}"
-        >
-          <div class="d-flex flex-row sidebar-row">
-            <i class="{{subMenu.button_icon_class}}">{{subMenu.button_icon}}</i>
-            <span>{{subMenu.button_name}}</span>
-          </div>
-      </button> -->
-        <button 
+<button class="mobile-backdrop d-lg-none"
+        *ngIf="isMobileOpen"
+        (click)="closeMobile()"
+        type="button"
+        aria-label="Cerrar menú">
+</button>
+
+<nav id="sidebarMenuLarge"
+     class="sidebar"
+     [class.sidebar-collapsed]="effectiveCollapsed"
+     [class.mobile-open]="isMobileOpen"
+     (mouseenter)="onSidebarMouseEnter()"
+     (mouseleave)="onSidebarMouseLeave()">
+
+  <!-- Brand header -->
+  <div class="sidebar-brand">
+    <a routerLink="/home" class="brand-link">
+      <img *ngIf="!effectiveCollapsed"
+           src="assets/img/brand/embutidos_any_900x150_white.png"
+           class="brand-full" alt="Embutidos Any">
+      <img *ngIf="effectiveCollapsed"
+           src="assets/img/brand/embutidos_any_50x50.png"
+           class="brand-icon" alt="Embutidos Any">
+    </a>
+    <!-- Mobile: close button -->
+    <button class="toggle-btn d-lg-none" (click)="closeMobile()" type="button">
+      <i class="material-icons">close</i>
+    </button>
+  </div>
+
+  <!-- Menu items -->
+  <div class="sidebar-scroll">
+    <div *ngFor="let subMenu of menuItems" class="menu-group">
+
+      <button
         *ngIf="subMenu.is_tree"
-        type="{{subMenu.button_type}}"
-        class="{{subMenu.button_class}}"
-        [attr.data-bs-toggle] = "subMenu.button_data_bs_toggle" 
-        [attr.data-bs-target] = "subMenu.button_data_bs_target" 
-        [attr.aria-controls]= "subMenu.button_aria_controls" 
-        [attr.aria-expanded] = "subMenu.button_aria_expanded" 
-        >
-          <div class="d-flex flex-row sidebar-row">
-            <i class="{{subMenu.button_icon_class}}">{{subMenu.button_icon}}</i>
-            <span>{{subMenu.button_name}}</span>
-            <i class="{{subMenu.button_dropdown_icon_class}}">{{subMenu.button_dropdown_icon}}</i>
-          </div>
-        </button>
-        <div *ngIf="subMenu.is_tree" id="{{subMenu.root_id}}" class="{{subMenu.root_class}}">
-          <div class="{{subMenu.sub_class}}">
-            <div *ngFor="let child of subMenu.childs" class="{{child.root_class}}">
-              <!-- <button 
-              routerLink="{{child.router_link}}" 
-              class="{{child.link_class}}"
-              type="button"
-              > -->
-              <button 
-              (click)="navigateWithParams(child.router_link, child.query_params)"
-              class="{{child.link_class}}"
-              type="button"
-              >
-                <div class="d-flex flex-row sidebar-row">
-                  <i class="{{child.icon_class}}">{{child.icon_name}}</i>
-                  <span>{{child.link_name}}</span>
-                </div>
-              </button>
-            </div>
-          </div>
+        type="button"
+        class="sidebar-btn"
+        [attr.data-bs-toggle]="effectiveCollapsed ? null : subMenu.button_data_bs_toggle"
+        [attr.data-bs-target]="effectiveCollapsed ? null : subMenu.button_data_bs_target"
+        [attr.aria-controls]="effectiveCollapsed ? null : subMenu.button_aria_controls"
+        [attr.aria-expanded]="subMenu.button_aria_expanded"
+        [matTooltip]="effectiveCollapsed ? subMenu.button_name : ''"
+        matTooltipPosition="right"
+      >
+        <i class="material-icons menu-icon">{{ subMenu.button_icon }}</i>
+        <span class="menu-text">{{ subMenu.button_name }}</span>
+        <i class="material-icons chevron-icon">arrow_drop_down</i>
+      </button>
+
+      <div *ngIf="subMenu.is_tree"
+           id="{{ subMenu.root_id }}"
+           class="{{ subMenu.root_class }}">
+        <div *ngFor="let child of subMenu.childs">
+          <button
+            type="button"
+            class="sidebar-child-btn"
+            (click)="navigateWithParams(child.router_link, child.query_params)"
+          >
+            <i class="material-icons menu-icon child-icon">{{ child.icon_name }}</i>
+            <span class="menu-text">{{ child.link_name }}</span>
+          </button>
         </div>
       </div>
+
     </div>
   </div>
+
+  <!-- User section at bottom -->
+  <div class="sidebar-user" [class.collapsed]="effectiveCollapsed">
+    <div class="user-info"
+         [matTooltip]="effectiveCollapsed ? (currentUser?.name || '') : ''"
+         matTooltipPosition="right">
+      <i class="material-icons user-avatar-icon">account_circle</i>
+      <div class="user-details">
+        <span class="user-name">{{ currentUser?.name }}</span>
+        <span class="user-role">{{ currentUser?.role?.text }}</span>
+      </div>
+    </div>
+    <div class="user-actions">
+      <button type="button"
+              class="user-action-btn"
+              (click)="viewProfile()"
+              [matTooltip]="effectiveCollapsed ? 'Mi perfil' : ''"
+              matTooltipPosition="right">
+        <i class="material-icons menu-icon">manage_accounts</i>
+        <span class="menu-text">Mi perfil</span>
+      </button>
+      <button type="button"
+              class="user-action-btn logout-btn"
+              (click)="logOut()"
+              [matTooltip]="effectiveCollapsed ? 'Cerrar sesión' : ''"
+              matTooltipPosition="right">
+        <i class="material-icons menu-icon">logout</i>
+        <span class="menu-text">Cerrar sesión</span>
+      </button>
+    </div>
+  </div>
+
 </nav>
+
+<!-- Floating desktop toggle — half on sidebar, half outside -->
+<button class="sidebar-toggle-float d-none d-lg-flex"
+        [class.collapsed]="effectiveCollapsed"
+        (click)="toggle()"
+        (mouseenter)="onSidebarMouseEnter()"
+        (mouseleave)="onSidebarMouseLeave()"
+        type="button"
+        [attr.aria-label]="effectiveCollapsed ? 'Expandir menú' : 'Colapsar menú'">
+  <i class="material-icons">{{ effectiveCollapsed ? 'chevron_right' : 'chevron_left' }}</i>
+</button>

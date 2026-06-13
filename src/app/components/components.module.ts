@@ -25,6 +25,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { DataTableComponent } from './data-table/data-table.component';
 
 @NgModule({
   imports: [
@@ -45,6 +47,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     MatAutocompleteModule,
     MatMenuModule,
     MatListModule,
+    MatTooltipModule,
     // MatDialogModule,
     // MatToolbarModule,
     // BrowserAnimationsModule
@@ -57,6 +60,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     ResponsiveTableComponent,
     ViewObjectComponent,
     DynamicDialogComponent,
+    DataTableComponent,
   ],
   exports: [
     MenuComponent,
@@ -66,6 +70,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     ResponsiveTableComponent,
     ViewObjectComponent,
     DynamicDialogComponent,
+    DataTableComponent,
   ]
 })
 export class ComponentsModule { }

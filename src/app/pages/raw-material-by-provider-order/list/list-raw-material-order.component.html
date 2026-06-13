@@ -1,48 +1,51 @@
-<div class="genericCard pt-3">
-    <mat-card class="mat-elevation-z8">
-        <mat-card-header style="justify-content: center;">
-            <mat-card-title>{{ pageTitle }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
-                        <div>
-                            <button type="button" routerLink="create" class="btn btn-outline-success m-2">
-                                <!-- relative route "add" = "/users/add" -->
-                                <div class="d-flex flex-row p-1">
-                                    <i class="material-icons icon">add</i>
-                                    <span>Crear Pedido</span>
-                                </div>
-                            </button>
-                        </div>
-                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">
-                            <div class="select-filter mx-2">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Buscar</mat-label>
-                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
-                                </mat-form-field>
-                            </div>
-                            <mat-form-field class="col-lg-2 col-md-4 col-sm-12 mx-2" appearance="outline">
-                                <mat-select matInput disableOptionCentering [(value)]="selectedSortOpt" (selectionChange)="sortOptSelect($event)">
-                                    <mat-option *ngFor="let sortOpt of sortOpts" [value]="sortOpt">
-                                        {{ sortOpt }}
-                                    </mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                            <mat-form-field class="col-lg-2 col-md-4 col-sm-12 mx-2" appearance="outline">
-                                <mat-select matInput disableOptionCentering [(value)]="pageSize">
-                                    <mat-option *ngFor="let entry of entries" [value]="entry">
-                                        {{ entry }}
-                                    </mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                        </div>
-                    </div>
-                    <responsive-table *ngIf="this.rawMaterialOrders" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'rm-orders-list'"></responsive-table>
-                    <span *ngIf="!rawMaterialOrders" class="spinner-border spinner-border-lg align-center"></span>
-                </div>
-            </div>
-        </mat-card-content>
-    </mat-card>
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h4 class="page-title">{{ pageTitle }}</h4>
+      <p class="page-subtitle">Consulta y gestiona los pedidos realizados a proveedores</p>
+    </div>
+    <button type="button" routerLink="create" class="btn-add">
+      <i class="material-icons">add</i>
+      Crear Pedido
+    </button>
+  </div>
+
+  <div class="content-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="material-icons search-icon">search</i>
+        <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search($event)" />
+      </div>
+      <div class="toolbar-right">
+        <div class="dropdown">
+          <button class="filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            {{ selectedSortOpt }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li *ngFor="let opt of sortOpts">
+              <a class="dropdown-item" (click)="sortDataByDate(opt)">{{ opt }}</a>
+            </li>
+          </ul>
+        </div>
+        <div class="dropdown" *ngIf="availableStatuses.length">
+          <button class="filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            {{ statusFilter || 'Estado' }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" (click)="filterByStatus(null)">Todos</a></li>
+            <li *ngFor="let s of availableStatuses">
+              <a class="dropdown-item" (click)="filterByStatus(s)">{{ s }}</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <data-table *ngIf="rawMaterialOrders" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"></data-table>
+    <div *ngIf="!rawMaterialOrders" class="loading-wrap">
+      <span class="spinner-border spinner-border-lg"></span>
+    </div>
+  </div>
+
 </div>

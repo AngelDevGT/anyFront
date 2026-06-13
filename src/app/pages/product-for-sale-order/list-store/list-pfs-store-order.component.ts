@@ -1,18 +1,12 @@
-import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
-import {map, startWith} from 'rxjs/operators';
-import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, DataService, paymentStatusValues, statusValues, storeOrderStatus} from '@app/services';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { AlertService, DataService, storeOrderStatus} from '@app/services';
 import { Establishment } from '@app/models/establishment.model';
-import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatSelectChange } from '@angular/material/select';
-import { BehaviorSubject, forkJoin } from 'rxjs';
 
-@Component({ 
+@Component({
     templateUrl: 'list-pfs-store-order.component.html',
     styleUrls: ['list-pfs-store-order.component.scss']
 })
@@ -20,23 +14,21 @@ export class ListProductForSaleOrderComponent implements OnInit {
     productForSaleOrdes?: ProductForSaleStoreOrder[];
     allProductForSaleOrdes?: ProductForSaleStoreOrder[];
     establishmentOptions?: Establishment[];
-    selectedEstablishment?: Establishment;
-    selectedEstablishmentSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     loadingOrders = false;
     loadingEstablishments = false;
     searchTerm?: string;
     pageTitle?: string;
-    entries = this.dataService.tableEntries;
     sortOpts = ['Desc', 'Asc'];
     selectedSortOpt = this.sortOpts[0];
     viewOption = '';
     storeOption = '';
     pageSize = this.dataService.defaultPageSize;
-    page = 1;
     tableElementsValues?: any;
     storeName = '';
+    availableStatuses: string[] = [];
+    statusFilter: string | null = null;
 
-    constructor(private dataService: DataService, private alertService: AlertService, private route: ActivatedRoute, private router: Router) {}
+    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router) {}
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
@@ -44,141 +36,112 @@ export class ListProductForSaleOrderComponent implements OnInit {
             this.storeOption = params['store'];
             this.storeName = params['name'];
         });
-        this.pageTitle = `Pedidos de Producto Terminado (${this.storeName})`;
+        this.pageTitle = this.viewOption === 'store'
+            ? `Pedidos de Producto para Venta (${this.storeName})`
+            : `Pedidos de Producto Terminado (${this.storeName})`;
         this.retrieveProductForSaleStoreOrders(this.storeOption);
-        if(this.viewOption === "store"){
-            this.pageTitle = `Pedidos de Producto para Venta (${this.storeName})`;
-        } 
     }
 
-    setEstablishment(establishmentId: string){
-        this.selectedEstablishment = this.establishmentOptions?.find(establishment => establishment.id === establishmentId);
-        // this.storeOption = establishmentId;
-        if(this.selectedEstablishment){
-            this.retrieveProductForSaleStoreOrders(establishmentId);
-        }
-    }
-
-    sortOptSelect(event: MatSelectChange){
-        if(event.value){
-            this.sortDataByDate(event.value);
-        }
-    }
-
-    sortDataByDate(sortOpt: string){
-        this.productForSaleOrdes = this.productForSaleOrdes?.sort((a,b) => {
-            const fechaA = new Date(a.updatedDate!);
-            const fechaB = new Date(b.updatedDate!);
-            if(sortOpt === 'Desc'){
-                return fechaB.getTime() - fechaA.getTime();
-            } else {
-                return fechaA.getTime() - fechaB.getTime();
-            }
+    sortDataByDate(sortOpt: string) {
+        this.selectedSortOpt = sortOpt;
+        this.productForSaleOrdes = this.productForSaleOrdes?.sort((a, b) => {
+            const fechaA = new Date(a.updatedDate!).getTime();
+            const fechaB = new Date(b.updatedDate!).getTime();
+            return sortOpt === 'Desc' ? fechaB - fechaA : fechaA - fechaB;
         });
-        this.allProductForSaleOrdes = this.productForSaleOrdes;
         this.setTableElements(this.productForSaleOrdes);
     }
 
-    retrieveProductForSaleStoreOrders(storeId?: string){
+    retrieveProductForSaleStoreOrders(storeId?: string) {
         this.productForSaleOrdes = undefined;
         this.loadingOrders = true;
-        if(storeId){
-            this.dataService.getAllProductForSaleOrderByFilter({ establishment_id: storeId})
-            .pipe(first())
-            .subscribe({
-                next: (pfsOrders: any) => {
-                    this.productForSaleOrdes = this.dataService.findJsonValue(pfsOrders, 'json_result') || [];
-                    this.allProductForSaleOrdes = this.productForSaleOrdes;
-                    this.sortDataByDate(this.sortOpts[0]);
-                    this.loadingOrders = false;
-                }
-            });
-            return;
-        } else {
-            this.dataService.getAllProducForSaleOrder()
-            .pipe(first())
-            .subscribe({
-                next: (pfsOrders: any) => {
-                    this.productForSaleOrdes = this.dataService.findJsonValue(pfsOrders, 'json_result') || [];
-                    this.allProductForSaleOrdes = this.productForSaleOrdes;
-                    this.sortDataByDate(this.sortOpts[0]);
-                    this.loadingOrders = false;
-                }
-            });
-        }
+        const req$ = storeId
+            ? this.dataService.getAllProductForSaleOrderByFilter({ establishment_id: storeId })
+            : this.dataService.getAllProducForSaleOrder();
+
+        req$.pipe(first()).subscribe({
+            next: (pfsOrders: any) => {
+                this.productForSaleOrdes = this.dataService.findJsonValue(pfsOrders, 'json_result') || [];
+                this.allProductForSaleOrdes = this.productForSaleOrdes;
+                const statusesSource = this.allProductForSaleOrdes || [];
+                this.availableStatuses = [...new Set(
+                    statusesSource.map(e =>
+                        this.viewOption === 'factory' ? e.factoryStatus?.identifier : e.storeStatus?.identifier
+                    ).filter((s): s is string => !!s)
+                )];
+                this.loadingOrders = false;
+                this.sortDataByDate(this.sortOpts[0]);
+            }
+        });
+    }
+
+    filterByStatus(status: string | null) {
+        this.statusFilter = status;
+        this.search(null);
     }
 
     search(value: any): void {
-        if (this.allProductForSaleOrdes){
-            this.productForSaleOrdes = this.allProductForSaleOrdes?.filter((val) => {
-                if(this.searchTerm){
-                    const nameMatch = val.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const commentMatch = val.comment?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const providerMatch = val.productForSaleStoreOrderElements![0].productForSale?.establishment?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const finalAmountMatch = val.finalAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    // const pendingAmountMatch = val.pendingAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const stateMatch = this.viewOption === "factory" ? val.factoryStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase()) : val.storeStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return nameMatch || stateMatch;
-                }
-                return true;
+        if (this.allProductForSaleOrdes) {
+            this.productForSaleOrdes = this.allProductForSaleOrdes.filter((val) => {
+                const textMatch = !this.searchTerm ||
+                    val.name?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    (this.viewOption === 'factory'
+                        ? val.factoryStatus?.identifier?.toLowerCase().includes(this.searchTerm.toLowerCase())
+                        : val.storeStatus?.identifier?.toLowerCase().includes(this.searchTerm.toLowerCase()));
+                const currentStatus = this.viewOption === 'factory' ? val.factoryStatus?.identifier : val.storeStatus?.identifier;
+                const statusMatch = !this.statusFilter || currentStatus === this.statusFilter;
+                return textMatch && statusMatch;
             });
         }
-        this.setTableElements(this.productForSaleOrdes);
+        this.sortDataByDate(this.selectedSortOpt);
     }
 
-    navigateWithParams(){
-        if(this.viewOption){
+    navigateWithParams() {
+        if (this.viewOption) {
             this.router.navigate(['/productsForSale/order/create'], {
-                queryParams: {
-                    opt: this.viewOption,
-                    store: this.storeOption
-                }
+                queryParams: { opt: this.viewOption, store: this.storeOption }
             });
         } else {
             this.router.navigateByUrl('/productsForSale/order');
         }
     }
 
-    setTableElements(elements?: ProductForSaleStoreOrder[]){
+    setTableElements(elements?: ProductForSaleStoreOrder[]) {
         this.tableElementsValues = [];
         elements?.forEach((element: ProductForSaleStoreOrder) => {
+            if (element.factoryStatus?.id === storeOrderStatus.eliminado.id ||
+                element.storeStatus?.id === storeOrderStatus.eliminado.id) return;
 
-            if(element.factoryStatus?.id === storeOrderStatus.eliminado.id || element.storeStatus?.id === storeOrderStatus.eliminado.id) return;  
-            let curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha", rows_bg_color: element.storeStatus?.bg_color, rows_color: element.storeStatus?.color},
-                    { type: "text", value: element.name, header_name: "Nombre" },
-                    // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
-                    { type: "text", value: element.establishment?.name, header_name: "Tienda" },
-                    this.viewOption === "factory" ? { type: "text", value: element.factoryStatus?.identifier, header_name: "Estado del pedido en fabrica", style: "width: 20%" } : { type: "text", value: element.storeStatus?.identifier, header_name: "Estado del pedido en tienda", style: "width: 20%" },
-                    // { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total" }
-                  ]
-            let actionsButtons = [
+            const statusValue = this.viewOption === 'factory' ? element.factoryStatus : element.storeStatus;
+            const statusHeader = this.viewOption === 'factory' ? 'Estado en fábrica' : 'Estado en tienda';
+
+            const curr_row: any[] = [
+                { type: 'text', value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: 'Fecha' },
+                { type: 'text', value: element.name, header_name: 'Nombre' },
+                { type: 'text', value: element.establishment?.name, header_name: 'Tienda' },
                 {
-                    type: "button",
-                    routerLink: "view/" + element.id,
-                    query_params: {opt: this.viewOption},
-                    class: "btn btn-success btn-sm pb-0 mx-1",
-                    icon: {
-                        class: "material-icons",
-                        icon: "visibility"
-                    }
+                    type: 'badge',
+                    value: (statusValue?.text || statusValue?.identifier) ?? '--',
+                    identifier: statusValue?.identifier?.toLowerCase(),
+                    bg_color: statusValue?.bg_color,
+                    color: statusValue?.color,
+                    header_name: statusHeader
+                },
+                {
+                    type: 'button',
+                    header_name: 'Acciones',
+                    button: [
+                        {
+                            type: 'button',
+                            routerLink: 'view/' + element.id,
+                            query_params: { opt: this.viewOption },
+                            colorClass: 'dt-btn-view',
+                            icon: { class: 'material-icons', icon: 'visibility' }
+                        }
+                    ]
                 }
             ];
-
-            let rowButtons = {
-                type: "button",
-                style: "white-space: nowrap",
-                value: undefined,
-                header_name: "Acciones",
-                button: [
-                    ...actionsButtons
-                ]
-            }
-
-            curr_row.push(rowButtons)
-
             this.tableElementsValues.push(curr_row);
         });
     }
-
 }

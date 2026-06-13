@@ -67,26 +67,19 @@ export class ListProviderComponent implements OnInit {
                     { type: "text", value: provider.description, header_name: "Descripcion" },
                     {
                         type: "button",
-                        style: "white-space: nowrap",
                         header_name: "Acciones",
                         button: [
                             {
                                 type: "button",
                                 routerLink: "view/" + provider.id,
-                                class: "btn btn-success btn-sm pb-0 mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "visibility"
-                                }
+                                colorClass: "dt-btn-view",
+                                icon: { class: "material-icons", icon: "visibility" }
                             },
                             {
                                 type: "button",
                                 routerLink: "edit/" + provider.id,
-                                class: "btn btn-primary btn-sm pb-0 mx-1",
-                                icon: {
-                                    class: "material-icons",
-                                    icon: "edit"
-                                }
+                                colorClass: "dt-btn-edit",
+                                icon: { class: "material-icons", icon: "edit" }
                             }
                         ]
                     }

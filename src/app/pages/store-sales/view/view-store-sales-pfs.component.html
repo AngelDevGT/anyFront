@@ -37,6 +37,38 @@
                         <p class="total-title">Monto total</p>
                         <p class="total-amount">Q{{ shopResume?.total | number: '1.2-2' }}</p>
                     </div>
+                    <!-- Credit-only summary rows -->
+                    <ng-container *ngIf="isOrderCredit">
+                        <div class="descuento">
+                            <p class="subtotal-title">Monto abonado (pedido)</p>
+                            <p class="subtotal-amount">Q{{ shopResume?.paidAmount | number: '1.2-2' }}</p>
+                        </div>
+                        <div class="descuento">
+                            <p class="subtotal-title">Monto pendiente (pedido)</p>
+                            <p class="subtotal-amount">Q{{ shopResume?.pendingAmount | number: '1.2-2' }}</p>
+                        </div>
+                    </ng-container>
+                    <ng-container *ngIf="isDeliveryCredit">
+                        <div class="descuento">
+                            <p class="subtotal-title">Monto abonado (envío)</p>
+                            <p class="subtotal-amount">Q{{ shopResume?.deliveryPaidAmount | number: '1.2-2' }}</p>
+                        </div>
+                        <div class="descuento">
+                            <p class="subtotal-title">Monto pendiente (envío)</p>
+                            <p class="subtotal-amount">Q{{ shopResume?.deliveryPendingAmount | number: '1.2-2' }}</p>
+                        </div>
+                    </ng-container>
+                    <div *ngIf="isCreditSale" class="d-flex flex-wrap justify-content-center mt-2">
+                        <button type="button"
+                            class="btn btn-outline-secondary"
+                            (click)="loadPaymentHistory()"
+                            data-bs-toggle="modal" data-bs-target="#payHistoryModal">
+                            <div class="d-flex flex-row p-1">
+                                <i class="material-icons icon">history</i>
+                                <span class="px-1">Historial de Pagos</span>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="d-flex flex-wrap justify-content-center">
@@ -44,6 +76,17 @@
                     <div class="d-flex flex-row p-1">
                         <i class="material-icons icon">download</i>
                         <span class="px-1">PDF</span>
+                    </div>
+                </button>
+                <!-- Pagar: solo ventas al crédito con monto pendiente (pedido y/o envío) -->
+                <button
+                    *ngIf="showPayButton && shopResume?.status?.id == 52"
+                    type="button"
+                    class="btn btn-warning m-2"
+                    data-bs-toggle="modal" data-bs-target="#payModal">
+                    <div class="d-flex flex-row p-1">
+                        <i class="material-icons icon">payments</i>
+                        <span class="px-1">PAGAR</span>
                     </div>
                 </button>
                 <button
@@ -68,4 +111,138 @@
             </div>
         </mat-card-content>
     </mat-card>
+</div>
+
+<!-- ── Modal: Registrar Pago ─────────────────────────────────────────────── -->
+<div class="modal fade" id="payModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="payModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="payModalLabel">Registrar Pago</h5>
+                <button #payModalCloseBtn type="button" class="btn-close" (click)="closePaymentModal()" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form [formGroup]="paymentForm">
+                    <!-- Pago del pedido -->
+                    <div *ngIf="canPayOrder" class="mb-4">
+                        <h6 class="text-muted">Pago del pedido</h6>
+                        <div class="row justify-content-center col-12 mb-2">
+                            <div class="descuento">
+                                <p class="subtotal-title">Pendiente (pedido)</p>
+                                <p class="subtotal-amount">Q{{ orderPendingAmount | number: '1.2-2' }}</p>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center col-12 gap-3">
+                            <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
+                                <mat-label>Monto a pagar (Q)</mat-label>
+                                <input type="text" formControlName="orderAmount" matInput
+                                    (input)="onOrderAmountInput($event)"
+                                    [ngClass]="{ 'is-invalid': paymentForm.get('orderAmount')?.errors && paymentForm.get('orderAmount')?.touched }" />
+                                <div class="invalid-feedback" *ngIf="paymentForm.get('orderAmount')?.errors">
+                                    <div *ngIf="paymentForm.get('orderAmount')?.hasError('pattern')">Solo números positivos (ej. 15.50)</div>
+                                </div>
+                            </mat-form-field>
+                            <div class="col-sm-12 col-md-5 pb-3">
+                                <select class="form-select form-select-lg" formControlName="orderPaymentType">
+                                    <option disabled selected value="">Tipo de pago</option>
+                                    <option *ngFor="let pt of nonCreditPaymentTypes" value="{{pt.id}}">{{pt.identifier}}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pago del envío -->
+                    <div *ngIf="canPayDelivery" class="mb-2">
+                        <h6 class="text-muted">Pago del envío</h6>
+                        <div class="row justify-content-center col-12 mb-2">
+                            <div class="descuento">
+                                <p class="subtotal-title">Pendiente (envío)</p>
+                                <p class="subtotal-amount">Q{{ deliveryPendingAmount | number: '1.2-2' }}</p>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center col-12 gap-3">
+                            <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
+                                <mat-label>Monto a pagar (Q)</mat-label>
+                                <input type="text" formControlName="deliveryAmount" matInput
+                                    (input)="onDeliveryAmountInput($event)"
+                                    [ngClass]="{ 'is-invalid': paymentForm.get('deliveryAmount')?.errors && paymentForm.get('deliveryAmount')?.touched }" />
+                                <div class="invalid-feedback" *ngIf="paymentForm.get('deliveryAmount')?.errors">
+                                    <div *ngIf="paymentForm.get('deliveryAmount')?.hasError('pattern')">Solo números positivos (ej. 15.50)</div>
+                                </div>
+                            </mat-form-field>
+                            <div class="col-sm-12 col-md-5 pb-3">
+                                <select class="form-select form-select-lg" formControlName="deliveryPaymentType">
+                                    <option disabled selected value="">Tipo de pago</option>
+                                    <option *ngFor="let pt of nonCreditPaymentTypes" value="{{pt.id}}">{{pt.identifier}}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closePaymentModal()" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning"
+                    [disabled]="!canSubmitPayment || submittingPayment"
+                    (click)="submitPayment()">
+                    Pagar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Error banner post-pago ────────────────────────────────────────────── -->
+<div *ngIf="paymentError" class="alert alert-danger alert-dismissible m-3" role="alert">
+    <strong>Error al registrar el pago:</strong> {{ paymentError }}
+    <button type="button" class="btn-close" (click)="paymentError = undefined" aria-label="Close"></button>
+</div>
+
+<!-- ── Overlay de carga post-pago ──────────────────────────────────────────── -->
+<div *ngIf="submittingPayment" class="payment-loading-overlay">
+    <div class="payment-loading-content">
+        <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
+        <p class="text-light mt-3 mb-0 fs-5">Procesando pago...</p>
+    </div>
+</div>
+
+<!-- ── Modal: Historial de Pagos ──────────────────────────────────────────── -->
+<div class="modal fade" id="payHistoryModal" data-bs-keyboard="false" tabindex="-1" aria-labelledby="payHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="payHistoryModalLabel">Historial de Pagos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div *ngIf="loadingPayments" class="text-center my-3">
+                    <span class="spinner-border spinner-border-lg align-center"></span>
+                </div>
+                <table *ngIf="!loadingPayments" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Destino</th>
+                            <th>Monto</th>
+                            <th>Tipo de pago</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let payment of shopSalePayments">
+                            <td>{{ getPaymentDate(payment.date) }}</td>
+                            <td>{{ getPaymentTargetLabel(payment.paymentTarget) }}</td>
+                            <td>Q{{ payment.amount | number: '1.2-2' }}</td>
+                            <td>{{ payment.paymentType?.identifier }}</td>
+                        </tr>
+                        <tr *ngIf="!shopSalePayments || shopSalePayments.length === 0">
+                            <td colspan="4" class="text-center text-muted">Sin pagos registrados</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
 </div>

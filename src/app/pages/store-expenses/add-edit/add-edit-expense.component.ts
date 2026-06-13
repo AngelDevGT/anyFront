@@ -40,7 +40,7 @@ export class AddEditExpenseComponent implements OnInit {
         if (this.id) {
             this.isEditOption = true;
             this.title = 'Actualizar Gasto';
-            this.expenseForm = this.createFormGroup();
+            this.expenseForm = this.createEditFormGroup();
             this.dataService.getStoreExpenseById({ id: this.id })
                 .pipe(first())
                 .subscribe({
@@ -68,17 +68,26 @@ export class AddEditExpenseComponent implements OnInit {
                     },
                     error: () => { this.loading = false; }
                 });
-            this.expenseForm = this.createFormGroup();
+            this.expenseForm = this.createAddFormGroup();
         }
     }
 
-    createFormGroup(): FormGroup {
+    createAddFormGroup(): FormGroup {
         return new FormGroup({
             title:       new FormControl('', [Validators.required, Validators.maxLength(40)]),
             comment:     new FormControl('', [Validators.maxLength(100)]),
             totalAmount: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             nit:         new FormControl('C/F', [Validators.maxLength(10)]),
             supplier:    new FormControl('', [Validators.maxLength(20)])
+        });
+    }
+
+    createEditFormGroup(): FormGroup {
+        return new FormGroup({
+            title:    new FormControl('', [Validators.required, Validators.maxLength(40)]),
+            comment:  new FormControl('', [Validators.maxLength(100)]),
+            nit:      new FormControl('C/F', [Validators.maxLength(10)]),
+            supplier: new FormControl('', [Validators.maxLength(20)])
         });
     }
 
@@ -96,7 +105,7 @@ export class AddEditExpenseComponent implements OnInit {
                 const estId = this.isEditOption
                     ? this.expense?.establishment?.id
                     : this.establishmentId;
-                this.router.navigateByUrl('/store/expenses/' + estId);
+                this.router.navigateByUrl('/store/expenses/history/' + estId);
             },
             error: error => {
                 const msg = this.dataService.getErrorMessageResponse(error, 'Error al guardar el gasto');

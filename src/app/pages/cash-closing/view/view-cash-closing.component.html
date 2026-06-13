@@ -165,6 +165,183 @@
                     </div>
                     <div class="container">
                         <div class="row justify-content-center">
+                            <h2 class="font-weight-bold text-primary mt-4 col-6 text-center">Pagos de Crédito</h2>
+                        </div>
+                        <div class="row justify-content-center">
+                            <h2 *ngIf="tableCreditPayments.length == 0" class="font-weight text-danger col-6 text-center">Sin Pagos de Crédito</h2>
+                            <mat-accordion *ngIf="tableCreditPayments.length > 0" class="col-xl-11">
+                                <mat-expansion-panel *ngFor="let payment of tableCreditPayments">
+                                  <mat-expansion-panel-header>
+                                    <mat-panel-title>
+                                      Pago: {{payment.accordion_name}}
+                                    </mat-panel-title>
+                                  </mat-expansion-panel-header>
+                                    <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
+                                        <div class="col-12">
+                                            <view-object [objectElements]="payment.elements_top"></view-object>
+                                        </div>
+                                        <div class="col-12">
+                                            <view-object [objectElements]="payment.elements_payment"></view-object>
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="button" class="btn btn-primary m-2" (click)="viewShopSale(payment.shopSaleId)">
+                                                <div class="d-flex flex-row p-1">
+                                                    <i class="material-icons icon">visibility</i>
+                                                    <span class="px-1">Ver Venta Original</span>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </mat-expansion-panel>
+                            </mat-accordion>
+                        </div>
+                    </div>
+                    <div *ngIf="tableCreditPayments.length > 0" class="container">
+                        <div class="row justify-content-center">
+                            <h2 class="font-weight-bold text-primary mt-4 col-6 text-center">Resumen de Pagos de Crédito</h2>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center">
+                            <div class="col-lg-7 col-md-9 col-sm-12 p-3">
+                                <table class="table table-striped text-center">
+                                    <thead>
+                                        <tr>
+                                            <th>Tipo de pago</th>
+                                            <th>Pedido</th>
+                                            <th>Envío</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Efectivo</td>
+                                            <td>Q {{ creditPaymentsSummary.efectivo.order | number: '1.2-2' }}</td>
+                                            <td>Q {{ creditPaymentsSummary.efectivo.delivery | number: '1.2-2' }}</td>
+                                            <td>Q {{ (creditPaymentsSummary.efectivo.order + creditPaymentsSummary.efectivo.delivery) | number: '1.2-2' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Depósito</td>
+                                            <td>Q {{ creditPaymentsSummary.deposito.order | number: '1.2-2' }}</td>
+                                            <td>Q {{ creditPaymentsSummary.deposito.delivery | number: '1.2-2' }}</td>
+                                            <td>Q {{ (creditPaymentsSummary.deposito.order + creditPaymentsSummary.deposito.delivery) | number: '1.2-2' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Cheque</td>
+                                            <td>Q {{ creditPaymentsSummary.cheque.order | number: '1.2-2' }}</td>
+                                            <td>Q {{ creditPaymentsSummary.cheque.delivery | number: '1.2-2' }}</td>
+                                            <td>Q {{ (creditPaymentsSummary.cheque.order + creditPaymentsSummary.cheque.delivery) | number: '1.2-2' }}</td>
+                                        </tr>
+                                        <tr class="fw-bold">
+                                            <td>Total</td>
+                                            <td>Q {{ (creditPaymentsSummary.efectivo.order + creditPaymentsSummary.deposito.order + creditPaymentsSummary.cheque.order) | number: '1.2-2' }}</td>
+                                            <td>Q {{ (creditPaymentsSummary.efectivo.delivery + creditPaymentsSummary.deposito.delivery + creditPaymentsSummary.cheque.delivery) | number: '1.2-2' }}</td>
+                                            <td>Q {{ totalCreditPaymentsTotal | number: '1.2-2' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Cierre de Caja -->
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <h2 class="font-weight-bold text-primary mt-4 col-6 text-center">Cierre de Caja</h2>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-center">
+                            <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(+) Total vendido</p>
+                                    <p class="subtotal-amount">Q. {{ totalAmountShopResumes | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(+) Total envíos</p>
+                                    <p class="subtotal-amount">Q. {{ totalDeliveryShopResumes | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(+) Créditos pagados efectivo</p>
+                                    <p class="subtotal-amount">Q. {{ totalCreditPaymentsCash | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">( ) Créditos pagados depósito</p>
+                                    <p class="subtotal-amount">Q. {{ totalCreditPaymentsDeposit | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">( ) Créditos pagados cheque</p>
+                                    <p class="subtotal-amount">Q. {{ totalCreditPaymentsCheque | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(+) Sobrante</p>
+                                    <p class="subtotal-amount">Q. {{ sobrante | number: '1.2-2' }}</p>
+                                </div>
+                                <hr>
+                                <div class="total">
+                                    <p class="total-title">(=) Total ingresos</p>
+                                    <p class="total-amount">Q. {{ totalIngresos | number: '1.2-2' }}</p>
+                                </div>
+                                <hr>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(-) Descuentos</p>
+                                    <p class="subtotal-amount">Q. {{ totalDiscountShopResumes | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(-) Ventas en transferencia</p>
+                                    <p class="subtotal-amount">Q. {{ totalDepositSales | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(-) Envíos en transferencia</p>
+                                    <p class="subtotal-amount">Q. {{ totalDeliveryDeposit | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(-) Gastos</p>
+                                    <p class="subtotal-amount">Q. {{ totalStoreExpenses | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(-) Créditos nuevos</p>
+                                    <p class="subtotal-amount">Q. {{ totalCreditSales | number: '1.2-2' }}</p>
+                                </div>
+                                <hr>
+                                <div class="total">
+                                    <p class="total-title">(=) Total egresos</p>
+                                    <p class="total-amount">Q. {{ totalEgresos | number: '1.2-2' }}</p>
+                                </div>
+                                <hr>
+                                <div class="total">
+                                    <p class="total-title">(=) Total efectivo</p>
+                                    <p class="total-amount">Q. {{ totalEfectivo | number: '1.2-2' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Créditos -->
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <h2 class="font-weight-bold text-primary mt-4 col-6 text-center">Créditos</h2>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-center">
+                            <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(+) Saldo anterior</p>
+                                    <p class="subtotal-amount">Q. {{ previousCreditBalance | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(+) Créditos nuevos</p>
+                                    <p class="subtotal-amount">Q. {{ totalCreditSalesFull | number: '1.2-2' }}</p>
+                                </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(-) Créditos pagados</p>
+                                    <p class="subtotal-amount">Q. {{ totalCreditPaymentsTotal | number: '1.2-2' }}</p>
+                                </div>
+                                <hr>
+                                <div class="total">
+                                    <p class="total-title">(=) Saldo nuevo</p>
+                                    <p class="total-amount">Q. {{ newCreditBalance | number: '1.2-2' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container">
+                        <div class="row justify-content-center">
                             <div class="d-flex flex-wrap justify-content-center justify-content-md-center">
                                 <div class="justify-content-center col-lg-6 col-md-8 col-sm-12 p-3">
                                     <p class="total-title text-center">Resumen</p>

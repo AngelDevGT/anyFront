@@ -44,6 +44,7 @@ export class AddEditCashClosingComponent implements OnInit{
     pageSize = this.dataService.defaultPageSize;
     tableShopResumes?: any = [];
     tableSaleStoreOrders?: any = [];
+    tableCreditPayments?: any = [];
     tableInventoryCapture?: any = [];
     tableLastInventory?: any = [];
     totalDiscountShopResumes = 0;
@@ -55,6 +56,32 @@ export class AddEditCashClosingComponent implements OnInit{
     totalAmountLastInventory = 0;
     totalAmountCashClosing = 0;
     totalRemainingCashClosing = 0;
+
+    // Cierre de caja
+    totalNonCreditSales = 0;
+    totalCreditSales = 0;
+    totalCreditSalesFull = 0;
+    totalDepositSales = 0;
+    totalDeliveryDeposit = 0;
+    totalCreditPaymentsCash = 0;
+    totalCreditPaymentsDeposit = 0;
+    totalCreditPaymentsCheque = 0;
+    totalCreditPaymentsTotal = 0;
+    totalStoreExpenses = 0;
+    totalIngresos = 0;
+    totalEgresos = 0;
+    totalEfectivo = 0;
+
+    // Resumen de pagos de crédito por tipo (filas) y destino pedido/envío (columnas)
+    creditPaymentsSummary = {
+        efectivo: { order: 0, delivery: 0 },
+        deposito: { order: 0, delivery: 0 },
+        cheque: { order: 0, delivery: 0 }
+    };
+
+    // Créditos
+    previousCreditBalance = 0;
+    newCreditBalance = 0;
     activityLogs?: any = [];
     activityLogsModifiedAmounts?: any = {};
     tableActivityLogs?: any = [];
@@ -162,6 +189,7 @@ export class AddEditCashClosingComponent implements OnInit{
         this.tableInventoryCapture = [];
         this.tableLastInventory = [];
         this.tableShopResumes = [];
+        this.tableCreditPayments = [];
         this.tableActivityLogs = [];
         this.totalDiscountShopResumes = 0;
         this.totalDeliveryShopResumes = 0;
@@ -259,10 +287,50 @@ export class AddEditCashClosingComponent implements OnInit{
         });
         this.activityLogsModifiedAmounts.added = totalActivityLogsAmountAdded;
         this.activityLogsModifiedAmounts.removed = totalActivityLogsAmountRemoved;
+        this.totalCreditSales = 0;
+        this.totalCreditSalesFull = 0;
+        this.totalDepositSales = 0;
+        this.totalDeliveryDeposit = 0;
+        this.totalCreditPaymentsCash = 0;
+        this.totalCreditPaymentsDeposit = 0;
+        this.totalCreditPaymentsCheque = 0;
+        this.totalCreditPaymentsTotal = 0;
+        this.creditPaymentsSummary = {
+            efectivo: { order: 0, delivery: 0 },
+            deposito: { order: 0, delivery: 0 },
+            cheque: { order: 0, delivery: 0 }
+        };
+        this.previousCreditBalance = Number(cashClosing.previousCreditBalance || 0);
+
+        this.totalNonCreditSales = 0;
         cashClosing.shopResumes?.forEach((element: ShopResume) => {
+            const subtotal = Number(element.total || 0) - Number(element.delivery || 0);
+            const deliveryCost = Number(element.delivery || 0);
             this.totalDiscountShopResumes += Number(element.totalDiscount || 0);
-            this.totalDeliveryShopResumes += Number(element.delivery || 0);
-            this.totalAmountShopResumes += (Number(element.total || 0) - Number(element.delivery || 0));
+            this.totalDeliveryShopResumes += deliveryCost;
+            this.totalAmountShopResumes += subtotal;
+
+            const orderType = element.paymentType?.identifier;
+            const deliveryType = element.deliveryPaymentType?.identifier;
+
+            // Pedido
+            if (orderType === 'Crédito') {
+                this.totalCreditSales += Number(element.pendingAmount || 0);
+                this.totalCreditSalesFull += subtotal;
+            } else {
+                this.totalNonCreditSales += subtotal;
+                if (orderType === 'Depósito') {
+                    this.totalDepositSales += subtotal;
+                }
+            }
+
+            // Envío
+            if (deliveryType === 'Crédito') {
+                this.totalCreditSales += Number(element.deliveryPendingAmount || 0);
+                this.totalCreditSalesFull += deliveryCost;
+            } else if (deliveryType === 'Depósito') {
+                this.totalDeliveryDeposit += deliveryCost;
+            }
             const curr_row =
             { 
                 accordion_name: this.dataService.getLocalDateTimeFromUTCTime(element!.updatedDate!.replaceAll("\"","")),
@@ -281,6 +349,7 @@ export class AddEditCashClosingComponent implements OnInit{
                     {icon : "person", name : "Cliente", value : element?.nameClient},
                     {icon : "tag", name : "NIT", value : element?.nitClient},
                     {icon : "feed", name : "Notas", value : element?.nota ? element?.nota : '--'},
+                    {icon : "payments", name : "Tipo de pago", value : element?.paymentType?.identifier ?? '--'},
                     {icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(element!.updatedDate!.replaceAll("\"",""))},
                 ],
                 elements_bottom: [
@@ -292,15 +361,76 @@ export class AddEditCashClosingComponent implements OnInit{
             };
             this.tableShopResumes.push(curr_row);
         });
+
+        cashClosing.creditPayments?.forEach((payment: any) => {
+            const amount = Number(payment.amount || 0);
+            this.totalCreditPaymentsTotal += amount;
+            const targetKey = payment.paymentTarget === 'DELIVERY' ? 'delivery' : 'order';
+            if (payment.paymentType?.identifier === 'Efectivo') {
+                this.totalCreditPaymentsCash += amount;
+                this.creditPaymentsSummary.efectivo[targetKey] += amount;
+            }
+            if (payment.paymentType?.identifier === 'Depósito') {
+                this.totalCreditPaymentsDeposit += amount;
+                this.creditPaymentsSummary.deposito[targetKey] += amount;
+            }
+            if (payment.paymentType?.identifier === 'Cheque') {
+                this.totalCreditPaymentsCheque += amount;
+                this.creditPaymentsSummary.cheque[targetKey] += amount;
+            }
+
+            const curr_row = {
+                accordion_name: this.dataService.getLocalDateTimeFromUTCTime(payment.date?.replaceAll("\"","") || payment.date),
+                elements_top: [
+                    {icon : "person", name : "Cliente", value : payment.shopSale?.nameClient},
+                    {icon : "tag", name : "NIT", value : payment.shopSale?.nitClient},
+                    {icon : "calendar_today", name : "Fecha de venta", value : this.dataService.getLocalDateTimeFromUTCTime(payment.shopSale?.creationDate?.replaceAll("\"","") || payment.shopSale?.creationDate)},
+                ],
+                elements_payment: [
+                    {icon : "payments", name : "Monto pagado", value : this.dataService.getFormatedPrice(Number(payment.amount || 0))},
+                    {icon : "credit_card", name : "Tipo de pago", value : payment.paymentType?.identifier ?? '--'},
+                    {icon : "local_shipping", name : "Destino", value : this.getPaymentTargetLabel(payment.paymentTarget)},
+                    {icon : "calendar_today", name : "Fecha de pago", value : this.dataService.getLocalDateTimeFromUTCTime(payment.date?.replaceAll("\"","") || payment.date)},
+                ],
+                shopSaleId: payment.shopSale?.id
+            };
+            this.tableCreditPayments.push(curr_row);
+        });
+
+        this.totalStoreExpenses = (cashClosing.storeExpenses ?? [])
+            .reduce((sum, e) => sum + Number(e.totalAmount || 0), 0);
+
         this.totalAmountSale = this.totalAmountShopResumes - this.totalDiscountShopResumes + this.totalDeliveryShopResumes;
         this.totalAmountCashClosing = (
-            this.totalAmountInventoryCapture 
-            + this.totalAmountShopResumes 
-            + this.totalDiscountShopResumes) 
+            this.totalAmountInventoryCapture
+            + this.totalAmountShopResumes
+            + this.totalDiscountShopResumes)
             - (this.totalAmountStoreOrders[0] + this.totalAmountLastInventory)
             - totalActivityLogsAmountAdded
-            + totalActivityLogsAmountRemoved 
-            ;
+            + totalActivityLogsAmountRemoved;
+
+        this.recalcularCierreCaja();
+    }
+
+    getPaymentTargetLabel(target?: string): string {
+        if (target === 'DELIVERY') return 'Envío';
+        if (target === 'ORDER') return 'Pedido';
+        return '--';
+    }
+
+    recalcularCierreCaja() {
+        const sobrante = Number(this.operationRawMaterialForm?.value?.sobrante || 0);
+        this.totalIngresos = this.totalAmountShopResumes
+            + this.totalDeliveryShopResumes
+            + this.totalCreditPaymentsCash
+            + sobrante;
+        this.totalEgresos = this.totalDiscountShopResumes
+            + this.totalDepositSales
+            + this.totalDeliveryDeposit
+            + this.totalStoreExpenses
+            + this.totalCreditSales;
+        this.totalEfectivo = this.totalIngresos - this.totalEgresos;
+        this.newCreditBalance = this.previousCreditBalance + this.totalCreditSalesFull - this.totalCreditPaymentsTotal;
     }
 
     setTablePayments(payments: any){
@@ -315,6 +445,13 @@ export class AddEditCashClosingComponent implements OnInit{
         });
     }
 
+    viewShopSale(shopSaleId: string){
+        const url = this.router.serializeUrl(
+            this.router.createUrlTree(['/store/sales/history/view/' + shopSaleId])
+        );
+        window.open(url, '_blank');
+    }
+
     // generatePDF() {  
     //     this.pdfService.generateRawMaterialOrderPDF(this.rawMaterialOrder!);
     // }  
@@ -322,7 +459,7 @@ export class AddEditCashClosingComponent implements OnInit{
     createOperationMaterialFormGroup() {
         return new FormGroup({
             note: new FormControl('', [Validators.maxLength(100)]),
-            // initialDate: new FormControl('', [this.isUpdate ? Validators.nullValidator : Validators.required, Validators.maxLength(45)])
+            sobrante: new FormControl(0, [Validators.required, Validators.min(0)])
         });
     }
 
@@ -356,7 +493,8 @@ export class AddEditCashClosingComponent implements OnInit{
         } else {
 
             let notes = this.operationRawMaterialForm.value.note;
-            this.dataService.addCashClosingV2(notes, this.establishmentId)
+            let sobrante = Number(this.operationRawMaterialForm.value.sobrante || 0);
+            this.dataService.addCashClosingV4(notes, this.establishmentId, sobrante)
             .pipe(first())
             .subscribe({
                 next: () => {

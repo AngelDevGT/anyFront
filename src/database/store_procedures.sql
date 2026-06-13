@@ -1028,26 +1028,60 @@ AS '$libdir/pgcrypto', $function$pgp_sym_encrypt_bytea$function$
 
 -- DROP PROCEDURE public.register_cash_closing(text, uuid, uuid);
 
-CREATE OR REPLACE PROCEDURE public.register_cash_closing(IN _note text, IN _establishment_id uuid, IN _user_request_id uuid)
+CREATE OR REPLACE PROCEDURE public.register_cash_closing_v4(IN _note text, IN _establishment_id uuid, IN _user_request_id uuid, IN _sobrante numeric DEFAULT 0)
  LANGUAGE plpgsql
 AS $procedure$
 declare
 	_last_cash_closing_id UUID;
 	_last_inventory jsonb;
 	_last_cash_closing_date timestamp;
+	_credit_balance numeric(10,2) := 0;
 begin
 
-	select cc0.creation_date, cc0.inventory_capture 
+	select cc0.creation_date, cc0.inventory_capture
 	into _last_cash_closing_date, _last_inventory
-	from cash_closing cc0 
+	from cash_closing cc0
 	where cc0.establishment_id = _establishment_id
 	order by cc0.creation_date desc
 	limit 1;
 
+	-- Saldo nuevo = saldo anterior + créditos nuevos del período (pedido + envío) - pagos de crédito del período
+	SELECT
+		COALESCE((
+			SELECT cc_prev.credit_balance FROM cash_closing cc_prev
+			WHERE cc_prev.establishment_id = _establishment_id
+			ORDER BY cc_prev.creation_date DESC LIMIT 1
+		), 0)
+		-- Créditos nuevos del PEDIDO (subtotal = total - delivery) cuando el pedido es a crédito
+		+ COALESCE((
+			SELECT SUM(ss_c.total - ss_c.delivery) FROM shop_sale ss_c
+			JOIN payment_type pt_c ON pt_c.id = ss_c.payment_type_id
+			WHERE ss_c.establishment_id = _establishment_id
+			AND pt_c.name = 'Crédito' AND ss_c.status_id = 52
+			AND (_last_cash_closing_date IS NULL OR ss_c.creation_date >= _last_cash_closing_date)
+		), 0)
+		-- Créditos nuevos del ENVÍO (delivery) cuando el envío es a crédito
+		+ COALESCE((
+			SELECT SUM(ss_d.delivery) FROM shop_sale ss_d
+			JOIN payment_type pt_d ON pt_d.id = ss_d.delivery_payment_type_id
+			WHERE ss_d.establishment_id = _establishment_id
+			AND pt_d.name = 'Crédito' AND ss_d.status_id = 52
+			AND (_last_cash_closing_date IS NULL OR ss_d.creation_date >= _last_cash_closing_date)
+		), 0)
+		-- Pagos de crédito del período (todos: pedido y envío)
+		- COALESCE((
+			SELECT SUM(ssp.amount) FROM shop_sale_payment ssp
+			JOIN shop_sale ss2 ON ss2.id = ssp.shop_sale_id
+			WHERE ss2.establishment_id = _establishment_id
+			AND ss2.status_id = 52
+			AND (_last_cash_closing_date IS NULL OR ssp."date" >= _last_cash_closing_date)
+		), 0)
+	INTO _credit_balance;
+
 	insert into cash_closing(
-		establishment_id, status_id, shop_sales, sale_store_orders, last_inventory_capture, 
+		establishment_id, status_id, shop_sales, sale_store_orders, last_inventory_capture,
 		last_inventory_creation_date, inventory_capture,
-		inventory_element_actions, validator_user, note)
+		inventory_element_actions, validator_user, note, credit_balance, sobrante)
 	values (
 		_establishment_id, 55, 
 		(
@@ -1060,11 +1094,22 @@ begin
 				    'total', ss.total,
 					'totalDiscount', ss.total_discount,
 				    'delivery', ss.delivery,
+				    'paidAmount', ss.paid_amount,
+				    'pendingAmount', ss.pending_amount,
+				    'deliveryPendingAmount', ss.delivery_pending_amount,
 				    'updatedDate', coalesce(ss.updated_date, ss.creation_date),
 				    'creationDate', ss.creation_date,
 				    'status', json_build_object(
 				        'identifier', s.name,
 				        'id', s.id
+				    ),
+				    'paymentType', json_build_object(
+				        'identifier', pt."name",
+				        'id', pt.id
+				    ),
+				    'deliveryPaymentType', json_build_object(
+				        'identifier', dpt."name",
+				        'id', dpt.id
 				    ),
 				    'itemsList', (
 					    SELECT json_agg(
@@ -1095,9 +1140,10 @@ begin
 					)
 			    )
 			) AS json_result
-			from shop_sale ss 
+			from shop_sale ss
 			left join status s on ss.status_id = s.id
 			left join payment_type pt on ss.payment_type_id = pt.id
+			left join payment_type dpt on ss.delivery_payment_type_id = dpt.id
 			left join "user" u on ss.creator_user_id = u.id
 			left join establishment e3 on ss.establishment_id = e3.id
 			where  ss.establishment_id = _establishment_id
@@ -1257,10 +1303,10 @@ begin
 		where i3.unit_name = _establishment_id::text
 		and (_last_cash_closing_date IS NULL OR iea.creation_date >= _last_cash_closing_date)
 		)::jsonb,
-		_user_request_id, _note
+		_user_request_id, _note, _credit_balance, _sobrante
 	);
-	
-	
+
+
 exception
     WHEN OTHERS THEN
         RAISE EXCEPTION 'Error en generacion de cierre de caja: %', SQLERRM;
@@ -1862,4 +1908,440 @@ EXCEPTION
 END;
 $procedure$
 ;
+;
+
+-- ============================================================
+-- V2: register_shop_sale_with_elements_v2
+-- Same as v1 but adds paid_amount, pending_amount, payment_status_id
+-- based on whether payment type is 'Crédito'
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE public.register_shop_sale_with_elements_v2(
+    IN _sale_properties jsonb,
+    IN _sale_elements jsonb,
+    IN _creator_user_id uuid
+)
+LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    _new_ss_id uuid;
+    _status_id INT := 52;
+    _item JSONB;
+    _establishment_id uuid;
+    _price NUMERIC;
+    _subtotal NUMERIC;
+    _total NUMERIC;
+    _total_discount NUMERIC;
+    _product_for_sale_id UUID;
+    _quantity NUMERIC;
+    _measure_id INT;
+    _discount NUMERIC;
+    _payment_type_identifier VARCHAR;
+    _paid_amount NUMERIC(10,2);
+    _pending_amount NUMERIC(10,2);
+    _payment_status_id INT;
+    _paid_status_id INT := 5;
+    _pending_status_id INT := 3;
+BEGIN
+    BEGIN
+        _establishment_id := (_sale_properties -> 'establishment' ->> 'id')::UUID;
+        _total := ROUND((_sale_properties->>'total')::NUMERIC, 2);
+        _total_discount := ROUND((_sale_properties->>'totalDiscount')::NUMERIC, 2);
+
+        SELECT pt."name" INTO _payment_type_identifier
+        FROM payment_type pt
+        WHERE pt.id = (_sale_properties->'paymentType'->>'id')::INT;
+
+        IF _payment_type_identifier = 'Crédito' THEN
+            _payment_status_id := _pending_status_id;
+            _paid_amount := 0;
+            _pending_amount := _total;
+        ELSE
+            _payment_status_id := _paid_status_id;
+            _paid_amount := _total;
+            _pending_amount := 0;
+        END IF;
+
+        INSERT INTO public.shop_sale(
+            name_client,
+            nota,
+            delivery,
+            nit_client,
+            establishment_id,
+            status_id,
+            total,
+            total_discount,
+            payment_type_id,
+            creator_user_id,
+            paid_amount,
+            pending_amount,
+            payment_status_id
+        )
+        VALUES (
+            _sale_properties->>'nameClient',
+            _sale_properties->>'nota',
+            ROUND((_sale_properties->>'delivery')::NUMERIC, 2),
+            (_sale_properties->>'nitClient')::VARCHAR(10),
+            _establishment_id,
+            _status_id,
+            _total,
+            _total_discount,
+            (_sale_properties->'paymentType'->>'id')::INT,
+            _creator_user_id,
+            _paid_amount,
+            _pending_amount,
+            _payment_status_id
+        )
+        RETURNING id INTO _new_ss_id;
+
+        FOR _item IN SELECT * FROM jsonb_array_elements(_sale_elements)
+        LOOP
+            _price := (_item->>'price')::NUMERIC;
+            _subtotal := ROUND((_item->>'subtotal')::NUMERIC, 2);
+            _total := ROUND((_item->>'total')::NUMERIC, 2);
+            _total_discount := ROUND((_item->>'totalDiscount')::NUMERIC, 2);
+            _product_for_sale_id := (_item -> 'productForSale' ->> 'id')::UUID;
+            _quantity := ROUND((_item ->> 'quantity')::NUMERIC, 2);
+            _measure_id := (_item -> 'measure' ->> 'id')::INT;
+            _discount := ROUND((_item->>'discount')::NUMERIC, 2);
+
+            CALL add_remove_inventory_element(
+                'product_for_sale',
+                _establishment_id::text,
+                _product_for_sale_id,
+                _measure_id,
+                _quantity,
+                _creator_user_id,
+                'Venta de producto en tienda',
+                14);
+
+            INSERT INTO public.shop_sale_element(
+                shop_sale_id,
+                product_for_sale_id,
+                price,
+                subtotal,
+                total,
+                discount,
+                total_discount,
+                quantity,
+                measure_id)
+            VALUES(
+                _new_ss_id,
+                _product_for_sale_id,
+                _price,
+                _subtotal,
+                _total,
+                _discount,
+                _total_discount,
+                _quantity,
+                _measure_id);
+        END LOOP;
+
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Error en registro de venta v2: %', SQLERRM;
+    END;
+END;
+$procedure$
+;
+
+-- ============================================================
+-- V3: register_shop_sale_with_elements_v3
+-- Igual que v2 pero rastrea por separado el crédito del pedido
+-- (paid_amount/pending_amount sobre el subtotal = total - delivery) y
+-- el crédito del envío (delivery_paid_amount/delivery_pending_amount).
+-- Acepta deliveryPaymentType en _sale_properties.
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE public.register_shop_sale_with_elements_v3(
+    IN _sale_properties jsonb,
+    IN _sale_elements jsonb,
+    IN _creator_user_id uuid
+)
+LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    _new_ss_id uuid;
+    _status_id INT := 52;
+    _item JSONB;
+    _establishment_id uuid;
+    _price NUMERIC;
+    _subtotal NUMERIC;
+    _total NUMERIC;
+    _total_discount NUMERIC;
+    _delivery NUMERIC;
+    _order_amount NUMERIC;
+    _product_for_sale_id UUID;
+    _quantity NUMERIC;
+    _measure_id INT;
+    _discount NUMERIC;
+    _payment_type_id INT;
+    _delivery_payment_type_id INT;
+    _payment_type_identifier VARCHAR;
+    _delivery_payment_identifier VARCHAR;
+    _paid_amount NUMERIC(10,2);
+    _pending_amount NUMERIC(10,2);
+    _payment_status_id INT;
+    _delivery_paid_amount NUMERIC(10,2);
+    _delivery_pending_amount NUMERIC(10,2);
+    _delivery_payment_status_id INT;
+    _paid_status_id INT := 5;
+    _pending_status_id INT := 3;
+BEGIN
+    BEGIN
+        _establishment_id := (_sale_properties -> 'establishment' ->> 'id')::UUID;
+        _total := ROUND((_sale_properties->>'total')::NUMERIC, 2);
+        _total_discount := ROUND((_sale_properties->>'totalDiscount')::NUMERIC, 2);
+        _delivery := ROUND(COALESCE((_sale_properties->>'delivery')::NUMERIC, 0), 2);
+        _order_amount := ROUND(_total - _delivery, 2);
+
+        _payment_type_id := (_sale_properties->'paymentType'->>'id')::INT;
+        _delivery_payment_type_id := (_sale_properties->'deliveryPaymentType'->>'id')::INT;
+
+        SELECT pt."name" INTO _payment_type_identifier FROM payment_type pt WHERE pt.id = _payment_type_id;
+        SELECT pt."name" INTO _delivery_payment_identifier FROM payment_type pt WHERE pt.id = _delivery_payment_type_id;
+
+        -- Crédito del pedido (subtotal)
+        IF _payment_type_identifier = 'Crédito' THEN
+            _payment_status_id := _pending_status_id;
+            _paid_amount := 0;
+            _pending_amount := _order_amount;
+        ELSE
+            _payment_status_id := _paid_status_id;
+            _paid_amount := _order_amount;
+            _pending_amount := 0;
+        END IF;
+
+        -- Crédito del envío
+        IF _delivery_payment_identifier = 'Crédito' THEN
+            _delivery_payment_status_id := _pending_status_id;
+            _delivery_paid_amount := 0;
+            _delivery_pending_amount := _delivery;
+        ELSE
+            _delivery_payment_status_id := _paid_status_id;
+            _delivery_paid_amount := _delivery;
+            _delivery_pending_amount := 0;
+        END IF;
+
+        INSERT INTO public.shop_sale(
+            name_client,
+            nota,
+            delivery,
+            nit_client,
+            establishment_id,
+            status_id,
+            total,
+            total_discount,
+            payment_type_id,
+            creator_user_id,
+            paid_amount,
+            pending_amount,
+            payment_status_id,
+            delivery_payment_type_id,
+            delivery_paid_amount,
+            delivery_pending_amount,
+            delivery_payment_status_id
+        )
+        VALUES (
+            _sale_properties->>'nameClient',
+            _sale_properties->>'nota',
+            _delivery,
+            (_sale_properties->>'nitClient')::VARCHAR(10),
+            _establishment_id,
+            _status_id,
+            _total,
+            _total_discount,
+            _payment_type_id,
+            _creator_user_id,
+            _paid_amount,
+            _pending_amount,
+            _payment_status_id,
+            _delivery_payment_type_id,
+            _delivery_paid_amount,
+            _delivery_pending_amount,
+            _delivery_payment_status_id
+        )
+        RETURNING id INTO _new_ss_id;
+
+        FOR _item IN SELECT * FROM jsonb_array_elements(_sale_elements)
+        LOOP
+            _price := (_item->>'price')::NUMERIC;
+            _subtotal := ROUND((_item->>'subtotal')::NUMERIC, 2);
+            _total := ROUND((_item->>'total')::NUMERIC, 2);
+            _total_discount := ROUND((_item->>'totalDiscount')::NUMERIC, 2);
+            _product_for_sale_id := (_item -> 'productForSale' ->> 'id')::UUID;
+            _quantity := ROUND((_item ->> 'quantity')::NUMERIC, 2);
+            _measure_id := (_item -> 'measure' ->> 'id')::INT;
+            _discount := ROUND((_item->>'discount')::NUMERIC, 2);
+
+            CALL add_remove_inventory_element(
+                'product_for_sale',
+                _establishment_id::text,
+                _product_for_sale_id,
+                _measure_id,
+                _quantity,
+                _creator_user_id,
+                'Venta de producto en tienda',
+                14);
+
+            INSERT INTO public.shop_sale_element(
+                shop_sale_id,
+                product_for_sale_id,
+                price,
+                subtotal,
+                total,
+                discount,
+                total_discount,
+                quantity,
+                measure_id)
+            VALUES(
+                _new_ss_id,
+                _product_for_sale_id,
+                _price,
+                _subtotal,
+                _total,
+                _discount,
+                _total_discount,
+                _quantity,
+                _measure_id);
+        END LOOP;
+
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Error en registro de venta v3: %', SQLERRM;
+    END;
+END;
+$procedure$
+;
+
+-- ============================================================
+-- add_shop_sale_payment
+-- Registers a partial or full payment against a credit shop sale
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE public.add_shop_sale_payment(
+    IN _shop_sale_id uuid,
+    IN _amount numeric,
+    IN _payment_type_id integer
+)
+LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    _paid_amount NUMERIC(9,2);
+    _pending_amount NUMERIC(9,2);
+    _total NUMERIC(9,2);
+    _payment_status_id INT;
+    _paid_status_id INT := 5;
+    _partial_status_id INT := 4;
+BEGIN
+    BEGIN
+        SELECT paid_amount, total, payment_status_id
+        INTO _paid_amount, _total, _payment_status_id
+        FROM shop_sale
+        WHERE id = _shop_sale_id
+        FOR UPDATE;
+
+        _paid_amount := _paid_amount + _amount;
+        _pending_amount := _total - _paid_amount;
+
+        IF _pending_amount < 0 THEN
+            RAISE EXCEPTION 'El monto del pago excede el monto pendiente.';
+        END IF;
+
+        IF _pending_amount <= 0 THEN
+            _payment_status_id := _paid_status_id;
+        ELSIF _pending_amount < _total THEN
+            _payment_status_id := _partial_status_id;
+        END IF;
+
+        INSERT INTO shop_sale_payment (shop_sale_id, amount, payment_type_id)
+        VALUES (_shop_sale_id, _amount, _payment_type_id);
+
+        UPDATE shop_sale
+        SET payment_status_id = _payment_status_id,
+            paid_amount = _paid_amount,
+            pending_amount = _pending_amount,
+            updated_date = timezone('UTC'::text, CURRENT_TIMESTAMP)
+        WHERE id = _shop_sale_id;
+
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Error en adición de pago para venta: %', SQLERRM;
+    END;
+END;
+$procedure$
+;
+
+-- ============================================================
+-- add_shop_sale_payment_v2
+-- Igual que add_shop_sale_payment pero distingue el destino del pago
+-- (_payment_target = 'ORDER' | 'DELIVERY') para rastrear por separado
+-- el crédito del pedido y el del envío.
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE public.add_shop_sale_payment_v2(
+    IN _shop_sale_id uuid,
+    IN _amount numeric,
+    IN _payment_type_id integer,
+    IN _payment_target varchar DEFAULT 'ORDER'
+)
+LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    _paid_amount NUMERIC(9,2);
+    _pending_amount NUMERIC(9,2);
+    _base_amount NUMERIC(9,2);   -- subtotal del pedido (total - delivery) o monto del envío
+    _payment_status_id INT;
+    _paid_status_id INT := 5;
+    _partial_status_id INT := 4;
+BEGIN
+    BEGIN
+        IF _payment_target = 'DELIVERY' THEN
+            SELECT delivery_paid_amount, delivery, delivery_payment_status_id
+            INTO _paid_amount, _base_amount, _payment_status_id
+            FROM shop_sale
+            WHERE id = _shop_sale_id
+            FOR UPDATE;
+        ELSE
+            SELECT paid_amount, (total - delivery), payment_status_id
+            INTO _paid_amount, _base_amount, _payment_status_id
+            FROM shop_sale
+            WHERE id = _shop_sale_id
+            FOR UPDATE;
+        END IF;
+
+        _paid_amount := _paid_amount + _amount;
+        _pending_amount := _base_amount - _paid_amount;
+
+        IF _pending_amount < 0 THEN
+            RAISE EXCEPTION 'El monto del pago excede el monto pendiente.';
+        END IF;
+
+        IF _pending_amount <= 0 THEN
+            _payment_status_id := _paid_status_id;
+        ELSIF _pending_amount < _base_amount THEN
+            _payment_status_id := _partial_status_id;
+        END IF;
+
+        INSERT INTO shop_sale_payment (shop_sale_id, amount, payment_type_id, payment_target)
+        VALUES (_shop_sale_id, _amount, _payment_type_id, _payment_target);
+
+        IF _payment_target = 'DELIVERY' THEN
+            UPDATE shop_sale
+            SET delivery_payment_status_id = _payment_status_id,
+                delivery_paid_amount = _paid_amount,
+                delivery_pending_amount = _pending_amount,
+                updated_date = timezone('UTC'::text, CURRENT_TIMESTAMP)
+            WHERE id = _shop_sale_id;
+        ELSE
+            UPDATE shop_sale
+            SET payment_status_id = _payment_status_id,
+                paid_amount = _paid_amount,
+                pending_amount = _pending_amount,
+                updated_date = timezone('UTC'::text, CURRENT_TIMESTAMP)
+            WHERE id = _shop_sale_id;
+        END IF;
+
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Error en adición de pago para venta: %', SQLERRM;
+    END;
+END;
+$procedure$
 ;

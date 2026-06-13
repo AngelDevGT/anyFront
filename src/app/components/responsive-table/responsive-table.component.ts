@@ -53,6 +53,10 @@ export class ResponsiveTableComponent implements OnInit, OnChanges {
         this.headers = this.tableElements[0];
     }
 
+    badgeClass(identifier: string): string {
+        return 'badge-' + (identifier?.toLowerCase().replace(/\s+/g, '-') || '');
+    }
+
     sendData(data: any){
         this.sentData.emit(data);
     }

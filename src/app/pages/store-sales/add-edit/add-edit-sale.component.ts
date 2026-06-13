@@ -51,6 +51,8 @@ export class AddEditSaleComponent implements OnInit{
     selectedMeasure?: Measure;
     selectedPaymentType?: PaymentType;
     selectedPaymentTypeSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
+    selectedDeliveryPaymentType?: PaymentType;
+    selectedDeliveryPaymentTypeSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     currentMeasurePrice?: number;
     paymentTypeOptions?: PaymentType[];
     constantes?: Constant[];
@@ -103,6 +105,9 @@ export class AddEditSaleComponent implements OnInit{
 
         this.selectedPaymentTypeSubject.subscribe(value => {
             this.setPaymentType(value);
+        });
+        this.selectedDeliveryPaymentTypeSubject.subscribe(value => {
+            this.setDeliveryPaymentType(value);
         });
     }
 
@@ -164,6 +169,13 @@ export class AddEditSaleComponent implements OnInit{
                         this.inventoryElements = this.inventory?.inventoryElements;
                         // this.inventoryElements = this.inventoryElements?.filter(invElem =>invElem.productForSale?.establishment?.id === String(this.establishment?.id));
                         this.allInventoryElements = this.inventoryElements;
+                    }
+                    const efectivo = this.paymentTypeOptions?.find(pt => pt.identifier === 'Efectivo');
+                    if (efectivo) {
+                        this.paymentTypeSelect?.setValue(String(efectivo.id));
+                        this.selectedPaymentTypeSubject.next(String(efectivo.id));
+                        this.deliveryPaymentTypeSelect?.setValue(String(efectivo.id));
+                        this.selectedDeliveryPaymentTypeSubject.next(String(efectivo.id));
                     }
                     this.loading = false;
                     this.title = 'Registrar Venta (' + this.establishment?.name + ')';
@@ -242,6 +254,7 @@ export class AddEditSaleComponent implements OnInit{
                 subtotal: this.subtotal.toFixed(2),
                 totalDiscount: this.totalDiscount.toFixed(2),
                 paymentType: this.selectedPaymentType,
+                deliveryPaymentType: this.selectedDeliveryPaymentType,
                 itemsList: this.itemsList,
             }
             return this.dataService.registerShop(newShopResume);
@@ -353,6 +366,18 @@ export class AddEditSaleComponent implements OnInit{
 
     setPaymentType(payment: any){
         this.selectedPaymentType = this.findPaymentType(payment);
+    }
+
+    setDeliveryPaymentType(payment: any){
+        this.selectedDeliveryPaymentType = this.findPaymentType(payment);
+    }
+
+    get deliveryPaymentTypeSelect(){
+        return this.orderForm.get('deliveryPaymentType');
+    }
+
+    get deliveryPaymentTypeOptions(): PaymentType[] {
+        return this.paymentTypeOptions?.filter(pt => pt.identifier !== 'Cheque') ?? [];
     }
 
     changeMeasure(measureId: any){
@@ -521,6 +546,7 @@ export class AddEditSaleComponent implements OnInit{
             nitClient: new FormControl('', [ Validators.maxLength(20),]),
             nota: new FormControl('', [Validators.maxLength(100)]),
             paymentType: new FormControl('', [Validators.required]),
+            deliveryPaymentType: new FormControl('', [Validators.required]),
             delivery: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
         //   applyDate: new FormControl('', [Validators.required])
         });

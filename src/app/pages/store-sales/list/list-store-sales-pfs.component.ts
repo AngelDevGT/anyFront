@@ -9,7 +9,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ShopResume } from '@app/models/store/shop-resume.model';
 import { Establishment } from '@app/models/establishment.model';
 
-@Component({ 
+@Component({
     templateUrl: 'list-store-sales-pfs.component.html',
     styleUrls: ['list-store-sales-pfs.component.scss']
 })
@@ -33,20 +33,24 @@ export class ListStoreSalesPFSComponent implements OnInit {
     modalSelectedQuantity = 0;
     modalUnitBaseTotalQuantity = 0;
     searchTerm?: string;
-    entries = this.dataService.tableEntries;
     pageSize = this.dataService.defaultPageSize;
-    page = 1;
     tableElementsValues?: any;
+    availableSaleStatuses: string[] = [];
+    saleStatusFilter: string | null = null;
+    availableOrderPaymentStatuses: string[] = [];
+    orderPaymentStatusFilter: string | null = null;
+    availableDeliveryPaymentStatuses: string[] = [];
+    deliveryPaymentStatusFilter: string | null = null;
 
     constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router) {}
 
     ngOnInit() {
-        let establishmentId = this.route.snapshot.params['id'];
-        let requestArray = [];
-
-        requestArray.push(this.dataService.getAllShopHistory({establishment_id: establishmentId}));
-        requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
-        requestArray.push(this.dataService.getEstablishmentById(establishmentId));
+        const establishmentId = this.route.snapshot.params['id'];
+        const requestArray = [
+            this.dataService.getAllShopHistory({establishment_id: establishmentId}),
+            this.dataService.getAnyComponent({}, 'getMeasure'),
+            this.dataService.getEstablishmentById(establishmentId)
+        ];
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
@@ -55,13 +59,21 @@ export class ListStoreSalesPFSComponent implements OnInit {
                 this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
                 this.establishment = this.dataService.findJsonValue(result[2], 'json_result') || {};
             },
-            error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
+            error: (e) => console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
-                this.shopResumes = this.shopResumes?.sort((a,b) => {
-                    const fechaA = new Date(a.updatedDate!);
-                    const fechaB = new Date(b.updatedDate!);
-                    return fechaB.getTime() - fechaA.getTime();
-                });
+                this.shopResumes = this.shopResumes?.sort((a, b) =>
+                    new Date(b.updatedDate!).getTime() - new Date(a.updatedDate!).getTime()
+                );
+                this.allShopResumes = this.shopResumes;
+                this.availableSaleStatuses = [...new Set(
+                    (this.allShopResumes || []).map(e => e.status?.identifier).filter((s): s is string => !!s)
+                )];
+                this.availableOrderPaymentStatuses = [...new Set(
+                    (this.allShopResumes || []).map(e => e.paymentStatus?.identifier).filter((s): s is string => !!s)
+                )];
+                this.availableDeliveryPaymentStatuses = [...new Set(
+                    (this.allShopResumes || []).map(e => e.deliveryPaymentStatus?.identifier).filter((s): s is string => !!s)
+                )];
                 this.setTableElements(this.shopResumes);
                 this.storeName = this.establishment?.name;
             }
@@ -69,87 +81,104 @@ export class ListStoreSalesPFSComponent implements OnInit {
         this.rawMaterialForm = this.createMaterialFormGroup();
     }
 
+    filterBySaleStatus(status: string | null) {
+        this.saleStatusFilter = status;
+        this.search(null);
+    }
+
+    filterByOrderPaymentStatus(status: string | null) {
+        this.orderPaymentStatusFilter = status;
+        this.search(null);
+    }
+
+    filterByDeliveryPaymentStatus(status: string | null) {
+        this.deliveryPaymentStatusFilter = status;
+        this.search(null);
+    }
+
     search(value: any): void {
-        if (this.allShopResumes){
-            this.shopResumes = this.allShopResumes?.filter((val) => {
-                if(this.searchTerm){
-                    const clientMatch = val.nameClient?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const dateMatch = val.updatedDate?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    const noteMatch = val.nota?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return clientMatch || dateMatch || noteMatch;
-                }
-                return true;
+        if (this.allShopResumes) {
+            this.shopResumes = this.allShopResumes.filter((val) => {
+                const textMatch = !this.searchTerm ||
+                    val.nameClient?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    val.updatedDate?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    val.nota?.toLowerCase().includes(this.searchTerm.toLowerCase());
+                const saleStatusMatch = !this.saleStatusFilter || val.status?.identifier === this.saleStatusFilter;
+                const orderPaymentMatch = !this.orderPaymentStatusFilter || val.paymentStatus?.identifier === this.orderPaymentStatusFilter;
+                const deliveryPaymentMatch = !this.deliveryPaymentStatusFilter || val.deliveryPaymentStatus?.identifier === this.deliveryPaymentStatusFilter;
+                return textMatch && saleStatusMatch && orderPaymentMatch && deliveryPaymentMatch;
             });
         }
         this.setTableElements(this.shopResumes);
     }
 
-    setTableElements(elements?: ShopResume[]){
-        // Filtrar para mostrar solo elementos activos
+    setTableElements(elements?: ShopResume[]) {
         elements = elements?.filter(element => element.status?.id !== 8);
         this.tableElementsValues = [];
         elements?.forEach((element: ShopResume) => {
-            const curr_row = [
-                    { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha", style: "width: 10%", rows_bg_color: element.status?.bg_color, rows_color: element.status?.color },
-                    // { type: "text", value: element.establecimiento?.name, header_name: "Tienda", style: "width: 15%" },
-                    // { type: "text", value: element.totalDiscount, header_name: "Descuento" },
-                    // { type: "text", value: Number(element.total) - Number(element.totalDiscount), header_name: "Subtotal" },
-                    { type: "text", value: element.itemsList?.map(item => " " + item.productForSale?.finishedProduct?.name), header_name: "Productos", style: "width: 30%" },
-                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.total)), header_name: "Monto Total", style: "width: 15%" },
-                    { type: "text", value: element.nameClient ? element.nameClient : "--", header_name: "Cliente", style: "width: 10%" },
-                    { type: "text", value: element.nota ? element.nota : "--", header_name: "Notas", style: "width: 20%" },
-            ];
-
-            let actionsButtons = [
+            const curr_row: any[] = [
+                { type: 'text', value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: 'Fecha' },
+                { type: 'text', value: element.itemsList?.map(item => ' ' + item.productForSale?.finishedProduct?.name), header_name: 'Productos' },
+                { type: 'text', value: this.dataService.getFormatedPrice(Number(element.total)), header_name: 'Total' },
                 {
-                    type: "button",
-                    routerLink: "/store/sales/history/view/" + element.id,
-                    is_absolute: true,
-                    class: "btn btn-success btn-sm pb-0 mx-1",
-                    icon: {
-                        class: "material-icons",
-                        icon: "visibility"
-                    }
+                    type: 'badge',
+                    value: (element.status?.text || element.status?.identifier) ?? '--',
+                    identifier: element.status?.identifier?.toLowerCase(),
+                    bg_color: element.status?.bg_color,
+                    color: element.status?.color,
+                    header_name: 'Estado'
+                },
+                { type: 'text', value: element.paymentType?.identifier ?? '--', header_name: 'Pago pedido' },
+                {
+                    type: 'badge',
+                    value: (element.paymentStatus?.text || element.paymentStatus?.identifier) ?? '--',
+                    identifier: element.paymentStatus?.identifier?.toLowerCase(),
+                    bg_color: element.paymentStatus?.bg_color,
+                    color: element.paymentStatus?.color,
+                    header_name: 'Estado pedido'
+                },
+                { type: 'text', value: element.paymentType?.identifier === 'Crédito' ? this.dataService.getFormatedPrice(Number(element.pendingAmount)) : '--', header_name: 'Pend. pedido' },
+                { type: 'text', value: element.deliveryPaymentType?.identifier ?? '--', header_name: 'Pago envío' },
+                {
+                    type: 'badge',
+                    value: (element.deliveryPaymentStatus?.text || element.deliveryPaymentStatus?.identifier) ?? '--',
+                    identifier: element.deliveryPaymentStatus?.identifier?.toLowerCase(),
+                    bg_color: element.deliveryPaymentStatus?.bg_color,
+                    color: element.deliveryPaymentStatus?.color,
+                    header_name: 'Estado envío'
+                },
+                { type: 'text', value: element.deliveryPaymentType?.identifier === 'Crédito' ? this.dataService.getFormatedPrice(Number(element.deliveryPendingAmount)) : '--', header_name: 'Pend. envío' },
+                { type: 'text', value: element.nameClient ?? '--', header_name: 'Cliente' },
+                {
+                    type: 'button',
+                    header_name: 'Acciones',
+                    button: [
+                        {
+                            type: 'button',
+                            routerLink: '/store/sales/history/view/' + element.id,
+                            is_absolute: true,
+                            colorClass: 'dt-btn-view',
+                            icon: { class: 'material-icons', icon: 'visibility' }
+                        }
+                    ]
                 }
             ];
-
-            let rowButtons = {
-                type: "button",
-                style: "white-space: nowrap; width: 10%",
-                value: undefined,
-                header_name: "Acciones",
-                button: [
-                    ...actionsButtons
-                ]
-            }
-
-            curr_row.push(rowButtons);
-
             this.tableElementsValues.push(curr_row);
         });
     }
 
-    get r() {
-        return this.rawMaterialForm.controls;
-    }
+    get r() { return this.rawMaterialForm.controls; }
 
-    selectMeasure(measureId?: string){
+    selectMeasure(measureId?: string) {
         return this.measureOptions?.find(measure => String(measure.id) === measureId);
     }
 
-    get quantityInput(){
-        return this.rawMaterialForm.get('quantity');
-    }
+    get quantityInput() { return this.rawMaterialForm.get('quantity'); }
+    get measureSelect() { return this.rawMaterialForm.get('measure'); }
 
-    get measureSelect(){
-        return this.rawMaterialForm.get('measure');
-    }
+    closeRawMaterialDialog() { this.onResetMaterialForm(); }
 
-    closeRawMaterialDialog(){
-        this.onResetMaterialForm();
-    }
-
-    onResetMaterialForm(){
+    onResetMaterialForm() {
         this.rawMaterialForm.reset();
         this.selectedInventoryElement = undefined;
         this.selectedMeasure = undefined;
@@ -167,12 +196,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
         });
     }
 
-    saveSale(){
-        let saveSalePath = '/store/sales/create';
-        let queryParams = {
-            strId: this.establishment?.id
-        };
-        this.router.navigate([saveSalePath], { queryParams: queryParams});
+    saveSale() {
+        this.router.navigate(['/store/sales/create'], { queryParams: { strId: this.establishment?.id } });
     }
-
 }

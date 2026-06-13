@@ -1,60 +1,43 @@
-<div class="genericCard pt-3">
-    <mat-card class="mat-elevation-z8">
-        <mat-card-header style="justify-content: center;">
-            <mat-card-title>{{ pageTitle }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pt-1">
-                        <div>
-                            <!-- <button type="button" routerLink="create" class="btn btn-outline-success m-2">
-                                <div class="d-flex flex-row p-1">
-                                    <i class="material-icons icon">add</i>
-                                    <span>Crear Pedido</span>
-                                </div>
-                            </button> -->
-                        </div>
-                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center">
-                            <button type="button" (click)="goToActionsHistory()" class="btn btn-outline-secondary align-self-start py-2">
-                                <div class="d-flex flex-row p-1">
-                                    <i class="material-icons icon">history</i>
-                                    <span class="px-1">Historial de acciones</span>
-                                </div>
-                            </button>
-                            <div class="select-filter mx-2">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Buscar</mat-label>
-                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)" />
-                                </mat-form-field>
-                            </div>
-                            <mat-form-field class="col-lg-2 col-sm-12 mx-2" appearance="outline">
-                                <mat-label>Unidades</mat-label>
-                                <mat-select matInput disableOptionCentering (valueChange)="selectedMeasureTableSubject.next($event)">
-                                    <mat-option *ngFor="let measure of generalMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                            <mat-form-field class="col-lg-2 col-sm-12 mx-2" appearance="outline">
-                                <mat-label>Peso</mat-label>
-                                <mat-select matInput disableOptionCentering (valueChange)="selectedWeightMeasureSubject.next($event)">
-                                    <mat-option *ngFor="let measure of weightMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                            <mat-form-field class="col-lg-2 col-2" appearance="outline">
-                                <mat-select matInput disableOptionCentering [(value)]="pageSize">
-                                    <mat-option *ngFor="let entry of entries" [value]="entry">
-                                        {{ entry }}
-                                    </mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                        </div>
-                    </div>
-                    <responsive-table *ngIf="this.inventoryElements" [tableElements]="tableElementsValues" [pageSize]="pageSize" [pageKey]="'bodega-inv-rmp'" (sentData)="receiveData($event)"></responsive-table>
-                    <span *ngIf="!inventoryElements" class="spinner-border spinner-border-lg align-center"></span>
-                </div>
-            </div>
-        </mat-card-content>
-    </mat-card>
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h4 class="page-title">{{ pageTitle }}</h4>
+      <p class="page-subtitle">Consulta y gestiona el inventario de bodega</p>
+    </div>
+    <div class="page-header-actions">
+      <button type="button" (click)="goToActionsHistory()" class="btn-outline-action">
+        <i class="material-icons">history</i>
+        Historial
+      </button>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="material-icons search-icon">search</i>
+        <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search($event)" />
+      </div>
+      <div class="toolbar-right">
+        <select class="measure-select" aria-label="Unidades"
+                [ngModel]="selectedMeasureTable?.id"
+                (ngModelChange)="selectedMeasureTableSubject.next($event)">
+          <option *ngFor="let m of generalMeasureOptions" [ngValue]="m.id">{{m.identifier}}</option>
+        </select>
+        <select class="measure-select" aria-label="Peso"
+                [ngModel]="selectedWeightMeasure?.id"
+                (ngModelChange)="selectedWeightMeasureSubject.next($event)">
+          <option *ngFor="let m of weightMeasureOptions" [ngValue]="m.id">{{m.identifier}}</option>
+        </select>
+      </div>
+    </div>
+    <data-table *ngIf="inventoryElements" [tableElements]="tableElementsValues" [initialPageSize]="pageSize" (modalAction)="receiveData($event.data)"></data-table>
+    <div *ngIf="!inventoryElements" class="loading-wrap">
+      <span class="spinner-border spinner-border-lg"></span>
+    </div>
+  </div>
+
 </div>
 
 

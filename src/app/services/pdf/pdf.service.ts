@@ -314,41 +314,32 @@ export class PdfService {
     }
 
     generateStoreSalePDF(storeSale: ShopResume) {
-        console.log(storeSale);
-        let storeName = storeSale?.establecimiento?.name!;
-        let docTitle = storeName;
-        let docMainTitle = "Ventas en Tienda";
-        let orderStatus = storeSale?.status?.identifier;
+        const storeName = storeSale?.establecimiento?.name ?? storeSale?.establishment?.name ?? '';
+        const isCreditSale = storeSale?.paymentType?.identifier === 'Crédito';
         let docDefinition:TDocumentDefinitions = {
             content: [
-                // {  
-                //     image: 'assets/img/brand/embutidos_any_900x150_white.png',
-                //     width: 100,
-                //     height: 100,
-                //     alignment: 'right',
-                // },
-                {  
-                  text: docTitle,  
-                  fontSize: 16,  
-                  alignment: 'center',  
-                  color: 'grey'
+                {
+                    text: storeName,
+                    fontSize: 16,
+                    alignment: 'center',
+                    color: 'grey'
                 },
-                {  
-                  text: docMainTitle,
-                  fontSize: 20,  
-                  bold: true,  
-                  alignment: 'center',  
-                  decoration: 'underline',  
-                  color: '#ec5300'  
+                {
+                    text: 'Ventas en Tienda',
+                    fontSize: 20,
+                    bold: true,
+                    alignment: 'center',
+                    decoration: 'underline',
+                    color: '#ec5300'
                 },
-                {  
-                    text: 'Productos',  
-                    style: 'sectionHeader'  
+                {
+                    text: 'Productos',
+                    style: 'sectionHeader'
                 },
-                {  
+                {
                     table: {
-                        headerRows: 1,  
-                        widths: ['15%', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],  
+                        headerRows: 1,
+                        widths: ['15%', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
                         body: [
                             [
                                 { text: 'Nombre', style: 'tableHeader' },
@@ -360,73 +351,76 @@ export class PdfService {
                                 { text: 'Descuento Total (Q)', style: 'tableHeader' },
                                 { text: 'Total (Q)', style: 'tableHeader' }
                             ],
-                            ...storeSale!.itemsList!.map(
-                                p => (
-                                    [
-                                        p.productForSale?.finishedProduct?.name!,
-                                        p.measure?.identifier!,
-                                        this.dataService.getDecimalFromText(p.price!),
-                                        this.dataService.getDecimalFromText(p.discount!),
-                                        p.quantity!,
-                                        this.dataService.getDecimalFromText(p.subtotal!),
-                                        this.dataService.getDecimalFromText(p.totalDiscount!),
-                                        this.dataService.getDecimalFromText(p.total!)
-                                        // (p.price * p.qty).toFixed(2)
-                                    ])),
-                            [{ text: 'Total (Q)', colSpan: 5 }, {}, {}, {}, {}, storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.subtotal), 0).toFixed(2), storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.totalDiscount), 0).toFixed(2), storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.total), 0).toFixed(2)]
+                            ...storeSale!.itemsList!.map(p => ([
+                                p.productForSale?.finishedProduct?.name!,
+                                p.measure?.identifier!,
+                                this.dataService.getDecimalFromText(p.price!),
+                                this.dataService.getDecimalFromText(p.discount!),
+                                p.quantity!,
+                                this.dataService.getDecimalFromText(p.subtotal!),
+                                this.dataService.getDecimalFromText(p.totalDiscount!),
+                                this.dataService.getDecimalFromText(p.total!)
+                            ])),
+                            [
+                                { text: 'Total (Q)', colSpan: 5 }, {}, {}, {}, {},
+                                storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.subtotal), 0).toFixed(2),
+                                storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.totalDiscount), 0).toFixed(2),
+                                storeSale!.itemsList!.reduce((sum, p) => sum + Number(p.total), 0).toFixed(2)
+                            ]
                         ]
-                    }  
+                    }
                 },
-                {  
+                {
                     text: "Subtotal:   " + this.dataService.getFormatedPrice(Number(storeSale?.total || 0) - Number(storeSale?.delivery || 0)),
                     marginTop: 10
                 },
-                {  
-                    text: "Costo envio:   " + this.dataService.getFormatedPrice(Number(storeSale?.delivery || 0)),
+                {
+                    text: "Costo envío:   " + this.dataService.getFormatedPrice(Number(storeSale?.delivery || 0)),
                     marginTop: 2
                 },
-                {  
+                {
                     text: "Monto Total:   " + this.dataService.getFormatedPrice(Number(storeSale?.total)),
                     bold: true,
                     marginTop: 2
                 },
+                ...(isCreditSale ? [
+                    {
+                        text: "Monto Abonado:   " + this.dataService.getFormatedPrice(Number(storeSale?.paidAmount || 0)),
+                        marginTop: 2
+                    },
+                    {
+                        text: "Monto Pendiente:   " + this.dataService.getFormatedPrice(Number(storeSale?.pendingAmount || 0)),
+                        bold: true,
+                        marginTop: 2,
+                        color: Number(storeSale?.pendingAmount || 0) > 0 ? '#c0392b' : '#27ae60'
+                    }
+                ] as any[] : []),
                 {
                     text: 'Detalles de la venta',
                     style: 'sectionHeader'
                 },
                 {
-                    text: "Estado: " + orderStatus!,
+                    text: "Estado: " + (storeSale?.status?.identifier ?? '--'),
                     bold: true
-                }, 
-                { text: "Creado: " + this.dataService.getLocalDateTimeFromUTCTime(storeSale?.creationDate!) }, 
-                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(storeSale?.updatedDate!) }, 
+                },
+                { text: "Tipo de pago: " + (storeSale?.paymentType?.identifier ?? '--') },
+                { text: "Estado de pago: " + (storeSale?.paymentStatus?.identifier ?? '--') },
+                { text: "Creado: " + this.dataService.getLocalDateTimeFromUTCTime(storeSale?.creationDate!) },
+                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(storeSale?.updatedDate!) },
                 {
                     text: 'Datos del Cliente',
                     style: 'sectionHeader'
                 },
-                { text: "Cliente: " + (storeSale.nameClient ? storeSale.nameClient : "--") }, 
-                { text: "NIT: " + (storeSale.nitClient ? storeSale.nitClient : "--" ) }, 
+                { text: "Cliente: " + (storeSale.nameClient ? storeSale.nameClient : "--") },
+                { text: "NIT: " + (storeSale.nitClient ? storeSale.nitClient : "--") },
                 {
                     text: 'Notas de la venta',
                     style: 'sectionHeader'
                 },
                 {
-                      text: storeSale?.nota ? storeSale?.nota : "--",
-                      margin: [0, 0 ,0, 15]
+                    text: storeSale?.nota ? storeSale?.nota : "--",
+                    margin: [0, 0, 0, 15]
                 },
-                // {
-                //     text: 'Codigo QR de la venta',
-                //     style: 'sectionHeader'
-                // },
-                // {  
-                //     columns: [  
-                //         [{ qr: `https://embutidosany.store/store/sales/history/view/${storeSale?.id}`, fit: 100 }],  
-                //         [{  
-                //             text: `Fecha: ${new Date().toLocaleString()}`,  
-                //             alignment: 'right'  
-                //         }],
-                //     ]
-                // },
             ],
             styles: {  
                 sectionHeader: {  
