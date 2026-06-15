@@ -425,6 +425,7 @@ export class AddEditCashClosingComponent implements OnInit{
             + this.totalDeliveryShopResumes
             + this.totalCreditPaymentsCash
             + this.totalCreditPaymentsDeposit
+            + this.totalCreditPaymentsCheque
             + sobrante;
         this.totalEgresos = this.totalDiscountShopResumes
             + this.totalDepositSales
