@@ -5,7 +5,7 @@
       <h4 class="page-title">Ventas de Tienda<span *ngIf="storeName"> — {{storeName}}</span></h4>
       <p class="page-subtitle">Historial de ventas registradas</p>
     </div>
-    <button type="button" (click)="saveSale()" class="btn-add">
+    <button *ngIf="shopResumes" type="button" (click)="saveSale()" class="btn-add">
       <i class="material-icons">add</i>
       Registrar venta
     </button>

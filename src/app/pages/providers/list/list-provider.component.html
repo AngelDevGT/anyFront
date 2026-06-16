@@ -5,7 +5,7 @@
       <h4 class="page-title">Registro de proveedores</h4>
       <p class="page-subtitle">Administra los proveedores registrados</p>
     </div>
-    <button type="button" routerLink="create" class="btn-add">
+    <button *ngIf="providers" type="button" routerLink="create" class="btn-add">
       <i class="material-icons">add</i>
       Registrar proveedor
     </button>

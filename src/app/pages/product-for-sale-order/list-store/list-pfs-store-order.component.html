@@ -5,7 +5,7 @@
       <h4 class="page-title">{{pageTitle}}</h4>
       <p class="page-subtitle">Consulta y gestiona los pedidos de productos para venta</p>
     </div>
-    <button *ngIf="viewOption != 'factory'" type="button" (click)="navigateWithParams()" class="btn-add">
+    <button *ngIf="productForSaleOrdes && viewOption != 'factory'" type="button" (click)="navigateWithParams()" class="btn-add">
       <i class="material-icons">add</i>
       Crear Pedido
     </button>

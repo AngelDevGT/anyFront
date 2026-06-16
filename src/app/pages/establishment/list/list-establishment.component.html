@@ -6,7 +6,7 @@
       <p class="page-subtitle" *ngIf="isInventory">Gestiona el inventario y operaciones de las tiendas</p>
       <p class="page-subtitle" *ngIf="!isInventory">Administra las tiendas registradas</p>
     </div>
-    <button *ngIf="!isInventory" type="button" routerLink="create" class="btn-add">
+    <button *ngIf="establishments && !isInventory" type="button" routerLink="create" class="btn-add">
       <i class="material-icons">add</i>
       Crear Tienda
     </button>

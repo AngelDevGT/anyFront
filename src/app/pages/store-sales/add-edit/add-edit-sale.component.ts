@@ -166,7 +166,7 @@ export class AddEditSaleComponent implements OnInit{
                 error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
                 complete: () => {
                     if (this.inventory){
-                        this.inventoryElements = this.inventory?.inventoryElements;
+                        this.inventoryElements = this.inventory?.inventoryElements || [];
                         // this.inventoryElements = this.inventoryElements?.filter(invElem =>invElem.productForSale?.establishment?.id === String(this.establishment?.id));
                         this.allInventoryElements = this.inventoryElements;
                     }

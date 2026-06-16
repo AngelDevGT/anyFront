@@ -5,7 +5,7 @@
       <h4 class="page-title">{{title}}</h4>
       <p class="page-subtitle">Consulta y gestiona los cierres de caja</p>
     </div>
-    <button type="button" (click)="createCashClosing()" class="btn-add">
+    <button *ngIf="cashClosings" type="button" (click)="createCashClosing()" class="btn-add">
       <i class="material-icons">add</i>
       Crear Cierre de Caja
     </button>

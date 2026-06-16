@@ -5,7 +5,7 @@
       <h4 class="page-title">Gastos de Tienda</h4>
       <p class="page-subtitle">Administra los gastos registrados de la tienda</p>
     </div>
-    <button type="button" (click)="createExpense()" class="btn-add">
+    <button *ngIf="expenses" type="button" (click)="createExpense()" class="btn-add">
       <i class="material-icons">add</i>
       Registrar Gasto
     </button>

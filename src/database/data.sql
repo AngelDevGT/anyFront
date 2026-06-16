@@ -2336,73 +2336,53 @@ left join payment_type pt on ss.payment_type_id = pt.id
 left join payment_type dpt on ss.delivery_payment_type_id = dpt.id
 left join "user" u on ss.creator_user_id = u.id
 left join establishment e on ss.establishment_id = e.id','shop_sale','POST'),
-	 ('listShopSaleV2','/listShopSaleV2','SELECT json_agg(
+	 ('listShopSaleV2','/listShopSaleV2','WITH items AS (
+    SELECT
+        sse.shop_sale_id,
+        json_agg(json_build_object(
+            ''id'', sse.id,
+            ''productForSale'', json_build_object(
+                ''id'', pfs.id,
+                ''finishedProduct'', json_build_object(''id'', fp.id, ''name'', fp.name)
+            )
+        )) AS json_data
+    FROM shop_sale_element sse
+    LEFT JOIN product_for_sale pfs ON pfs.id = sse.product_for_sale_id
+    LEFT JOIN finished_product fp ON pfs.finished_product_id = fp.id
+    GROUP BY sse.shop_sale_id
+)
+SELECT json_agg(
     json_build_object(
         ''id'', ss.id,
-	    ''nameClient'', ss.name_client,
-	    ''nitClient'', ss.nit_client,
-	    ''nota'', ss.nota,
-	    ''total'', ss.total,
-	    ''pendingAmount'', ss.pending_amount,
-	    ''deliveryPendingAmount'', ss.delivery_pending_amount,
-	    ''updatedDate'', coalesce(ss.updated_date, ss.creation_date),
-	    ''creationDate'', ss.creation_date,
-	    ''status'', json_build_object(
-	        ''identifier'', s.name,
-	        ''id'', s.id,
-			''bg_color'', s.bg_color,
-	        ''color'', s.color
-	    ),
-	    ''paymentType'', json_build_object(
-	        ''id'', pt.id,
-	        ''identifier'', pt."name"
-	    ),
-	    ''deliveryPaymentType'', json_build_object(
-	        ''id'', dpt.id,
-	        ''identifier'', dpt."name"
-	    ),
-	    ''paymentStatus'', json_build_object(
-	        ''id'', pst.id,
-	        ''identifier'', pst."name",
-	        ''bg_color'', pst.bg_color,
-	        ''color'', pst.color
-	    ),
-	    ''deliveryPaymentStatus'', json_build_object(
-	        ''id'', dpst.id,
-	        ''identifier'', dpst."name",
-	        ''bg_color'', dpst.bg_color,
-	        ''color'', dpst.color
-	    ),
-	    ''itemsList'', (
-		    SELECT json_agg(
-			    json_build_object(
-			    	''id'', sse.id,
-			    	''productForSale'', json_build_object(
-				        ''id'', pfs.id,
-				        ''finishedProduct'', json_build_object(
-				            ''id'', fp.id,
-				            ''name'', fp.name
-				        )
-					)
-			    )
-			)
-			from shop_sale_element sse
-			left join product_for_sale pfs on pfs.id = sse.product_for_sale_id
-			LEFT JOIN finished_product fp ON pfs.finished_product_id = fp.id
-			LEFT JOIN unit_base ub ON fp.unit_base_id = ub.id
-			left join measure m2 on sse.measure_id = m2.id
-			WHERE sse.shop_sale_id = ss.id
-		)
+        ''nameClient'', ss.name_client,
+        ''nitClient'', ss.nit_client,
+        ''nota'', ss.nota,
+        ''total'', ss.total,
+        ''pendingAmount'', ss.pending_amount,
+        ''deliveryPendingAmount'', ss.delivery_pending_amount,
+        ''updatedDate'', COALESCE(ss.updated_date, ss.creation_date),
+        ''creationDate'', ss.creation_date,
+        ''status'', json_build_object(
+            ''identifier'', s.name, ''id'', s.id, ''bg_color'', s.bg_color, ''color'', s.color
+        ),
+        ''paymentType'', json_build_object(''id'', pt.id, ''identifier'', pt.name),
+        ''deliveryPaymentType'', json_build_object(''id'', dpt.id, ''identifier'', dpt.name),
+        ''paymentStatus'', json_build_object(
+            ''id'', pst.id, ''identifier'', pst.name, ''bg_color'', pst.bg_color, ''color'', pst.color
+        ),
+        ''deliveryPaymentStatus'', json_build_object(
+            ''id'', dpst.id, ''identifier'', dpst.name, ''bg_color'', dpst.bg_color, ''color'', dpst.color
+        ),
+        ''itemsList'', i.json_data
     )
 ) AS json_result
-from shop_sale ss
-left join status s on ss.status_id = s.id
-left join status pst on ss.payment_status_id = pst.id
-left join status dpst on ss.delivery_payment_status_id = dpst.id
-left join payment_type pt on ss.payment_type_id = pt.id
-left join payment_type dpt on ss.delivery_payment_type_id = dpt.id
-left join "user" u on ss.creator_user_id = u.id
-left join establishment e on ss.establishment_id = e.id','shop_sale','POST');
+FROM shop_sale ss
+LEFT JOIN status s ON ss.status_id = s.id
+LEFT JOIN status pst ON ss.payment_status_id = pst.id
+LEFT JOIN status dpst ON ss.delivery_payment_status_id = dpst.id
+LEFT JOIN payment_type pt ON ss.payment_type_id = pt.id
+LEFT JOIN payment_type dpt ON ss.delivery_payment_type_id = dpt.id
+LEFT JOIN items i ON i.shop_sale_id = ss.id','shop_sale','POST');
 
 -- ============================================================
 -- V2 cash closing queries
