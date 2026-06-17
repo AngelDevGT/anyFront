@@ -298,6 +298,10 @@
                                     <p class="subtotal-title">(-) Créditos nuevos</p>
                                     <p class="subtotal-amount">Q. {{ totalCreditSalesFull | number: '1.2-2' }}</p>
                                 </div>
+                                <div class="subtotal">
+                                    <p class="subtotal-title">(-) Créditos pagados en depósito / cheque</p>
+                                    <p class="subtotal-amount">Q. {{ (totalCreditPaymentsDeposit + totalCreditPaymentsCheque) | number: '1.2-2' }}</p>
+                                </div>
                                 <hr>
                                 <div class="total">
                                     <p class="total-title">(=) Total egresos</p>
