@@ -34,15 +34,15 @@
                         </mat-form-field>
                         <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
                             <mat-label>NIT</mat-label>
-                            <input type="text" formControlName="nitClient" matInput maxlength="20"
+                            <input type="text" formControlName="nitClient" matInput maxlength="10"
                                 [ngClass]="{ 'is-invalid': f['nitClient'].errors }" />
                             <div class="invalid-feedback" *ngIf="f['nitClient'].errors?.['maxlength']">
-                                El NIT debe tener maximo 20 caracteres
+                                El NIT debe tener maximo 10 caracteres
                             </div>
                         </mat-form-field>
                         <mat-form-field class="col-sm-12 col-md-10 custom-input" appearance="outline">
                             <mat-label>Notas</mat-label>
-                            <textarea formControlName="nota" matInput
+                            <textarea formControlName="nota" matInput maxlength="100"
                                 [ngClass]="{ 'is-invalid': f['nota'].errors }"></textarea>
                             <div class="invalid-feedback" *ngIf="f['nota'].errors?.['maxlength']">
                                 Las notas deben tener maximo 100 caracteres
@@ -130,7 +130,7 @@
                         <div class="pos-client-icon"><i class="material-icons">person</i></div>
                         <div class="pos-client-fields">
                             <input type="text" placeholder="Nombre del cliente" formControlName="nameClient" />
-                            <input type="text" placeholder="NIT" formControlName="nitClient" maxlength="20" />
+                            <input type="text" placeholder="NIT" formControlName="nitClient" maxlength="10" />
                         </div>
                         <button type="button" class="pos-row-x" (click)="removeClientRow()" aria-label="Quitar cliente">
                             <i class="material-icons">close</i>
@@ -153,7 +153,7 @@
                     <!-- Fila de comentario -->
                     <div class="pos-comment-row" *ngIf="showComment">
                         <div class="pos-comment-icon"><i class="material-icons">edit_note</i></div>
-                        <textarea class="pos-comment-input" formControlName="nota" rows="2"
+                        <textarea class="pos-comment-input" formControlName="nota" rows="2" maxlength="100"
                             placeholder="Comentario (opcional)"></textarea>
                         <button type="button" class="pos-row-x" (click)="removeCommentRow()" aria-label="Quitar comentario">
                             <i class="material-icons">close</i>
@@ -169,13 +169,15 @@
                                 <ng-container *ngIf="itemHasDiscount(itemList)">
                                     <span class="pos-price-old">{{ dataPrice(itemList.price) }}</span>
                                     <span class="pos-price-new">{{ dataPrice(itemDiscountedUnitPrice(itemList)) }}</span>
-                                    <span class="pos-discount-badge"><i class="material-icons">sell</i> -{{ dataPrice(itemList.totalDiscount) }}</span>
                                 </ng-container>
                                 <span *ngIf="!itemHasDiscount(itemList)" class="pos-price-new">{{ dataPrice(itemList.price) }}</span>
                             </div>
                             <span class="pos-item-qty">{{ itemList.quantity }} {{ itemList.measure?.identifier }}</span>
                         </div>
                         <div class="pos-item-right">
+                            <span *ngIf="itemHasDiscount(itemList)" class="pos-discount-badge">
+                                <i class="material-icons">sell</i> -{{ dataPrice(itemList.totalDiscount) }}
+                            </span>
                             <span class="pos-item-total">{{ dataPrice(itemList.total) }}</span>
                             <div class="pos-item-actions">
                                 <button type="button" (click)="selectItemListForEdit(itemList, i)"

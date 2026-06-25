@@ -548,9 +548,18 @@ export class AddEditSaleComponent implements OnInit{
     }
     
     setDeliveryValue(event: Event){
-        if (event.target instanceof HTMLInputElement) {
-            this.delivery =  Number(event.target.value) || 0;
+        if (!(event.target instanceof HTMLInputElement)) return;
+        // Solo dígitos y un punto, con máximo 2 decimales
+        let v = event.target.value.replace(/[^\d.]/g, '');
+        const dot = v.indexOf('.');
+        if (dot !== -1) {
+            const intPart = v.slice(0, dot);
+            const decPart = v.slice(dot + 1).replace(/\./g, '').slice(0, 2);
+            v = intPart + '.' + decPart;
         }
+        event.target.value = v;
+        this.f['delivery'].setValue(v);
+        this.delivery = Number(v) || 0;
     }
 
     calculateTotal(){
@@ -640,7 +649,7 @@ export class AddEditSaleComponent implements OnInit{
             nameClient: new FormControl('', [
             Validators.maxLength(50),
             ]),
-            nitClient: new FormControl('', [ Validators.maxLength(20),]),
+            nitClient: new FormControl('', [ Validators.maxLength(10),]),
             nota: new FormControl('', [Validators.maxLength(100)]),
             paymentType: new FormControl('', [Validators.required]),
             deliveryPaymentType: new FormControl('', [Validators.required]),
@@ -654,7 +663,7 @@ export class AddEditSaleComponent implements OnInit{
             nameClient: new FormControl('', [
             Validators.maxLength(50),
             ]),
-            nitClient: new FormControl('', [ Validators.maxLength(20),]),
+            nitClient: new FormControl('', [ Validators.maxLength(10),]),
             nota: new FormControl('', [Validators.maxLength(100)]),
         });
     }
