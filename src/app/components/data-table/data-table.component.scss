@@ -33,6 +33,28 @@
     user-select: none;
   }
 
+  .dt-th-sortable {
+    cursor: pointer;
+    transition: background 0.12s;
+    &:hover { background: #e9eaec; }
+  }
+
+  .dt-th-active { color: #c94e00; }
+
+  .dt-th-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .dt-sort-icon {
+    font-size: 17px;
+    color: #c0c4cc;
+    transition: color 0.12s;
+    .dt-th-sortable:hover & { color: #6b7280; }
+    .dt-th-active & { color: #c94e00; }
+  }
+
   // Rows
   tbody tr {
     border-bottom: 1px solid #f1f3f5;
@@ -40,6 +62,14 @@
 
     &:hover {
       background: #fafafa;
+    }
+
+    &.dt-row-clickable {
+      cursor: pointer;
+
+      &:hover {
+        background: #f0f4ff;
+      }
     }
 
     &:last-child {

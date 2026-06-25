@@ -1,116 +1,214 @@
-<div class="genericCard pt-3">
-    <mat-card class="mat-elevation-z8">
-        <div *ngIf="loading" class="text-center m-5">
-            <span class="spinner-border spinner-border-lg align-center"></span>
+<div class="sale-loading" *ngIf="loading">
+    <span class="spinner-border spinner-border-lg"></span>
+</div>
+
+<div class="sale-view" *ngIf="!loading">
+
+    <!-- ── Top bar ─────────────────────────────────────────────────────────── -->
+    <div class="sale-topbar">
+        <div class="topbar-left">
+            <button class="back-btn" type="button" (click)="goBack()" aria-label="Volver">
+                <i class="material-icons">arrow_back</i>
+            </button>
+            <div class="topbar-titles">
+                <h1 class="sale-title">Venta <span *ngIf="shopResume?.saleNumber != null">#{{ shopResume?.saleNumber }}</span></h1>
+                <p class="sale-sub">{{ shopResume?.establecimiento?.name }}</p>
+            </div>
         </div>
-        <mat-card-header *ngIf="!loading" style="justify-content: center;">
-            <mat-card-title>{{shopResume?.establecimiento?.name}}</mat-card-title>
-        </mat-card-header>
-        <br>
-        <mat-card-content *ngIf="!loading">
-            <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
-                <div class="col-12">
-                    <view-object [objectElements]="elements"></view-object>
+        <div class="topbar-actions">
+            <button class="btn-ghost" type="button" (click)="generatePDF()" [disabled]="submitting">
+                <i class="material-icons">download</i> Descargar PDF
+            </button>
+            <button *ngIf="shopResume?.status?.id == 52" class="btn-ghost" type="button" (click)="editSale()" [disabled]="submitting">
+                <i class="material-icons">edit</i> Editar
+            </button>
+            <button *ngIf="shopResume?.status?.id == 52" class="btn-ghost btn-ghost-danger" type="button" (click)="cancelSale()" [disabled]="submitting">
+                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                <i class="material-icons">cancel</i> Cancelar
+            </button>
+        </div>
+    </div>
+
+    <div class="sale-grid">
+
+        <!-- ── Main column ─────────────────────────────────────────────────── -->
+        <div class="sale-main">
+
+            <!-- Products -->
+            <div class="card-block">
+                <table class="product-table">
+                    <thead>
+                        <tr>
+                            <th class="col-product">Producto</th>
+                            <th class="col-num">Cantidad</th>
+                            <th class="col-num">Descuento Total</th>
+                            <th class="col-num">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of shopResume?.itemsList">
+                            <td class="col-product">
+                                <p class="product-name">{{ item.productForSale?.finishedProduct?.name }}</p>
+                                <p class="product-meta">
+                                    {{ dataPrice(item.price) }}
+                                    <span class="dot">·</span>
+                                    {{ item.measure?.identifier }}
+                                </p>
+                            </td>
+                            <td class="col-num col-qty">{{ item.quantity }}</td>
+                            <td class="col-num col-discount">{{ dataPrice(item.totalDiscount) }}</td>
+                            <td class="col-num product-total col-total">{{ dataPrice(item.total) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totals -->
+            <div class="card-block totals-card">
+                <div class="totals-row">
+                    <span>Subtotal sin descuento(s)</span>
+                    <span>Q{{ getSubTotalWithoutDiscount() | number: '1.2-2' }}</span>
                 </div>
-                <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
-                    <responsive-table *ngIf="this.shopResume" [tableElements]="tableElementsValues"
-                        [pageSize]="pageSize"></responsive-table>
+                <div class="totals-row">
+                    <span>Descuento total</span>
+                    <span>Q{{ shopResume?.totalDiscount | number: '1.2-2' }}</span>
                 </div>
-                <div class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
-                    <div class="descuento">
-                        <p class="subtotal-title">Subtotal sin descuento(s)</p>
-                        <p class="subtotal-amount">Q{{ getSubTotalWithoutDiscount() | number: '1.2-2' }}</p>
-                    </div>
-                    <div class="descuento">
-                        <p class="subtotal-title">Descuento total</p>
-                        <p class="subtotal-amount">Q{{ shopResume?.totalDiscount| number: '1.2-2' }}</p>
-                    </div>
-                    <div class="descuento">
-                        <p class="subtotal-title">Subtotal</p>
-                        <p class="subtotal-amount">Q{{ getSubTotal() | number: '1.2-2' }}</p>
-                    </div>
-                    <div class="descuento">
-                        <p class="subtotal-title">Costo envio</p>
-                        <p class="subtotal-amount">Q{{ shopResume?.delivery| number: '1.2-2' }}</p>
-                    </div>
-                    <div class="total col-md-8 col-sm-12">
-                        <p class="total-title">Monto total</p>
-                        <p class="total-amount">Q{{ shopResume?.total | number: '1.2-2' }}</p>
-                    </div>
-                    <!-- Credit-only summary rows -->
-                    <ng-container *ngIf="isOrderCredit">
-                        <div class="descuento">
-                            <p class="subtotal-title">Monto abonado (pedido)</p>
-                            <p class="subtotal-amount">Q{{ shopResume?.paidAmount | number: '1.2-2' }}</p>
+                <div class="totals-row">
+                    <span>Subtotal</span>
+                    <span>Q{{ getSubTotal() | number: '1.2-2' }}</span>
+                </div>
+                <div class="totals-row">
+                    <span>Costo de envío</span>
+                    <span>Q{{ shopResume?.delivery | number: '1.2-2' }}</span>
+                </div>
+                <div class="totals-row totals-total">
+                    <span>Total</span>
+                    <span>Q{{ shopResume?.total | number: '1.2-2' }}</span>
+                </div>
+            </div>
+
+            <!-- Historial -->
+            <div class="card-block">
+                <div class="card-block-head">
+                    <h3 class="card-block-title"><i class="material-icons title-icon">history</i> Historial</h3>
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item" *ngFor="let ev of timeline">
+                        <div class="timeline-marker">
+                            <i class="material-icons">{{ ev.icon }}</i>
                         </div>
-                        <div class="descuento">
-                            <p class="subtotal-title">Monto pendiente (pedido)</p>
-                            <p class="subtotal-amount">Q{{ shopResume?.pendingAmount | number: '1.2-2' }}</p>
-                        </div>
-                    </ng-container>
-                    <ng-container *ngIf="isDeliveryCredit">
-                        <div class="descuento">
-                            <p class="subtotal-title">Monto abonado (envío)</p>
-                            <p class="subtotal-amount">Q{{ shopResume?.deliveryPaidAmount | number: '1.2-2' }}</p>
-                        </div>
-                        <div class="descuento">
-                            <p class="subtotal-title">Monto pendiente (envío)</p>
-                            <p class="subtotal-amount">Q{{ shopResume?.deliveryPendingAmount | number: '1.2-2' }}</p>
-                        </div>
-                    </ng-container>
-                    <div *ngIf="isCreditSale" class="d-flex flex-wrap justify-content-center mt-2">
-                        <button type="button"
-                            class="btn btn-outline-secondary"
-                            (click)="loadPaymentHistory()"
-                            data-bs-toggle="modal" data-bs-target="#payHistoryModal">
-                            <div class="d-flex flex-row p-1">
-                                <i class="material-icons icon">history</i>
-                                <span class="px-1">Historial de Pagos</span>
+                        <div class="timeline-body">
+                            <div class="timeline-line">
+                                <span class="timeline-title">
+                                    {{ ev.title }}
+                                    <span *ngIf="ev.tag" class="timeline-tag">{{ ev.tag }}</span>
+                                </span>
+                                <span class="timeline-date">{{ getPaymentDate(ev.date) }}</span>
                             </div>
-                        </button>
+                            <p class="timeline-sub">{{ ev.subtitle }}</p>
+                        </div>
                     </div>
+                    <p *ngIf="!timeline.length" class="timeline-empty">Sin movimientos registrados</p>
                 </div>
             </div>
-            <div class="d-flex flex-wrap justify-content-center">
-                <button type="button" (click)="generatePDF()" [disabled]="submitting" class="btn btn-secondary m-2">
-                    <div class="d-flex flex-row p-1">
-                        <i class="material-icons icon">download</i>
-                        <span class="px-1">PDF</span>
-                    </div>
-                </button>
-                <!-- Pagar: solo ventas al crédito con monto pendiente (pedido y/o envío) -->
-                <button
-                    *ngIf="showPayButton && shopResume?.status?.id == 52"
-                    type="button"
-                    class="btn btn-warning m-2"
-                    data-bs-toggle="modal" data-bs-target="#payModal">
-                    <div class="d-flex flex-row p-1">
-                        <i class="material-icons icon">payments</i>
-                        <span class="px-1">PAGAR</span>
-                    </div>
-                </button>
-                <button
-                *ngIf="shopResume?.status?.id == 52"
-                type="button" (click)="editSale()" [disabled]="submitting"
-                class="btn btn-primary m-2">
-                <div class="d-flex flex-row p-1">
-                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="material-icons icon">edit</i>
-                    <span class="px-1">EDITAR</span>
+        </div>
+
+        <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
+        <div class="sale-side">
+
+            <div class="card-block side-summary">
+                <div class="side-row">
+                    <span class="side-label">Estado</span>
+                    <span class="status-pill"
+                          [style.background]="shopResume?.status?.bg_color || '#eef2ff'"
+                          [style.color]="shopResume?.status?.color || '#4361ee'">
+                        {{ (shopResume?.status?.text || shopResume?.status?.identifier) ?? '--' }}
+                    </span>
                 </div>
-                </button>
-                <button
-                *ngIf="shopResume?.status?.id == 52" type="button" (click)="cancelSale()" [disabled]="submitting"
-                class="btn btn-danger m-2">
-                <div class="d-flex flex-row p-1">
-                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="material-icons icon">cancel</i>
-                    <span class="px-1">CANCELAR VENTA</span>
+                <div class="side-row">
+                    <span class="side-label">Pago pedido</span>
+                    <span class="status-pill"
+                          [style.background]="shopResume?.paymentStatus?.bg_color || '#eef2ff'"
+                          [style.color]="shopResume?.paymentStatus?.color || '#4361ee'">
+                        {{ (shopResume?.paymentStatus?.text || shopResume?.paymentStatus?.identifier) ?? '--' }}
+                    </span>
                 </div>
+                <div class="side-row" *ngIf="shopResume?.deliveryPaymentType">
+                    <span class="side-label">Pago envío</span>
+                    <span class="status-pill"
+                          [style.background]="shopResume?.deliveryPaymentStatus?.bg_color || '#eef2ff'"
+                          [style.color]="shopResume?.deliveryPaymentStatus?.color || '#4361ee'">
+                        {{ (shopResume?.deliveryPaymentStatus?.text || shopResume?.deliveryPaymentStatus?.identifier) ?? '--' }}
+                    </span>
+                </div>
+                <div class="side-row side-total-row">
+                    <span class="side-label">Total</span>
+                    <span class="side-total">Q{{ shopResume?.total | number: '1.2-2' }}</span>
+                </div>
+
+                <!-- Totales de crédito (pedido) — solo si aún hay saldo pendiente -->
+                <ng-container *ngIf="canPayOrder">
+                    <div class="side-row side-credit">
+                        <span class="side-label">Abonado (pedido)</span>
+                        <span class="side-credit-paid">Q{{ shopResume?.paidAmount | number: '1.2-2' }}</span>
+                    </div>
+                    <div class="side-row side-credit">
+                        <span class="side-label">Pendiente (pedido)</span>
+                        <span class="side-credit-pending">Q{{ shopResume?.pendingAmount | number: '1.2-2' }}</span>
+                    </div>
+                </ng-container>
+
+                <!-- Totales de crédito (envío) — solo si aún hay saldo pendiente -->
+                <ng-container *ngIf="canPayDelivery">
+                    <div class="side-row side-credit">
+                        <span class="side-label">Abonado (envío)</span>
+                        <span class="side-credit-paid">Q{{ shopResume?.deliveryPaidAmount | number: '1.2-2' }}</span>
+                    </div>
+                    <div class="side-row side-credit">
+                        <span class="side-label">Pendiente (envío)</span>
+                        <span class="side-credit-pending">Q{{ shopResume?.deliveryPendingAmount | number: '1.2-2' }}</span>
+                    </div>
+                </ng-container>
+
+                <button *ngIf="showPayButton && shopResume?.status?.id == 52"
+                        type="button" class="side-pay-btn"
+                        data-bs-toggle="modal" data-bs-target="#payModal">
+                    <i class="material-icons">payments</i> Registrar pago
                 </button>
             </div>
-        </mat-card-content>
-    </mat-card>
+
+            <div class="card-block side-info">
+                <div class="info-block">
+                    <p class="info-label">Fecha</p>
+                    <p class="info-value">{{ getPaymentDate(shopResume?.creationDate) }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Cliente</p>
+                    <p class="info-value">{{ shopResume?.nameClient || 'Público en General' }}</p>
+                </div>
+                <div class="info-block" *ngIf="shopResume?.nitClient">
+                    <p class="info-label">NIT</p>
+                    <p class="info-value">{{ shopResume?.nitClient }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Vendido por</p>
+                    <p class="info-value">{{ shopResume?.creatorUser?.name || '--' }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Tipo de pago (pedido)</p>
+                    <p class="info-value">{{ shopResume?.paymentType?.identifier || '--' }}</p>
+                </div>
+                <div class="info-block" *ngIf="shopResume?.deliveryPaymentType">
+                    <p class="info-label">Tipo de pago (envío)</p>
+                    <p class="info-value">{{ shopResume?.deliveryPaymentType?.identifier }}</p>
+                </div>
+                <div class="info-block" *ngIf="shopResume?.nota">
+                    <p class="info-label">Notas</p>
+                    <p class="info-value">{{ shopResume?.nota }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ── Modal: Registrar Pago ─────────────────────────────────────────────── -->
@@ -182,7 +280,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" (click)="closePaymentModal()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-warning"
+                <button type="button" class="btn btn-accent-modal"
                     [disabled]="!canSubmitPayment || submittingPayment"
                     (click)="submitPayment()">
                     Pagar
@@ -203,46 +301,5 @@
     <div class="payment-loading-content">
         <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
         <p class="text-light mt-3 mb-0 fs-5">Procesando pago...</p>
-    </div>
-</div>
-
-<!-- ── Modal: Historial de Pagos ──────────────────────────────────────────── -->
-<div class="modal fade" id="payHistoryModal" data-bs-keyboard="false" tabindex="-1" aria-labelledby="payHistoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="payHistoryModalLabel">Historial de Pagos</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div *ngIf="loadingPayments" class="text-center my-3">
-                    <span class="spinner-border spinner-border-lg align-center"></span>
-                </div>
-                <table *ngIf="!loadingPayments" class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Destino</th>
-                            <th>Monto</th>
-                            <th>Tipo de pago</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let payment of shopSalePayments">
-                            <td>{{ getPaymentDate(payment.date) }}</td>
-                            <td>{{ getPaymentTargetLabel(payment.paymentTarget) }}</td>
-                            <td>Q{{ payment.amount | number: '1.2-2' }}</td>
-                            <td>{{ payment.paymentType?.identifier }}</td>
-                        </tr>
-                        <tr *ngIf="!shopSalePayments || shopSalePayments.length === 0">
-                            <td colspan="4" class="text-center text-muted">Sin pagos registrados</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
     </div>
 </div>

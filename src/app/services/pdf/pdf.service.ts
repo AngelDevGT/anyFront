@@ -315,7 +315,8 @@ export class PdfService {
 
     generateStoreSalePDF(storeSale: ShopResume) {
         const storeName = storeSale?.establecimiento?.name ?? storeSale?.establishment?.name ?? '';
-        const isCreditSale = storeSale?.paymentType?.identifier === 'Crédito';
+        const isOrderCredit = storeSale?.paymentType?.identifier === 'Crédito';
+        const isDeliveryCredit = storeSale?.deliveryPaymentType?.identifier === 'Crédito';
         let docDefinition:TDocumentDefinitions = {
             content: [
                 {
@@ -383,16 +384,28 @@ export class PdfService {
                     bold: true,
                     marginTop: 2
                 },
-                ...(isCreditSale ? [
+                ...(isOrderCredit ? [
                     {
-                        text: "Monto Abonado:   " + this.dataService.getFormatedPrice(Number(storeSale?.paidAmount || 0)),
+                        text: "Monto Abonado (pedido):   " + this.dataService.getFormatedPrice(Number(storeSale?.paidAmount || 0)),
                         marginTop: 2
                     },
                     {
-                        text: "Monto Pendiente:   " + this.dataService.getFormatedPrice(Number(storeSale?.pendingAmount || 0)),
+                        text: "Monto Pendiente (pedido):   " + this.dataService.getFormatedPrice(Number(storeSale?.pendingAmount || 0)),
                         bold: true,
                         marginTop: 2,
                         color: Number(storeSale?.pendingAmount || 0) > 0 ? '#c0392b' : '#27ae60'
+                    }
+                ] as any[] : []),
+                ...(isDeliveryCredit ? [
+                    {
+                        text: "Monto Abonado (envío):   " + this.dataService.getFormatedPrice(Number(storeSale?.deliveryPaidAmount || 0)),
+                        marginTop: 2
+                    },
+                    {
+                        text: "Monto Pendiente (envío):   " + this.dataService.getFormatedPrice(Number(storeSale?.deliveryPendingAmount || 0)),
+                        bold: true,
+                        marginTop: 2,
+                        color: Number(storeSale?.deliveryPendingAmount || 0) > 0 ? '#c0392b' : '#27ae60'
                     }
                 ] as any[] : []),
                 {

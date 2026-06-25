@@ -4,12 +4,24 @@
 
       <thead>
         <tr>
-          <th *ngFor="let h of headers">{{ h.header_name }}</th>
+          <th *ngFor="let h of headers; let i = index"
+              class="dt-th-sortable"
+              [class.dt-th-active]="sortColumn === i"
+              (click)="sort(i)">
+            <span class="dt-th-inner">
+              {{ h.header_name }}
+              <i class="material-icons dt-sort-icon">
+                {{ sortColumn === i ? (sortDirection === 'asc' ? 'keyboard_arrow_up' : 'keyboard_arrow_down') : 'unfold_more' }}
+              </i>
+            </span>
+          </th>
         </tr>
       </thead>
 
       <tbody>
-        <tr *ngFor="let row of pagedRows">
+        <tr *ngFor="let row of pagedRows"
+            [class.dt-row-clickable]="hasRowLink(row)"
+            (click)="onRowClick(row)">
           <td *ngFor="let cell of row">
 
             <!-- Avatar + text -->
@@ -40,7 +52,7 @@
                       [ngClass]="[btn.colorClass, btn.title ? 'dt-action-btn--labeled' : '']"
                       data-bs-toggle="modal"
                       [attr.data-bs-target]="btn.data_bs_target"
-                      (click)="emitModalAction(btn.data_bs_target, cell.data)">
+                      (click)="$event.stopPropagation(); emitModalAction(btn.data_bs_target, cell.data)">
                 <i class="material-icons">{{ btn.icon.icon }}</i>
                 <span *ngIf="btn.title" class="dt-btn-label">{{ btn.title }}</span>
               </button>
@@ -52,7 +64,7 @@
                       type="button"
                       class="dt-action-btn"
                       [ngClass]="[btn.colorClass, btn.title ? 'dt-action-btn--labeled' : '']"
-                      (click)="navigate(btn.routerLink, btn.query_params, btn.is_absolute)">
+                      (click)="$event.stopPropagation(); navigate(btn.routerLink, btn.query_params, btn.is_absolute)">
                 <i class="material-icons">{{ btn.icon.icon }}</i>
                 <span *ngIf="btn.title" class="dt-btn-label">{{ btn.title }}</span>
               </button>

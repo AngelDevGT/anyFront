@@ -7,6 +7,7 @@ import { ShopSalePayment } from "./shop-sale-payment.model";
 
 export interface ShopResume {
     id?: string;
+    saleNumber?: number;
     nameClient?: string;
     nota?: string;
     delivery?: string;

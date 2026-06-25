@@ -2,7 +2,8 @@
 
   <div class="page-header">
     <div class="page-header-left">
-      <h4 class="page-title">Ventas de Tienda<span *ngIf="storeName"> — {{storeName}}</span></h4>
+      <h4 class="page-title">Ventas de Tienda</h4>
+      <p *ngIf="storeName" class="store-name-label">{{ storeName }}</p>
       <p class="page-subtitle">Historial de ventas registradas</p>
     </div>
     <button *ngIf="shopResumes" type="button" (click)="saveSale()" class="btn-add">
@@ -18,38 +19,69 @@
         <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search($event)" />
       </div>
       <div class="toolbar-right">
-        <div class="dropdown" *ngIf="availableSaleStatuses.length">
-          <button class="filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            {{ saleStatusFilter || 'Estado pedido' }}
+        <div class="filter-wrapper" (click)="$event.stopPropagation()">
+          <button class="filter-main-btn" [class.open]="filterPanelOpen" type="button" (click)="toggleFilterPanel($event)">
+            <i class="material-icons" style="font-size:17px">filter_list</i>
+            Filtro
+            <span *ngIf="activeFilterCount" class="filter-badge">{{ activeFilterCount }}</span>
+            <i class="material-icons chevron-icon">keyboard_arrow_down</i>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" (click)="filterBySaleStatus(null)">Todos</a></li>
-            <li *ngFor="let s of availableSaleStatuses">
-              <a class="dropdown-item" (click)="filterBySaleStatus(s)">{{ s }}</a>
-            </li>
-          </ul>
-        </div>
-        <div class="dropdown" *ngIf="availableOrderPaymentStatuses.length">
-          <button class="filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            {{ orderPaymentStatusFilter || 'Estado pago pedido' }}
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" (click)="filterByOrderPaymentStatus(null)">Todos</a></li>
-            <li *ngFor="let s of availableOrderPaymentStatuses">
-              <a class="dropdown-item" (click)="filterByOrderPaymentStatus(s)">{{ s }}</a>
-            </li>
-          </ul>
-        </div>
-        <div class="dropdown" *ngIf="availableDeliveryPaymentStatuses.length">
-          <button class="filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            {{ deliveryPaymentStatusFilter || 'Estado pago envío' }}
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" (click)="filterByDeliveryPaymentStatus(null)">Todos</a></li>
-            <li *ngFor="let s of availableDeliveryPaymentStatuses">
-              <a class="dropdown-item" (click)="filterByDeliveryPaymentStatus(s)">{{ s }}</a>
-            </li>
-          </ul>
+
+          <div class="filter-panel" *ngIf="filterPanelOpen">
+            <div class="filter-panel-header">
+              <span class="filter-panel-title">
+                <i class="material-icons" style="font-size:16px">filter_list</i>
+                Filtro
+              </span>
+              <button class="filter-close-btn" type="button" (click)="closeFilterPanel()">
+                <i class="material-icons" style="font-size:18px">close</i>
+              </button>
+            </div>
+
+            <div class="filter-section" *ngIf="availableSaleStatuses.length">
+              <button class="filter-section-header" type="button" (click)="saleStatusExpanded = !saleStatusExpanded">
+                <i class="material-icons chevron">{{ saleStatusExpanded ? 'expand_more' : 'chevron_right' }}</i>
+                Estado venta
+              </button>
+              <div class="filter-section-body" *ngIf="saleStatusExpanded">
+                <label class="filter-option" *ngFor="let s of availableSaleStatuses">
+                  <input type="checkbox" [checked]="pendingSaleStatuses.includes(s)" (change)="toggleSaleStatus(s)" />
+                  {{ s }}
+                </label>
+              </div>
+            </div>
+
+            <div class="filter-section" *ngIf="availableOrderPaymentStatuses.length">
+              <button class="filter-section-header" type="button" (click)="orderPaymentExpanded = !orderPaymentExpanded">
+                <i class="material-icons chevron">{{ orderPaymentExpanded ? 'expand_more' : 'chevron_right' }}</i>
+                Estado pago pedido
+              </button>
+              <div class="filter-section-body" *ngIf="orderPaymentExpanded">
+                <label class="filter-option" *ngFor="let s of availableOrderPaymentStatuses">
+                  <input type="checkbox" [checked]="pendingOrderPaymentStatuses.includes(s)" (change)="toggleOrderPaymentStatus(s)" />
+                  {{ s }}
+                </label>
+              </div>
+            </div>
+
+            <div class="filter-section" *ngIf="availableDeliveryPaymentStatuses.length">
+              <button class="filter-section-header" type="button" (click)="deliveryPaymentExpanded = !deliveryPaymentExpanded">
+                <i class="material-icons chevron">{{ deliveryPaymentExpanded ? 'expand_more' : 'chevron_right' }}</i>
+                Estado pago envío
+              </button>
+              <div class="filter-section-body" *ngIf="deliveryPaymentExpanded">
+                <label class="filter-option" *ngFor="let s of availableDeliveryPaymentStatuses">
+                  <input type="checkbox" [checked]="pendingDeliveryPaymentStatuses.includes(s)" (change)="toggleDeliveryPaymentStatus(s)" />
+                  {{ s }}
+                </label>
+              </div>
+            </div>
+
+            <div class="filter-panel-footer">
+              <button class="btn-reset" type="button" (click)="resetFilters()">Restablecer</button>
+              <button class="btn-filter-apply" type="button" (click)="applyFilters()">Filtrar</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

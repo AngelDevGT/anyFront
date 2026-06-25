@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import {BehaviorSubject, EMPTY, forkJoin, of} from 'rxjs';
 import {concatMap, first} from 'rxjs/operators';
 import { NgxImageCompressService } from 'ngx-image-compress';
@@ -38,12 +38,96 @@ export class AddEditSaleComponent implements OnInit{
     allInventoryElements?: InventoryElement[];
     saleSearchTerm?: string;
 
+    // POS UI state
+    searchFocused = false;
+    showClientRow = false;
+    showDelivery = false;
+    showComment = false;
+    actionsSheetOpen = false;
+
     get filteredInventoryElements(): InventoryElement[] | undefined {
         if (!this.saleSearchTerm) return this.inventoryElements;
         const term = this.saleSearchTerm.toLowerCase();
         return this.inventoryElements?.filter(el =>
             el.productForSale?.finishedProduct?.name?.toLowerCase().includes(term)
         );
+    }
+
+    /** Productos cuando el buscador tiene foco o texto; opciones cuando no. */
+    get showProductResults(): boolean {
+        return this.searchFocused || !!this.saleSearchTerm;
+    }
+
+    get itemsSubtotal(): number {
+        return (this.itemsList ?? []).reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+    }
+
+    get grandTotal(): number {
+        return this.itemsSubtotal + (Number(this.delivery) || 0);
+    }
+
+    get itemCount(): number {
+        return this.itemsList?.length ?? 0;
+    }
+
+    openActionsSheet() {
+        this.actionsSheetOpen = true;
+    }
+
+    closeActionsSheet() {
+        this.actionsSheetOpen = false;
+    }
+
+    onSearchFocus() {
+        this.searchFocused = true;
+    }
+
+    onSearchBlur() {
+        // Pequeño delay para permitir el click sobre un producto antes de ocultar la lista
+        setTimeout(() => this.searchFocused = false, 200);
+    }
+
+    addClientRow() {
+        this.showClientRow = true;
+        this.searchFocused = false;
+    }
+
+    removeClientRow() {
+        this.showClientRow = false;
+        this.f['nameClient'].setValue('');
+        this.f['nitClient'].setValue('');
+    }
+
+    addDeliveryRow() {
+        this.showDelivery = true;
+        this.searchFocused = false;
+    }
+
+    removeDeliveryRow() {
+        this.showDelivery = false;
+        this.delivery = 0;
+        this.f['delivery'].setValue('0');
+    }
+
+    addCommentRow() {
+        this.showComment = true;
+        this.searchFocused = false;
+    }
+
+    removeCommentRow() {
+        this.showComment = false;
+        this.f['nota'].setValue('');
+    }
+
+    itemHasDiscount(item: ItemsList): boolean {
+        return Number(item.totalDiscount) > 0;
+    }
+
+    /** Precio unitario (por medida) ya con el descuento aplicado. */
+    itemDiscountedUnitPrice(item: ItemsList): number {
+        const qty = Number(item.quantity) || 0;
+        if (qty <= 0) return Number(item.price) || 0;
+        return (Number(item.total) || 0) / qty;
     }
 
     rawMaterialForm!: FormGroup;
@@ -98,6 +182,8 @@ export class AddEditSaleComponent implements OnInit{
     activityLog?: ActivityLog;
     isEditMode = false;
     editingIndex?: number;
+
+    @ViewChild('cobrarCloseBtn') cobrarCloseBtnRef?: ElementRef;
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private imageCompress: NgxImageCompressService, private alertService: AlertService,
@@ -216,6 +302,16 @@ export class AddEditSaleComponent implements OnInit{
         this.editingIndex = undefined;
     }
 
+    dataPrice(value?: string | number): string {
+        return this.dataService.getFormatedPrice(Number(value || 0));
+    }
+
+    /** Cierra el modal de cobro y guarda la venta. */
+    onCobrar() {
+        this.cobrarCloseBtnRef?.nativeElement?.click();
+        this.onSaveForm();
+    }
+
     onSaveForm() {
         this.alertService.clear();
         this.submitting = true;
@@ -250,9 +346,10 @@ export class AddEditSaleComponent implements OnInit{
                 ...this.orderForm.value,
                 establecimiento: this.establishment,
                 establishment: this.establishment,
-                total: this.total.toFixed(2),
-                subtotal: this.subtotal.toFixed(2),
-                totalDiscount: this.totalDiscount.toFixed(2),
+                total: this.grandTotal.toFixed(2),
+                subtotal: this.itemsSubtotal.toFixed(2),
+                totalDiscount: this.calculateTotalDiscount().toFixed(2),
+                delivery: String(this.delivery),
                 paymentType: this.selectedPaymentType,
                 deliveryPaymentType: this.selectedDeliveryPaymentType,
                 itemsList: this.itemsList,

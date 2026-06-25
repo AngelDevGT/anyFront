@@ -16,6 +16,8 @@ export class DataTableComponent implements OnChanges {
   page = 1;
   pageSize = 10;
   readonly pageSizes = [5, 10, 25, 50, 100];
+  sortColumn: number | null = null;
+  sortDirection: 'asc' | 'desc' = 'asc';
 
   private readonly avatarPalette = [
     '#4361ee', '#3a86ff', '#7b2d8b', '#2ec4b6',
@@ -41,9 +43,29 @@ export class DataTableComponent implements OnChanges {
     }
   }
 
+  sort(colIndex: number) {
+    if (this.sortColumn === colIndex) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = colIndex;
+      this.sortDirection = 'asc';
+    }
+    this.page = 1;
+  }
+
+  get sortedRows(): any[][] {
+    if (this.sortColumn === null) return this.rows;
+    return [...this.rows].sort((a, b) => {
+      const valA = a[this.sortColumn!]?.value ?? '';
+      const valB = b[this.sortColumn!]?.value ?? '';
+      const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+      return this.sortDirection === 'asc' ? cmp : -cmp;
+    });
+  }
+
   get pagedRows(): any[][] {
     const start = (this.page - 1) * this.pageSize;
-    return this.rows.slice(start, start + this.pageSize);
+    return this.sortedRows.slice(start, start + this.pageSize);
   }
 
 getInitials(name: string): string {
@@ -62,6 +84,16 @@ getInitials(name: string): string {
 
   emitModalAction(target: string, data: any) {
     this.modalAction.emit({ target, data });
+  }
+
+  hasRowLink(row: any): boolean {
+    return !!row?.rowLink;
+  }
+
+  onRowClick(row: any) {
+    if (row?.rowLink) {
+      this.navigate(row.rowLink, row.rowLinkQueryParams, row.rowLinkAbsolute);
+    }
   }
 
   navigate(routerLink: string, queryParams?: any, isAbsolute?: boolean) {

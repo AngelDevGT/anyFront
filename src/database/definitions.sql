@@ -325,3 +325,66 @@ ALTER TABLE shop_sale
 -- Discriminador en el historial de pagos: 'ORDER' (pedido) o 'DELIVERY' (envío)
 ALTER TABLE shop_sale_payment
     ADD COLUMN IF NOT EXISTS payment_target varchar(10) DEFAULT 'ORDER' NOT NULL;
+
+-- ============================================================
+-- MIGRATION: número de venta visible (correlativo POR TIENDA)
+-- Cada establecimiento lleva su propia numeración 1, 2, 3...
+-- Se asigna automáticamente vía trigger BEFORE INSERT (atómico).
+-- Numera también las ventas existentes en orden cronológico.
+-- ============================================================
+ALTER TABLE shop_sale ADD COLUMN IF NOT EXISTS sale_number bigint;
+
+-- Contador atómico por establecimiento
+CREATE TABLE IF NOT EXISTS shop_sale_counter (
+    establishment_id uuid PRIMARY KEY REFERENCES establishment(id),
+    last_number bigint NOT NULL DEFAULT 0
+);
+
+-- Backfill cronológico por tienda (solo las ventas que aún no tienen número)
+WITH base AS (
+    SELECT establishment_id, COALESCE(max(sale_number), 0) AS mx
+    FROM shop_sale
+    GROUP BY establishment_id
+),
+ordered AS (
+    SELECT id, establishment_id,
+           row_number() OVER (PARTITION BY establishment_id ORDER BY creation_date, id) AS rn
+    FROM shop_sale
+    WHERE sale_number IS NULL
+)
+UPDATE shop_sale ss
+SET sale_number = o.rn + b.mx
+FROM ordered o
+JOIN base b ON b.establishment_id = o.establishment_id
+WHERE ss.id = o.id;
+
+-- Inicializar los contadores con el máximo actual por tienda
+INSERT INTO shop_sale_counter (establishment_id, last_number)
+SELECT establishment_id, max(sale_number)
+FROM shop_sale
+WHERE sale_number IS NOT NULL
+GROUP BY establishment_id
+ON CONFLICT (establishment_id)
+DO UPDATE SET last_number = GREATEST(shop_sale_counter.last_number, EXCLUDED.last_number);
+
+ALTER TABLE shop_sale ALTER COLUMN sale_number SET NOT NULL;
+
+-- Trigger: asigna el siguiente número de la tienda en cada inserción
+CREATE OR REPLACE FUNCTION shop_sale_assign_number() RETURNS trigger AS $$
+BEGIN
+    IF NEW.sale_number IS NULL THEN
+        INSERT INTO shop_sale_counter (establishment_id, last_number)
+        VALUES (NEW.establishment_id, 1)
+        ON CONFLICT (establishment_id)
+        DO UPDATE SET last_number = shop_sale_counter.last_number + 1
+        RETURNING last_number INTO NEW.sale_number;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_shop_sale_assign_number ON shop_sale;
+CREATE TRIGGER trg_shop_sale_assign_number
+    BEFORE INSERT ON shop_sale
+    FOR EACH ROW
+    EXECUTE FUNCTION shop_sale_assign_number();

@@ -2238,6 +2238,7 @@ FROM shop_sale_payment ssp
 LEFT JOIN payment_type pt ON pt.id = ssp.payment_type_id','shop_sale_payment','POST'),
 	 ('getShopSaleV2','/getShopSaleV2','select json_build_object(
     ''id'', ss.id,
+    ''saleNumber'', ss.sale_number,
     ''nameClient'', ss.name_client,
     ''nitClient'', ss.nit_client,
     ''nota'', ss.nota,
@@ -2252,15 +2253,21 @@ LEFT JOIN payment_type pt ON pt.id = ssp.payment_type_id','shop_sale_payment','P
     ''creationDate'', ss.creation_date,
     ''status'', json_build_object(
         ''identifier'', s.name,
-        ''id'', s.id
+        ''id'', s.id,
+        ''bg_color'', s.bg_color,
+        ''color'', s.color
     ),
     ''paymentStatus'', json_build_object(
         ''identifier'', pst.name,
-        ''id'', pst.id
+        ''id'', pst.id,
+        ''bg_color'', pst.bg_color,
+        ''color'', pst.color
     ),
     ''deliveryPaymentStatus'', json_build_object(
         ''identifier'', dpst.name,
-        ''id'', dpst.id
+        ''id'', dpst.id,
+        ''bg_color'', dpst.bg_color,
+        ''color'', dpst.color
     ),
     ''paymentType'', json_build_object(
         ''identifier'', pt."name",
@@ -2354,10 +2361,12 @@ left join establishment e on ss.establishment_id = e.id','shop_sale','POST'),
 SELECT json_agg(
     json_build_object(
         ''id'', ss.id,
+        ''saleNumber'', ss.sale_number,
         ''nameClient'', ss.name_client,
         ''nitClient'', ss.nit_client,
         ''nota'', ss.nota,
         ''total'', ss.total,
+        ''delivery'', ss.delivery,
         ''pendingAmount'', ss.pending_amount,
         ''deliveryPendingAmount'', ss.delivery_pending_amount,
         ''updatedDate'', COALESCE(ss.updated_date, ss.creation_date),

@@ -1,236 +1,55 @@
-<div class="genericCard pt-3">
+<!-- ── Loading ─────────────────────────────────────────────── -->
+<div *ngIf="loading" class="text-center m-5">
+    <span class="spinner-border spinner-border-lg align-center"></span>
+</div>
+
+<!-- ── Overlay de carga al guardar la venta ────────────────── -->
+<div *ngIf="submitting" class="sale-loading-overlay">
+    <div class="sale-loading-content">
+        <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
+        <p class="text-light mt-3 mb-0 fs-5">Registrando venta...</p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     EDIT: formulario simple (nombre / NIT / notas)
+     ════════════════════════════════════════════════════════════ -->
+<div class="genericCard pt-3" *ngIf="!loading && isEditOption">
     <mat-card class="mat-elevation-z8">
         <mat-card-header style="justify-content: center;">
-            <mat-card-title>{{title}}</mat-card-title>
-            <!-- <mat-card-subtitle>Tienda</mat-card-subtitle> -->
+            <mat-card-title>{{ title }}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <br>
-            <div *ngIf="loading" class="text-center m-5">
-                <span class="spinner-border spinner-border-lg align-center"></span>
-            </div>
-            <form *ngIf="!loading" [formGroup]="orderForm" (ngSubmit)="onSaveForm()">
+            <form [formGroup]="orderForm" (ngSubmit)="onSaveForm()">
                 <div class="container">
                     <div class="row justify-content-center">
-                        <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
-                            <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
-                                <mat-label>Nombre del cliente</mat-label>
-                                <input id="nameClient-form-crear-comunidad" type="text" formControlName="nameClient" matInput
-                                    [ngClass]="{ 'is-invalid': f['nameClient'].errors }" />
-                                <div class="invalid-feedback" *ngIf="f['nameClient'].errors">
-                                    <div *ngIf="f['nameClient'].errors['maxlength']">
-                                        El nombre debe tener maximo 50 caracteres
-                                    </div>
-                                </div>
-                            </mat-form-field>
-                            <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
-                                <mat-label>NIT</mat-label>
-                                <input id="nitClient-form-crear-comunidad" type="text" formControlName="nitClient" matInput
-                                    [ngClass]="{ 'is-invalid': f['nitClient'].errors }" />
-                                <div class="invalid-feedback" *ngIf="f['nitClient'].errors">
-                                    <div *ngIf="f['nitClient'].errors['maxlength']">
-                                        El nombre debe tener maximo 20 caracteres
-                                    </div>
-                                </div>
-                            </mat-form-field>
-                            <div class="col-12"></div>
-                            <mat-form-field *ngIf="!isEditOption" class="col-sm-12 col-md-3 custom-input align-self-start" appearance="outline">
-                                <mat-label>Tipo de pago</mat-label>
-                                <mat-select matInput disableOptionCentering formControlName="paymentType"
-                                    [ngClass]="{ 'is-invalid': f['paymentType'].errors }" (valueChange)="selectedPaymentTypeSubject.next($event)">
-                                    <mat-option *ngFor="let paymentType of paymentTypeOptions" value="{{paymentType.id}}">{{paymentType.identifier}}</mat-option>
-                                </mat-select>
-                                <div class="invalid-feedback" *ngIf="f['paymentType'].errors">
-                                    <div *ngIf="f['paymentType'].errors['required']">
-                                        Tipo de pago requerido requerido
-                                    </div>
-                                </div>
-                            </mat-form-field>
-                            <mat-form-field class="col-sm-12 col-md-5 custom-input align-self-start" appearance="outline">
-                                <mat-label>Notas</mat-label>
-                                <textarea id="nombre-form-crear-comunidad" type="text" formControlName="nota" matInput
-                                    [ngClass]="{ 'is-invalid': f['nota'].errors }"></textarea>
-                                <div class="invalid-feedback" *ngIf="f['nota'].errors">
-                                    <div *ngIf="f['nota'].errors['maxlength']">
-                                        Las notas deben tener maximo 100 caracteres
-                                    </div>
-                                </div>
-                            </mat-form-field>
-                            <!-- *ngIf="selectedProviderSubject.value" -->
-                            <!-- <div *ngIf="selectedProviderSubject.value" class="row justify-content-center col-12"> -->
-                            <div *ngIf="!isEditOption" class="row justify-content-center col-12">
-                                <div class="p-3 col-sm-12 col-md-5">
-                                    <h2 class="text-center text-muted">Producto disponible</h2>
-                                    <div class="d-flex justify-content-center my-2" style="height: 72px;">
-                                        <mat-form-field appearance="outline" class="col-md-6 col-sm-12">
-                                            <mat-label>Buscar</mat-label>
-                                            <input type="text" matInput
-                                                [value]="saleSearchTerm || ''"
-                                                (input)="saleSearchTerm = $any($event.target).value"
-                                                [matAutocomplete]="saleAuto" />
-                                            <mat-autocomplete #saleAuto (optionSelected)="saleSearchTerm = $event.option.value">
-                                                <mat-option *ngFor="let el of filteredInventoryElements" [value]="el.productForSale?.finishedProduct?.name">
-                                                    {{ el.productForSale?.finishedProduct?.name }}
-                                                </mat-option>
-                                            </mat-autocomplete>
-                                        </mat-form-field>
-                                    </div>
-                                    <div class="table-container my-custom-scrollbar">
-                                        <table class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 30%">Nombre</th>
-                                                    <th style="width: 20%">Medida</th>
-                                                    <th style="width: 15%">Cantidad</th>
-                                                    <th style="width: 20%">Precio</th>
-                                                    <!-- <th style="width: 10%">Estado</th> -->
-                                                    <th style="width: 15%">Agregar</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr *ngFor="let inventoryElement of filteredInventoryElements; let i = index">
-                                                    <td>{{inventoryElement.productForSale?.finishedProduct?.name}}</td>
-                                                    <td>{{inventoryElement.measure?.identifier}}</td>
-                                                    <td>{{inventoryElement.quantity}}</td>
-                                                    <td>Q{{inventoryElement.productForSale?.price}}</td>
-                                                    <!-- <td>{{rawMaterial.status!.id}}</td> -->
-                                                    <td style="white-space: nowrap">
-                                                        <button
-                                                            type="button" (click)="selectInventoryElement(inventoryElement, i)"
-                                                            class="btn btn-success btn-sm pb-0 mx-1"
-                                                            data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
-                                                                <i class="material-icons">add_circle</i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                                <tr *ngIf="!inventoryElements">
-                                                    <td colspan="4" class="text-center">
-                                                        <span class="spinner-border spinner-border-lg align-center"></span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div *ngIf="!isEditOption" class="table-responsive p-3 col-sm-12 col-md-7">
-                                    <h2 class="text-center text-muted">Producto seleccionado</h2>
-                                    <div class="d-none d-md-block my-2" style="height: 72px;"></div>
-                                    <div class="table-container my-custom-scrollbar">
-                                        <table class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 35%">Nombre</th>
-                                                    <th style="width: 10%">Medida</th>
-                                                    <th style="width: 10%">Precio</th>
-                                                    <th style="width: 10%">Cantidad</th>
-                                                    <th style="width: 10%">Descuento</th>
-                                                    <th style="width: 10%">Total</th>
-                                                    <th style="width: 15%">Acciones</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr *ngFor="let itemList of itemsList; let i = index">
-                                                    <td>{{itemList.productForSale?.finishedProduct?.name}}</td>
-                                                    <td>{{itemList.measure?.identifier}}</td>
-                                                    <td>Q{{itemList.price}}</td>
-                                                    <td>{{itemList.quantity}}</td>
-                                                    <td>Q{{itemList.totalDiscount}}</td>
-                                                    <td>Q{{itemList.total}}</td>
-                                                    <!-- <td><input [(ngModel)]="orderElement.quantity" [ngModelOptions]="{ standalone: true }" (keydown)="onQuantityKeydown($event)"
-                                                        style="width: 100%;" type="text" placeholder="Cantidad" aria-label="Cantidad" min="1"
-                                                        type="number">
-                                                    </td>
-                                                    <td>
-                                                        <div class="input-with-text">
-                                                            <span class="input-text">Q</span><input (keydown)="onDiscountKeydown($event)" (input)="onDiscountInput($event, orderElement)"
-                                                            style="width: 100%;" type="text" placeholder="Descuento" aria-label="Descuento" min="0">
-                                                        </div>
-                                                    </td> -->
-                                                    <td style="white-space: nowrap">
-                                                        <button
-                                                            type="button" (click)="selectItemListForEdit(itemList, i)"
-                                                            class="btn btn-primary btn-sm pb-0 mx-1"
-                                                            data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
-                                                                <i class="material-icons">edit</i>
-                                                        </button>
-                                                        <button
-                                                            type="button" (click)="unselectItemList(itemList, i)"
-                                                            class="btn btn-danger btn-sm pb-0 mx-1">
-                                                                <i class="material-icons">cancel</i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <mat-divider></mat-divider>
+                        <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
+                            <mat-label>Nombre del cliente</mat-label>
+                            <input type="text" formControlName="nameClient" matInput
+                                [ngClass]="{ 'is-invalid': f['nameClient'].errors }" />
+                            <div class="invalid-feedback" *ngIf="f['nameClient'].errors?.['maxlength']">
+                                El nombre debe tener maximo 50 caracteres
                             </div>
-                            <div *ngIf="!isEditOption" class="container">
-                                <div class="row justify-content-center mt-4">
-                                    <mat-form-field class="col-sm-12 col-md-3 custom-input align-self-start" appearance="outline">
-                                        <mat-label>Costo envío</mat-label>
-                                        <input id="delivery-form-crear-comunidad" type="text" formControlName="delivery" matInput
-                                            [ngClass]="{ 'is-invalid': f['delivery'].errors }" (input)="setDeliveryValue($event)" />
-                                        <div class="invalid-feedback" *ngIf="f['delivery'].errors">
-                                            <div *ngIf="f['delivery'].hasError('required')">
-                                                Costo requerido
-                                            </div>
-                                            <div *ngIf="f['delivery'].hasError('pattern')">
-                                                Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
-                                            </div>
-                                        </div>
-                                    </mat-form-field>
-                                    <mat-form-field class="col-sm-12 col-md-3 custom-input align-self-start" appearance="outline">
-                                        <mat-label>Tipo de pago de envío</mat-label>
-                                        <mat-select matInput disableOptionCentering formControlName="deliveryPaymentType"
-                                            [ngClass]="{ 'is-invalid': f['deliveryPaymentType'].errors }" (valueChange)="selectedDeliveryPaymentTypeSubject.next($event)">
-                                            <mat-option *ngFor="let paymentType of deliveryPaymentTypeOptions" value="{{paymentType.id}}">{{paymentType.identifier}}</mat-option>
-                                        </mat-select>
-                                        <div class="invalid-feedback" *ngIf="f['deliveryPaymentType'].errors">
-                                            <div *ngIf="f['deliveryPaymentType'].errors['required']">
-                                                Tipo de pago de envío requerido
-                                            </div>
-                                        </div>
-                                    </mat-form-field>
-                                </div>
-                                <div class="row justify-content-center">
-                                    <div *ngIf="!isEditOption" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
-                                        <div class="subtotal">
-                                            <p class="subtotal-title">Subtotal sin descuento(s)</p>
-                                            <p class="subtotal-amount">Q{{ calculateSubtotalWithoutDiscount() | number: '1.2-2' }}</p>
-                                        </div>
-                                        <div class="descuento">
-                                            <p class="subtotal-title">Descuento total</p>
-                                            <p class="subtotal-amount">Q{{ calculateTotalDiscount() | number: '1.2-2' }}</p>
-                                        </div>
-                                        <div class="subtotal">
-                                            <p class="subtotal-title">Subtotal</p>
-                                            <p class="subtotal-amount">Q{{ calculateSubtotal() | number: '1.2-2' }}</p>
-                                        </div>
-                                        <div class="descuento">
-                                            <p class="subtotal-title">Costo envio</p>
-                                            <p class="subtotal-amount">Q{{ delivery | number: '1.2-2' }}</p>
-                                        </div>
-                                        <div class="total">
-                                            <p class="total-title">Total</p>
-                                            <p class="total-amount">Q{{ calculateTotal() | number: '1.2-2' }}</p>
-                                        </div>
-                                        <div *ngIf="isReceiveOption" class="subtotal">
-                                            <p class="subtotal-title">Monto Abonado</p>
-                                            <p class="subtotal-amount">Q{{ calculatePaidAmount() | number: '1.2-2' }}</p>
-                                        </div>
-                                        <div *ngIf="isReceiveOption" class="total">
-                                            <p class="total-title">Monto Pendiente</p>
-                                            <p class="total-amount">Q{{ calculatePendingAmount() | number: '1.2-2' }}</p>
-                                        </div>
-                                    </div>
-                                </div>
+                        </mat-form-field>
+                        <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
+                            <mat-label>NIT</mat-label>
+                            <input type="text" formControlName="nitClient" matInput maxlength="20"
+                                [ngClass]="{ 'is-invalid': f['nitClient'].errors }" />
+                            <div class="invalid-feedback" *ngIf="f['nitClient'].errors?.['maxlength']">
+                                El NIT debe tener maximo 20 caracteres
                             </div>
-                        </div>
+                        </mat-form-field>
+                        <mat-form-field class="col-sm-12 col-md-10 custom-input" appearance="outline">
+                            <mat-label>Notas</mat-label>
+                            <textarea formControlName="nota" matInput
+                                [ngClass]="{ 'is-invalid': f['nota'].errors }"></textarea>
+                            <div class="invalid-feedback" *ngIf="f['nota'].errors?.['maxlength']">
+                                Las notas deben tener maximo 100 caracteres
+                            </div>
+                        </mat-form-field>
                         <div class="col-sm-12 text-center p-2">
-                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||orderForm.invalid||(!itemsList||itemsList.length<=0 && !isEditOption)"
-                                class="btn btn-outline-success btn-lg">
+                            <button type="submit" [disabled]="submitting || orderForm.invalid" class="btn btn-outline-success btn-lg">
                                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                                 Guardar Venta
                             </button>
@@ -242,17 +61,239 @@
     </mat-card>
 </div>
 
+<!-- ════════════════════════════════════════════════════════════
+     ADD: punto de venta (POS)
+     ════════════════════════════════════════════════════════════ -->
+<div class="pos-page" *ngIf="!loading && !isEditOption">
+    <form [formGroup]="orderForm">
+        <div class="pos-layout">
+
+            <!-- ── Panel izquierdo: buscador ─────────────────────── -->
+            <div class="pos-search-panel">
+                <h2 class="pos-panel-title">Buscar productos</h2>
+
+                <div class="pos-search-box" [class.focused]="searchFocused">
+                    <i class="material-icons">search</i>
+                    <input type="text" placeholder="Buscar productos"
+                        [(ngModel)]="saleSearchTerm" [ngModelOptions]="{ standalone: true }"
+                        (focus)="onSearchFocus()" (blur)="onSearchBlur()" />
+                </div>
+
+                <!-- Resultados de productos (siempre visible) -->
+                <div class="pos-list">
+                    <button type="button" class="pos-product"
+                        *ngFor="let inventoryElement of filteredInventoryElements; let i = index"
+                        (click)="selectInventoryElement(inventoryElement, i)"
+                        data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
+                        <div class="pos-product-avatar">
+                            <i class="material-icons">inventory_2</i>
+                        </div>
+                        <div class="pos-product-info">
+                            <span class="pos-product-name">{{ inventoryElement.productForSale?.finishedProduct?.name }}</span>
+                            <span class="pos-product-price">{{ dataPrice(inventoryElement.productForSale?.price) }}</span>
+                        </div>
+                        <span class="pos-stock">{{ inventoryElement.quantity | number: '1.0-2' }} {{ inventoryElement.measure?.identifier }}</span>
+                    </button>
+                    <p *ngIf="!filteredInventoryElements?.length" class="pos-empty">Sin productos disponibles</p>
+                </div>
+
+                <!-- Acciones inline (escritorio) -->
+                <div class="pos-options-bar">
+                    <button type="button" class="pos-option" (click)="addClientRow()" [disabled]="showClientRow">
+                        <span class="pos-option-icon client"><i class="material-icons">person_add</i></span>
+                        Añadir cliente
+                    </button>
+                    <button type="button" class="pos-option" (click)="addDeliveryRow()" [disabled]="showDelivery">
+                        <span class="pos-option-icon delivery"><i class="material-icons">local_shipping</i></span>
+                        Añadir costo de envío
+                    </button>
+                    <button type="button" class="pos-option" (click)="addCommentRow()" [disabled]="showComment">
+                        <span class="pos-option-icon comment"><i class="material-icons">edit_note</i></span>
+                        Añadir comentario
+                    </button>
+                </div>
+
+                <!-- Botón Acciones (móvil) -->
+                <div class="pos-actions-bar-mobile">
+                    <button type="button" class="pos-actions-btn" (click)="openActionsSheet()">
+                        Acciones <i class="material-icons">expand_more</i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Panel derecho: carrito ────────────────────────── -->
+            <div class="pos-cart-panel">
+                <div class="pos-cart-items">
+
+                    <!-- Fila de cliente -->
+                    <div class="pos-client-row" *ngIf="showClientRow">
+                        <div class="pos-client-icon"><i class="material-icons">person</i></div>
+                        <div class="pos-client-fields">
+                            <input type="text" placeholder="Nombre del cliente" formControlName="nameClient" />
+                            <input type="text" placeholder="NIT" formControlName="nitClient" maxlength="20" />
+                        </div>
+                        <button type="button" class="pos-row-x" (click)="removeClientRow()" aria-label="Quitar cliente">
+                            <i class="material-icons">close</i>
+                        </button>
+                    </div>
+
+                    <!-- Fila de costo de envío -->
+                    <div class="pos-delivery-row" *ngIf="showDelivery">
+                        <div class="pos-delivery-icon"><i class="material-icons">local_shipping</i></div>
+                        <div class="pos-delivery-label">Costo de envío</div>
+                        <div class="pos-delivery-input">
+                            <span>Q</span>
+                            <input type="text" formControlName="delivery" (input)="setDeliveryValue($event)" />
+                        </div>
+                        <button type="button" class="pos-row-x" (click)="removeDeliveryRow()" aria-label="Quitar envío">
+                            <i class="material-icons">close</i>
+                        </button>
+                    </div>
+
+                    <!-- Fila de comentario -->
+                    <div class="pos-comment-row" *ngIf="showComment">
+                        <div class="pos-comment-icon"><i class="material-icons">edit_note</i></div>
+                        <textarea class="pos-comment-input" formControlName="nota" rows="2"
+                            placeholder="Comentario (opcional)"></textarea>
+                        <button type="button" class="pos-row-x" (click)="removeCommentRow()" aria-label="Quitar comentario">
+                            <i class="material-icons">close</i>
+                        </button>
+                    </div>
+
+                    <!-- Productos -->
+                    <div class="pos-item" *ngFor="let itemList of itemsList; let i = index">
+                        <div class="pos-item-avatar"><i class="material-icons">inventory_2</i></div>
+                        <div class="pos-item-info">
+                            <span class="pos-item-name">{{ itemList.productForSale?.finishedProduct?.name }}</span>
+                            <div class="pos-item-price">
+                                <ng-container *ngIf="itemHasDiscount(itemList)">
+                                    <span class="pos-price-old">{{ dataPrice(itemList.price) }}</span>
+                                    <span class="pos-price-new">{{ dataPrice(itemDiscountedUnitPrice(itemList)) }}</span>
+                                    <span class="pos-discount-badge"><i class="material-icons">sell</i> -{{ dataPrice(itemList.totalDiscount) }}</span>
+                                </ng-container>
+                                <span *ngIf="!itemHasDiscount(itemList)" class="pos-price-new">{{ dataPrice(itemList.price) }}</span>
+                            </div>
+                            <span class="pos-item-qty">{{ itemList.quantity }} {{ itemList.measure?.identifier }}</span>
+                        </div>
+                        <div class="pos-item-right">
+                            <span class="pos-item-total">{{ dataPrice(itemList.total) }}</span>
+                            <div class="pos-item-actions">
+                                <button type="button" (click)="selectItemListForEdit(itemList, i)"
+                                    data-bs-toggle="modal" data-bs-target="#rawMaterialModal" aria-label="Editar">
+                                    <i class="material-icons">edit</i>
+                                </button>
+                                <button type="button" class="danger" (click)="unselectItemList(itemList, i)" aria-label="Quitar">
+                                    <i class="material-icons">delete</i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p *ngIf="!itemCount && !showClientRow && !showDelivery && !showComment" class="pos-cart-empty">
+                        <i class="material-icons">shopping_cart</i>
+                        Agrega productos a la venta
+                    </p>
+                </div>
+
+                <!-- Footer -->
+                <div class="pos-cart-footer">
+                    <div class="pos-sumline">
+                        <span>Subtotal ({{ itemCount }})</span>
+                        <span>{{ dataPrice(itemsSubtotal) }}</span>
+                    </div>
+                    <div class="pos-sumline" *ngIf="showDelivery">
+                        <span>Envío</span>
+                        <span>{{ dataPrice(delivery) }}</span>
+                    </div>
+                    <button type="button" class="pos-cobrar-btn" [disabled]="!itemCount || submitting"
+                        data-bs-toggle="modal" data-bs-target="#cobrarModal">
+                        Cobrar {{ dataPrice(grandTotal) }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Bottom sheet de acciones (móvil) ─────────────────── -->
+        <div class="pos-sheet-backdrop" *ngIf="actionsSheetOpen" (click)="closeActionsSheet()"></div>
+        <div class="pos-sheet" [class.open]="actionsSheetOpen">
+            <div class="pos-sheet-handle"></div>
+            <div class="pos-sheet-header">
+                <span class="pos-sheet-title">Acciones</span>
+                <button type="button" class="pos-sheet-close" (click)="closeActionsSheet()" aria-label="Cerrar">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="pos-actions-grid">
+                <button type="button" class="pos-action-card" (click)="addClientRow(); closeActionsSheet()" [disabled]="showClientRow">
+                    <span class="pos-action-icon client"><i class="material-icons">person_add</i></span>
+                    Añadir cliente
+                </button>
+                <button type="button" class="pos-action-card" (click)="addDeliveryRow(); closeActionsSheet()" [disabled]="showDelivery">
+                    <span class="pos-action-icon delivery"><i class="material-icons">local_shipping</i></span>
+                    Añadir costo de envío
+                </button>
+                <button type="button" class="pos-action-card" (click)="addCommentRow(); closeActionsSheet()" [disabled]="showComment">
+                    <span class="pos-action-icon comment"><i class="material-icons">edit_note</i></span>
+                    Añadir comentario
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Modal: Registrar Venta (cobro) ───────────────────── -->
+        <div class="modal fade" id="cobrarModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Registrar Venta</h5>
+                        <button #cobrarCloseBtn type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancelar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pos-total-box">
+                            <span class="pos-total-label">Total a cobrar</span>
+                            <span class="pos-total-amount">{{ dataPrice(grandTotal) }}</span>
+                        </div>
+
+                        <div class="pos-pay-field">
+                            <label>Método de pago (pedido)</label>
+                            <select class="form-select form-select-lg" formControlName="paymentType"
+                                (change)="selectedPaymentTypeSubject.next($any($event.target).value)">
+                                <option *ngFor="let pt of paymentTypeOptions" value="{{ pt.id }}">{{ pt.identifier }}</option>
+                            </select>
+                        </div>
+
+                        <div class="pos-pay-field" *ngIf="showDelivery && delivery > 0">
+                            <label>Método de pago (envío)</label>
+                            <select class="form-select form-select-lg" formControlName="deliveryPaymentType"
+                                (change)="selectedDeliveryPaymentTypeSubject.next($any($event.target).value)">
+                                <option *ngFor="let pt of deliveryPaymentTypeOptions" value="{{ pt.id }}">{{ pt.identifier }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="pos-cobrar-btn modal-cobrar"
+                            [disabled]="submitting || orderForm.invalid" (click)="onCobrar()">
+                            <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                            Cobrar {{ dataPrice(grandTotal) }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ── Modal: agregar producto (cantidad / medida / descuento) ── -->
 <div class="modal fade" id="rawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="rawMaterialModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div *ngIf="selectedIE" class="modal-header">
-                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{this.selectedIE.productForSale?.finishedProduct?.name}}</h1>
+                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{ selectedIE.productForSale?.finishedProduct?.name }}</h1>
                 <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form [formGroup]="rawMaterialForm">
                     <div class="d-flex flex-wrap justify-content-center">
-                        <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="this.selectedIE?.productForSale?.finishedProduct?.photo"></view-object>
+                        <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="selectedIE?.productForSale?.finishedProduct?.photo"></view-object>
                         <div class="d-flex flex-wrap justify-content-center col-12 p-3">
                             <div class="pb-4 col-6 col-lg-3">
                                 <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
@@ -266,12 +307,8 @@
                                     <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
                                         [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="setQuantityValue($event)" />
                                     <div class="invalid-feedback" *ngIf="r['quantity'].errors">
-                                        <div *ngIf="r['quantity'].hasError('required')">
-                                            Cantidad requerida
-                                        </div>
-                                        <div *ngIf="r['quantity'].hasError('pattern')">
-                                            DDebe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
-                                        </div>
+                                        <div *ngIf="r['quantity'].hasError('required')">Cantidad requerida</div>
+                                        <div *ngIf="r['quantity'].hasError('pattern')">Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong></div>
                                     </div>
                                 </mat-form-field>
                             </div>
@@ -281,12 +318,8 @@
                                     <input id="discount-modal-form" type="text" formControlName="discount" matInput
                                         [ngClass]="{ 'is-invalid': r['discount'].errors }" (input)="setDiscountValue($event)" />
                                     <div class="invalid-feedback" *ngIf="r['discount'].errors">
-                                        <div *ngIf="r['discount'].hasError('required')">
-                                            Descuento requerido
-                                        </div>
-                                        <div *ngIf="r['discount'].hasError('pattern')">
-                                            Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
-                                        </div>
+                                        <div *ngIf="r['discount'].hasError('required')">Descuento requerido</div>
+                                        <div *ngIf="r['discount'].hasError('pattern')">Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong></div>
                                     </div>
                                 </mat-form-field>
                             </div>
@@ -296,7 +329,7 @@
                                 <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
                                     <div class="subtotal">
                                         <p class="subtotal-title">Cantidad Disponible ({{ selectedIE?.measure?.identifier }})</p>
-                                        <p class="subtotal-amount">{{ this.selectedIE?.quantity | number: '1.2-2' }}</p>
+                                        <p class="subtotal-amount">{{ selectedIE?.quantity | number: '1.2-2' }}</p>
                                     </div>
                                     <div class="total">
                                         <p class="total-title">Cantidad Seleccionada ({{ selectedIE?.measure?.identifier }})</p>

@@ -6,7 +6,6 @@ import { AlertService, DataService, PdfService } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ShopResume } from '@app/models/store/shop-resume.model';
-import { ItemsList } from '@app/models/store/item-list.model';
 import { ShopSalePayment } from '@app/models/store/shop-sale-payment.model';
 import { PaymentType } from '@app/models';
 import { ActivityLog } from '@app/models/system/activity-log';
@@ -20,13 +19,10 @@ export class ViewStoreSalesPFSComponent implements OnInit{
 
     id?: string;
     shopResume?: ShopResume;
-    tableElementsValues?: any;
+    timeline: any[] = [];
     submitting = false;
     submittingPayment = false;
     loading = false;
-    loadingPayments = false;
-    pageSize = 5;
-    elements: any = [];
     deleteOption = false;
     activityLogName = "Acciones de Producto para Venta en tienda";
     activityLog?: ActivityLog;
@@ -91,19 +87,21 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         if (this.id) {
             forkJoin([
                 this.dataService.getShopHistoryById({id: this.id}),
-                this.dataService.getAnyComponent({}, 'getPaymentTypes')
+                this.dataService.getAnyComponent({}, 'getPaymentTypes'),
+                this.dataService.getShopSalePayments(this.id)
             ]).subscribe({
                 next: (result: any) => {
                     const shopRes = this.dataService.findJsonValue(result[0], 'json_result') || {};
                     this.shopResume = shopRes;
                     this.paymentTypeOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                    this.shopSalePayments = this.dataService.findJsonValue(result[2], 'json_result') || [];
                 },
                 error: () => { this.loading = false; },
                 complete: () => {
                     if (this.shopResume?.status?.id === 3) {
                         this.deleteOption = true;
                     }
-                    this.setElements(this.shopResume);
+                    this.buildTimeline();
                     this.activityLogName = this.activityLogName + "|||" + this.shopResume?.establecimiento?.id;
                     this.orderPendingAmount = Number(this.shopResume?.pendingAmount);
                     this.deliveryPendingAmount = Number(this.shopResume?.deliveryPendingAmount);
@@ -111,6 +109,47 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                 }
             });
         }
+    }
+
+    goBack() {
+        this.router.navigateByUrl('/store/sales/history/' + (this.shopResume?.establecimiento?.id ?? this.shopResume?.establishment?.id ?? ''));
+    }
+
+    /** Builds the activity timeline from the sale creation and registered payments. */
+    buildTimeline() {
+        const userName = this.shopResume?.creatorUser?.name ?? 'Sistema';
+        const place = this.shopResume?.establecimiento?.name;
+        const at = place ? ` en ${place}` : '';
+        const events: any[] = [];
+
+        (this.shopSalePayments || []).forEach(p => {
+            events.push({
+                icon: 'payments',
+                title: `Cobro de ${this.dataService.getFormatedPrice(Number(p.amount))} (${p.paymentType?.identifier ?? '--'})`,
+                subtitle: `${userName}${at}`,
+                tag: this.getPaymentTargetLabel(p.paymentTarget),
+                date: p.date
+            });
+        });
+
+        if (this.shopResume?.creationDate) {
+            events.push({
+                icon: 'add_circle',
+                title: 'Venta Registrada',
+                subtitle: `${userName}${at}`,
+                date: this.shopResume.creationDate
+            });
+        }
+
+        this.timeline = events.sort((a, b) => this.parseDate(b.date) - this.parseDate(a.date));
+    }
+
+    private parseDate(dateStr?: string): number {
+        if (!dateStr) return 0;
+        let s = dateStr.replaceAll('"', '');
+        s = s.includes('Z') ? s : s + 'Z';
+        const t = new Date(s).getTime();
+        return Number.isNaN(t) ? 0 : t;
     }
 
     cancelSale() {
@@ -136,34 +175,8 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         this.router.navigateByUrl('/store/sales/history/edit/' + this.id);
     }
 
-    setElements(shopResume?: ShopResume){
-        this.elements.push({icon : "person", name : "Cliente", value : shopResume?.nameClient ? shopResume?.nameClient : "--"});
-        this.elements.push({icon : "tag", name : "NIT", value : shopResume?.nitClient ? shopResume?.nitClient : "--"});
-        this.elements.push({icon : "feed", name : "Notas", value : shopResume?.nota ? shopResume?.nota : "--"});
-        this.elements.push({icon : "credit_card", name : "Tipo de pago (pedido)", value : shopResume?.paymentType?.identifier ?? "--"});
-        this.elements.push({icon : "local_shipping", name : "Tipo de pago (envío)", value : shopResume?.deliveryPaymentType?.identifier ?? "--"});
-        this.elements.push({icon : "info", name : "Estado", value : shopResume?.status?.identifier});
-        this.elements.push({icon : "payments", name : "Estado de pago (pedido)", value : shopResume?.paymentStatus?.identifier ?? "--"});
-        this.elements.push({icon : "local_shipping", name : "Estado de pago (envío)", value : shopResume?.deliveryPaymentStatus?.identifier ?? "--"});
-        this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(shopResume!.creationDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : this.dataService.getLocalDateTimeFromUTCTime(shopResume!.updatedDate!.replaceAll("\"",""))});
-        this.elements.push({icon : "badge", name : "Vendido por", value : shopResume?.creatorUser?.name});
-        this.setTableElements(shopResume?.itemsList);
-    }
-
-    setTableElements(elements?: ItemsList[]){
-        this.tableElementsValues = [];
-        elements?.forEach((element: ItemsList) => {
-            let curr_row = [
-                    { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Nombre" },
-                    { type: "text", value: element.measure?.identifier, header_name: "Medida" },
-                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.price)), header_name: "Precio" },
-                    { type: "text", value: element.quantity, header_name: "Cantidad" },
-                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.totalDiscount)), header_name: "Descuento Total" },
-                    { type: "text", value: this.dataService.getFormatedPrice(Number(element.total)), header_name: "Total" },
-            ];
-            this.tableElementsValues.push(curr_row);
-        });
+    dataPrice(value?: string | number): string {
+        return this.dataService.getFormatedPrice(Number(value || 0));
     }
 
     getSubTotal(){
@@ -261,22 +274,6 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     closePaymentModal() {
         this.paymentForm.reset();
         this.paymentError = undefined;
-    }
-
-    // ── Payment history modal ─────────────────────────────────────────────────
-
-    loadPaymentHistory() {
-        if (!this.shopResume?.id) return;
-        this.loadingPayments = true;
-        this.dataService.getShopSalePayments(this.shopResume.id)
-            .pipe(first())
-            .subscribe({
-                next: (res: any) => {
-                    this.shopSalePayments = this.dataService.findJsonValue(res, 'json_result') || [];
-                },
-                error: () => { this.loadingPayments = false; },
-                complete: () => { this.loadingPayments = false; }
-            });
     }
 
     getPaymentDate(dateStr?: string): string {

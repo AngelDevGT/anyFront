@@ -800,8 +800,10 @@ export class DataService {
     
     getLocalDateTimeFromUTCTime(utcTime: string){
         utcTime = utcTime.includes("Z") ? utcTime : utcTime + "Z";
-        let date = new Date(utcTime.replaceAll("\"",""));
-        return date.toLocaleString().replace(",", " ");
+        const date = new Date(utcTime.replaceAll("\"",""));
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ` +
+            `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
 
     getLocalDateFromUTCTime(utcTime: string){

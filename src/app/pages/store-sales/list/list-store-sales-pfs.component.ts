@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 
 import { AlertService, DataService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
@@ -36,11 +36,19 @@ export class ListStoreSalesPFSComponent implements OnInit {
     pageSize = this.dataService.defaultPageSize;
     tableElementsValues?: any;
     availableSaleStatuses: string[] = [];
-    saleStatusFilter: string | null = null;
     availableOrderPaymentStatuses: string[] = [];
-    orderPaymentStatusFilter: string | null = null;
     availableDeliveryPaymentStatuses: string[] = [];
-    deliveryPaymentStatusFilter: string | null = null;
+
+    filterPanelOpen = false;
+    saleStatusFilters: string[] = [];
+    orderPaymentStatusFilters: string[] = [];
+    deliveryPaymentStatusFilters: string[] = [];
+    pendingSaleStatuses: string[] = [];
+    pendingOrderPaymentStatuses: string[] = [];
+    pendingDeliveryPaymentStatuses: string[] = [];
+    saleStatusExpanded = true;
+    orderPaymentExpanded = true;
+    deliveryPaymentExpanded = true;
 
     constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router) {}
 
@@ -62,7 +70,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
             error: (e) => console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
                 this.shopResumes = this.shopResumes?.sort((a, b) =>
-                    new Date(b.updatedDate!).getTime() - new Date(a.updatedDate!).getTime()
+                    new Date(b.creationDate!).getTime() - new Date(a.creationDate!).getTime()
                 );
                 this.allShopResumes = this.shopResumes;
                 this.availableSaleStatuses = [...new Set(
@@ -81,19 +89,62 @@ export class ListStoreSalesPFSComponent implements OnInit {
         this.rawMaterialForm = this.createMaterialFormGroup();
     }
 
-    filterBySaleStatus(status: string | null) {
-        this.saleStatusFilter = status;
-        this.search(null);
+    @HostListener('document:click')
+    onDocumentClick() {
+        if (this.filterPanelOpen) this.filterPanelOpen = false;
     }
 
-    filterByOrderPaymentStatus(status: string | null) {
-        this.orderPaymentStatusFilter = status;
-        this.search(null);
+    get activeFilterCount(): number {
+        return this.saleStatusFilters.length + this.orderPaymentStatusFilters.length + this.deliveryPaymentStatusFilters.length;
     }
 
-    filterByDeliveryPaymentStatus(status: string | null) {
-        this.deliveryPaymentStatusFilter = status;
+    toggleFilterPanel(event?: Event) {
+        event?.stopPropagation();
+        this.filterPanelOpen = !this.filterPanelOpen;
+        if (this.filterPanelOpen) {
+            this.pendingSaleStatuses = [...this.saleStatusFilters];
+            this.pendingOrderPaymentStatuses = [...this.orderPaymentStatusFilters];
+            this.pendingDeliveryPaymentStatuses = [...this.deliveryPaymentStatusFilters];
+        }
+    }
+
+    closeFilterPanel() { this.filterPanelOpen = false; }
+
+    toggleSaleStatus(value: string) {
+        const idx = this.pendingSaleStatuses.indexOf(value);
+        if (idx > -1) this.pendingSaleStatuses.splice(idx, 1); else this.pendingSaleStatuses.push(value);
+        this.pendingSaleStatuses = [...this.pendingSaleStatuses];
+    }
+
+    toggleOrderPaymentStatus(value: string) {
+        const idx = this.pendingOrderPaymentStatuses.indexOf(value);
+        if (idx > -1) this.pendingOrderPaymentStatuses.splice(idx, 1); else this.pendingOrderPaymentStatuses.push(value);
+        this.pendingOrderPaymentStatuses = [...this.pendingOrderPaymentStatuses];
+    }
+
+    toggleDeliveryPaymentStatus(value: string) {
+        const idx = this.pendingDeliveryPaymentStatuses.indexOf(value);
+        if (idx > -1) this.pendingDeliveryPaymentStatuses.splice(idx, 1); else this.pendingDeliveryPaymentStatuses.push(value);
+        this.pendingDeliveryPaymentStatuses = [...this.pendingDeliveryPaymentStatuses];
+    }
+
+    applyFilters() {
+        this.saleStatusFilters = [...this.pendingSaleStatuses];
+        this.orderPaymentStatusFilters = [...this.pendingOrderPaymentStatuses];
+        this.deliveryPaymentStatusFilters = [...this.pendingDeliveryPaymentStatuses];
         this.search(null);
+        this.filterPanelOpen = false;
+    }
+
+    resetFilters() {
+        this.pendingSaleStatuses = [];
+        this.pendingOrderPaymentStatuses = [];
+        this.pendingDeliveryPaymentStatuses = [];
+        this.saleStatusFilters = [];
+        this.orderPaymentStatusFilters = [];
+        this.deliveryPaymentStatusFilters = [];
+        this.search(null);
+        this.filterPanelOpen = false;
     }
 
     search(value: any): void {
@@ -101,11 +152,12 @@ export class ListStoreSalesPFSComponent implements OnInit {
             this.shopResumes = this.allShopResumes.filter((val) => {
                 const textMatch = !this.searchTerm ||
                     val.nameClient?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                    val.updatedDate?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                    val.nota?.toLowerCase().includes(this.searchTerm.toLowerCase());
-                const saleStatusMatch = !this.saleStatusFilter || val.status?.identifier === this.saleStatusFilter;
-                const orderPaymentMatch = !this.orderPaymentStatusFilter || val.paymentStatus?.identifier === this.orderPaymentStatusFilter;
-                const deliveryPaymentMatch = !this.deliveryPaymentStatusFilter || val.deliveryPaymentStatus?.identifier === this.deliveryPaymentStatusFilter;
+                    val.creationDate?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    String(val.total ?? '').toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    String(val.saleNumber ?? '').includes(this.searchTerm);
+                const saleStatusMatch = !this.saleStatusFilters.length || this.saleStatusFilters.includes(val.status?.identifier || '');
+                const orderPaymentMatch = !this.orderPaymentStatusFilters.length || this.orderPaymentStatusFilters.includes(val.paymentStatus?.identifier || '');
+                const deliveryPaymentMatch = !this.deliveryPaymentStatusFilters.length || this.deliveryPaymentStatusFilters.includes(val.deliveryPaymentStatus?.identifier || '');
                 return textMatch && saleStatusMatch && orderPaymentMatch && deliveryPaymentMatch;
             });
         }
@@ -116,10 +168,13 @@ export class ListStoreSalesPFSComponent implements OnInit {
         elements = elements?.filter(element => element.status?.id !== 8);
         this.tableElementsValues = [];
         elements?.forEach((element: ShopResume) => {
-            const curr_row: any[] = [
-                { type: 'text', value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: 'Fecha' },
-                { type: 'text', value: element.itemsList?.map(item => ' ' + item.productForSale?.finishedProduct?.name), header_name: 'Productos' },
-                { type: 'text', value: this.dataService.getFormatedPrice(Number(element.total)), header_name: 'Total' },
+            const orderPending = element.paymentType?.identifier === 'Crédito' ? Number(element.pendingAmount) || 0 : 0;
+            const deliveryPending = element.deliveryPaymentType?.identifier === 'Crédito' ? Number(element.deliveryPendingAmount) || 0 : 0;
+            const hasPending = element.paymentType?.identifier === 'Crédito' || element.deliveryPaymentType?.identifier === 'Crédito';
+            const curr_row: any = [
+                { type: 'text', value: element.saleNumber != null ? '#' + element.saleNumber : '--', header_name: 'No.' },
+                { type: 'text', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: 'Fecha' },
+                { type: 'text', value: element.nameClient ?? '--', header_name: 'Cliente' },
                 {
                     type: 'badge',
                     value: (element.status?.text || element.status?.identifier) ?? '--',
@@ -128,41 +183,30 @@ export class ListStoreSalesPFSComponent implements OnInit {
                     color: element.status?.color,
                     header_name: 'Estado'
                 },
-                { type: 'text', value: element.paymentType?.identifier ?? '--', header_name: 'Pago pedido' },
+                { type: 'text', value: this.dataService.getFormatedPrice(Number(element.total)), header_name: 'Total' },
+                { type: 'text', value: hasPending ? this.dataService.getFormatedPrice(orderPending + deliveryPending) : '--', header_name: 'Pendiente' },
+                { type: 'text', value: element.paymentType?.identifier ?? '--', header_name: 'Pedido' },
                 {
                     type: 'badge',
                     value: (element.paymentStatus?.text || element.paymentStatus?.identifier) ?? '--',
                     identifier: element.paymentStatus?.identifier?.toLowerCase(),
                     bg_color: element.paymentStatus?.bg_color,
                     color: element.paymentStatus?.color,
-                    header_name: 'Estado pedido'
+                    header_name: 'Pago pedido'
                 },
-                { type: 'text', value: element.paymentType?.identifier === 'Crédito' ? this.dataService.getFormatedPrice(Number(element.pendingAmount)) : '--', header_name: 'Pend. pedido' },
-                { type: 'text', value: element.deliveryPaymentType?.identifier ?? '--', header_name: 'Pago envío' },
+                { type: 'text', value: element.deliveryPaymentType?.identifier ?? '--', header_name: 'Envío' },
                 {
                     type: 'badge',
                     value: (element.deliveryPaymentStatus?.text || element.deliveryPaymentStatus?.identifier) ?? '--',
                     identifier: element.deliveryPaymentStatus?.identifier?.toLowerCase(),
                     bg_color: element.deliveryPaymentStatus?.bg_color,
                     color: element.deliveryPaymentStatus?.color,
-                    header_name: 'Estado envío'
+                    header_name: 'Pago envío'
                 },
-                { type: 'text', value: element.deliveryPaymentType?.identifier === 'Crédito' ? this.dataService.getFormatedPrice(Number(element.deliveryPendingAmount)) : '--', header_name: 'Pend. envío' },
-                { type: 'text', value: element.nameClient ?? '--', header_name: 'Cliente' },
-                {
-                    type: 'button',
-                    header_name: 'Acciones',
-                    button: [
-                        {
-                            type: 'button',
-                            routerLink: '/store/sales/history/view/' + element.id,
-                            is_absolute: true,
-                            colorClass: 'dt-btn-view',
-                            icon: { class: 'material-icons', icon: 'visibility' }
-                        }
-                    ]
-                }
+                { type: 'text', value: this.dataService.getFormatedPrice(Number(element.delivery)), header_name: 'Total envío' }
             ];
+            curr_row.rowLink = '/store/sales/history/view/' + element.id;
+            curr_row.rowLinkAbsolute = true;
             this.tableElementsValues.push(curr_row);
         });
     }
