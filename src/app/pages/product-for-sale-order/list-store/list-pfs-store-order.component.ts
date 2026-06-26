@@ -198,7 +198,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
             const statusHeader = this.viewOption === 'factory' ? 'Estado en fábrica' : 'Estado en tienda';
 
             const curr_row: any[] = [
-                { type: 'text', value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: 'Fecha' },
+                { type: 'text', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!), header_name: 'Fecha' },
                 { type: 'text', value: element.name, header_name: 'Nombre' },
                 { type: 'text', value: element.establishment?.name, header_name: 'Tienda' },
                 {
