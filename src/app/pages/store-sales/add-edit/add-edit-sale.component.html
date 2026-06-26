@@ -26,7 +26,7 @@
                     <div class="row justify-content-center">
                         <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
                             <mat-label>Nombre del cliente</mat-label>
-                            <input type="text" formControlName="nameClient" matInput
+                            <input id="nameClient-form-crear-comunidad" type="text" formControlName="nameClient" matInput
                                 [ngClass]="{ 'is-invalid': f['nameClient'].errors }" />
                             <div class="invalid-feedback" *ngIf="f['nameClient'].errors?.['maxlength']">
                                 El nombre debe tener maximo 50 caracteres
@@ -34,7 +34,7 @@
                         </mat-form-field>
                         <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
                             <mat-label>NIT</mat-label>
-                            <input type="text" formControlName="nitClient" matInput maxlength="10"
+                            <input id="nitClient-form-crear-comunidad" type="text" formControlName="nitClient" matInput maxlength="10"
                                 [ngClass]="{ 'is-invalid': f['nitClient'].errors }" />
                             <div class="invalid-feedback" *ngIf="f['nitClient'].errors?.['maxlength']">
                                 El NIT debe tener maximo 10 caracteres
