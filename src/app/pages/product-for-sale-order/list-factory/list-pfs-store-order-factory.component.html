@@ -5,6 +5,41 @@
         </mat-card-header>
         <mat-card-content>
             <div class="container">
+                <div class="orders-toolbar">
+                    <div class="date-wrapper" (click)="$event.stopPropagation()">
+                        <button class="filter-main-btn" [class.open]="datePanelOpen" type="button" (click)="toggleDatePanel($event)">
+                            <i class="material-icons" style="font-size:17px">event</i>
+                            Fecha
+                            <span *ngIf="dateRangeLabel" class="date-range-label">{{ dateRangeLabel }}</span>
+                            <i class="material-icons chevron-icon">keyboard_arrow_down</i>
+                        </button>
+
+                        <div class="date-panel" *ngIf="datePanelOpen">
+                            <div class="date-panel-header">
+                                <span class="date-panel-title">
+                                    <i class="material-icons" style="font-size:16px">event</i>
+                                    Rango de fechas
+                                </span>
+                                <button class="date-close-btn" type="button" (click)="closeDatePanel()">
+                                    <i class="material-icons" style="font-size:18px">close</i>
+                                </button>
+                            </div>
+
+                            <div class="date-panel-body">
+                                <mat-calendar
+                                    [selected]="selectedDateRange"
+                                    [maxDate]="maxDate"
+                                    (selectedChange)="onDateRangeChange($event)">
+                                </mat-calendar>
+                            </div>
+
+                            <div class="date-panel-footer">
+                                <button class="btn-reset" type="button" (click)="resetDateRange()">Últimos 15 días</button>
+                                <button class="btn-date-apply" type="button" (click)="applyDateRange()">Buscar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="row justify-content-center">
                     <!-- <div *ngIf="!loadingOrders" class="d-flex flex-wrap justify-content-md-end justify-content-end pb-0">
                         <div class="d-flex flex-wrap justify-content-md-end justify-content-center pb-0">

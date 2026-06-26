@@ -1,14 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { first } from 'rxjs/operators';
 
 import { AlertService, DataService, storeOrderStatus} from '@app/services';
+import { DateRange } from '@angular/material/datepicker';
 import { Establishment } from '@app/models/establishment.model';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
 import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
     templateUrl: 'list-pfs-store-order.component.html',
-    styleUrls: ['list-pfs-store-order.component.scss']
+    styleUrls: ['list-pfs-store-order.component.scss'],
+    providers: [DatePipe]
 })
 export class ListProductForSaleOrderComponent implements OnInit {
     productForSaleOrdes?: ProductForSaleStoreOrder[];
@@ -28,7 +31,13 @@ export class ListProductForSaleOrderComponent implements OnInit {
     availableStatuses: string[] = [];
     statusFilter: string | null = null;
 
-    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router) {}
+    datePanelOpen = false;
+    maxDate = new Date();
+    appliedStartDate?: Date;
+    appliedEndDate?: Date;
+    selectedDateRange: DateRange<Date> | null = null;
+
+    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe) {}
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
@@ -39,6 +48,81 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.pageTitle = this.viewOption === 'store'
             ? `Pedidos de Producto para Venta (${this.storeName})`
             : `Pedidos de Producto Terminado (${this.storeName})`;
+
+        // Rango por defecto: últimos 15 días desde la fecha actual
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 14);
+        this.appliedStartDate = start;
+        this.appliedEndDate = today;
+        this.selectedDateRange = new DateRange<Date>(start, today);
+
+        this.retrieveProductForSaleStoreOrders(this.storeOption);
+    }
+
+    private buildOrderParams(storeId?: string): any {
+        const params: any = {};
+        if (storeId) params['establishment_id'] = storeId;
+        if (this.appliedStartDate && this.appliedEndDate) {
+            const startDateObject = new Date(this.appliedStartDate);
+            startDateObject.setHours(0, 0, 0, 0);
+            const endDateObject = new Date(this.appliedEndDate);
+            endDateObject.setHours(23, 59, 59, 999);
+            params['creation_date$gte'] = this.datePipe.transform(startDateObject, 'yyyy-MM-dd HH:mm:ss', 'UTC');
+            params['creation_date$lte'] = this.datePipe.transform(endDateObject, 'yyyy-MM-dd HH:mm:ss', 'UTC');
+        }
+        return params;
+    }
+
+    @HostListener('document:click')
+    onDocumentClick() {
+        if (this.datePanelOpen) this.datePanelOpen = false;
+    }
+
+    get dateRangeLabel(): string {
+        if (this.appliedStartDate && this.appliedEndDate) {
+            return `${this.appliedStartDate.toLocaleDateString('es-GT')} - ${this.appliedEndDate.toLocaleDateString('es-GT')}`;
+        }
+        return '';
+    }
+
+    toggleDatePanel(event?: Event) {
+        event?.stopPropagation();
+        this.datePanelOpen = !this.datePanelOpen;
+        if (this.datePanelOpen) {
+            // El panel parte del rango actualmente aplicado; los cambios no se buscan hasta presionar "Buscar"
+            this.selectedDateRange = new DateRange<Date>(this.appliedStartDate ?? null, this.appliedEndDate ?? null);
+        }
+    }
+
+    closeDatePanel() { this.datePanelOpen = false; }
+
+    onDateRangeChange(date: Date | null) {
+        if (!date) return;
+        const start = this.selectedDateRange?.start ?? null;
+        const end = this.selectedDateRange?.end ?? null;
+        if (!start || end || date < start) {
+            this.selectedDateRange = new DateRange<Date>(date, null);
+        } else {
+            this.selectedDateRange = new DateRange<Date>(start, date);
+        }
+    }
+
+    resetDateRange() {
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 14);
+        this.selectedDateRange = new DateRange<Date>(start, today);
+    }
+
+    applyDateRange() {
+        if (!this.selectedDateRange?.start || !this.selectedDateRange?.end) {
+            this.alertService.warn('Selecciona una fecha de inicio y una de fin');
+            return;
+        }
+        this.appliedStartDate = this.selectedDateRange.start;
+        this.appliedEndDate = this.selectedDateRange.end;
+        this.datePanelOpen = false;
         this.retrieveProductForSaleStoreOrders(this.storeOption);
     }
 
@@ -55,9 +139,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
     retrieveProductForSaleStoreOrders(storeId?: string) {
         this.productForSaleOrdes = undefined;
         this.loadingOrders = true;
-        const req$ = storeId
-            ? this.dataService.getAllProductForSaleOrderByFilter({ establishment_id: storeId })
-            : this.dataService.getAllProducForSaleOrder();
+        const req$ = this.dataService.getAllProductForSaleOrderByFilter(this.buildOrderParams(storeId));
 
         req$.pipe(first()).subscribe({
             next: (pfsOrders: any) => {

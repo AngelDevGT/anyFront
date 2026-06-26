@@ -1,7 +1,9 @@
 import { Component, OnInit, HostListener } from '@angular/core';
+import { DatePipe } from '@angular/common';
 
 import { AlertService, DataService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { DateRange } from '@angular/material/datepicker';
 import { Measure } from '@app/models';
 import { UnitBase } from '@app/models/auxiliary/unit-base.model';
 import { forkJoin } from 'rxjs';
@@ -11,7 +13,8 @@ import { Establishment } from '@app/models/establishment.model';
 
 @Component({
     templateUrl: 'list-store-sales-pfs.component.html',
-    styleUrls: ['list-store-sales-pfs.component.scss']
+    styleUrls: ['list-store-sales-pfs.component.scss'],
+    providers: [DatePipe]
 })
 export class ListStoreSalesPFSComponent implements OnInit {
 
@@ -40,6 +43,12 @@ export class ListStoreSalesPFSComponent implements OnInit {
     availableDeliveryPaymentStatuses: string[] = [];
 
     filterPanelOpen = false;
+    datePanelOpen = false;
+    maxDate = new Date();
+    establishmentId!: string;
+    appliedStartDate?: Date;
+    appliedEndDate?: Date;
+    selectedDateRange: DateRange<Date> | null = null;
     saleStatusFilters: string[] = [];
     orderPaymentStatusFilters: string[] = [];
     deliveryPaymentStatusFilters: string[] = [];
@@ -50,48 +59,130 @@ export class ListStoreSalesPFSComponent implements OnInit {
     orderPaymentExpanded = true;
     deliveryPaymentExpanded = true;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe) {}
 
     ngOnInit() {
-        const establishmentId = this.route.snapshot.params['id'];
+        this.establishmentId = this.route.snapshot.params['id'];
+
+        // Rango por defecto: últimos 15 días desde la fecha actual
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 14);
+        this.appliedStartDate = start;
+        this.appliedEndDate = today;
+        this.selectedDateRange = new DateRange<Date>(start, today);
+
         const requestArray = [
-            this.dataService.getAllShopHistory({establishment_id: establishmentId}),
+            this.dataService.getAllShopHistory(this.buildSalesParams()),
             this.dataService.getAnyComponent({}, 'getMeasure'),
-            this.dataService.getEstablishmentById(establishmentId)
+            this.dataService.getEstablishmentById(this.establishmentId)
         ];
 
         forkJoin(requestArray).subscribe({
             next: (result: any) => {
-                this.shopResumes = this.dataService.findJsonValue(result[0], 'json_result') || [];
-                this.allShopResumes = this.shopResumes;
                 this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
                 this.establishment = this.dataService.findJsonValue(result[2], 'json_result') || {};
+                this.applyShopResumes(this.dataService.findJsonValue(result[0], 'json_result') || []);
             },
             error: (e) => console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
-                this.shopResumes = this.shopResumes?.sort((a, b) =>
-                    new Date(b.creationDate!).getTime() - new Date(a.creationDate!).getTime()
-                );
-                this.allShopResumes = this.shopResumes;
-                this.availableSaleStatuses = [...new Set(
-                    (this.allShopResumes || []).map(e => e.status?.identifier).filter((s): s is string => !!s)
-                )];
-                this.availableOrderPaymentStatuses = [...new Set(
-                    (this.allShopResumes || []).map(e => e.paymentStatus?.identifier).filter((s): s is string => !!s)
-                )];
-                this.availableDeliveryPaymentStatuses = [...new Set(
-                    (this.allShopResumes || []).map(e => e.deliveryPaymentStatus?.identifier).filter((s): s is string => !!s)
-                )];
-                this.setTableElements(this.shopResumes);
                 this.storeName = this.establishment?.name;
             }
         });
         this.rawMaterialForm = this.createMaterialFormGroup();
     }
 
+    private buildSalesParams(): any {
+        const params: any = { establishment_id: this.establishmentId };
+        if (this.appliedStartDate && this.appliedEndDate) {
+            const startDateObject = new Date(this.appliedStartDate);
+            startDateObject.setHours(0, 0, 0, 0);
+            const endDateObject = new Date(this.appliedEndDate);
+            endDateObject.setHours(23, 59, 59, 999);
+            params['creation_date$gte'] = this.datePipe.transform(startDateObject, 'yyyy-MM-dd HH:mm:ss', 'UTC');
+            params['creation_date$lte'] = this.datePipe.transform(endDateObject, 'yyyy-MM-dd HH:mm:ss', 'UTC');
+        }
+        return params;
+    }
+
+    private applyShopResumes(resumes: ShopResume[]) {
+        this.shopResumes = (resumes || []).sort((a, b) =>
+            new Date(b.creationDate!).getTime() - new Date(a.creationDate!).getTime()
+        );
+        this.allShopResumes = this.shopResumes;
+        this.availableSaleStatuses = [...new Set(
+            (this.allShopResumes || []).map(e => e.status?.identifier).filter((s): s is string => !!s)
+        )];
+        this.availableOrderPaymentStatuses = [...new Set(
+            (this.allShopResumes || []).map(e => e.paymentStatus?.identifier).filter((s): s is string => !!s)
+        )];
+        this.availableDeliveryPaymentStatuses = [...new Set(
+            (this.allShopResumes || []).map(e => e.deliveryPaymentStatus?.identifier).filter((s): s is string => !!s)
+        )];
+        this.search(null);
+    }
+
+    private fetchSales() {
+        this.shopResumes = undefined;
+        this.tableElementsValues = undefined;
+        this.dataService.getAllShopHistory(this.buildSalesParams()).subscribe({
+            next: (result: any) => this.applyShopResumes(this.dataService.findJsonValue(result, 'json_result') || []),
+            error: (e) => console.error('Se ha producido un error al obtener las ventas', e)
+        });
+    }
+
     @HostListener('document:click')
     onDocumentClick() {
         if (this.filterPanelOpen) this.filterPanelOpen = false;
+        if (this.datePanelOpen) this.datePanelOpen = false;
+    }
+
+    get dateRangeLabel(): string {
+        if (this.appliedStartDate && this.appliedEndDate) {
+            return `${this.appliedStartDate.toLocaleDateString('es-GT')} - ${this.appliedEndDate.toLocaleDateString('es-GT')}`;
+        }
+        return '';
+    }
+
+    toggleDatePanel(event?: Event) {
+        event?.stopPropagation();
+        this.datePanelOpen = !this.datePanelOpen;
+        if (this.datePanelOpen) {
+            this.filterPanelOpen = false;
+            // El panel parte del rango actualmente aplicado; los cambios no se buscan hasta presionar "Buscar"
+            this.selectedDateRange = new DateRange<Date>(this.appliedStartDate ?? null, this.appliedEndDate ?? null);
+        }
+    }
+
+    closeDatePanel() { this.datePanelOpen = false; }
+
+    onDateRangeChange(date: Date | null) {
+        if (!date) return;
+        const start = this.selectedDateRange?.start ?? null;
+        const end = this.selectedDateRange?.end ?? null;
+        if (!start || end || date < start) {
+            this.selectedDateRange = new DateRange<Date>(date, null);
+        } else {
+            this.selectedDateRange = new DateRange<Date>(start, date);
+        }
+    }
+
+    resetDateRange() {
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 14);
+        this.selectedDateRange = new DateRange<Date>(start, today);
+    }
+
+    applyDateRange() {
+        if (!this.selectedDateRange?.start || !this.selectedDateRange?.end) {
+            this.alertService.warn('Selecciona una fecha de inicio y una de fin');
+            return;
+        }
+        this.appliedStartDate = this.selectedDateRange.start;
+        this.appliedEndDate = this.selectedDateRange.end;
+        this.datePanelOpen = false;
+        this.fetchSales();
     }
 
     get activeFilterCount(): number {
@@ -102,6 +193,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
         event?.stopPropagation();
         this.filterPanelOpen = !this.filterPanelOpen;
         if (this.filterPanelOpen) {
+            this.datePanelOpen = false;
             this.pendingSaleStatuses = [...this.saleStatusFilters];
             this.pendingOrderPaymentStatuses = [...this.orderPaymentStatusFilters];
             this.pendingDeliveryPaymentStatuses = [...this.deliveryPaymentStatusFilters];

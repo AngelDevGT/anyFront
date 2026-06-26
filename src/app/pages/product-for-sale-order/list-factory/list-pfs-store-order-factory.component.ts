@@ -1,10 +1,12 @@
-import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, HostListener } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
 import { AccountService, AlertService, DataService, paymentStatusValues, statusValues, storeOrderStatus} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { DateRange } from '@angular/material/datepicker';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
@@ -12,9 +14,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatSelectChange } from '@angular/material/select';
 import { BehaviorSubject, forkJoin } from 'rxjs';
 
-@Component({ 
+@Component({
     templateUrl: 'list-pfs-store-order-factory.component.html',
-    styleUrls: ['list-pfs-store-order-factory.component.scss']
+    styleUrls: ['list-pfs-store-order-factory.component.scss'],
+    providers: [DatePipe]
 })
 export class ListFinishedProductOrderInFactoryComponent implements OnInit {
     establishmentOrders?: ProductForSaleStoreOrder[];
@@ -38,13 +41,93 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
     cards: any = [];
     dialogTitle = '';
 
-    constructor(private dataService: DataService, private alertService: AlertService, private route: ActivatedRoute, private router: Router) {}
+    datePanelOpen = false;
+    maxDate = new Date();
+    appliedStartDate?: Date;
+    appliedEndDate?: Date;
+    selectedDateRange: DateRange<Date> | null = null;
+
+    constructor(private dataService: DataService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private datePipe: DatePipe) {}
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
         });
         this.pageTitle = 'Pedidos';
+
+        // Rango por defecto: últimos 15 días desde la fecha actual
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 14);
+        this.appliedStartDate = start;
+        this.appliedEndDate = today;
+        this.selectedDateRange = new DateRange<Date>(start, today);
+
+        this.retrieveProductForSaleStoreOrders();
+    }
+
+    private buildOrderParams(): any {
+        const params: any = {};
+        if (this.appliedStartDate && this.appliedEndDate) {
+            const startDateObject = new Date(this.appliedStartDate);
+            startDateObject.setHours(0, 0, 0, 0);
+            const endDateObject = new Date(this.appliedEndDate);
+            endDateObject.setHours(23, 59, 59, 999);
+            params['creation_date$gte'] = this.datePipe.transform(startDateObject, 'yyyy-MM-dd HH:mm:ss', 'UTC');
+            params['creation_date$lte'] = this.datePipe.transform(endDateObject, 'yyyy-MM-dd HH:mm:ss', 'UTC');
+        }
+        return params;
+    }
+
+    @HostListener('document:click')
+    onDocumentClick() {
+        if (this.datePanelOpen) this.datePanelOpen = false;
+    }
+
+    get dateRangeLabel(): string {
+        if (this.appliedStartDate && this.appliedEndDate) {
+            return `${this.appliedStartDate.toLocaleDateString('es-GT')} - ${this.appliedEndDate.toLocaleDateString('es-GT')}`;
+        }
+        return '';
+    }
+
+    toggleDatePanel(event?: Event) {
+        event?.stopPropagation();
+        this.datePanelOpen = !this.datePanelOpen;
+        if (this.datePanelOpen) {
+            // El panel parte del rango actualmente aplicado; los cambios no se buscan hasta presionar "Buscar"
+            this.selectedDateRange = new DateRange<Date>(this.appliedStartDate ?? null, this.appliedEndDate ?? null);
+        }
+    }
+
+    closeDatePanel() { this.datePanelOpen = false; }
+
+    onDateRangeChange(date: Date | null) {
+        if (!date) return;
+        const start = this.selectedDateRange?.start ?? null;
+        const end = this.selectedDateRange?.end ?? null;
+        if (!start || end || date < start) {
+            this.selectedDateRange = new DateRange<Date>(date, null);
+        } else {
+            this.selectedDateRange = new DateRange<Date>(start, date);
+        }
+    }
+
+    resetDateRange() {
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 14);
+        this.selectedDateRange = new DateRange<Date>(start, today);
+    }
+
+    applyDateRange() {
+        if (!this.selectedDateRange?.start || !this.selectedDateRange?.end) {
+            this.alertService.warn('Selecciona una fecha de inicio y una de fin');
+            return;
+        }
+        this.appliedStartDate = this.selectedDateRange.start;
+        this.appliedEndDate = this.selectedDateRange.end;
+        this.datePanelOpen = false;
         this.retrieveProductForSaleStoreOrders();
     }
 
@@ -94,7 +177,7 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
         this.loadingOrders = true;
 
         let requestArray = [];
-        requestArray.push(this.dataService.getAllProducForSaleOrder()); // providerRequest
+        requestArray.push(this.dataService.getAllProductForSaleOrderByFilter(this.buildOrderParams())); // providerRequest
         requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status_id": 28})); // paymentTypeRequest
 
         forkJoin(requestArray).subscribe({

@@ -19,6 +19,40 @@
         <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search($event)" />
       </div>
       <div class="toolbar-right">
+        <div class="date-wrapper" (click)="$event.stopPropagation()">
+          <button class="filter-main-btn" [class.open]="datePanelOpen" type="button" (click)="toggleDatePanel($event)">
+            <i class="material-icons" style="font-size:17px">event</i>
+            Fecha
+            <span *ngIf="dateRangeLabel" class="date-range-label">{{ dateRangeLabel }}</span>
+            <i class="material-icons chevron-icon">keyboard_arrow_down</i>
+          </button>
+
+          <div class="date-panel" *ngIf="datePanelOpen">
+            <div class="filter-panel-header">
+              <span class="filter-panel-title">
+                <i class="material-icons" style="font-size:16px">event</i>
+                Rango de fechas
+              </span>
+              <button class="filter-close-btn" type="button" (click)="closeDatePanel()">
+                <i class="material-icons" style="font-size:18px">close</i>
+              </button>
+            </div>
+
+            <div class="date-panel-body">
+              <mat-calendar
+                [selected]="selectedDateRange"
+                [maxDate]="maxDate"
+                (selectedChange)="onDateRangeChange($event)">
+              </mat-calendar>
+            </div>
+
+            <div class="filter-panel-footer">
+              <button class="btn-reset" type="button" (click)="resetDateRange()">Últimos 15 días</button>
+              <button class="btn-filter-apply" type="button" (click)="applyDateRange()">Buscar</button>
+            </div>
+          </div>
+        </div>
+
         <div class="filter-wrapper" (click)="$event.stopPropagation()">
           <button class="filter-main-btn" [class.open]="filterPanelOpen" type="button" (click)="toggleFilterPanel($event)">
             <i class="material-icons" style="font-size:17px">filter_list</i>

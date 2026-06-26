@@ -271,3 +271,52 @@
   transition: background 0.15s;
   &:hover { background: #a83e00; }
 }
+
+// Date panel
+.date-wrapper { position: relative; }
+
+.date-range-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+  white-space: nowrap;
+}
+
+.date-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 330px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 1000;
+  overflow: hidden;
+
+  @media (max-width: 576px) {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+  }
+}
+
+.date-panel-body {
+  padding: 4px 8px;
+
+  ::ng-deep .mat-calendar { width: 100%; height: auto; }
+  ::ng-deep .mat-calendar-body-selected {
+    background-color: #c94e00;
+    color: #fff;
+  }
+  ::ng-deep .mat-calendar-body-in-range::before { background: rgba(201,78,0,0.15); }
+  ::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) { border-color: #c94e00; }
+  ::ng-deep .cdk-keyboard-focused .mat-calendar-body-active > .mat-calendar-body-cell-content:not(.mat-calendar-body-selected),
+  ::ng-deep .cdk-program-focused .mat-calendar-body-active > .mat-calendar-body-cell-content:not(.mat-calendar-body-selected) {
+    background-color: rgba(201,78,0,0.15);
+  }
+}
