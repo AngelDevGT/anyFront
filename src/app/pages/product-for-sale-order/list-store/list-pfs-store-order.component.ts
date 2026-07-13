@@ -129,8 +129,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
     sortDataByDate(sortOpt: string) {
         this.selectedSortOpt = sortOpt;
         this.productForSaleOrdes = this.productForSaleOrdes?.sort((a, b) => {
-            const fechaA = new Date(a.updatedDate!).getTime();
-            const fechaB = new Date(b.updatedDate!).getTime();
+            const fechaA = new Date(a.creationDate!).getTime();
+            const fechaB = new Date(b.creationDate!).getTime();
             return sortOpt === 'Desc' ? fechaB - fechaA : fechaA - fechaB;
         });
         this.setTableElements(this.productForSaleOrdes);
@@ -198,7 +198,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
             const statusHeader = this.viewOption === 'factory' ? 'Estado en fábrica' : 'Estado en tienda';
 
             const curr_row: any[] = [
-                { type: 'text', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!), header_name: 'Fecha' },
+                { type: 'text', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: 'Fecha' },
                 { type: 'text', value: element.name, header_name: 'Nombre' },
                 { type: 'text', value: element.establishment?.name, header_name: 'Tienda' },
                 {
