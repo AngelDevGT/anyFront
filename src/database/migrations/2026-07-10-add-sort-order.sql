@@ -15,15 +15,81 @@
 --   * Las queries nuevas llevan versión (V3 / V2) y endpoints nuevos; las
 --     originales quedan intactas para no romper nada en producción.
 --
--- ORDEN DE EJECUCIÓN:
---   PASO 1 -> ALTER (agregar columnas)                    [ejecutar YA, no rompe nada]
---   PASO 2 -> Backfill de sort_order de lo ya existente   [ejecutar tras el PASO 1]
---   PASO 3 -> INSERT de las queries/endpoints nuevos      [ejecutar antes de desplegar el front]
+-- ORDEN DE EJECUCIÓN (una sola corrida, ANTES de desplegar el front nuevo):
+--   PASO 1 -> Snapshot: guarda el ORDEN ACTUAL en una tabla de respaldo   [ANTES del ALTER]
+--   PASO 2 -> ALTER: agrega las columnas sort_order (nullable, no rompe nada)
+--   PASO 3 -> Backfill: copia el orden del snapshot a sort_order
+--   PASO 4 -> INSERT de las queries/endpoints nuevos
 -- =============================================================================
 
 
 -- #############################################################################
--- PASO 1 — Columnas nuevas (nullable => las queries actuales no se ven afectadas).
+-- PASO 1 — SNAPSHOT del orden ACTUAL, guardado en una tabla de respaldo.
+--          Se ejecuta ANTES del ALTER: así el orden que se congela es exactamente
+--          el que las queries devuelven HOY, sin depender de la nueva columna.
+--
+--          Para cada catálogo se reejecuta su MISMA consulta actual (mismo FROM/JOINs,
+--          sin ORDER BY) reducida a los id, y con json_array_elements(...) WITH ORDINALITY
+--          se captura la posición tal cual la ve el front. sort_order = posición (0-based).
+--
+--            * finished_product         -> orden físico del catálogo (ver/editar todos).
+--            * raw_material             -> orden físico del catálogo.
+--            * raw_material_by_provider -> orden físico del catálogo (proveedor y empaque).
+--            * product_for_sale         -> ya ordena por creation_date; se rankea por tienda.
+--
+--          Se captura sobre TODAS las filas (sin filtrar por estado) para que ninguna
+--          quede sin orden; los subconjuntos filtrados conservan su orden relativo.
+--          La tabla de respaldo se conserva al final (sirve de backup / rollback).
+-- #############################################################################
+DROP TABLE IF EXISTS sort_order_snapshot;
+
+CREATE TABLE sort_order_snapshot AS
+-- finished_product (Productos + Abarrotes): orden físico del catálogo
+SELECT 'finished_product'::text AS entidad, (elem->>'id')::uuid AS id, (ord - 1)::int AS sort_order
+FROM (
+    SELECT COALESCE(json_agg(json_build_object('id', fp.id)), '[]'::json) AS arr
+    FROM finished_product fp
+    LEFT JOIN unit_base ub ON ub.id = fp.unit_base_id
+    LEFT JOIN status s ON s.id = fp.status_id
+    LEFT JOIN "user" u ON u.id = fp.creator_user_id
+) q
+CROSS JOIN LATERAL json_array_elements(q.arr) WITH ORDINALITY AS t(elem, ord)
+
+UNION ALL
+-- raw_material: orden físico del catálogo
+SELECT 'raw_material'::text, (elem->>'id')::uuid, (ord - 1)::int
+FROM (
+    SELECT COALESCE(json_agg(json_build_object('id', rm.id)), '[]'::json) AS arr
+    FROM raw_material rm
+    LEFT JOIN unit_base ub ON ub.id = rm.unit_base_id
+    LEFT JOIN status s ON s.id = rm.status_id
+    LEFT JOIN "user" u ON u.id = rm.creator_user_id
+) q
+CROSS JOIN LATERAL json_array_elements(q.arr) WITH ORDINALITY AS t(elem, ord)
+
+UNION ALL
+-- raw_material_by_provider (Proveedor + Empaque): orden físico del catálogo
+SELECT 'raw_material_by_provider'::text, (elem->>'id')::uuid, (ord - 1)::int
+FROM (
+    SELECT COALESCE(json_agg(json_build_object('id', rmbp.id)), '[]'::json) AS arr
+    FROM raw_material_by_provider rmbp
+    LEFT JOIN raw_material rm ON rmbp.raw_material_base_id = rm.id
+    LEFT JOIN unit_base ub ON rm.unit_base_id = ub.id
+    LEFT JOIN provider p ON p.id = rmbp.provider_id
+    LEFT JOIN status s ON s.id = rmbp.status_id
+    LEFT JOIN "user" u ON u.id = rmbp.creator_user_id
+) q
+CROSS JOIN LATERAL json_array_elements(q.arr) WITH ORDINALITY AS t(elem, ord)
+
+UNION ALL
+-- product_for_sale: su query ya ordena por creation_date; se rankea por tienda.
+SELECT 'product_for_sale'::text, id,
+       (row_number() OVER (PARTITION BY establishment_id ORDER BY creation_date, id) - 1)::int
+FROM product_for_sale;
+
+
+-- #############################################################################
+-- PASO 2 — Columnas nuevas (nullable => las queries actuales no se ven afectadas).
 -- #############################################################################
 ALTER TABLE finished_product         ADD COLUMN IF NOT EXISTS sort_order int4 NULL;
 ALTER TABLE product_for_sale         ADD COLUMN IF NOT EXISTS sort_order int4 NULL;
@@ -32,63 +98,47 @@ ALTER TABLE raw_material_by_provider ADD COLUMN IF NOT EXISTS sort_order int4 NU
 
 
 -- #############################################################################
--- PASO 2 — Backfill: asigna un orden inicial a todo lo existente según su fecha
---          de creación, particionado por el "grupo" en que se lista cada entidad.
+-- PASO 3 — Backfill: copia a sort_order el orden capturado en el snapshot (PASO 1).
 --          Sólo toca filas con sort_order IS NULL (idempotente / re-ejecutable).
+--          Como el snapshot se tomó ANTES del ALTER, el orden es exactamente el que
+--          las queries mostraban hoy -> transparente para el usuario final.
 -- #############################################################################
+UPDATE finished_product t
+SET sort_order = s.sort_order
+FROM sort_order_snapshot s
+WHERE s.entidad = 'finished_product' AND t.id = s.id AND t.sort_order IS NULL;
 
--- finished_product: un orden por tipo (1 = Productos, 2 = Abarrotes).
-UPDATE finished_product fp
-SET sort_order = sub.rn
-FROM (
-    SELECT id, (row_number() OVER (PARTITION BY finished_product_type_id ORDER BY creation_date, id) - 1) AS rn
-    FROM finished_product
-) sub
-WHERE fp.id = sub.id AND fp.sort_order IS NULL;
+UPDATE raw_material t
+SET sort_order = s.sort_order
+FROM sort_order_snapshot s
+WHERE s.entidad = 'raw_material' AND t.id = s.id AND t.sort_order IS NULL;
 
--- product_for_sale: un orden por tienda (establishment_id).
-UPDATE product_for_sale pfs
-SET sort_order = sub.rn
-FROM (
-    SELECT id, (row_number() OVER (PARTITION BY establishment_id ORDER BY creation_date, id) - 1) AS rn
-    FROM product_for_sale
-) sub
-WHERE pfs.id = sub.id AND pfs.sort_order IS NULL;
+UPDATE raw_material_by_provider t
+SET sort_order = s.sort_order
+FROM sort_order_snapshot s
+WHERE s.entidad = 'raw_material_by_provider' AND t.id = s.id AND t.sort_order IS NULL;
 
--- raw_material: un único orden global.
-UPDATE raw_material rm
-SET sort_order = sub.rn
-FROM (
-    SELECT id, (row_number() OVER (ORDER BY creation_date, id) - 1) AS rn
-    FROM raw_material
-) sub
-WHERE rm.id = sub.id AND rm.sort_order IS NULL;
-
--- raw_material_by_provider: un orden por tipo (1 = Proveedor, 2 = Empaque).
-UPDATE raw_material_by_provider rmbp
-SET sort_order = sub.rn
-FROM (
-    SELECT id, (row_number() OVER (PARTITION BY raw_material_by_provider_type_id ORDER BY creation_date, id) - 1) AS rn
-    FROM raw_material_by_provider
-) sub
-WHERE rmbp.id = sub.id AND rmbp.sort_order IS NULL;
+UPDATE product_for_sale t
+SET sort_order = s.sort_order
+FROM sort_order_snapshot s
+WHERE s.entidad = 'product_for_sale' AND t.id = s.id AND t.sort_order IS NULL;
 
 
 -- #############################################################################
--- PASO 3 — Endpoints/queries nuevos (filas nuevas en la tabla de ruteo sql_queries).
+-- PASO 4 — Endpoints/queries nuevos (filas nuevas en la tabla de ruteo sql_queries).
 --
---   3.A  Retrieves de catálogo con versión nueva: agregan `sortOrder` y ordenan
+--   4.A  Retrieves de catálogo con versión nueva: agregan `sortOrder` y ordenan
 --        por sort_order (los NULL al final). Copias fieles de la última versión
 --        de cada retrieve, sin tocar las originales.
---   3.B  Endpoints nuevos de guardado del orden (batch): reciben un arreglo JSON
+--   4.B  Endpoints nuevos de guardado del orden (batch): reciben un arreglo JSON
 --        [{ "id": "...uuid...", "sort_order": 0 }, ...] en $1 y lo persisten en
 --        un solo UPDATE.
---   3.C  Retrieves de inventario con versión nueva: mismos datos que hoy pero
+--   4.C  Retrieves de inventario con versión nueva: mismos datos que hoy pero
 --        ordenados por sort_order, para que el orden se refleje en los inventarios.
 -- #############################################################################
 
 -- ---------------------------------------------------------------------------
--- 3.A  RETRIEVES DE CATÁLOGO (con sortOrder + ORDER BY sort_order)
+-- 4.A  RETRIEVES DE CATÁLOGO (con sortOrder + ORDER BY sort_order)
 -- ---------------------------------------------------------------------------
 INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
 	 ('retrieveRawMaterialV3','/retrieveRawMaterialV3','SELECT json_agg(
@@ -248,7 +298,7 @@ FROM products_ordered pfs','product_for_sale','POST');
 
 
 -- ---------------------------------------------------------------------------
--- 3.B  ENDPOINTS DE GUARDADO DEL ORDEN (batch por arreglo JSON en $1)
+-- 4.B  ENDPOINTS DE GUARDADO DEL ORDEN (batch por arreglo JSON en $1)
 --       Payload esperado: $1 = ''[{"id":"<uuid>","sort_order":0}, ...]''
 -- ---------------------------------------------------------------------------
 INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
@@ -274,7 +324,7 @@ WHERE rmbp.id = v.id','raw_material_by_provider','PATCH');
 
 
 -- ---------------------------------------------------------------------------
--- 3.C  RETRIEVES DE INVENTARIO (versión nueva, ordenados por sort_order)
+-- 4.C  RETRIEVES DE INVENTARIO (versión nueva, ordenados por sort_order)
 --       Mismos datos/forma que las versiones actuales; sólo cambia el orden.
 --       Nota: los inventarios de bodega (materia prima / empaque) se ordenan por
 --       raw_material.sort_order, ya que el inventory_element apunta a raw_material.
@@ -624,6 +674,93 @@ FROM inventory i
 INNER JOIN establishment e ON e.id::text = i.unit_name','inventory','POST');
 
 
+-- #############################################################################
+-- PASO 5 — Triggers BEFORE INSERT: asignan sort_order automáticamente a los
+--          registros NUEVOS (MAX(sort_order)+1 dentro de su grupo), para que
+--          entren al final sin quedar en NULL y sin depender del front.
+--          Mismo patrón que trg_shop_sale_assign_number.
+--
+--          Nota: sólo actúan cuando NEW.sort_order viene NULL, así que no pisan
+--          un valor asignado explícitamente. Si dos inserts concurrentes tomaran
+--          el mismo MAX, el empate es inofensivo: las queries desempatan con el
+--          segundo criterio (creation_date / name) del ORDER BY.
+-- #############################################################################
+
+-- finished_product: siguiente orden dentro del tipo (Productos / Abarrotes)
+CREATE OR REPLACE FUNCTION finished_product_assign_sort_order() RETURNS trigger AS $$
+BEGIN
+    IF NEW.sort_order IS NULL THEN
+        SELECT COALESCE(MAX(sort_order) + 1, 0) INTO NEW.sort_order
+        FROM finished_product
+        WHERE finished_product_type_id = NEW.finished_product_type_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_finished_product_assign_sort_order ON finished_product;
+CREATE TRIGGER trg_finished_product_assign_sort_order
+    BEFORE INSERT ON finished_product
+    FOR EACH ROW
+    EXECUTE FUNCTION finished_product_assign_sort_order();
+
+
+-- product_for_sale: siguiente orden dentro de la tienda (establishment_id)
+CREATE OR REPLACE FUNCTION product_for_sale_assign_sort_order() RETURNS trigger AS $$
+BEGIN
+    IF NEW.sort_order IS NULL THEN
+        SELECT COALESCE(MAX(sort_order) + 1, 0) INTO NEW.sort_order
+        FROM product_for_sale
+        WHERE establishment_id = NEW.establishment_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_product_for_sale_assign_sort_order ON product_for_sale;
+CREATE TRIGGER trg_product_for_sale_assign_sort_order
+    BEFORE INSERT ON product_for_sale
+    FOR EACH ROW
+    EXECUTE FUNCTION product_for_sale_assign_sort_order();
+
+
+-- raw_material: siguiente orden global
+CREATE OR REPLACE FUNCTION raw_material_assign_sort_order() RETURNS trigger AS $$
+BEGIN
+    IF NEW.sort_order IS NULL THEN
+        SELECT COALESCE(MAX(sort_order) + 1, 0) INTO NEW.sort_order
+        FROM raw_material;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_raw_material_assign_sort_order ON raw_material;
+CREATE TRIGGER trg_raw_material_assign_sort_order
+    BEFORE INSERT ON raw_material
+    FOR EACH ROW
+    EXECUTE FUNCTION raw_material_assign_sort_order();
+
+
+-- raw_material_by_provider: siguiente orden dentro del tipo (Proveedor / Empaque)
+CREATE OR REPLACE FUNCTION raw_material_by_provider_assign_sort_order() RETURNS trigger AS $$
+BEGIN
+    IF NEW.sort_order IS NULL THEN
+        SELECT COALESCE(MAX(sort_order) + 1, 0) INTO NEW.sort_order
+        FROM raw_material_by_provider
+        WHERE raw_material_by_provider_type_id = NEW.raw_material_by_provider_type_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_raw_material_by_provider_assign_sort_order ON raw_material_by_provider;
+CREATE TRIGGER trg_raw_material_by_provider_assign_sort_order
+    BEFORE INSERT ON raw_material_by_provider
+    FOR EACH ROW
+    EXECUTE FUNCTION raw_material_by_provider_assign_sort_order();
+
+
 -- =============================================================================
 -- VERIFICACIÓN OPCIONAL (queries de lectura, no modifican nada):
 --
@@ -646,4 +783,26 @@ INNER JOIN establishment e ON e.id::text = i.unit_name','inventory','POST');
 --     '/retrieveFinishedProductInventoryV2','/retrieveRawMaterialInventoryV2','/retrievePackagingMaterialInventoryV2',
 --     '/retrieveProductForSaleInventoryV2','/retrieveAllProductForSaleInventoryV2'
 --   ) ORDER BY descripcion;
+--
+--   -- Confirmar que sort_order coincide con el orden capturado en el snapshot
+--   -- (debe devolver 0 filas si todo quedó idéntico):
+--   SELECT 'finished_product' AS entidad, t.id FROM finished_product t
+--     JOIN sort_order_snapshot s ON s.entidad='finished_product' AND s.id=t.id
+--     WHERE t.sort_order <> s.sort_order
+--   UNION ALL SELECT 'raw_material', t.id FROM raw_material t
+--     JOIN sort_order_snapshot s ON s.entidad='raw_material' AND s.id=t.id
+--     WHERE t.sort_order <> s.sort_order
+--   UNION ALL SELECT 'raw_material_by_provider', t.id FROM raw_material_by_provider t
+--     JOIN sort_order_snapshot s ON s.entidad='raw_material_by_provider' AND s.id=t.id
+--     WHERE t.sort_order <> s.sort_order
+--   UNION ALL SELECT 'product_for_sale', t.id FROM product_for_sale t
+--     JOIN sort_order_snapshot s ON s.entidad='product_for_sale' AND s.id=t.id
+--     WHERE t.sort_order <> s.sort_order;
 -- =============================================================================
+
+
+-- #############################################################################
+-- LIMPIEZA (OPCIONAL) — La tabla de respaldo se conserva por si necesitas
+-- revisar o revertir el orden capturado. Cuando ya no la necesites:
+--   DROP TABLE IF EXISTS sort_order_snapshot;
+-- #############################################################################

@@ -90,6 +90,15 @@
   &:hover, &:focus { border-color: #c94e00; color: #c94e00; background: #fff; box-shadow: none; outline: none; }
 }
 
+.btn-export {
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    &:hover, &:focus { border-color: #ddd; color: #555; }
+  }
+  &:not(:disabled) { border-color: #ff6e20; color: #ff6e20; }
+}
+
 .loading-wrap { display: flex; justify-content: center; padding: 48px; color: #aaa; }
 
 // Date filter

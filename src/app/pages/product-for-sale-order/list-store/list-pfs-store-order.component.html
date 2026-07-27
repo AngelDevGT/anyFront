@@ -18,6 +18,16 @@
         <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search($event)" />
       </div>
       <div class="toolbar-right">
+        <button class="filter-btn btn-export"
+                type="button"
+                [disabled]="!selectedOrderIds.length || exportingPdf"
+                (click)="exportSelectedToPdf()">
+          <span *ngIf="exportingPdf" class="spinner-border spinner-border-sm"></span>
+          <i *ngIf="!exportingPdf" class="material-icons" style="font-size:17px">picture_as_pdf</i>
+          Exportar a PDF
+          <span *ngIf="selectedOrderIds.length">({{ selectedOrderIds.length }})</span>
+        </button>
+
         <div class="date-wrapper" (click)="$event.stopPropagation()">
           <button class="filter-main-btn" [class.open]="datePanelOpen" type="button" (click)="toggleDatePanel($event)">
             <i class="material-icons" style="font-size:17px">event</i>
@@ -76,7 +86,11 @@
       </div>
     </div>
 
-    <data-table *ngIf="productForSaleOrdes" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"></data-table>
+    <data-table *ngIf="productForSaleOrdes"
+                [tableElements]="tableElementsValues"
+                [initialPageSize]="pageSize"
+                [selectable]="true"
+                (selectionChange)="onSelectionChange($event)"></data-table>
     <div *ngIf="loadingOrders || loadingEstablishments" class="loading-wrap">
       <span class="spinner-border spinner-border-lg"></span>
     </div>

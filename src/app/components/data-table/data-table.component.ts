@@ -9,10 +9,14 @@ import { Router } from '@angular/router';
 export class DataTableComponent implements OnChanges {
   @Input() tableElements: any[][] = [];
   @Input() initialPageSize = 10;
+  // Habilita la columna de checkboxes. Cada fila debe traer la propiedad 'rowKey' con su identificador.
+  @Input() selectable = false;
   @Output() modalAction = new EventEmitter<{ target: string; data: any }>();
+  @Output() selectionChange = new EventEmitter<string[]>();
 
   headers: { header_name: string }[] = [];
   rows: any[][] = [];
+  selectedKeys = new Set<string>();
   page = 1;
   pageSize = 10;
   readonly pageSizes = [5, 10, 25, 50, 100];
@@ -37,10 +41,79 @@ export class DataTableComponent implements OnChanges {
         this.rows = [];
       }
       this.page = 1;
+      if (this.selectable) this.syncSelection();
     }
     if (changes['initialPageSize'] && changes['initialPageSize'].firstChange) {
       this.pageSize = this.initialPageSize;
     }
+  }
+
+  /**
+   * Las filas se reconstruyen en cada busqueda/orden/filtro, asi que se conserva la seleccion
+   * de los elementos que siguen presentes en lugar de limpiarla.
+   */
+  private syncSelection() {
+    const availableKeys = new Set(this.rowKeys());
+    const previousSize = this.selectedKeys.size;
+    this.selectedKeys.forEach(key => {
+      if (!availableKeys.has(key)) this.selectedKeys.delete(key);
+    });
+    // Se difiere el emit porque ngOnChanges corre dentro de la deteccion de cambios del padre
+    if (this.selectedKeys.size !== previousSize) Promise.resolve().then(() => this.emitSelection());
+  }
+
+  private rowKeys(): string[] {
+    return this.rows.map(row => (row as any).rowKey).filter((key: string) => !!key);
+  }
+
+  private emitSelection() {
+    // Se emite en el orden en el que se muestran las filas
+    this.selectionChange.emit(this.rowKeys().filter(key => this.selectedKeys.has(key)));
+  }
+
+  getRowKey(row: any): string {
+    return row?.rowKey;
+  }
+
+  isRowSelected(row: any): boolean {
+    return this.selectedKeys.has(this.getRowKey(row));
+  }
+
+  toggleRow(row: any, event: Event) {
+    event.stopPropagation();
+    const key = this.getRowKey(row);
+    if (!key) return;
+    if (this.selectedKeys.has(key)) {
+      this.selectedKeys.delete(key);
+    } else {
+      this.selectedKeys.add(key);
+    }
+    this.emitSelection();
+  }
+
+  get allSelected(): boolean {
+    const keys = this.rowKeys();
+    return keys.length > 0 && keys.every(key => this.selectedKeys.has(key));
+  }
+
+  get someSelected(): boolean {
+    return this.selectedKeys.size > 0 && !this.allSelected;
+  }
+
+  /** Aplica sobre todas las filas filtradas, no solo sobre la pagina visible */
+  toggleAll(event: Event) {
+    event.stopPropagation();
+    if (this.allSelected) {
+      this.selectedKeys.clear();
+    } else {
+      this.rowKeys().forEach(key => this.selectedKeys.add(key));
+    }
+    this.emitSelection();
+  }
+
+  clearSelection() {
+    this.selectedKeys.clear();
+    this.emitSelection();
   }
 
   sort(colIndex: number) {

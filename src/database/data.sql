@@ -3140,3 +3140,53 @@ SELECT json_agg(
 ) AS json_result
 FROM inventory i
 INNER JOIN establishment e ON e.id::text = i.unit_name','inventory','POST');
+
+-- Version reducida de /getProductForSaleStoreOrder para la exportacion a PDF, compartida por las
+-- vistas de fabrica y de tienda: devuelve unicamente los campos que se imprimen. Los precios se
+-- incluyen porque el formato de tienda los imprime; el de fabrica simplemente no los usa.
+-- Se filtra por id con el mecanismo estandar de filtros: {"pfsso": {"id": "..."}}
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('getProductForSaleStoreOrderForPdf','/getProductForSaleStoreOrderForPdf','SELECT json_build_object(
+    ''id'', pfsso.id,
+    ''name'', pfsso.name,
+    ''comment'', pfsso.comment,
+    ''finalAmount'', pfsso.final_amount,
+    ''creationDate'', pfsso.creation_date,
+    ''updatedDate'', coalesce(pfsso.updated_date, pfsso.creation_date),
+    ''establishment'', json_build_object(
+        ''name'', e."name"
+    ),
+    ''storeStatus'', json_build_object(
+        ''identifier'', s.name
+    ),
+    ''factoryStatus'', json_build_object(
+        ''identifier'', s2.name
+    ),
+    ''productForSaleStoreOrderElements'', (
+        SELECT json_agg(
+            json_build_object(
+                ''quantity'', pfssoe.quantity,
+                ''price'', pfssoe.price,
+                ''totalPrice'', pfssoe.total_price,
+                ''measure'', json_build_object(
+                    ''identifier'', m.name
+                ),
+                ''productForSale'', json_build_object(
+                    ''finishedProduct'', json_build_object(
+                        ''name'', fp.name
+                    )
+                )
+            )
+            ORDER BY fp.sort_order NULLS LAST, fp.name
+        )
+        FROM product_for_sale_store_order_element pfssoe
+        LEFT JOIN product_for_sale pfs ON pfs.id = pfssoe.product_for_sale_id
+        LEFT JOIN finished_product fp ON fp.id = pfs.finished_product_id
+        LEFT JOIN measure m ON m.id = pfssoe.measure_id
+        WHERE pfssoe.pfsso_id = pfsso.id
+    )
+) as json_result
+from product_for_sale_store_order pfsso
+left join establishment e on e.id = pfsso.establishment_id
+left join status s on s.id = pfsso.store_status_id
+left join status s2 on s2.id = pfsso.factory_status_id','product_for_sale_store_order','POST');

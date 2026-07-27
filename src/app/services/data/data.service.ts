@@ -1464,6 +1464,14 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrder`, params);
     }
 
+    /**
+     * Version reducida de getProductForSaleOrderById: solo los campos que se imprimen en el PDF.
+     */
+    getProductForSaleOrderByIdForPdf(id: string) {
+        let params = JSON.stringify({pfsso: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderForPdf`, params);
+    }
+
     addProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
         let params = JSON.stringify({
             "$1": JSON.stringify({

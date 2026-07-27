@@ -4,6 +4,13 @@
 
       <thead>
         <tr>
+          <th *ngIf="selectable" class="dt-col-check">
+            <input type="checkbox"
+                   class="dt-checkbox"
+                   [checked]="allSelected"
+                   [indeterminate]="someSelected"
+                   (click)="toggleAll($event)" />
+          </th>
           <th *ngFor="let h of headers; let i = index"
               class="dt-th-sortable"
               [class.dt-th-active]="sortColumn === i"
@@ -22,6 +29,12 @@
         <tr *ngFor="let row of pagedRows"
             [class.dt-row-clickable]="hasRowLink(row)"
             (click)="onRowClick(row)">
+          <td *ngIf="selectable" class="dt-col-check">
+            <input type="checkbox"
+                   class="dt-checkbox"
+                   [checked]="isRowSelected(row)"
+                   (click)="toggleRow(row, $event)" />
+          </td>
           <td *ngFor="let cell of row">
 
             <!-- Avatar + text -->
@@ -74,7 +87,7 @@
         </tr>
 
         <tr *ngIf="rows.length === 0">
-          <td [attr.colspan]="headers.length + 1" class="dt-empty">
+          <td [attr.colspan]="headers.length + (selectable ? 2 : 1)" class="dt-empty">
             No hay registros
           </td>
         </tr>

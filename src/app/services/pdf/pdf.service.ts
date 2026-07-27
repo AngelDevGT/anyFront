@@ -3,7 +3,7 @@ import { RawMaterialOrder } from "@app/models/raw-material/raw-material-order.mo
 import { DataService } from "../data/data.service";
 import pdfMake from "pdfmake/build/pdfmake";  
 import pdfFonts from "pdfmake/build/vfs_fonts";  
-import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { ProductForSaleStoreOrder } from "@app/models/product-for-sale/product-for-sale-store-order.model";
 import { ShopResume } from "@app/models/store/shop-resume.model";
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -11,9 +11,26 @@ pdfMake.vfs = pdfFonts.pdfMake.vfs;
 @Injectable({ providedIn: 'root' })
 export class PdfService {
 
+    private readonly logoPath = 'assets/img/brand/embutidos_any_900x150_black.png';
+    private logoBase64?: Promise<string>;
+
+    private readonly pdfStyles = {
+        sectionHeader: {
+            bold: true,
+            decoration: 'underline' as const,
+            fontSize: 14,
+            margin: [0, 15, 0, 15] as [number, number, number, number]
+        },
+        tableHeader: {
+            bold: true,
+            fontSize: 12,
+            fillColor: '#ffefd2'
+        }
+    };
+
     constructor(private dataService: DataService) {
     }
-    
+
     generateRawMaterialOrderPDF(rawMaterialOrder: RawMaterialOrder) {  
         let docDefinition:TDocumentDefinitions = {
             content: [
@@ -159,19 +176,99 @@ export class PdfService {
     }
 
     generateProductForSaleOrderPDF(productForSaleOrder: ProductForSaleStoreOrder, option?: string) {
-        console.log(productForSaleOrder);
-        let storeName = productForSaleOrder?.productForSaleStoreOrderElements![0].productForSale?.establishment?.name!; 
+        let docDefinition:TDocumentDefinitions = {
+            content: this.buildProductForSaleOrderContent(productForSaleOrder, option),
+            styles: this.pdfStyles
+        };
+
+        pdfMake.createPdf(docDefinition).open();
+    }
+
+    /**
+     * Genera un unico PDF con varios pedidos: una hoja de portada y cada pedido en su propia hoja.
+     */
+    async generateMultipleProductForSaleOrdersPDF(orders: ProductForSaleStoreOrder[], option?: string, storeName?: string) {
+        const store = storeName || orders[0]?.establishment?.name || '';
+        const logo = await this.getLogoBase64();
+
+        let content: Content[] = [];
+
+        // Portada
+        if (logo) {
+            content.push({ image: logo, width: 300, alignment: 'center', marginTop: 60 });
+        }
+        content.push({
+            text: option === "factory" ? 'Pedidos de producto terminado' : 'Pedidos de producto para venta',
+            fontSize: 16,
+            alignment: 'center',
+            color: 'grey',
+            marginTop: logo ? 40 : 100
+        });
+        content.push({
+            text: store,
+            fontSize: 20,
+            bold: true,
+            alignment: 'center',
+            color: '#ff6e20',
+            marginTop: 10
+        });
+
+        // Un pedido por hoja
+        orders.forEach(order => {
+            const orderContent = this.buildProductForSaleOrderContent(order, option);
+            orderContent.forEach((element: any, index: number) => {
+                if (index === 0) element.pageBreak = 'before';
+                content.push(element);
+            });
+        });
+
+        let docDefinition:TDocumentDefinitions = {
+            content: content,
+            styles: this.pdfStyles
+        };
+
+        pdfMake.createPdf(docDefinition).download(this.getMultipleOrdersFileName(store));
+    }
+
+    private getMultipleOrdersFileName(storeName: string): string {
+        const today = new Date();
+        const date = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+        const store = storeName ? storeName.trim().toLowerCase().replace(/\s+/g, '-') : 'pedidos';
+        return `pedidos-${store}-${date}.pdf`;
+    }
+
+    /**
+     * pdfMake 0.2 solo resuelve imagenes desde una URL absoluta (http/https), por lo que el logo
+     * se convierte a data URI. La promesa queda cacheada para no descargarlo en cada exportacion.
+     */
+    private getLogoBase64(): Promise<string> {
+        if (!this.logoBase64) {
+            this.logoBase64 = fetch(this.logoPath)
+                .then(response => response.blob())
+                .then(blob => {
+                    if (!blob.type.startsWith('image/')) throw new Error('Logo no disponible');
+                    return new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = () => reject(reader.error);
+                        reader.readAsDataURL(blob);
+                    });
+                })
+                .catch(() => {
+                    // Si el logo falla se genera el PDF sin portada grafica, no se pierde la exportacion
+                    this.logoBase64 = undefined;
+                    return '';
+                });
+        }
+        return this.logoBase64;
+    }
+
+    private buildProductForSaleOrderContent(productForSaleOrder: ProductForSaleStoreOrder, option?: string): Content[] {
+        let storeName = productForSaleOrder?.establishment?.name || productForSaleOrder?.productForSaleStoreOrderElements![0].productForSale?.establishment?.name!;
         let docTitle = option === "factory" ? "Pedido de Producto Terminado (Fabrica)" : "Pedido de Producto para Venta (Tienda)";
         let orderStatus = option === "factory" ? productForSaleOrder?.factoryStatus?.identifier : productForSaleOrder?.storeStatus?.identifier;
-        let docDefinition:TDocumentDefinitions = {
-            content: [
-                // {  
-                //     image: 'assets/img/brand/embutidos_any_900x150_white.png',
-                //     width: 100,
-                //     height: 100,
-                //     alignment: 'right',
-                // },
-                {  
+        let content: Content[] = [
+                {
                   text: docTitle,  
                   fontSize: 16,  
                   alignment: 'center',  
@@ -250,18 +347,18 @@ export class PdfService {
                                         p.quantity!,
                                         this.dataService.getDecimalFromText(p.totalPrice!)
                                     ]}),
-                            option === "factory" ?
-                            [{ text: 'Total', colSpan: 2 }, {}, Number(productForSaleOrder?.finalAmount!).toFixed(2)] 
-                            :
-                            [{ text: 'Total', colSpan: 4 }, {}, {}, {}, Number(productForSaleOrder?.finalAmount!).toFixed(2)]
+                            // El formato de fabrica no lleva precios ni totales
+                            ...(option === "factory" ? [] : [
+                                [{ text: 'Total', colSpan: 4 }, {}, {}, {}, Number(productForSaleOrder?.finalAmount!).toFixed(2)]
+                            ])
                         ]
-                    }  
+                    }
                 },
-                {  
+                ...(option === "factory" ? [] : [{
                     text: "Monto Total: " + this.dataService.getFormatedPrice(Number(productForSaleOrder?.finalAmount)),
                     bold: true,
                     marginTop: 10
-                },
+                }]),
                 {
                     text: 'Detalles del pedido',
                     style: 'sectionHeader'
@@ -284,33 +381,15 @@ export class PdfService {
                 //     text: 'Codigo QR del pedido',
                 //     style: 'sectionHeader'
                 // },
-                // {  
-                //     columns: [  
-                //         [{ qr: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?.id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, fit: 100 }],  
+                // {
+                //     columns: [
+                //         [{ qr: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?.id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, fit: 100 }],
                 //         // [{ text: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?._id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, alignment: 'right', italics: true }],
                 //     ]
                 // },
-            ],
-            styles: {  
-                sectionHeader: {  
-                    bold: true,  
-                    decoration: 'underline',  
-                    fontSize: 14,  
-                    margin: [0, 15, 0, 15]  
-                },
-                tableHeader: {
-                    bold: true,
-                    fontSize: 12,
-                    fillColor: '#ffefd2'
-                }
-            }
-        };
-        // let docDefinition = {  
-        //     header: 'C#Corner PDF Header',  
-        //     content: 'Sample PDF generated with Angular and PDFMake for C#Corner Blog'  
-        // };  
-        
-        pdfMake.createPdf(docDefinition).open();  
+            ];
+
+        return content;
     }
 
     generateStoreSalePDF(storeSale: ShopResume) {

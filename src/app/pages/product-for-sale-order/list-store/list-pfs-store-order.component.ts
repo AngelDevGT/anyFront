@@ -1,8 +1,9 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { first } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 
-import { AlertService, DataService, storeOrderStatus} from '@app/services';
+import { AlertService, DataService, PdfService, storeOrderStatus} from '@app/services';
 import { DateRange } from '@angular/material/datepicker';
 import { Establishment } from '@app/models/establishment.model';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
@@ -30,6 +31,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
     storeName = '';
     availableStatuses: string[] = [];
     statusFilter: string | null = null;
+    selectedOrderIds: string[] = [];
+    exportingPdf = false;
 
     datePanelOpen = false;
     maxDate = new Date();
@@ -37,7 +40,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
     appliedEndDate?: Date;
     selectedDateRange: DateRange<Date> | null = null;
 
-    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe) {}
+    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe, private readonly pdfService: PdfService) {}
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
@@ -178,6 +181,44 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.sortDataByDate(this.selectedSortOpt);
     }
 
+    onSelectionChange(selectedIds: string[]) {
+        this.selectedOrderIds = selectedIds;
+    }
+
+    exportSelectedToPdf() {
+        if (!this.selectedOrderIds.length || this.exportingPdf) return;
+
+        // El listado no trae el detalle de los productos, se pide el de cada pedido seleccionado.
+        // forkJoin conserva el orden del arreglo, que ya viene en el orden del listado.
+        this.exportingPdf = true;
+        const requests = this.selectedOrderIds.map(id => this.dataService.getProductForSaleOrderByIdForPdf(id));
+
+        forkJoin(requests).pipe(first()).subscribe({
+            next: (responses: any[]) => {
+                const orders: ProductForSaleStoreOrder[] = responses
+                    .map(response => this.dataService.findJsonValue(response, 'json_result'))
+                    .filter(order => !!order);
+
+                if (!orders.length) {
+                    this.exportingPdf = false;
+                    this.alertService.error('No se pudo obtener el detalle de los pedidos seleccionados');
+                    return;
+                }
+
+                this.pdfService.generateMultipleProductForSaleOrdersPDF(orders, this.viewOption, this.storeName)
+                    .then(() => this.exportingPdf = false)
+                    .catch(() => {
+                        this.exportingPdf = false;
+                        this.alertService.error('Error al generar el PDF');
+                    });
+            },
+            error: () => {
+                this.exportingPdf = false;
+                this.alertService.error('Error al obtener los pedidos seleccionados');
+            }
+        });
+    }
+
     navigateWithParams() {
         if (this.viewOption) {
             this.router.navigate(['/productsForSale/order/create'], {
@@ -223,6 +264,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
                     ]
                 }
             ];
+            // Identificador usado por la columna de seleccion de la tabla
+            (curr_row as any).rowKey = element.id;
             this.tableElementsValues.push(curr_row);
         });
     }
