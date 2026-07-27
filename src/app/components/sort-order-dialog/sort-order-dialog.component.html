@@ -1,0 +1,73 @@
+<!-- Botón que abre el diálogo de reordenamiento -->
+<button type="button" class="sort-order__trigger" [disabled]="disabled || !items.length"
+    data-bs-toggle="modal" [attr.data-bs-target]="'#' + modalId" (click)="open()" [title]="title">
+    <i class="material-icons">swap_vert</i>
+    <span>Ordenar</span>
+</button>
+
+
+<!-- Modal Bootstrap con la lista arrastrable -->
+<div class="modal fade" [id]="modalId" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{title}}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="sort-order__toolbar">
+                    <div class="sort-order__dropdown">
+                        <button type="button" class="sort-order__sortby-btn" (click)="sortMenuOpen = !sortMenuOpen">
+                            <i class="material-icons">sort_by_alpha</i>
+                            <span>Ordenar por</span>
+                            <i class="material-icons sort-order__caret">{{ sortMenuOpen ? 'expand_less' : 'expand_more' }}</i>
+                        </button>
+                        <ul class="sort-order__menu" *ngIf="sortMenuOpen">
+                            <li>
+                                <button type="button" (click)="applyAlphabetical('asc')">Alfabéticamente A-Z</button>
+                            </li>
+                            <li>
+                                <button type="button" (click)="applyAlphabetical('desc')">Alfabéticamente Z-A</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p class="sort-order__hint">Arrastra los elementos para definir el orden en que se mostrarán.</p>
+
+                <div cdkDropList class="sort-order__list" (cdkDropListDropped)="drop($event)">
+                    <div class="sort-order__item" *ngFor="let item of working; let i = index" cdkDrag>
+                        <div class="sort-order__handle" cdkDragHandle>
+                            <i class="material-icons">drag_indicator</i>
+                        </div>
+                        <span class="sort-order__position">{{ i + 1 }}</span>
+                        <div class="sort-order__info">
+                            <span class="sort-order__name">{{ item.title }}</span>
+                            <span *ngIf="item.subtitle" class="sort-order__subtitle">{{ item.subtitle }}</span>
+                        </div>
+                        <div class="sort-order__placeholder" *cdkDragPlaceholder></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="sort-order__btn sort-order__btn--cancel" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="sort-order__btn sort-order__btn--save" data-bs-dismiss="modal"
+                    [disabled]="saving" (click)="onSave()">
+                    Guardar orden
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay de carga: bloquea toda la pantalla con blur mientras se guarda el orden -->
+<div *ngIf="saving" class="sort-order__loading-overlay">
+    <div class="sort-order__loading-content">
+        <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
+        <p class="text-light mt-3 mb-0 fs-5">Guardando orden...</p>
+    </div>
+</div>

@@ -35,7 +35,7 @@ export class SummaryProductForSaleInventoryFactoryComponent implements OnInit {
         this.inventoryElements = undefined;
 
         const requestArray = [
-            this.dataService.getInventoryByType({inventory_type: "product_for_sale"}, 'retrieveAllProductForSaleInventory'),
+            this.dataService.getInventoryByType({inventory_type: "product_for_sale"}, 'retrieveAllProductForSaleInventoryV2'),
             this.dataService.getAnyComponent({s: {id: 28}}, 'retrieveEstablishments')
         ];
 

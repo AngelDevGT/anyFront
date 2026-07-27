@@ -1,55 +1,56 @@
-<div class="genericCard">
-    <mat-card>
-        <mat-card-header style="justify-content: center;">
-            <mat-card-title>{{ pageTitle }}</mat-card-title>
-        </mat-card-header>
-        <div *ngIf="!cards" class="d-flex justify-content-center align-items-center py-3">
-            <span class="spinner-border spinner-border-lg me-1"></span>
+<div class="product-list">
+    <div class="product-list__header">
+        <div class="product-list__heading">
+            <h1 class="product-list__title">{{ pageTitle }}</h1>
+            <p class="product-list__subtitle">{{ pageSubtitle }}</p>
         </div>
-        <mat-card-content *ngIf="cards">
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="d-flex flex-wrap justify-content-md-between justify-content-center pb-0">
-                        <div>
-                            <button
-                                type="button"
-                                routerLink="create"
-                                class="btn btn-outline-success m-2"
-                                > <!-- relative route "add" = "/users/add" -->
-                                <div class="d-flex flex-row p-1">
-                                    <i class="material-icons icon">add</i>
-                                    <span>{{ materialType === 2 ? 'Crear Material de Empaque' : 'Crear Materia Prima' }}</span>
-                                </div>
-                            </button>
-                        </div>
-                        <div class="d-flex flex-wrap justify-content-md-end justify-content-center">
-                            <div class="select-filter mx-2">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Buscar</mat-label>
-                                    <input type="text" matInput [(ngModel)]="searchTerm" (input)="search($event)"/>
-                                </mat-form-field>
-                            </div>
-                            <div class="select-filter mx-2">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Proveedor</mat-label>
-                                    <mat-select matInput disableOptionCentering (valueChange)="selectedProviderSubject.next($event)">
-                                        <mat-option *ngFor="let provider of providerOptions" value="{{provider.id}}">{{provider.name}} - {{provider.company}}</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
+        <div class="product-list__actions">
+            <div class="product-list__search">
+                <i class="material-icons">search</i>
+                <input type="text" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search($event)" />
             </div>
-            <div class="d-flex flex-wrap justify-content-center">
-                <div *ngFor="let cardElements of cards | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize" class="p-2">
-                    <app-card [cardElements]="cardElements">
-                    </app-card>
-                </div>
-            </div>
-            <div class="d-flex flex-wrap justify-content-center pt-3">
-                <ngb-pagination [pageSize]="5" [maxSize]="4" [rotate]="true" [collectionSize]="this.cards.length ? this.cards.length : 0" [(page)]="page" [boundaryLinks]="true"></ngb-pagination>
-            </div>
-        </mat-card-content>
-    </mat-card>
+            <select #providerSel class="product-list__select"
+                (change)="selectedProviderSubject.next(providerSel.value)">
+                <option value="" disabled selected>Proveedor</option>
+                <option *ngFor="let provider of providerOptions" [value]="provider.id">
+                    {{provider.name}} - {{provider.company}}
+                </option>
+            </select>
+            <app-sort-order-dialog *ngIf="cards && selectedProvider" [items]="sortItems"
+                [title]="'Ordenar ' + pageTitle" [modalId]="'sortRawMaterialByProvider'" [saving]="savingOrder"
+                (save)="onSaveOrder($event)">
+            </app-sort-order-dialog>
+            <button *ngIf="cards" type="button" routerLink="create" class="product-list__create-btn">
+                <i class="material-icons">add</i>
+                <span>{{ materialType === 2 ? 'Crear Material de Empaque' : 'Crear Materia Prima' }}</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="product-list__grid">
+        <div *ngIf="!cards" class="product-list__loader">
+            <span class="spinner-border spinner-border-lg"></span>
+        </div>
+        <div *ngIf="cards && !selectedProvider" class="product-list__empty">
+            Selecciona un proveedor para ver sus materiales.
+        </div>
+        <app-product-card
+            *ngFor="let cardElements of cards | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize"
+            [cardElements]="cardElements">
+        </app-product-card>
+    </div>
+
+    <div class="product-list__footer" *ngIf="selectedProvider">
+        <div class="product-list__footer-info">
+            <span>Filas por página</span>
+            <select class="product-list__page-select" [(ngModel)]="pageSize" (change)="page = 1">
+                <option *ngFor="let s of pageSizes" [ngValue]="s">{{ s }}</option>
+            </select>
+            <span>registros</span>
+        </div>
+        <ngb-pagination [pageSize]="pageSize" [maxSize]="3" [rotate]="true" [ellipses]="true"
+            [collectionSize]="this.cards?.length ? this.cards!.length : 0" [(page)]="page"
+            [boundaryLinks]="true"></ngb-pagination>
+    </div>
 </div>

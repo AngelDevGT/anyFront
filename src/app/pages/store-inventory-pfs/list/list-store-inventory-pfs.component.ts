@@ -72,7 +72,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventory'));
+        requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventoryV2'));
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 
         forkJoin(requestArray).subscribe({

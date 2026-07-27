@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { DataService } from '@app/services';
+import { AlertService, DataService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -25,8 +25,9 @@ export class ListProductForSaleComponent implements OnInit {
     productsForSale?: ProductForSale[];
     allProductsForSale?: ProductForSale[];
     ProductForSaleForm!: FormGroup;
-    pageSize = 5;
+    pageSize = 8;
     page = 1;
+    readonly pageSizes = [8, 12, 24, 48, 96];
     searchTerm?: string;
     minDate: Date = new Date();
     nameOptions: string[] = ['Longaniza', 'Chorizo', 'Posta'];
@@ -34,8 +35,9 @@ export class ListProductForSaleComponent implements OnInit {
     filteredNameOptions?: Observable<string[]>;
     filteredCreatorUserOptions?: Observable<string[]>;
     cards?: any[];
+    savingOrder = false;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute, public _builder: FormBuilder) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, public _builder: FormBuilder, private alertService: AlertService) {}
 
     ngOnInit() {
 
@@ -51,7 +53,7 @@ export class ListProductForSaleComponent implements OnInit {
         this.productsForSale = undefined;
         let requestArray = [];
         if(this.storeID){
-            requestArray.push(this.dataService.getAllProductForSaleByFilter({"establishment_id": this.storeID, status_id: 50}));
+            requestArray.push(this.dataService.getAllProductForSaleByFilterV3({"establishment_id": this.storeID, status_id: 50}));
             forkJoin(requestArray).subscribe({
                 next: (result: any) => {
                     this.productsForSale = this.dataService.findJsonValue(result[0], 'json_result') || [];
@@ -71,27 +73,56 @@ export class ListProductForSaleComponent implements OnInit {
         let newCards: any[] = [];
         if (this.productsForSale){
             this.productsForSale.forEach(element => {
+                let descriptions = [
+                    {name:'Tienda', value: element.establishment?.name},
+                    {name:'Medida', value: element.finishedProduct?.measure?.identifier},
+                    {name:'Descripción', value: element.finishedProduct?.description},
+                    {name:'Creado', value: element.creationDate ? this.dataService.getLocalDateTimeFromUTCTime(element.creationDate) : null},
+                    {name:'Última actualización', value: element.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate) : null}
+                ].filter(d => d.value != null && ('' + d.value).trim() !== '');
                 let currentCard = {
                     title: element.finishedProduct?.name,
+                    subtitle: element.price != null ? this.dataService.getFormatedPrice(Number(element.price)) : null,
                     photo: element.finishedProduct?.photo,
-                    descriptions : [
-                        {name:'Tienda:', value: element.establishment?.name},
-                        {name:'Precio:', value: this.dataService.getFormatedPrice(Number(element.price))},
-                        {name:'Medida:', value: element.finishedProduct?.measure?.identifier},
-                        {name:'Descripcion:', value: element.finishedProduct?.description},
-                        {name:'Fecha creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
-                        {name:'Fecha actualizacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!)}
-                    ],
+                    thumb: element.finishedProduct?.thumb,
+                    link: '/productsForSale/view/' + element.id,
+                    params: { store: this.storeID },
+                    descriptions : descriptions,
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/productsForSale/view/' + element.id, params: { store: this.storeID }},
                         {title: 'Editar', value: 'edit_note', link: '/productsForSale/edit/' + element.id, params: { store: this.storeID }},
-                        // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currProduct._id},
+                        // {title: 'Eliminar', value: 'delete', link: '/productsForSale/delete/' + element.id, params: { store: this.storeID }},
                     ]
                 };
                 newCards.push(currentCard);
             });
             this.cards = newCards;
         }
+    }
+
+    get sortItems() {
+        return (this.allProductsForSale ?? []).map(p => ({
+            id: p.id!,
+            title: p.finishedProduct?.name,
+            subtitle: p.price != null ? this.dataService.getFormatedPrice(Number(p.price)) : undefined
+        }));
+    }
+
+    onSaveOrder(items: { id: string }[]) {
+        this.savingOrder = true;
+        const payload = items.map((it, index) => ({ id: it.id, sort_order: index }));
+        this.dataService.updateProductForSaleSortOrder(payload)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                    this.savingOrder = false;
+                    this.alertService.success('Orden actualizado correctamente');
+                    this.retriveProductsForSale();
+                },
+                error: () => {
+                    this.savingOrder = false;
+                    this.alertService.error('No se pudo actualizar el orden, intente nuevamente');
+                }
+            });
     }
 
     search(value: any): void {

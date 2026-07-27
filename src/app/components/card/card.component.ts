@@ -17,10 +17,11 @@ export class CardComponent implements OnInit {
     constructor(private router: Router, private dataService: DataService) { }
 
     ngOnInit() {
-        // this.cardElements['photo'] = undefined;
-        if (this.cardElements['photo']){
+        // En listados se prioriza el thumbnail (más liviano); si no hay, se usa la imagen full.
+        const imageId = this.cardElements['thumb'] || this.cardElements['photo'];
+        if (imageId){
             this.loading = true;
-            this.getImage(this.cardElements['photo'])
+            this.getImage(imageId)
             this.loading = false;
         }
     }

@@ -1,63 +1,207 @@
-mat-form-field{
-    width: 100%;
-    // margin-left: 5%;
-    // height: 30px !important;
-    // width: 50%;
-    // margin-left: 25%;
-    // height: 50%;
-    // // width: 90%;
-    // display: flex;
-    // align-items: flex-end;
-    // height: 10px !important;
-    
+$accent-orange: #f5a623;
+
+.product-list {
+    padding: 24px 28px;
+
+    &__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    &__heading {
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__title {
+        margin: 0 0 2px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #1a1a2e;
+    }
+
+    &__subtitle {
+        margin: 0;
+        font-size: 13px;
+        color: #888;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+
+    &__search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        border: 1px solid #e6e8ec;
+        border-radius: 8px;
+        padding: 8px 14px;
+        transition: border-color 0.2s ease;
+
+        i {
+            font-size: 20px;
+            color: #9aa0a6;
+        }
+
+        input {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            color: #1f2937;
+            min-width: 180px;
+
+            &::placeholder {
+                color: #9aa0a6;
+            }
+        }
+
+        &:focus-within {
+            border-color: $accent-orange;
+        }
+    }
+
+    &__select {
+        border: 1px solid #e6e8ec;
+        border-radius: 8px;
+        padding: 9px 14px;
+        font-size: 14px;
+        color: #1f2937;
+        background: #fff;
+        cursor: pointer;
+        min-width: 180px;
+
+        &:focus {
+            outline: none;
+            border-color: $accent-orange;
+        }
+    }
+
+    &__create-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: $accent-orange;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+
+        i {
+            font-size: 20px;
+        }
+
+        &:hover {
+            background: darken($accent-orange, 6%);
+            box-shadow: 0 4px 12px 0 rgba(245, 166, 35, 0.35);
+        }
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+        gap: 24px;
+    }
+
+    &__loader {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: center;
+        padding: 40px 0;
+    }
+
+    &__empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 48px 0;
+        color: #9aa0a6;
+        font-size: 14px;
+    }
+
+    &__footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 4px 4px;
+        margin-top: 12px;
+        border-top: 1px solid #f1f3f5;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__footer-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #666;
+    }
+
+    &__page-select {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 13px;
+        color: #444;
+        background: #fff;
+        cursor: pointer;
+
+        &:focus {
+            outline: none;
+            border-color: #ff6e20;
+        }
+    }
 }
 
+// ── Pagination styling (igual a data-table) ────────────────
+::ng-deep .product-list ngb-pagination .pagination {
+    margin: 0;
+    gap: 4px;
 
-.mat-form-field mat-select {
-    height: 10px;
-    // transition: height ease-in-out 100ms;
-}
+    .page-item .page-link {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 13px;
+        font-weight: 500;
+        color: #555;
+        background: #fff;
+        transition: background 0.15s, color 0.15s;
 
-.parent {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: row;
-  }
+        &:hover {
+            background: #f0f0f0;
+            color: #333;
+            border-color: #ccc;
+        }
+    }
 
+    .page-item.active .page-link {
+        background: #be4b00;
+        border-color: #be4b00;
+        color: #fff;
+    }
 
-.centrado{
-    align-content: center;
-}
-
-.mat-success {
-    background-color: #33c000;
-    color: #fff;
-}
-
-.mat-remove {
-    background-color: #ff8000;
-    color: #fff;
-}
-
-.inbtn{
-    // display: flex;
-    // justify-content: center;
-    // align-items: center; 
-    // display: inline-block;
-    padding: 10px;
-}
-
-.genericCard {
-    /* margin-top: 10px; */
-    margin: 20px;
-}
-
-.select-filter{
-    padding: 0 5px;
-}
-
-.custom-mat-card-content{
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
+    .page-item.disabled .page-link {
+        color: #bbb;
+        border-color: #eee;
+        background: #fafafa;
+    }
 }

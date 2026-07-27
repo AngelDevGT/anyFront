@@ -4,6 +4,7 @@ import { SidebarComponent } from './sidebar/sidebar.component';
 import { NavbarComponent } from './navbar/navbar.component';
 import { MenuComponent } from './menu/menu.component';
 import { CardComponent } from './card/card.component';
+import { ProductCardComponent } from './product-card/product-card.component';
 import { ResponsiveTableComponent } from './responsive-table/responsive-table.component';
 import { RouterModule } from '@angular/router';
 import { NgbCollapseModule } from '@ng-bootstrap/ng-bootstrap';
@@ -27,6 +28,8 @@ import { MatListModule } from '@angular/material/list';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DataTableComponent } from './data-table/data-table.component';
+import { SortOrderDialogComponent } from './sort-order-dialog/sort-order-dialog.component';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @NgModule({
   imports: [
@@ -36,6 +39,7 @@ import { DataTableComponent } from './data-table/data-table.component';
     NgbModule,
     ReactiveFormsModule,
     FormsModule,
+    DragDropModule,
     MatSelectModule,
     MatFormFieldModule,
     MatIconModule,
@@ -57,20 +61,24 @@ import { DataTableComponent } from './data-table/data-table.component';
     NavbarComponent,
     SidebarComponent,
     CardComponent,
+    ProductCardComponent,
     ResponsiveTableComponent,
     ViewObjectComponent,
     DynamicDialogComponent,
     DataTableComponent,
+    SortOrderDialogComponent,
   ],
   exports: [
     MenuComponent,
     NavbarComponent,
     SidebarComponent,
     CardComponent,
+    ProductCardComponent,
     ResponsiveTableComponent,
     ViewObjectComponent,
     DynamicDialogComponent,
     DataTableComponent,
+    SortOrderDialogComponent,
   ]
 })
 export class ComponentsModule { }

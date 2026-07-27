@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { DataService } from '@app/services';
+import { AlertService, DataService } from '@app/services';
 import { ActivatedRoute } from '@angular/router';
 import {
 AbstractControl,
@@ -23,8 +23,10 @@ export class ListRawMaterialByProviderComponent implements OnInit {
     rawMaterials?: RawMaterialByProvider[];
     allRawMaterials?: RawMaterialByProvider[];
     rawMaterialForm!: FormGroup;
-    pageSize = 5;
+    pageSize = 8;
     page = 1;
+    readonly pageSizes = [8, 12, 24, 48, 96];
+    pageSubtitle = 'Administra la materia prima por proveedor';
     searchTerm?: string;
     minDate: Date = new Date();
     nameOptions: string[] = ['Longaniza', 'Chorizo', 'Posta'];
@@ -41,13 +43,15 @@ export class ListRawMaterialByProviderComponent implements OnInit {
     basePath = '/rawMaterialsByProvider';
 
     cards?: any[];
+    savingOrder = false;
 
-    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute) {}
+    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute, private alertService: AlertService) {}
 
     ngOnInit() {
         this.materialType = this.route.snapshot.data['materialType'] ?? 1;
         this.basePath = this.materialType === 2 ? '/empaques' : '/rawMaterialsByProvider';
         this.pageTitle = this.materialType === 2 ? 'Material de Empaque' : 'Ingreso de proveedores';
+        this.pageSubtitle = this.materialType === 2 ? 'Administra el material de empaque por proveedor' : 'Administra la materia prima por proveedor';
         this.retriveRawMaterials();
 
         this.selectedProviderSubject.subscribe(value => {
@@ -66,7 +70,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
         this.rawMaterials = undefined;
 
         let requestArray = [];
-        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilter({"status_id": 34, "raw_material_by_provider_type_id": this.materialType}));
+        requestArray.push(this.dataService.getAllRawMaterialsByProviderByFilterV2({"status_id": 34, "raw_material_by_provider_type_id": this.materialType}));
         requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
 
         forkJoin(requestArray).subscribe({
@@ -100,25 +104,51 @@ export class ListRawMaterialByProviderComponent implements OnInit {
         if (this.rawMaterials && this.selectedProvider){
             this.rawMaterials.forEach(element => {
                 if (element.provider?.id !== this.selectedProvider?.id) return;
+                let descriptions = [
+                    {name:'Proveedor', value: element.provider?.name},
+                    {name:'Medida', value: element.rawMaterialBase?.measure?.identifier},
+                    {name:'Descripción', value: element.rawMaterialBase?.description},
+                    {name:'Última actualización', value: element.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate) : null},
+                ].filter(d => d.value != null && ('' + d.value).trim() !== '');
                 let currentCard = {
                     title: element.rawMaterialBase?.name,
+                    subtitle: element.price != null ? this.dataService.getFormatedPrice(Number(element.price)) : null,
                     photo: element.rawMaterialBase?.photo,
-                    descriptions: [
-                        {name:'Proveedor:', value: element.provider?.name},
-                        {name:'Precio:', value: this.dataService.getFormatedPrice(Number(element.price))},
-                        {name:'Medida:', value: element.rawMaterialBase?.measure?.identifier},
-                        {name:'Descripcion:', value: element.rawMaterialBase?.description},
-                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!)},
-                    ],
+                    link: this.basePath + '/view/' + element.id,
+                    descriptions: descriptions,
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: this.basePath + '/view/' + element.id},
                         {title: 'Editar', value: 'edit_note', link: this.basePath + '/edit/' + element.id},
-                        // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currRawMaterial._id},
+                        // {title: 'Eliminar', value: 'delete', link: this.basePath + '/delete/' + element.id},
                     ]
                 };
                 this.cards!.push(currentCard);
             });
         }
+    }
+
+    get sortItems() {
+        // El orden se define por proveedor (dentro del tipo actual): sólo los del proveedor seleccionado.
+        return (this.allRawMaterials ?? [])
+            .filter(rm => rm.provider?.id === this.selectedProvider?.id)
+            .map(rm => ({ id: rm.id!, title: rm.rawMaterialBase?.name, subtitle: rm.provider?.name }));
+    }
+
+    onSaveOrder(items: { id: string }[]) {
+        this.savingOrder = true;
+        const payload = items.map((it, index) => ({ id: it.id, sort_order: index }));
+        this.dataService.updateRawMaterialByProviderSortOrder(payload)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                    this.savingOrder = false;
+                    this.alertService.success('Orden actualizado correctamente');
+                    this.retriveRawMaterials();
+                },
+                error: () => {
+                    this.savingOrder = false;
+                    this.alertService.error('No se pudo actualizar el orden, intente nuevamente');
+                }
+            });
     }
 
     search(value: any): void {

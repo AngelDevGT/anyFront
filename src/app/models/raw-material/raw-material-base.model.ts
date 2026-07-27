@@ -8,8 +8,10 @@ export class RawMaterialBase {
     description?: string;
     measure?: Measure;
     photo?: string;
+    thumb?: string;
     status?: Status;
     creatorUser?: User;
     creationDate?: string;
     updatedDate?: string;
+    sortOrder?: number;
 }

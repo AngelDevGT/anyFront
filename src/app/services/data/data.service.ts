@@ -950,6 +950,60 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/UpdateRawMaterial`, params);
     }
 
+    // ---- V2 (soporte de thumbnail) — no reemplaza a los métodos anteriores ----
+    getAllRawMaterialsByFilterV2(params: any) {
+        let parameters = JSON.stringify({
+            rm: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveRawMaterialV2`, parameters);
+    }
+
+    // ---- V3 (orden personalizado: agrega sortOrder y ordena por sort_order) ----
+    getAllRawMaterialsByFilterV3(params: any) {
+        let parameters = JSON.stringify({
+            rm: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveRawMaterialV3`, parameters);
+    }
+
+    updateRawMaterialSortOrder(items: { id: string, sort_order: number }[]) {
+        let params = JSON.stringify({ "$1": JSON.stringify(items) });
+        return this.http.patch(`${environment.apiUrlV3}/updateRawMaterialSortOrder`, params);
+    }
+
+    getRawMaterialByIdV2(id: string) {
+        let params = JSON.stringify({rm: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getRawMaterialV2`, params);
+    }
+
+    addRawMaterialV2(rawMaterial: RawMaterialBase, img?: string, thumb?: string){
+        let params = JSON.stringify({
+            name: rawMaterial.name,
+            description: rawMaterial.description,
+            photo: img || undefined,
+            thumb: thumb || undefined,
+            unit_base_id: rawMaterial.measure?.id,
+            status_id: rawMaterialStatusValues.activo.status.id,
+            creator_user_id: this.accountService.userValue.uuid
+        });
+        return this.http.put(`${environment.apiUrlV3}/addRawMaterialV2`, params);
+    }
+
+    // El orden de las claves debe coincidir con los parámetros posicionales
+    // de UpdateRawMaterialV2: name=$1, description=$2, photo=$3, thumb=$4, id=$5
+    updateRawMaterialV2(id: string, rawMaterial: RawMaterialBase, img?: string, thumb?: string){
+        let params = JSON.stringify({
+            name: rawMaterial.name,
+            description: rawMaterial.description,
+            photo: img || "",
+            thumb: thumb || "",
+            id: id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/UpdateRawMaterialV2`, params);
+    }
+
     deleteRawMaterial(params: any) {
         let deleteUser = JSON.stringify({
             id: params.id
@@ -971,6 +1025,20 @@ export class DataService {
                 ...params
             }});
         return this.http.post(`${environment.apiUrlV3}/retrieveRawMaterialByProvider`, parameters);
+    }
+
+    // ---- V2 (orden personalizado: agrega sortOrder y ordena por sort_order) ----
+    getAllRawMaterialsByProviderByFilterV2(params: any) {
+        let parameters = JSON.stringify({
+            rmbp: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveRawMaterialByProviderV2`, parameters);
+    }
+
+    updateRawMaterialByProviderSortOrder(items: { id: string, sort_order: number }[]) {
+        let params = JSON.stringify({ "$1": JSON.stringify(items) });
+        return this.http.patch(`${environment.apiUrlV3}/updateRawMaterialByProviderSortOrder`, params);
     }
 
     getRawMaterialByProviderById(id: string) {
@@ -1055,6 +1123,61 @@ export class DataService {
             id: id
         });
         return this.http.patch(`${environment.apiUrlV3}/updateFinishedProduct`, params);
+    }
+
+    // ---- V2 (soporte de thumbnail) — no reemplaza a los métodos anteriores ----
+    getAllFinishedProductByFilterV2(params: any) {
+        let parameters = JSON.stringify({
+            fp: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveFinishedProductV2`, parameters);
+    }
+
+    getFinishedProductByIdV2(id: string) {
+        let params = JSON.stringify({fp: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getFinishedProductV2`, params);
+    }
+
+    // ---- V3 (orden personalizado: agrega sortOrder y ordena por sort_order) ----
+    getAllFinishedProductByFilterV3(params: any) {
+        let parameters = JSON.stringify({
+            fp: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveFinishedProductV3`, parameters);
+    }
+
+    updateFinishedProductSortOrder(items: { id: string, sort_order: number }[]) {
+        let params = JSON.stringify({ "$1": JSON.stringify(items) });
+        return this.http.patch(`${environment.apiUrlV3}/updateFinishedProductSortOrder`, params);
+    }
+
+    addFinishedProductV2(product: FinishedProduct, img?: string, thumb?: string){
+        let params = JSON.stringify({
+            name: product.name,
+            description: product.description,
+            photo: img || undefined,
+            thumb: thumb || undefined,
+            status_id: finishedProductStatusValues.activo.status.id,
+            unit_base_id: product.measure?.id,
+            creator_user_id: this.accountService.userValue.uuid,
+            finished_product_type_id: product.finishedProductTypeId ?? 1
+        });
+        return this.http.put(`${environment.apiUrlV3}/addFinishedProductV2`, params);
+    }
+
+    // El orden de las claves debe coincidir con los parámetros posicionales
+    // de updateFinishedProductV2: name=$1, description=$2, photo=$3, thumb=$4, id=$5
+    updateFinishedProductV2(id: string, product: FinishedProduct, img?: string, thumb?: string){
+        let params = JSON.stringify({
+            name: product.name,
+            description: product.description,
+            photo: img || "",
+            thumb: thumb || "",
+            id: id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateFinishedProductV2`, params);
     }
 
     deleteFinishedProduct(params: any) {
@@ -1256,6 +1379,34 @@ export class DataService {
     getProductForSaleById(id: string) {
         let params = JSON.stringify({pfs: { "id": id}});
         return this.http.post(`${environment.apiUrlV3}/getProductForSale`, params);
+    }
+
+    // ---- V2 (soporte de thumbnail, heredado de finished_product) ----
+    getAllProductForSaleByFilterV2(params: any) {
+        let parameters = JSON.stringify({
+            pfs: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveProductsForSaleV2`, parameters);
+    }
+
+    getProductForSaleByIdV2(id: string) {
+        let params = JSON.stringify({pfs: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleV2`, params);
+    }
+
+    // ---- V3 (orden personalizado por tienda: agrega sortOrder y ordena por sort_order) ----
+    getAllProductForSaleByFilterV3(params: any) {
+        let parameters = JSON.stringify({
+            pfs: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveProductsForSaleV3`, parameters);
+    }
+
+    updateProductForSaleSortOrder(items: { id: string, sort_order: number }[]) {
+        let params = JSON.stringify({ "$1": JSON.stringify(items) });
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleSortOrder`, params);
     }
 
     addProductForSale(product: ProductForSale){

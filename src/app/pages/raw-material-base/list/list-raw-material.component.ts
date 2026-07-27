@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { DataService } from '@app/services';
+import { AlertService, DataService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -21,8 +21,11 @@ export class ListRawMaterialComponent implements OnInit {
     rawMaterials?: RawMaterialBase[];
     allRawMaterials?: RawMaterialBase[];
     rawMaterialForm!: FormGroup;
-    pageSize = 5;
+    pageSize = 8;
     page = 1;
+    readonly pageSizes = [8, 12, 24, 48, 96];
+    pageTitle = 'Materia Prima';
+    pageSubtitle = 'Administra las materias primas registradas';
     searchTerm?: string;
     minDate: Date = new Date();
     nameOptions: string[] = ['Longaniza', 'Chorizo', 'Posta'];
@@ -33,8 +36,9 @@ export class ListRawMaterialComponent implements OnInit {
     filteredCreatorUserOptions?: Observable<string[]>;
 
     cards?: any[];
+    savingOrder = false;
 
-    constructor(private dataService: DataService, public _builder: FormBuilder) {}
+    constructor(private dataService: DataService, public _builder: FormBuilder, private alertService: AlertService) {}
 
     ngOnInit() {
         this.retriveRawMaterials();
@@ -42,7 +46,7 @@ export class ListRawMaterialComponent implements OnInit {
 
     retriveRawMaterials(){
         this.rawMaterials = undefined;
-        this.dataService.getAllRawMaterialsByFilter({"status_id": 32})
+        this.dataService.getAllRawMaterialsByFilterV3({"status_id": 32})
             .pipe(first())
             .subscribe({
                 next: (rawMaterials: any) => {
@@ -57,24 +61,48 @@ export class ListRawMaterialComponent implements OnInit {
         this.cards = [];
         if (this.rawMaterials){
             this.rawMaterials.forEach(element => {
+                let descriptions = [
+                    {name:'Descripción', value: element.description},
+                    {name:'Creado', value: element.creationDate ? this.dataService.getLocalDateTimeFromUTCTime(element.creationDate) : null},
+                    {name:'Última actualización', value: element.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate) : null},
+                ].filter(d => d.value != null && ('' + d.value).trim() !== '');
                 let currentCard = {
                     title: element.name,
+                    subtitle: element.measure?.identifier,
                     photo: element.photo,
-                    descriptions: [
-                        {name:'Descripcion:', value: element.description},
-                        {name:'Medida:', value: element.measure?.identifier},
-                        {name:'Creacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!)},
-                        {name:'Modificacion:', value: this.dataService.getLocalDateTimeFromUTCTime(element.updatedDate!)},
-                    ],
+                    thumb: element.thumb,
+                    link: '/rawMaterials/view/' + element.id,
+                    descriptions: descriptions,
                     buttons: [
-                        {title: 'Ver', value: 'visibility', link: '/rawMaterials/view/' + element.id},
                         {title: 'Editar', value: 'edit_note', link: '/rawMaterials/edit/' + element.id},
-                        // {title: 'Eliminar', value: 'delete', link: '/products/delete' + currRawMaterial._id},
+                        // {title: 'Eliminar', value: 'delete', link: '/rawMaterials/delete/' + element.id},
                     ]
                 };
                 this.cards!.push(currentCard);
             });
         }
+    }
+
+    get sortItems() {
+        return (this.allRawMaterials ?? []).map(rm => ({ id: rm.id!, title: rm.name, subtitle: rm.measure?.identifier }));
+    }
+
+    onSaveOrder(items: { id: string }[]) {
+        this.savingOrder = true;
+        const payload = items.map((it, index) => ({ id: it.id, sort_order: index }));
+        this.dataService.updateRawMaterialSortOrder(payload)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                    this.savingOrder = false;
+                    this.alertService.success('Orden actualizado correctamente');
+                    this.retriveRawMaterials();
+                },
+                error: () => {
+                    this.savingOrder = false;
+                    this.alertService.error('No se pudo actualizar el orden, intente nuevamente');
+                }
+            });
     }
 
     search(value: any): void {

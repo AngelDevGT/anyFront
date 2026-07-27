@@ -12,4 +12,5 @@ export class ProductForSale {
     creatorUser?: User; //sistema
     creationDate?: string;
     updatedDate?: string;
+    sortOrder?: number;
 }

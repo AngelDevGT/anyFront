@@ -238,7 +238,7 @@ export class AddEditSaleComponent implements OnInit{
 
             requestArray.push(this.dataService.getAnyComponent({}, 'getPaymentTypes')); // paymentTypeRequest
             requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
-            requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventory'));
+            requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventoryV2'));
             requestArray.push(this.dataService.getEstablishmentById(establishmentId));
     
             forkJoin(requestArray).subscribe({

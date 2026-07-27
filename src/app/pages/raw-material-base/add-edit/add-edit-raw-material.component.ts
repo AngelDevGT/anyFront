@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {BehaviorSubject, Observable, of} from 'rxjs';
+import {BehaviorSubject, forkJoin, Observable, of} from 'rxjs';
 import {concatMap, first, map, startWith} from 'rxjs/operators';
 import {
     DataUrl,
@@ -47,7 +47,8 @@ export class AddEditRawMaterialComponent implements OnInit{
     };
     selectedImage?: string;
     selectedFileImage?: File;
-    
+    selectedFileThumb?: File;
+
     minDate: Date = new Date();
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
@@ -77,7 +78,7 @@ export class AddEditRawMaterialComponent implements OnInit{
                 concatMap((measures: any) => {
                     this.measureOptions = this.dataService.findJsonValue(measures, 'json_result');
                     if (this.id){
-                        return this.dataService.getRawMaterialById(this.id);
+                        return this.dataService.getRawMaterialByIdV2(this.id);
                     }
                     this.loading = false;
                     return of(null);
@@ -107,11 +108,14 @@ export class AddEditRawMaterialComponent implements OnInit{
         this.alertService.clear();
         this.submitting = true;
         if(this.selectedFileImage){
-            this.dataService.uploadImage(this.selectedFileImage)
+            // Se suben full y thumb en paralelo; cada uno recibe su propio nombre del backend.
+            forkJoin({
+                full: this.dataService.uploadImage(this.selectedFileImage),
+                thumb: this.dataService.uploadImage(this.selectedFileThumb!)
+            })
             .pipe(
-                concatMap((imgResponse: any) => {
-                    let imgName = imgResponse.name;
-                    return this.saveRawMaterial(imgName);
+                concatMap((res: any) => {
+                    return this.saveRawMaterial(res.full?.name, res.thumb?.name);
                 })
             ).subscribe({
                 next: () => {
@@ -127,10 +131,12 @@ export class AddEditRawMaterialComponent implements OnInit{
             });
         } else {
             let imgName = undefined;
+            let thumbName = undefined;
             if(this.selectedImage && this.selectedImage !== ""){
                 imgName = this.currentRawMaterial?.photo;
+                thumbName = this.currentRawMaterial?.thumb;
             }
-            this.saveRawMaterial(imgName)
+            this.saveRawMaterial(imgName, thumbName)
                 .pipe(first())
                 .subscribe({
                     next: () => {
@@ -165,19 +171,19 @@ export class AddEditRawMaterialComponent implements OnInit{
         }
     }
     
-    saveRawMaterial(imgName?: string){
+    saveRawMaterial(imgName?: string, thumbName?: string){
         if(this.id){
             let newRawMaterial = {
                 ...this.currentRawMaterial,
                 ...this.rawMaterialForm.value
             };
-            return this.dataService.updateRawMaterial(this.id, newRawMaterial, imgName);
+            return this.dataService.updateRawMaterialV2(this.id, newRawMaterial, imgName, thumbName);
         }
         let newRawMaterial = {
             ...this.rawMaterialForm.value,
             measure: this.selectedMeasure
         }
-        return this.dataService.addRawMaterial(newRawMaterial, imgName);
+        return this.dataService.addRawMaterialV2(newRawMaterial, imgName, thumbName);
     }
 
     createFormGroup() {
@@ -211,35 +217,52 @@ export class AddEditRawMaterialComponent implements OnInit{
     }
 
     removePhoto(imageInput: any){
-        // this.imgResultAfterResizeMax = '';
-        // this.productPhoto!.setValue('');
         this.selectedImage = undefined;
         this.selectedFileImage = undefined;
+        this.selectedFileThumb = undefined;
         imageInput.value = '';
     }
 
     onFileSelected(event: any): void {
-        this.selectedFileImage = event.target.files[0];
-        console.log(this.selectedFileImage);
+        const file: File = event.target.files[0];
+        if (!file) { return; }
         const reader = new FileReader();
-            reader.onload = (e: any) => {
-            this.selectedImage = e.target.result;
-            };
-        reader.readAsDataURL(this.selectedFileImage!);
-        // if (file) {
-        //     if (file.size > this.maxFileSize) {
-        //       console.log('El archivo es demasiado grande. Tamaño máximo permitido: 10MB');
-        //       // Puedes mostrar un mensaje de error al usuario si lo deseas.
-        //     } else {
-        //       // Cargar la imagen como URL de datos (data URL)
-        //       const reader = new FileReader();
-        //       reader.onload = (e: any) => {
-        //         this.selectedImage = e.target.result;
-        //       };
-        //       reader.readAsDataURL(file);
-        //     }
-        //   }
-        // this.imageUploadService.uploadImage(file);
+        reader.onload = async (e: any) => {
+            const originalDataUrl: string = e.target.result;
+            try {
+                // full: se limita a 1280px de lado mayor con calidad 75
+                const fullDataUrl = await this.imageCompress.compressFile(
+                    originalDataUrl, DOC_ORIENTATION.Default, 100, 75, 1280, 1280);
+                // thumb: miniatura de 300px con calidad 70 (para listados)
+                const thumbDataUrl = await this.imageCompress.compressFile(
+                    originalDataUrl, DOC_ORIENTATION.Default, 100, 70, 300, 300);
+
+                this.selectedImage = fullDataUrl; // preview
+                this.selectedFileImage = this.dataUrlToFile(fullDataUrl, file.name);
+                this.selectedFileThumb = this.dataUrlToFile(thumbDataUrl, this.buildThumbName(file.name));
+            } catch (err) {
+                console.error('Error al comprimir la imagen', err);
+                this.alertService.error('No se pudo procesar la imagen seleccionada');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    /** Convierte un DataUrl (base64) en un objeto File para subirlo vía FormData. */
+    private dataUrlToFile(dataUrl: string, fileName: string): File {
+        const [header, base64] = dataUrl.split(',');
+        const mime = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
+        const binary = atob(base64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+        }
+        return new File([array], fileName, { type: mime });
+    }
+
+    /** Inserta el sufijo _thumb antes de la extensión (foto.jpg -> foto_thumb.jpg). */
+    private buildThumbName(fileName: string): string {
+        return fileName.replace(/(\.[^.]+)$/, '_thumb$1');
     }
 
 }

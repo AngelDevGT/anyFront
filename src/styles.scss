@@ -12,3 +12,52 @@ body {
   font-family: Roboto, "Helvetica Neue", sans-serif;
   background-color: $background-color;
 }
+
+// =============================================================================
+// Drag & drop (Angular CDK) — estilos GLOBALES a propósito.
+// El elemento que se arrastra (.cdk-drag-preview) se adjunta al <body>, fuera de
+// cualquier componente, por lo que la encapsulación de vista NO le aplica y debe
+// ir por encima del modal de Bootstrap (z-index 1055) para no quedar detrás.
+// Usado por app-sort-order-dialog (reordenamiento de catálogos).
+// =============================================================================
+.cdk-drag-preview {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, .18);
+  z-index: 1080 !important; // > .modal (1055)
+  list-style: none;
+
+  .sort-order__handle { display: flex; align-items: center; color: #98a2b3; }
+  .sort-order__position {
+    min-width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f2f4f7;
+    color: #475467;
+    font-size: .8rem;
+    font-weight: 700;
+  }
+  .sort-order__info { display: flex; flex-direction: column; min-width: 0; }
+  .sort-order__name { font-weight: 600; color: #101828; }
+  .sort-order__subtitle { font-size: .8rem; color: #667085; }
+}
+
+.cdk-drag-placeholder {
+  opacity: 0;
+}
+
+.cdk-drag-animating {
+  transition: transform .2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drop-list-dragging .sort-order__item:not(.cdk-drag-placeholder) {
+  transition: transform .2s cubic-bezier(0, 0, 0.2, 1);
+}

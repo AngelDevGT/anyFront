@@ -8,9 +8,11 @@ export class FinishedProduct {
     description?: string;
     measure?: Measure;
     photo?: string;
+    thumb?: string;
     status?: Status;
     creatorUser?: User;
     creationDate?: string;
     updatedDate?: string;
     finishedProductTypeId?: number;
+    sortOrder?: number;
 }

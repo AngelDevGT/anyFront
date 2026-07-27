@@ -13,4 +13,5 @@ export class RawMaterialByProvider {
     creatorUser?: User;
     creationDate?: string;
     updatedDate?: string;
+    sortOrder?: number;
 }

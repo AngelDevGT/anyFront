@@ -134,7 +134,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
         requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status_id": 28})); // providerRequest
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
-        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventory'));
+        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventoryV2'));
         requestArray.push(this.dataService.getAllProductForSaleByFilter({"status_id": 50})); //rawMaterialByProviderRequest
 
         if (this.id){

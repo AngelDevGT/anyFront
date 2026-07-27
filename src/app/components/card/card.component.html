@@ -1,10 +1,10 @@
 <div class="card-wrapper">
   <div class="card">
     <div class="position-relative">
-      <img *ngIf="cardPhoto" class="img-fluid card-img-top" 
-      [src]="cardPhoto"/>
-      <img *ngIf="!cardPhoto" class="img-fluid card-img-top" 
-      src="assets/img/no-image-available.jpg"/>
+      <img *ngIf="cardPhoto" class="img-fluid card-img-top"
+      [src]="cardPhoto" loading="lazy" decoding="async"/>
+      <img *ngIf="!cardPhoto" class="img-fluid card-img-top"
+      src="assets/img/no-image-available.jpg" loading="lazy" decoding="async"/>
       <div *ngIf="loading" class="my-4" style="text-align: center;">
         <span class="spinner-border spinner-border-lg"></span>
       </div>

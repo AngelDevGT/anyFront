@@ -1,0 +1,33 @@
+<div class="product-card" (click)="onCardClick()">
+  <button *ngIf="cardElements['buttons']?.length" type="button" class="product-card__menu-btn"
+    [matMenuTriggerFor]="cardMenu" (click)="$event.stopPropagation()" title="Opciones">
+    <mat-icon>more_vert</mat-icon>
+  </button>
+  <mat-menu #cardMenu="matMenu">
+    <button *ngFor="let button of cardElements['buttons']" mat-menu-item
+      (click)="onOption(button, $event)">
+      <span>{{button.title}}</span>
+    </button>
+  </mat-menu>
+
+  <div class="product-card__image-frame">
+    <span *ngIf="loading" class="spinner-border spinner-border-lg"></span>
+    <img *ngIf="cardPhoto && !loading" class="product-card__image"
+      [src]="cardPhoto" loading="lazy" decoding="async" [alt]="cardElements['title']" />
+    <img *ngIf="!cardPhoto && !loading" class="product-card__image"
+      src="assets/img/no-image-available.jpg" loading="lazy" decoding="async" [alt]="cardElements['title']" />
+  </div>
+
+  <div class="product-card__body">
+    <span *ngIf="cardElements['subtitle']" class="product-card__subtitle">
+      {{cardElements['subtitle']}}
+    </span>
+    <h3 class="product-card__title">{{cardElements['title']}}</h3>
+
+    <div class="product-card__descriptions">
+      <p *ngFor="let description of cardElements['descriptions']" class="product-card__description">
+        {{description.name}}: <span>{{description.value}}</span>
+      </p>
+    </div>
+  </div>
+</div>

@@ -50,7 +50,8 @@ export class AddEditFinishedProductComponent implements OnInit{
     };
     selectedImage?: string;
     selectedFileImage?: File;
-    
+    selectedFileThumb?: File;
+
     minDate: Date = new Date();
 
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
@@ -76,7 +77,7 @@ export class AddEditFinishedProductComponent implements OnInit{
         requestArray.push(this.dataService.getAnyComponent({}, 'getUnitBase')); // measureRequest
         if (this.id){
             this.title = this.productType === 2 ? 'Actualizar Abarrote' : 'Actualizar Producto Terminado';
-            requestArray.push(this.dataService.getFinishedProductById(this.id));
+            requestArray.push(this.dataService.getFinishedProductByIdV2(this.id));
         }
 
         forkJoin(requestArray).subscribe({
@@ -142,11 +143,14 @@ export class AddEditFinishedProductComponent implements OnInit{
         this.submitting = true;
 
         if(this.selectedFileImage){
-            this.dataService.uploadImage(this.selectedFileImage)
+            // Se suben full y thumb en paralelo; cada uno recibe su propio nombre del backend.
+            forkJoin({
+                full: this.dataService.uploadImage(this.selectedFileImage),
+                thumb: this.dataService.uploadImage(this.selectedFileThumb!)
+            })
             .pipe(
-                concatMap((imgResponse: any) => {
-                    let imgName = imgResponse.name;
-                    return this.saveFinishedProduct(imgName);
+                concatMap((res: any) => {
+                    return this.saveFinishedProduct(res.full?.name, res.thumb?.name);
                 })
             ).subscribe({
                 next: () => {
@@ -162,10 +166,12 @@ export class AddEditFinishedProductComponent implements OnInit{
             });
         } else {
             let imgName = undefined;
+            let thumbName = undefined;
             if(this.selectedImage && this.selectedImage !== ""){
                 imgName = this.currentProduct?.photo;
+                thumbName = this.currentProduct?.thumb;
             }
-            this.saveFinishedProduct(imgName)
+            this.saveFinishedProduct(imgName, thumbName)
                 .pipe(first())
                 .subscribe({
                     next: () => {
@@ -200,20 +206,20 @@ export class AddEditFinishedProductComponent implements OnInit{
         return this.productForm.get('photo');
     }
 
-    saveFinishedProduct(imgName?: string){
+    saveFinishedProduct(imgName?: string, thumbName?: string){
         if(this.id){
             let newProduct = {
                 ...this.currentProduct,
                 ...this.productForm.value
             };
-            return this.dataService.updateFinishedProduct(this.id, newProduct, imgName);
+            return this.dataService.updateFinishedProductV2(this.id, newProduct, imgName, thumbName);
         }
         let newProduct = {
             ...this.productForm.value,
             measure: this.selectedMeasure,
             finishedProductTypeId: this.productType
         }
-        return this.dataService.addFinishedProduct(newProduct, imgName);
+        return this.dataService.addFinishedProductV2(newProduct, imgName, thumbName);
     }
 
     createFormGroup() {
@@ -230,13 +236,45 @@ export class AddEditFinishedProductComponent implements OnInit{
     }
 
     onFileSelected(event: any): void {
-        this.selectedFileImage = event.target.files[0];
-        console.log(this.selectedFileImage);
+        const file: File = event.target.files[0];
+        if (!file) { return; }
         const reader = new FileReader();
-            reader.onload = (e: any) => {
-            this.selectedImage = e.target.result;
-            };
-        reader.readAsDataURL(this.selectedFileImage!);
+        reader.onload = async (e: any) => {
+            const originalDataUrl: string = e.target.result;
+            try {
+                // full: se limita a 1280px de lado mayor con calidad 75
+                const fullDataUrl = await this.imageCompress.compressFile(
+                    originalDataUrl, DOC_ORIENTATION.Default, 100, 75, 1280, 1280);
+                // thumb: miniatura de 300px con calidad 70 (para listados)
+                const thumbDataUrl = await this.imageCompress.compressFile(
+                    originalDataUrl, DOC_ORIENTATION.Default, 100, 70, 300, 300);
+
+                this.selectedImage = fullDataUrl; // preview
+                this.selectedFileImage = this.dataUrlToFile(fullDataUrl, file.name);
+                this.selectedFileThumb = this.dataUrlToFile(thumbDataUrl, this.buildThumbName(file.name));
+            } catch (err) {
+                console.error('Error al comprimir la imagen', err);
+                this.alertService.error('No se pudo procesar la imagen seleccionada');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    /** Convierte un DataUrl (base64) en un objeto File para subirlo vía FormData. */
+    private dataUrlToFile(dataUrl: string, fileName: string): File {
+        const [header, base64] = dataUrl.split(',');
+        const mime = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
+        const binary = atob(base64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+        }
+        return new File([array], fileName, { type: mime });
+    }
+
+    /** Inserta el sufijo _thumb antes de la extensión (foto.jpg -> foto_thumb.jpg). */
+    private buildThumbName(fileName: string): string {
+        return fileName.replace(/(\.[^.]+)$/, '_thumb$1');
     }
 
     // uploadAndReturnWithMaxSize() {
@@ -259,6 +297,7 @@ export class AddEditFinishedProductComponent implements OnInit{
     removePhoto(imageInput: any){
         this.selectedImage = undefined;
         this.selectedFileImage = undefined;
+        this.selectedFileThumb = undefined;
         imageInput.value = '';
     }
 
