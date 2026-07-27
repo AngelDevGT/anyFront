@@ -499,7 +499,7 @@ export class AddEditCashClosingComponent implements OnInit{
 
             let notes = this.operationRawMaterialForm.value.note;
             let sobrante = Number(this.operationRawMaterialForm.value.sobrante || 0);
-            this.dataService.addCashClosingV4(notes, this.establishmentId, sobrante)
+            this.dataService.addCashClosingV5(notes, this.establishmentId, sobrante)
             .pipe(first())
             .subscribe({
                 next: () => {

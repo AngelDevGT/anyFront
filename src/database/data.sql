@@ -1613,7 +1613,9 @@ INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,
         ),
         ''factoryStatus'', json_build_object(
             ''identifier'', s2.name,
-            ''id'', s2.id
+            ''id'', s2.id,
+            ''bg_color'', s2.bg_color,
+            ''color'', s2.color
         ),
         ''creatorUser'', json_build_object(
             ''name'', u.username,

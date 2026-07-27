@@ -49,6 +49,9 @@ import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/con
 import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
 import { SummaryStoreSalesComponent } from "@app/pages/store-sales/summary/summary-store-sales.component";
 import { ListStoreExpensesComponent } from "@app/pages/store-expenses/list/list-store-expenses.component";
+import { ListCustomerComponent } from "@app/pages/customers/list/list-customer.component";
+import { AddEditCustomerComponent } from "@app/pages/customers/add-edit/add-edit-customer.component";
+import { ViewCustomerComponent } from "@app/pages/customers/view/view-customer.component";
 import { AddEditExpenseComponent } from "@app/pages/store-expenses/add-edit/add-edit-expense.component";
 import { ViewExpenseComponent } from "@app/pages/store-expenses/view/view-expense.component";
 
@@ -86,6 +89,10 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'providers/create', component: AddEditProviderComponent, canActivate: [canActivateV2]},
     { path: 'providers/edit/:id', component: AddEditProviderComponent, canActivate: [canActivateV2]},
     { path: 'providers/view/:id', component: ViewProviderComponent, canActivate: [canActivateV2]},
+    { path: 'customers', component: ListCustomerComponent, canActivate: [canActivateV2]},
+    { path: 'customers/create', component: AddEditCustomerComponent, canActivate: [canActivateV2]},
+    { path: 'customers/edit/:id', component: AddEditCustomerComponent, canActivate: [canActivateV2]},
+    { path: 'customers/view/:id', component: ViewCustomerComponent, canActivate: [canActivateV2]},
     { path: 'rawMaterials', component: ListRawMaterialComponent, canActivate: [canActivateV2]},
     { path: 'rawMaterials/create', component: AddEditRawMaterialComponent, canActivate: [canActivateV2]},
     { path: 'rawMaterials/edit/:id', component: AddEditRawMaterialComponent, canActivate: [canActivateV2]},

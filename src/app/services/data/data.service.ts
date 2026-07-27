@@ -22,6 +22,12 @@ import { ActivityLog } from '@app/models/system/activity-log';
 import { CashClosing } from '@app/models/store/cash-closing.model';
 import { ShopResume } from '@app/models/store/shop-resume.model';
 import { StoreExpense } from '@app/models/store/store-expense.model';
+import { Customer } from '@app/models/system/customer.model';
+
+export const customerStatusValues = {
+    activo: { status: {id: 62}},
+    eliminado: { status: {id: 63}}
+}
 
 export const storeExpenseStatusValues = {
     activo: { status: {id: 58}},
@@ -747,6 +753,50 @@ export class DataService {
             id: params.id
         });
         return this.http.patch(`${environment.apiUrlV3}/deleteProvider`, deleteUser);
+    }
+
+    /** CUSTOMERS */
+
+    getAllCustomersByFilter(params: any) {
+        let parameters = JSON.stringify({
+            c: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveCustomers`, parameters);
+    }
+
+    getCustomerById(id: string) {
+        let parameters = JSON.stringify({c: { "id": id }});
+        return this.http.post(`${environment.apiUrlV3}/getCustomer`, parameters);
+    }
+
+    addCustomer(customer: Customer) {
+        let parameters = JSON.stringify({
+            "$1": customer.name,
+            "$2": customer.phone,
+            "$3": customer.email,
+            "$4": customer.nit || 'C/F',
+            "$5": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addCustomer`, parameters);
+    }
+
+    updateCustomer(customer: Customer) {
+        let parameters = JSON.stringify({
+            "$1": customer.name,
+            "$2": customer.phone,
+            "$3": customer.email,
+            "$4": customer.nit || 'C/F',
+            "$5": customer.id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateCustomer`, parameters);
+    }
+
+    deleteCustomer(id: string) {
+        let parameters = JSON.stringify({
+            "$1": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteCustomer`, parameters);
     }
 
     /** PRICE */
@@ -1568,7 +1618,7 @@ export class DataService {
             ss: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/listShopSaleV2`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listShopSaleV3`, parameters);
     }
 
     getShopHistoryById(params: any) {
@@ -1576,7 +1626,7 @@ export class DataService {
             ss: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/getShopSaleV2`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/getShopSaleV3`, parameters);
     }
 
     registerShop(params: ShopResume) {
@@ -1587,7 +1637,7 @@ export class DataService {
             "$2": JSON.stringify(params.itemsList),
             "$3": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/registerShopV3`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/registerShopV4`, parameters);
     }
 
     addShopSalePayment(shopSaleId: string, amount: string, paymentTypeId: string, paymentTarget: string = 'ORDER') {
@@ -1607,6 +1657,10 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV2`, params);
     }
 
+    /**
+     * Solo actualiza nombre y NIT si la venta es de un cliente escrito a mano;
+     * cuando la venta tiene un cliente registrado la query ignora $1 y $2.
+     */
     updateShopHistory(params: ShopResume) {
         let updateShopHistory = JSON.stringify({
             "$1": params.nameClient,
@@ -1614,7 +1668,7 @@ export class DataService {
             "$3": params.nota,
             "$4": params.id
         });
-        return this.http.patch(`${environment.apiUrlV3}/UpdateShopHistory`, updateShopHistory);
+        return this.http.patch(`${environment.apiUrlV3}/UpdateShopHistoryV2`, updateShopHistory);
     }
 
     cancelShop(params: ShopResume) {
@@ -1730,14 +1784,6 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/retrieveSotreCashClosing`, parameters);
     }
 
-    getAllCashClosingV2ByFilter(params: any) {
-        let parameters = JSON.stringify({
-            retrieveStoreCashClosing: {
-                ...params
-            }});
-        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV2`, parameters);
-    }
-
     listCashClosingByFilter(params: any) {
         let parameters = JSON.stringify({
             cc: {
@@ -1748,17 +1794,17 @@ export class DataService {
 
     getNewCashClosing(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosing`, params);
+        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV2`, params);
     }
 
     getCashClosingById(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosing`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV3`, params);
     }
 
     getCashClosingByIdV2(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV2`, params);
+        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV3`, params);
     }
 
     addCashClosingV2(notes: string, establishment_id: string){
@@ -1788,6 +1834,16 @@ export class DataService {
             "$4": sobrante
         });
         return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV4`, params);
+    }
+
+    addCashClosingV5(notes: string, establishment_id: string, sobrante: number = 0){
+        let params = JSON.stringify({
+            "$1": notes,
+            "$2": establishment_id,
+            "$3": this.accountService.userValue.uuid,
+            "$4": sobrante
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV5`, params);
     }
 
     updateCashClosing(id: string, note: string){

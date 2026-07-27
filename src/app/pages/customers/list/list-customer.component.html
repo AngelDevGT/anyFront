@@ -1,0 +1,28 @@
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h4 class="page-title">Registro de clientes</h4>
+      <p class="page-subtitle">Administra los clientes registrados</p>
+    </div>
+    <button *ngIf="customers" type="button" routerLink="create" class="btn-add">
+      <i class="material-icons">add</i>
+      Registrar cliente
+    </button>
+  </div>
+
+  <div class="content-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="material-icons search-icon">search</i>
+        <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search()" />
+      </div>
+    </div>
+
+    <data-table *ngIf="customers" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"></data-table>
+    <div *ngIf="!customers" class="loading-wrap">
+      <span class="spinner-border spinner-border-lg"></span>
+    </div>
+  </div>
+
+</div>

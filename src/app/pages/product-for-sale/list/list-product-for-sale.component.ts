@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { AlertService, DataService } from '@app/services';
+import { AlertService, DataService, PagerState, PaginationStateService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -25,8 +25,7 @@ export class ListProductForSaleComponent implements OnInit {
     productsForSale?: ProductForSale[];
     allProductsForSale?: ProductForSale[];
     ProductForSaleForm!: FormGroup;
-    pageSize = 8;
-    page = 1;
+    pager!: PagerState;
     readonly pageSizes = [8, 12, 24, 48, 96];
     searchTerm?: string;
     minDate: Date = new Date();
@@ -37,9 +36,11 @@ export class ListProductForSaleComponent implements OnInit {
     cards?: any[];
     savingOrder = false;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute, public _builder: FormBuilder, private alertService: AlertService) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, public _builder: FormBuilder, private alertService: AlertService, private paginationState: PaginationStateService) {}
 
     ngOnInit() {
+
+        this.pager = this.paginationState.createPager(8);
 
         this.route.queryParams.subscribe(params => {
             this.storeID = params['store'];
@@ -97,6 +98,7 @@ export class ListProductForSaleComponent implements OnInit {
             });
             this.cards = newCards;
         }
+        this.pager.onDataChange(this.cards?.length ?? 0);
     }
 
     get sortItems() {

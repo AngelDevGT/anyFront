@@ -4,6 +4,8 @@ import {concatMap, first} from 'rxjs/operators';
 import { NgxImageCompressService } from 'ngx-image-compress';
 
 import { statusValues, AlertService, DataService, measureUnitsConst } from '@app/services';
+import { customerStatusValues } from '@app/services/data/data.service';
+import { Customer } from '@app/models/system/customer.model';
 import {
 FormBuilder,
 FormGroup,
@@ -40,10 +42,22 @@ export class AddEditSaleComponent implements OnInit{
 
     // POS UI state
     searchFocused = false;
-    showClientRow = false;
     showDelivery = false;
     showComment = false;
     actionsSheetOpen = false;
+
+    /**
+     * Cliente de la venta. 'manual' y 'existing' son excluyentes: al entrar a
+     * uno se limpia el otro. Las ventas al crédito solo admiten 'existing'.
+     */
+    clientMode: 'none' | 'manual' | 'existing' = 'none';
+    customerOptions: Customer[] = [];
+    selectedCustomer?: Customer;
+    customerSearchTerm = '';
+    customerDropdownOpen = false;
+    cobrarModalOpen = false;
+    /** Venta en edición cuyo cliente es un registro de customer (no editable). */
+    isRegisteredCustomerSale = false;
 
     get filteredInventoryElements(): InventoryElement[] | undefined {
         if (!this.saleSearchTerm) return this.inventoryElements;
@@ -87,15 +101,131 @@ export class AddEditSaleComponent implements OnInit{
         setTimeout(() => this.searchFocused = false, 200);
     }
 
+    /** ── Cliente ──────────────────────────────────────────────── */
+
+    get showClientRow(): boolean {
+        return this.clientMode !== 'none';
+    }
+
+    /** El pago del pedido es al crédito. */
+    get isCreditOrder(): boolean {
+        return this.selectedPaymentType?.identifier === 'Crédito';
+    }
+
+    /** El envío tiene costo y se cobra al crédito. */
+    get isCreditDelivery(): boolean {
+        return this.showDelivery && this.delivery > 0
+            && this.selectedDeliveryPaymentType?.identifier === 'Crédito';
+    }
+
+    get isCreditSale(): boolean {
+        return this.isCreditOrder || this.isCreditDelivery;
+    }
+
+    /** Un cliente escrito a mano no es válido para una venta al crédito. */
+    get manualClientDisabled(): boolean {
+        return this.clientMode !== 'none' || (this.cobrarModalOpen && this.isCreditSale);
+    }
+
+    get filteredCustomers(): Customer[] {
+        const term = this.customerSearchTerm?.trim().toLowerCase();
+        if (!term) return this.customerOptions;
+        return this.customerOptions.filter(customer =>
+            customer.name?.toLowerCase().includes(term) ||
+            customer.nit?.toLowerCase().includes(term) ||
+            customer.phone?.toLowerCase().includes(term)
+        );
+    }
+
     addClientRow() {
-        this.showClientRow = true;
+        if (this.isCreditSale) return;
+        this.clearSelectedCustomer();
+        this.clientMode = 'manual';
         this.searchFocused = false;
     }
 
     removeClientRow() {
-        this.showClientRow = false;
+        this.clientMode = 'none';
         this.f['nameClient'].setValue('');
         this.f['nitClient'].setValue('');
+    }
+
+    /** Abre la fila de cliente registrado (excluyente con el manual). */
+    addCustomerRow() {
+        this.f['nameClient'].setValue('');
+        this.f['nitClient'].setValue('');
+        this.clientMode = 'existing';
+        this.searchFocused = false;
+        if (!this.selectedCustomer) {
+            this.openCustomerPicker();
+        }
+    }
+
+    removeCustomerRow() {
+        if (this.isCreditSale) return;
+        this.clientMode = 'none';
+        this.clearSelectedCustomer();
+        this.customerDropdownOpen = false;
+    }
+
+    openCustomerPicker() {
+        this.customerSearchTerm = '';
+        this.customerDropdownOpen = true;
+    }
+
+    /** Delay para que alcance a registrarse el click sobre una opción. */
+    onCustomerBlur() {
+        setTimeout(() => this.customerDropdownOpen = false, 200);
+    }
+
+    selectCustomer(customer: Customer) {
+        this.selectedCustomer = customer;
+        this.clientMode = 'existing';
+        this.orderForm.get('customerId')?.setValue(customer.id ?? null);
+        this.f['nameClient'].setValue('');
+        this.f['nitClient'].setValue('');
+        this.customerSearchTerm = '';
+        this.customerDropdownOpen = false;
+        this.syncCustomerRequirement();
+    }
+
+    clearSelectedCustomer() {
+        this.selectedCustomer = undefined;
+        this.orderForm.get('customerId')?.setValue(null);
+    }
+
+    /**
+     * Mantiene coherente el cliente con el tipo de pago: en cuanto la venta
+     * pasa a crédito el cliente manual se descarta y el registrado se vuelve
+     * obligatorio.
+     */
+    syncCustomerRequirement() {
+        const customerControl = this.orderForm?.get('customerId');
+        if (!customerControl) return;
+
+        if (this.isCreditSale) {
+            if (this.clientMode === 'manual') {
+                this.f['nameClient'].setValue('');
+                this.f['nitClient'].setValue('');
+                this.clientMode = this.selectedCustomer ? 'existing' : 'none';
+            }
+            customerControl.setValidators([Validators.required]);
+        } else {
+            customerControl.clearValidators();
+        }
+        customerControl.updateValueAndValidity();
+    }
+
+    /** El modal solo se puede cerrar con la X (backdrop estático, sin ESC). */
+    onOpenCobrarModal() {
+        this.cobrarModalOpen = true;
+        this.customerDropdownOpen = false;
+        this.syncCustomerRequirement();
+    }
+
+    onCloseCobrarModal() {
+        this.cobrarModalOpen = false;
+        this.customerDropdownOpen = false;
     }
 
     addDeliveryRow() {
@@ -107,6 +237,7 @@ export class AddEditSaleComponent implements OnInit{
         this.showDelivery = false;
         this.delivery = 0;
         this.f['delivery'].setValue('0');
+        this.syncCustomerRequirement();
     }
 
     addCommentRow() {
@@ -231,6 +362,13 @@ export class AddEditSaleComponent implements OnInit{
                     if (shopRes){
                         this.shopResume = shopRes;
                         this.orderForm.patchValue(this.shopResume!);
+                        // El cliente registrado no se modifica desde la edición
+                        this.isRegisteredCustomerSale = !!this.shopResume?.customer?.id;
+                        if (this.isRegisteredCustomerSale){
+                            this.selectedCustomer = this.shopResume?.customer;
+                            this.f['nameClient'].disable();
+                            this.f['nitClient'].disable();
+                        }
                         this.loading = false;
                     }
                 });
@@ -240,7 +378,8 @@ export class AddEditSaleComponent implements OnInit{
             requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
             requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventoryV2'));
             requestArray.push(this.dataService.getEstablishmentById(establishmentId));
-    
+            requestArray.push(this.dataService.getAllCustomersByFilter({ status_id: customerStatusValues.activo.status.id }));
+
             forkJoin(requestArray).subscribe({
                 next: (result: any) => {
                     this.paymentTypeOptions = this.dataService.findJsonValue(result[0], 'json_result') || [];
@@ -248,6 +387,7 @@ export class AddEditSaleComponent implements OnInit{
                     this.filteredMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
                     this.inventory = this.dataService.findJsonValue(result[2], 'json_result') || {};
                     this.establishment = this.dataService.findJsonValue(result[3], 'json_result') || {};
+                    this.customerOptions = this.dataService.findJsonValue(result[4], 'json_result') || [];
                 },
                 error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
                 complete: () => {
@@ -308,7 +448,12 @@ export class AddEditSaleComponent implements OnInit{
 
     /** Cierra el modal de cobro y guarda la venta. */
     onCobrar() {
+        if (this.isCreditSale && !this.selectedCustomer){
+            this.alertService.error('Una venta al crédito requiere seleccionar un cliente registrado');
+            return;
+        }
         this.cobrarCloseBtnRef?.nativeElement?.click();
+        this.cobrarModalOpen = false;
         this.onSaveForm();
     }
 
@@ -344,6 +489,9 @@ export class AddEditSaleComponent implements OnInit{
         } else {
             let newShopResume: ShopResume = {
                 ...this.orderForm.value,
+                // Con cliente registrado la venta viaja solo con la referencia:
+                // nameClient / nitClient quedan vacíos y la base los guarda en NULL
+                customer: this.selectedCustomer,
                 establecimiento: this.establishment,
                 establishment: this.establishment,
                 total: this.grandTotal.toFixed(2),
@@ -463,10 +611,12 @@ export class AddEditSaleComponent implements OnInit{
 
     setPaymentType(payment: any){
         this.selectedPaymentType = this.findPaymentType(payment);
+        this.syncCustomerRequirement();
     }
 
     setDeliveryPaymentType(payment: any){
         this.selectedDeliveryPaymentType = this.findPaymentType(payment);
+        this.syncCustomerRequirement();
     }
 
     get deliveryPaymentTypeSelect(){
@@ -560,6 +710,7 @@ export class AddEditSaleComponent implements OnInit{
         event.target.value = v;
         this.f['delivery'].setValue(v);
         this.delivery = Number(v) || 0;
+        this.syncCustomerRequirement();
     }
 
     calculateTotal(){
@@ -650,6 +801,8 @@ export class AddEditSaleComponent implements OnInit{
             Validators.maxLength(50),
             ]),
             nitClient: new FormControl('', [ Validators.maxLength(10),]),
+            // Obligatorio solo cuando la venta es al crédito (ver syncCustomerRequirement)
+            customerId: new FormControl(null),
             nota: new FormControl('', [Validators.maxLength(100)]),
             paymentType: new FormControl('', [Validators.required]),
             deliveryPaymentType: new FormControl('', [Validators.required]),

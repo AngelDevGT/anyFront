@@ -1,0 +1,73 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>{{title}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading" [formGroup]="customerForm" (ngSubmit)="onSaveForm()">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-start col-md-10 align-self-start">
+
+                            <mat-form-field class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>Nombre</mat-label>
+                                <input type="text" #name maxlength="{{listMaxLength['name']}}" formControlName="name" matInput
+                                    [ngClass]="{ 'is-invalid': f['name'].errors && f['name'].touched }" />
+                                <mat-hint align="end">{{name.value.length}} / {{listMaxLength['name']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['name'].errors && f['name'].touched">
+                                    <div *ngIf="f['name'].hasError('required')">Nombre requerido</div>
+                                    <div *ngIf="f['name'].hasError('maxlength')">El nombre debe tener maximo 100 caracteres</div>
+                                </div>
+                            </mat-form-field>
+
+                            <mat-form-field class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>Numero de telefono</mat-label>
+                                <input type="text" #phone maxlength="{{listMaxLength['phone']}}" formControlName="phone" matInput
+                                    [ngClass]="{ 'is-invalid': f['phone'].errors && f['phone'].touched }" />
+                                <mat-hint align="end">{{phone.value.length}} / {{listMaxLength['phone']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['phone'].errors && f['phone'].touched">
+                                    <div *ngIf="f['phone'].hasError('pattern')">Debe contener unicamente numeros</div>
+                                    <div *ngIf="f['phone'].hasError('maxlength')">El telefono debe tener maximo 15 caracteres</div>
+                                </div>
+                            </mat-form-field>
+
+                            <mat-form-field class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>Correo Electronico</mat-label>
+                                <input type="text" #email maxlength="{{listMaxLength['email']}}" formControlName="email" matInput
+                                    [ngClass]="{ 'is-invalid': f['email'].errors && f['email'].touched }" />
+                                <mat-hint align="end">{{email.value.length}} / {{listMaxLength['email']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['email'].errors && f['email'].touched">
+                                    <div *ngIf="f['email'].hasError('pattern')">El correo debe contener
+                                        <strong>una estructura similar a example&#64;email.com</strong>
+                                    </div>
+                                </div>
+                            </mat-form-field>
+
+                            <mat-form-field class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>NIT</mat-label>
+                                <input type="text" #nit maxlength="{{listMaxLength['nit']}}" formControlName="nit" matInput
+                                    [ngClass]="{ 'is-invalid': f['nit'].errors && f['nit'].touched }" />
+                                <mat-hint align="end">{{nit.value.length}} / {{listMaxLength['nit']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['nit'].errors && f['nit'].touched">
+                                    <div *ngIf="f['nit'].hasError('maxlength')">El NIT debe tener maximo 15 caracteres</div>
+                                </div>
+                            </mat-form-field>
+
+                        </div>
+                        <div class="col-sm-12 text-center p-2">
+                            <button type="submit" [disabled]="submitting || customerForm.invalid"
+                                class="btn btn-outline-success btn-lg">
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                Guardar Cliente
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

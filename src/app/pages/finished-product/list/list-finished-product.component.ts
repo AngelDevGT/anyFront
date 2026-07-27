@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { AlertService, DataService } from '@app/services';
+import { AlertService, DataService, PagerState, PaginationStateService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -23,8 +23,7 @@ export class ListFinishedProductComponent implements OnInit {
     allProducts?: FinishedProduct[];
     productForm!: FormGroup;
     searchTerm?: string;
-    pageSize = 8;
-    page = 1;
+    pager!: PagerState;
     readonly pageSizes = [8, 12, 24, 48, 96];
     minDate: Date = new Date();
     nameOptions: string[] = ['Longaniza', 'Chorizo', 'Posta'];
@@ -43,9 +42,10 @@ export class ListFinishedProductComponent implements OnInit {
 
     savingOrder = false;
 
-    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute, private alertService: AlertService) {}
+    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute, private alertService: AlertService, private paginationState: PaginationStateService) {}
 
     ngOnInit() {
+        this.pager = this.paginationState.createPager(8);
         this.productType = this.route.snapshot.data['productType'] ?? 1;
         this.basePath = this.productType === 2 ? '/abarrotes' : '/finishedProducts';
         this.pageTitle = this.productType === 2 ? 'Abarrotes' : 'Productos';
@@ -92,6 +92,7 @@ export class ListFinishedProductComponent implements OnInit {
                 this.cards.push(currentCard);
             }
         }
+        this.pager.onDataChange(this.cards.length);
     }
 
     createFormGroup() {

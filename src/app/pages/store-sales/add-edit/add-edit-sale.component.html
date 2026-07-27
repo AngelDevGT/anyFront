@@ -24,7 +24,25 @@
             <form [formGroup]="orderForm" (ngSubmit)="onSaveForm()">
                 <div class="container">
                     <div class="row justify-content-center">
-                        <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
+                        <!-- Cliente registrado: solo lectura, no se puede cambiar desde aquí -->
+                        <div class="col-sm-12 col-md-10 registered-client-box" *ngIf="isRegisteredCustomerSale">
+                            <div class="registered-client-head">
+                                <i class="material-icons">how_to_reg</i>
+                                <span>Cliente registrado</span>
+                            </div>
+                            <div class="registered-client-body">
+                                <span class="registered-client-name">{{ selectedCustomer?.name }}</span>
+                                <span class="registered-client-meta">
+                                    NIT {{ selectedCustomer?.nit || 'C/F' }}
+                                    <ng-container *ngIf="selectedCustomer?.phone as phone"> · {{ phone }}</ng-container>
+                                </span>
+                            </div>
+                            <p class="registered-client-hint">
+                                El cliente de una venta registrada no se puede modificar. Solo puedes editar las notas.
+                            </p>
+                        </div>
+
+                        <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline" *ngIf="!isRegisteredCustomerSale">
                             <mat-label>Nombre del cliente</mat-label>
                             <input id="nameClient-form-crear-comunidad" type="text" formControlName="nameClient" matInput
                                 [ngClass]="{ 'is-invalid': f['nameClient'].errors }" />
@@ -32,7 +50,7 @@
                                 El nombre debe tener maximo 50 caracteres
                             </div>
                         </mat-form-field>
-                        <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
+                        <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline" *ngIf="!isRegisteredCustomerSale">
                             <mat-label>NIT</mat-label>
                             <input id="nitClient-form-crear-comunidad" type="text" formControlName="nitClient" matInput maxlength="10"
                                 [ngClass]="{ 'is-invalid': f['nitClient'].errors }" />
@@ -99,9 +117,13 @@
 
                 <!-- Acciones inline (escritorio) -->
                 <div class="pos-options-bar">
-                    <button type="button" class="pos-option" (click)="addClientRow()" [disabled]="showClientRow">
+                    <button type="button" class="pos-option" (click)="addCustomerRow()" [disabled]="clientMode === 'existing'">
+                        <span class="pos-option-icon client"><i class="material-icons">how_to_reg</i></span>
+                        Cliente registrado
+                    </button>
+                    <button type="button" class="pos-option" (click)="addClientRow()" [disabled]="manualClientDisabled">
                         <span class="pos-option-icon client"><i class="material-icons">person_add</i></span>
-                        Añadir cliente
+                        Cliente sin registrar
                     </button>
                     <button type="button" class="pos-option" (click)="addDeliveryRow()" [disabled]="showDelivery">
                         <span class="pos-option-icon delivery"><i class="material-icons">local_shipping</i></span>
@@ -125,14 +147,55 @@
             <div class="pos-cart-panel">
                 <div class="pos-cart-items">
 
-                    <!-- Fila de cliente -->
-                    <div class="pos-client-row" *ngIf="showClientRow">
+                    <!-- Fila de cliente sin registrar -->
+                    <div class="pos-client-row" *ngIf="clientMode === 'manual'">
                         <div class="pos-client-icon"><i class="material-icons">person</i></div>
                         <div class="pos-client-fields">
                             <input type="text" placeholder="Nombre del cliente" formControlName="nameClient" />
                             <input type="text" placeholder="NIT" formControlName="nitClient" maxlength="10" />
                         </div>
                         <button type="button" class="pos-row-x" (click)="removeClientRow()" aria-label="Quitar cliente">
+                            <i class="material-icons">close</i>
+                        </button>
+                    </div>
+
+                    <!-- Fila de cliente registrado -->
+                    <div class="pos-client-row" *ngIf="clientMode === 'existing'">
+                        <div class="pos-client-icon"><i class="material-icons">how_to_reg</i></div>
+
+                        <div class="pos-customer-picker" *ngIf="!selectedCustomer || customerDropdownOpen">
+                            <input type="text" class="pos-customer-input" placeholder="Buscar cliente por nombre o NIT"
+                                [(ngModel)]="customerSearchTerm" [ngModelOptions]="{ standalone: true }"
+                                (focus)="customerDropdownOpen = true" (blur)="onCustomerBlur()" />
+                            <div class="pos-customer-dropdown" *ngIf="customerDropdownOpen">
+                                <button type="button" class="pos-customer-option"
+                                    *ngFor="let customer of filteredCustomers" (click)="selectCustomer(customer)">
+                                    <span class="pos-customer-option-name">{{ customer.name }}</span>
+                                    <span class="pos-customer-option-meta">
+                                        NIT {{ customer.nit || 'C/F' }}
+                                        <ng-container *ngIf="customer.phone"> · {{ customer.phone }}</ng-container>
+                                    </span>
+                                </button>
+                                <p *ngIf="!filteredCustomers.length" class="pos-customer-empty">
+                                    Sin clientes que coincidan
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="pos-customer-selected" *ngIf="selectedCustomer && !customerDropdownOpen">
+                            <span class="pos-customer-name">{{ selectedCustomer.name }}</span>
+                            <span class="pos-customer-meta">
+                                NIT {{ selectedCustomer.nit || 'C/F' }}
+                                <ng-container *ngIf="selectedCustomer.phone"> · {{ selectedCustomer.phone }}</ng-container>
+                            </span>
+                        </div>
+
+                        <button type="button" class="pos-row-x" *ngIf="selectedCustomer && !customerDropdownOpen"
+                            (click)="openCustomerPicker()" aria-label="Cambiar cliente">
+                            <i class="material-icons">swap_horiz</i>
+                        </button>
+                        <button type="button" class="pos-row-x" *ngIf="!isCreditSale"
+                            (click)="removeCustomerRow()" aria-label="Quitar cliente">
                             <i class="material-icons">close</i>
                         </button>
                     </div>
@@ -208,7 +271,7 @@
                         <span>{{ dataPrice(delivery) }}</span>
                     </div>
                     <button type="button" class="pos-cobrar-btn" [disabled]="!itemCount || submitting"
-                        data-bs-toggle="modal" data-bs-target="#cobrarModal">
+                        data-bs-toggle="modal" data-bs-target="#cobrarModal" (click)="onOpenCobrarModal()">
                         Cobrar {{ dataPrice(grandTotal) }}
                     </button>
                 </div>
@@ -226,9 +289,13 @@
                 </button>
             </div>
             <div class="pos-actions-grid">
-                <button type="button" class="pos-action-card" (click)="addClientRow(); closeActionsSheet()" [disabled]="showClientRow">
+                <button type="button" class="pos-action-card" (click)="addCustomerRow(); closeActionsSheet()" [disabled]="clientMode === 'existing'">
+                    <span class="pos-action-icon client"><i class="material-icons">how_to_reg</i></span>
+                    Cliente registrado
+                </button>
+                <button type="button" class="pos-action-card" (click)="addClientRow(); closeActionsSheet()" [disabled]="manualClientDisabled">
                     <span class="pos-action-icon client"><i class="material-icons">person_add</i></span>
-                    Añadir cliente
+                    Cliente sin registrar
                 </button>
                 <button type="button" class="pos-action-card" (click)="addDeliveryRow(); closeActionsSheet()" [disabled]="showDelivery">
                     <span class="pos-action-icon delivery"><i class="material-icons">local_shipping</i></span>
@@ -247,7 +314,8 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Registrar Venta</h5>
-                        <button #cobrarCloseBtn type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancelar"></button>
+                        <button #cobrarCloseBtn type="button" class="btn-close" data-bs-dismiss="modal"
+                            (click)="onCloseCobrarModal()" aria-label="Cancelar"></button>
                     </div>
                     <div class="modal-body">
                         <div class="pos-total-box">
@@ -269,6 +337,46 @@
                                 (change)="selectedDeliveryPaymentTypeSubject.next($any($event.target).value)">
                                 <option *ngFor="let pt of deliveryPaymentTypeOptions" value="{{ pt.id }}">{{ pt.identifier }}</option>
                             </select>
+                        </div>
+
+                        <!-- Cliente obligatorio para ventas al crédito -->
+                        <div class="pos-pay-field pos-credit-client" *ngIf="isCreditSale">
+                            <label>Cliente <span class="pos-required">*</span></label>
+
+                            <div class="pos-customer-selected modal-selected" *ngIf="selectedCustomer">
+                                <div class="pos-customer-selected-info">
+                                    <span class="pos-customer-name">{{ selectedCustomer.name }}</span>
+                                    <span class="pos-customer-meta">
+                                        NIT {{ selectedCustomer.nit || 'C/F' }}
+                                        <ng-container *ngIf="selectedCustomer.phone"> · {{ selectedCustomer.phone }}</ng-container>
+                                    </span>
+                                </div>
+                                <button type="button" class="pos-customer-change" (click)="clearSelectedCustomer()">
+                                    Cambiar
+                                </button>
+                            </div>
+
+                            <ng-container *ngIf="!selectedCustomer">
+                                <input type="text" class="form-control form-control-lg"
+                                    placeholder="Buscar cliente por nombre o NIT"
+                                    [(ngModel)]="customerSearchTerm" [ngModelOptions]="{ standalone: true }" />
+                                <div class="pos-customer-list">
+                                    <button type="button" class="pos-customer-option"
+                                        *ngFor="let customer of filteredCustomers" (click)="selectCustomer(customer)">
+                                        <span class="pos-customer-option-name">{{ customer.name }}</span>
+                                        <span class="pos-customer-option-meta">
+                                            NIT {{ customer.nit || 'C/F' }}
+                                            <ng-container *ngIf="customer.phone"> · {{ customer.phone }}</ng-container>
+                                        </span>
+                                    </button>
+                                    <p *ngIf="!filteredCustomers.length" class="pos-customer-empty">
+                                        Sin clientes que coincidan
+                                    </p>
+                                </div>
+                                <p class="pos-customer-hint">
+                                    Una venta al crédito debe registrarse a nombre de un cliente existente.
+                                </p>
+                            </ng-container>
                         </div>
                     </div>
                     <div class="modal-footer">

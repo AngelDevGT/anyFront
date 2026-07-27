@@ -1,0 +1,35 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <div *ngIf="loading" class="text-center m-5">
+            <span class="spinner-border spinner-border-lg align-center"></span>
+        </div>
+        <mat-card-header *ngIf="!loading" style="justify-content: center;">
+            <mat-card-title>{{customer?.name}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content *ngIf="!loading">
+            <br>
+            <view-object [objectElements]="elements"></view-object>
+            <div class="d-flex flex-wrap justify-content-center">
+                <button
+                    *ngIf="!isDeleted"
+                    type="button" (click)="editCustomer()" [disabled]="submitting"
+                    class="btn btn-primary m-2">
+                    <div class="d-flex flex-row p-1">
+                        <i class="material-icons icon">edit</i>
+                        <span class="px-1">EDITAR</span>
+                    </div>
+                </button>
+                <button
+                    *ngIf="!isDeleted"
+                    type="button" (click)="deleteCustomer()" [disabled]="submitting"
+                    class="btn btn-danger m-2">
+                    <div class="d-flex flex-row p-1">
+                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="material-icons icon">delete</i>
+                        <span class="px-1">ELIMINAR</span>
+                    </div>
+                </button>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

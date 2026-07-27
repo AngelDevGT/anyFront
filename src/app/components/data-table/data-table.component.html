@@ -100,18 +100,18 @@
   <div class="dt-footer">
     <div class="dt-footer-info">
       <span>Filas por página</span>
-      <select class="dt-page-select" [(ngModel)]="pageSize" (change)="page = 1">
+      <select class="dt-page-select" [(ngModel)]="pager.pageSize" (change)="pager.page = 1">
         <option *ngFor="let s of pageSizes" [ngValue]="s">{{ s }}</option>
       </select>
       <span>registros</span>
     </div>
     <ngb-pagination
-      [pageSize]="pageSize"
+      [pageSize]="pager.pageSize"
       [maxSize]="3"
       [rotate]="true"
       [ellipses]="true"
       [collectionSize]="rows.length"
-      [(page)]="page"
+      [(page)]="pager.page"
       [boundaryLinks]="true">
     </ngb-pagination>
   </div>

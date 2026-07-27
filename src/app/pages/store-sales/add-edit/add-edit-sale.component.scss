@@ -502,6 +502,127 @@ $accent-dark: #a83e00;
 }
 .modal-cobrar { margin-top: 0; }
 
+// ── Selector de cliente registrado ────────────────────────
+// Dropdown propio en lugar de mat-autocomplete: el overlay de Material
+// queda por debajo del modal de Bootstrap.
+.pos-customer-picker {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+}
+.pos-customer-input {
+    width: 100%;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 14px;
+    outline: none;
+    &:focus { border-color: $accent; }
+    &::placeholder { color: #b8bcc2; }
+}
+.pos-customer-dropdown {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #eef0f3;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
+}
+.pos-customer-list {
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 8px;
+    border: 1px solid #eef0f3;
+    border-radius: 10px;
+}
+.pos-customer-option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #f2f4f7;
+    padding: 9px 12px;
+    text-align: left;
+    cursor: pointer;
+    &:last-child { border-bottom: none; }
+    &:hover { background: #fff7f2; }
+}
+.pos-customer-option-name { font-size: 14px; font-weight: 600; color: #1d2939; }
+.pos-customer-option-meta { font-size: 12.5px; color: #98a2b3; }
+.pos-customer-empty {
+    margin: 0;
+    padding: 14px 12px;
+    font-size: 13px;
+    color: #98a2b3;
+    text-align: center;
+}
+.pos-customer-selected {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    &.modal-selected {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        background: #f8f9fb;
+        border: 1px solid #eef0f3;
+        border-radius: 10px;
+        padding: 10px 12px;
+    }
+}
+.pos-customer-selected-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pos-customer-name { font-size: 14.5px; font-weight: 600; color: #1d2939; }
+.pos-customer-meta { font-size: 12.5px; color: #98a2b3; }
+.pos-customer-change {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475467;
+    cursor: pointer;
+    &:hover { border-color: $accent; color: $accent; }
+}
+.pos-customer-hint { margin: 8px 0 0; font-size: 12.5px; color: #98a2b3; }
+.pos-required { color: #e0556b; }
+
+// ── Cliente registrado en la edición de la venta ──────────
+.registered-client-box {
+    background: #f8f9fb;
+    border: 1px solid #eef0f3;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+.registered-client-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #98a2b3;
+    .material-icons { font-size: 18px; color: $accent; }
+}
+.registered-client-body { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.registered-client-name { font-size: 16px; font-weight: 700; color: #1d2939; }
+.registered-client-meta { font-size: 13px; color: #667085; }
+.registered-client-hint { margin: 10px 0 0; font-size: 12.5px; color: #98a2b3; }
+
 // ── Overlay de carga al guardar la venta ──────────────────
 .sale-loading-overlay {
     position: fixed;

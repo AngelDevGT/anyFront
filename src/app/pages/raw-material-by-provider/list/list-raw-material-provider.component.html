@@ -36,7 +36,7 @@
             Selecciona un proveedor para ver sus materiales.
         </div>
         <app-product-card
-            *ngFor="let cardElements of cards | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize"
+            *ngFor="let cardElements of cards | slice: (pager.page-1) * pager.pageSize : (pager.page-1) * pager.pageSize + pager.pageSize"
             [cardElements]="cardElements">
         </app-product-card>
     </div>
@@ -44,13 +44,13 @@
     <div class="product-list__footer" *ngIf="selectedProvider">
         <div class="product-list__footer-info">
             <span>Filas por página</span>
-            <select class="product-list__page-select" [(ngModel)]="pageSize" (change)="page = 1">
+            <select class="product-list__page-select" [(ngModel)]="pager.pageSize" (change)="pager.page = 1">
                 <option *ngFor="let s of pageSizes" [ngValue]="s">{{ s }}</option>
             </select>
             <span>registros</span>
         </div>
-        <ngb-pagination [pageSize]="pageSize" [maxSize]="3" [rotate]="true" [ellipses]="true"
-            [collectionSize]="this.cards?.length ? this.cards!.length : 0" [(page)]="page"
+        <ngb-pagination [pageSize]="pager.pageSize" [maxSize]="3" [rotate]="true" [ellipses]="true"
+            [collectionSize]="this.cards?.length ? this.cards!.length : 0" [(page)]="pager.page"
             [boundaryLinks]="true"></ngb-pagination>
     </div>
 </div>

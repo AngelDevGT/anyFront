@@ -80,6 +80,14 @@ const menuItemsOptions: any = [
         icon_name: 'arrow_right',
         icon_class: 'material-icons icon',
       },
+      {
+        root_class: 'list-group list-group-flush',
+        router_link: '/customers',
+        link_class: 'list-group-item py-2 ripple',
+        link_name: 'Clientes',
+        icon_name: 'arrow_right',
+        icon_class: 'material-icons icon',
+      },
     ],
   },
   {

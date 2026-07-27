@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { AlertService, DataService } from '@app/services';
+import { AlertService, DataService, PagerState, PaginationStateService } from '@app/services';
 import { ActivatedRoute } from '@angular/router';
 import {
 AbstractControl,
@@ -23,8 +23,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
     rawMaterials?: RawMaterialByProvider[];
     allRawMaterials?: RawMaterialByProvider[];
     rawMaterialForm!: FormGroup;
-    pageSize = 8;
-    page = 1;
+    pager!: PagerState;
     readonly pageSizes = [8, 12, 24, 48, 96];
     pageSubtitle = 'Administra la materia prima por proveedor';
     searchTerm?: string;
@@ -45,9 +44,10 @@ export class ListRawMaterialByProviderComponent implements OnInit {
     cards?: any[];
     savingOrder = false;
 
-    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute, private alertService: AlertService) {}
+    constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute, private alertService: AlertService, private paginationState: PaginationStateService) {}
 
     ngOnInit() {
+        this.pager = this.paginationState.createPager(8);
         this.materialType = this.route.snapshot.data['materialType'] ?? 1;
         this.basePath = this.materialType === 2 ? '/empaques' : '/rawMaterialsByProvider';
         this.pageTitle = this.materialType === 2 ? 'Material de Empaque' : 'Ingreso de proveedores';
@@ -124,6 +124,7 @@ export class ListRawMaterialByProviderComponent implements OnInit {
                 this.cards!.push(currentCard);
             });
         }
+        this.pager.onDataChange(this.cards?.length ?? 0);
     }
 
     get sortItems() {

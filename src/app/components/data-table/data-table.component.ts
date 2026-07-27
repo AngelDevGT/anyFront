@@ -1,24 +1,26 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { Router } from '@angular/router';
+import { PagerState, PaginationStateService } from '@app/services';
 
 @Component({
   selector: 'data-table',
   templateUrl: './data-table.component.html',
   styleUrls: ['./data-table.component.scss']
 })
-export class DataTableComponent implements OnChanges {
+export class DataTableComponent implements OnInit, OnChanges {
   @Input() tableElements: any[][] = [];
   @Input() initialPageSize = 10;
   // Habilita la columna de checkboxes. Cada fila debe traer la propiedad 'rowKey' con su identificador.
   @Input() selectable = false;
+  // Identificador para recordar la pagina del listado; por defecto se usa la ruta actual.
+  @Input() pageKey?: string;
   @Output() modalAction = new EventEmitter<{ target: string; data: any }>();
   @Output() selectionChange = new EventEmitter<string[]>();
 
   headers: { header_name: string }[] = [];
   rows: any[][] = [];
   selectedKeys = new Set<string>();
-  page = 1;
-  pageSize = 10;
+  pager!: PagerState;
   readonly pageSizes = [5, 10, 25, 50, 100];
   sortColumn: number | null = null;
   sortDirection: 'asc' | 'desc' = 'asc';
@@ -28,9 +30,18 @@ export class DataTableComponent implements OnChanges {
     '#e76f51', '#06d6a0', '#f72585', '#4cc9f0'
   ];
 
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly router: Router,
+    private readonly paginationState: PaginationStateService
+  ) {}
+
+  ngOnInit() {
+    this.buildPager();
+  }
 
   ngOnChanges(changes: SimpleChanges) {
+    // Corre antes de ngOnInit, asi el pager ya existe cuando se restaura la pagina guardada.
+    this.buildPager();
     if (changes['tableElements']) {
       const data = this.tableElements;
       if (data?.length) {
@@ -40,11 +51,15 @@ export class DataTableComponent implements OnChanges {
         this.headers = [];
         this.rows = [];
       }
-      this.page = 1;
+      this.pager.onDataChange(this.rows.length);
       if (this.selectable) this.syncSelection();
     }
-    if (changes['initialPageSize'] && changes['initialPageSize'].firstChange) {
-      this.pageSize = this.initialPageSize;
+  }
+
+  /** El tamano de pagina guardado tiene prioridad sobre el que define la pagina contenedora. */
+  private buildPager() {
+    if (!this.pager) {
+      this.pager = this.paginationState.createPager(this.initialPageSize, this.pageKey);
     }
   }
 
@@ -123,7 +138,7 @@ export class DataTableComponent implements OnChanges {
       this.sortColumn = colIndex;
       this.sortDirection = 'asc';
     }
-    this.page = 1;
+    this.pager.page = 1;
   }
 
   get sortedRows(): any[][] {
@@ -137,8 +152,8 @@ export class DataTableComponent implements OnChanges {
   }
 
   get pagedRows(): any[][] {
-    const start = (this.page - 1) * this.pageSize;
-    return this.sortedRows.slice(start, start + this.pageSize);
+    const start = (this.pager.page - 1) * this.pager.pageSize;
+    return this.sortedRows.slice(start, start + this.pager.pageSize);
   }
 
 getInitials(name: string): string {

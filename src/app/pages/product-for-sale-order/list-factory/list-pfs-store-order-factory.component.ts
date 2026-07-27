@@ -55,10 +55,10 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
         });
         this.pageTitle = 'Pedidos';
 
-        // Rango por defecto: últimos 15 días desde la fecha actual
+        // Rango por defecto: último mes desde la fecha actual
         const today = new Date();
         const start = new Date();
-        start.setDate(today.getDate() - 14);
+        start.setDate(today.getDate() - 30);
         this.appliedStartDate = start;
         this.appliedEndDate = today;
         this.selectedDateRange = new DateRange<Date>(start, today);
@@ -116,7 +116,7 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
     resetDateRange() {
         const today = new Date();
         const start = new Date();
-        start.setDate(today.getDate() - 14);
+        start.setDate(today.getDate() - 30);
         this.selectedDateRange = new DateRange<Date>(start, today);
     }
 

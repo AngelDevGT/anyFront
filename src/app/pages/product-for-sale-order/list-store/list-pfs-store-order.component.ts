@@ -52,10 +52,10 @@ export class ListProductForSaleOrderComponent implements OnInit {
             ? `Pedidos de Producto para Venta (${this.storeName})`
             : `Pedidos de Producto Terminado (${this.storeName})`;
 
-        // Rango por defecto: últimos 15 días desde la fecha actual
+        // Rango por defecto: último mes desde la fecha actual
         const today = new Date();
         const start = new Date();
-        start.setDate(today.getDate() - 14);
+        start.setDate(today.getDate() - 30);
         this.appliedStartDate = start;
         this.appliedEndDate = today;
         this.selectedDateRange = new DateRange<Date>(start, today);
@@ -114,7 +114,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
     resetDateRange() {
         const today = new Date();
         const start = new Date();
-        start.setDate(today.getDate() - 14);
+        start.setDate(today.getDate() - 30);
         this.selectedDateRange = new DateRange<Date>(start, today);
     }
 

@@ -77,6 +77,9 @@ import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/v
 import { ListStoreExpensesComponent } from "@app/pages/store-expenses/list/list-store-expenses.component";
 import { AddEditExpenseComponent } from "@app/pages/store-expenses/add-edit/add-edit-expense.component";
 import { ViewExpenseComponent } from "@app/pages/store-expenses/view/view-expense.component";
+import { ListCustomerComponent } from "@app/pages/customers/list/list-customer.component";
+import { AddEditCustomerComponent } from "@app/pages/customers/add-edit/add-edit-customer.component";
+import { ViewCustomerComponent } from "@app/pages/customers/view/view-customer.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 export const MY_DATE_FORMATS = {
@@ -166,6 +169,9 @@ export const MY_DATE_FORMATS = {
       ListStoreExpensesComponent,
       AddEditExpenseComponent,
       ViewExpenseComponent,
+      ListCustomerComponent,
+      AddEditCustomerComponent,
+      ViewCustomerComponent,
       // UsersLayoutComponent
   ],
   providers: [

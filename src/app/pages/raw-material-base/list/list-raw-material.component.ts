@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { AlertService, DataService } from '@app/services';
+import { AlertService, DataService, PagerState, PaginationStateService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -21,8 +21,7 @@ export class ListRawMaterialComponent implements OnInit {
     rawMaterials?: RawMaterialBase[];
     allRawMaterials?: RawMaterialBase[];
     rawMaterialForm!: FormGroup;
-    pageSize = 8;
-    page = 1;
+    pager!: PagerState;
     readonly pageSizes = [8, 12, 24, 48, 96];
     pageTitle = 'Materia Prima';
     pageSubtitle = 'Administra las materias primas registradas';
@@ -38,9 +37,10 @@ export class ListRawMaterialComponent implements OnInit {
     cards?: any[];
     savingOrder = false;
 
-    constructor(private dataService: DataService, public _builder: FormBuilder, private alertService: AlertService) {}
+    constructor(private dataService: DataService, public _builder: FormBuilder, private alertService: AlertService, private paginationState: PaginationStateService) {}
 
     ngOnInit() {
+        this.pager = this.paginationState.createPager(8);
         this.retriveRawMaterials();
     }
 
@@ -81,6 +81,7 @@ export class ListRawMaterialComponent implements OnInit {
                 this.cards!.push(currentCard);
             });
         }
+        this.pager.onDataChange(this.cards?.length ?? 0);
     }
 
     get sortItems() {
