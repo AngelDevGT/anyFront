@@ -1459,6 +1459,42 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleSortOrder`, params);
     }
 
+    // ---- Costo (product_for_sale.cost): solo para el rol Sistema ----
+    // Las lecturas con costo viven en endpoints aparte para que el payload de un usuario
+    // de tienda no lo incluya. El backend no valida rol, así que el gate real es de UI.
+
+    /** Igual a getAllProductForSaleByFilterV3 pero incluyendo el costo. */
+    getAllProductForSaleByFilterV4(params: any) {
+        let parameters = JSON.stringify({
+            pfs: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveProductsForSaleV4`, parameters);
+    }
+
+    /** Igual a getProductForSaleById pero incluyendo el costo. */
+    getProductForSaleByIdWithCost(id: string) {
+        let params = JSON.stringify({pfs: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleWithCost`, params);
+    }
+
+    updateProductForSaleCost(id: string, cost: string) {
+        let params = JSON.stringify({
+            "$1": cost,
+            "$2": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleCost`, params);
+    }
+
+    /**
+     * Edición masiva de costos. Se resuelve con un solo UPDATE en base de datos,
+     * de modo que todos los cambios se aplican juntos o no se aplica ninguno.
+     */
+    updateManyProductForSaleCost(items: { id: string, cost: number }[]) {
+        let params = JSON.stringify({ "$1": JSON.stringify(items) });
+        return this.http.patch(`${environment.apiUrlV3}/updateManyProductForSaleCost`, params);
+    }
+
     addProductForSale(product: ProductForSale){
         let params = JSON.stringify({
             price: product.price,

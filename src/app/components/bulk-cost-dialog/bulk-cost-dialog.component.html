@@ -1,0 +1,78 @@
+<!-- Botón que abre el diálogo de edición masiva de costos -->
+<button type="button" class="bulk-cost__trigger" [disabled]="disabled || !items.length"
+    data-bs-toggle="modal" [attr.data-bs-target]="'#' + modalId" (click)="open()" [title]="title">
+    <i class="material-icons">payments</i>
+    <span>Editar costos</span>
+</button>
+
+
+<!-- Modal Bootstrap con el listado de costos editables -->
+<div class="modal fade" [id]="modalId" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{title}}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="bulk-cost__search">
+                    <i class="material-icons">search</i>
+                    <input type="text" placeholder="Buscar producto" [(ngModel)]="searchTerm" />
+                </div>
+
+                <p class="bulk-cost__hint">
+                    Modifica los costos que necesites. Al guardar se aplican todos los cambios juntos.
+                </p>
+
+                <div class="bulk-cost__list">
+                    <div class="bulk-cost__row bulk-cost__row--head">
+                        <span class="bulk-cost__col-name">Producto</span>
+                        <span class="bulk-cost__col-cost">Costo (Q)</span>
+                    </div>
+
+                    <div class="bulk-cost__row" *ngFor="let row of filtered; trackBy: trackById"
+                        [class.bulk-cost__row--changed]="row.cost.trim() !== row.originalCost">
+                        <div class="bulk-cost__info">
+                            <span class="bulk-cost__name">{{ row.title }}</span>
+                            <span *ngIf="row.subtitle" class="bulk-cost__subtitle">{{ row.subtitle }}</span>
+                        </div>
+                        <div class="bulk-cost__field">
+                            <input type="text" inputmode="decimal" maxlength="10" [(ngModel)]="row.cost"
+                                [class.is-invalid]="isInvalid(row)" />
+                            <span *ngIf="isInvalid(row)" class="bulk-cost__error">
+                                Solo números positivos, máximo dos decimales
+                            </span>
+                        </div>
+                    </div>
+
+                    <p *ngIf="!filtered.length" class="bulk-cost__empty">
+                        No hay productos que coincidan con la búsqueda.
+                    </p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <span class="bulk-cost__counter">
+                    {{ changed.length }} producto(s) con cambios
+                </span>
+                <button type="button" class="bulk-cost__btn bulk-cost__btn--cancel" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="bulk-cost__btn bulk-cost__btn--save"
+                    [disabled]="saving || hasInvalid || !changed.length"
+                    [attr.data-bs-dismiss]="hasInvalid || !changed.length ? null : 'modal'" (click)="onSave()">
+                    Guardar costos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay de carga: bloquea toda la pantalla con blur mientras se guardan los costos -->
+<div *ngIf="saving" class="bulk-cost__loading-overlay">
+    <div class="bulk-cost__loading-content">
+        <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
+        <p class="text-light mt-3 mb-0 fs-5">Guardando costos...</p>
+    </div>
+</div>

@@ -18,6 +18,15 @@
                     <span class="px-1">EDITAR</span>
                 </div>
                 </button>
+                <button *ngIf="isSystemUser"
+                type="button" routerLink="/productsForSale/cost/edit/{{productForSale!.id}}"
+                [queryParams]="{ store: storeID }" [disabled]="submitting"
+                class="btn btn-secondary m-2">
+                <div class="d-flex flex-row p-1">
+                    <i class="material-icons icon">payments</i>
+                    <span class="px-1">EDITAR COSTO</span>
+                </div>
+                </button>
                 <button
                 type="button" (click)="deleteProductForSale()" [disabled]="submitting"
                 class="btn btn-danger m-2">

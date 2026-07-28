@@ -29,6 +29,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DataTableComponent } from './data-table/data-table.component';
 import { SortOrderDialogComponent } from './sort-order-dialog/sort-order-dialog.component';
+import { BulkCostDialogComponent } from './bulk-cost-dialog/bulk-cost-dialog.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @NgModule({
@@ -67,6 +68,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     DynamicDialogComponent,
     DataTableComponent,
     SortOrderDialogComponent,
+    BulkCostDialogComponent,
   ],
   exports: [
     MenuComponent,
@@ -79,6 +81,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     DynamicDialogComponent,
     DataTableComponent,
     SortOrderDialogComponent,
+    BulkCostDialogComponent,
   ]
 })
 export class ComponentsModule { }

@@ -7,6 +7,8 @@ export class ProductForSale {
     id?: string;
     finishedProduct?: FinishedProduct;
     price?: string;
+    /** Costo del producto. Solo lo reciben/editan los usuarios con rol Sistema. */
+    cost?: string;
     establishment?: Establishment;
     status?: Status;
     creatorUser?: User; //sistema

@@ -2,7 +2,7 @@ import { Component, OnInit} from '@angular/core';
 import { from, of } from 'rxjs';
 import { concatMap, first, last } from 'rxjs/operators';
 
-import { AlertService, DataService } from '@app/services';
+import { AccountService, AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
@@ -24,7 +24,12 @@ export class ViewProductForSaleComponent implements OnInit{
     storeID = '';
 
     constructor(private dataService: DataService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router) {
+        private route: ActivatedRoute, private router: Router, private accountService: AccountService) {
+    }
+
+    /** El costo solo se consulta y se muestra para el rol Sistema. */
+    get isSystemUser(): boolean {
+        return this.accountService.isAdminUser();
     }
 
     ngOnInit(): void {
@@ -36,7 +41,10 @@ export class ViewProductForSaleComponent implements OnInit{
         this.loading = true;
 
         if (this.id){
-            this.dataService.getProductForSaleById(this.id)
+            const request = this.isSystemUser
+                ? this.dataService.getProductForSaleByIdWithCost(this.id)
+                : this.dataService.getProductForSaleById(this.id);
+            request
             .pipe(first())
             .subscribe({
                 next: (prod: any) => {
@@ -71,7 +79,10 @@ export class ViewProductForSaleComponent implements OnInit{
     setProductForSaleElements(product: ProductForSale){
         this.elements.push({icon : "person", name : "Establecimiento", value : product.establishment?.name });
         this.elements.push({icon : "monetization_on", name : "Precio", value : this.dataService.getFormatedPrice(Number(product.price))});
-        
+        if (this.isSystemUser && product.cost != null){
+            this.elements.push({icon : "payments", name : "Costo", value : this.dataService.getFormatedPrice(Number(product.cost))});
+        }
+
         this.elements.push({icon : "scale", name : "Medida", value : product.finishedProduct?.measure?.identifier});
         this.elements.push({icon : "feed", name : "Descripción", value : product.finishedProduct?.description});
         this.elements.push({icon : "info", name : "Estado", value : product.status?.identifier});

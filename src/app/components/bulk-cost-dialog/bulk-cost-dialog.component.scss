@@ -1,0 +1,239 @@
+.bulk-cost__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    background: #fff;
+    color: #344054;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+
+    &:hover:not(:disabled) {
+        background: #f9fafb;
+        border-color: #b0b7c3;
+    }
+
+    &:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
+    .material-icons {
+        font-size: 20px;
+    }
+}
+
+.bulk-cost__search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-bottom: 10px;
+
+    i {
+        font-size: 20px;
+        color: #9aa0a6;
+    }
+
+    input {
+        flex: 1;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 14px;
+        color: #1f2937;
+
+        &::placeholder {
+            color: #9aa0a6;
+        }
+    }
+
+    &:focus-within {
+        border-color: #b0b7c3;
+    }
+}
+
+.bulk-cost__hint {
+    margin: 0 0 12px;
+    font-size: .875rem;
+    color: #667085;
+}
+
+.bulk-cost__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bulk-cost__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #eaecf0;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+
+    &--head {
+        background: #f9fafb;
+        border-color: #eaecf0;
+        box-shadow: none;
+        font-size: .8rem;
+        font-weight: 700;
+        color: #667085;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+    }
+
+    &--changed {
+        border-color: #f5a623;
+        background: #fffaf1;
+    }
+}
+
+.bulk-cost__col-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.bulk-cost__col-cost {
+    width: 160px;
+    flex-shrink: 0;
+}
+
+.bulk-cost__info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.bulk-cost__name {
+    font-weight: 600;
+    color: #101828;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bulk-cost__subtitle {
+    font-size: .8rem;
+    color: #667085;
+}
+
+.bulk-cost__field {
+    width: 160px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1f2937;
+        outline: none;
+        text-align: right;
+
+        &:focus {
+            border-color: #f5a623;
+        }
+
+        &.is-invalid {
+            border-color: #d92d20;
+            background: #fffbfa;
+        }
+    }
+}
+
+.bulk-cost__error {
+    font-size: .7rem;
+    color: #d92d20;
+    line-height: 1.2;
+}
+
+.bulk-cost__empty {
+    margin: 12px 0 0;
+    text-align: center;
+    font-size: .875rem;
+    color: #667085;
+}
+
+.bulk-cost__counter {
+    margin-right: auto;
+    font-size: .8rem;
+    color: #667085;
+}
+
+.bulk-cost__btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+
+    &--cancel {
+        background: #fff;
+        border-color: #d0d5dd;
+        color: #344054;
+    }
+
+    &--save {
+        background: #7f56d9;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        &:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+    }
+}
+
+// --- Overlay de carga al guardar los costos (bloquea toda la pantalla + blur) ---
+.bulk-cost__loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.bulk-cost__loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@media (max-width: 575.98px) {
+    .bulk-cost__row {
+        flex-direction: column;
+        align-items: stretch;
+
+        &--head {
+            display: none;
+        }
+    }
+
+    .bulk-cost__field,
+    .bulk-cost__col-cost {
+        width: 100%;
+    }
+}

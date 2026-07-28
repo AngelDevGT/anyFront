@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { AlertService, DataService, PagerState, PaginationStateService } from '@app/services';
+import { AccountService, AlertService, DataService, PagerState, PaginationStateService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -35,8 +35,14 @@ export class ListProductForSaleComponent implements OnInit {
     filteredCreatorUserOptions?: Observable<string[]>;
     cards?: any[];
     savingOrder = false;
+    savingCosts = false;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute, public _builder: FormBuilder, private alertService: AlertService, private paginationState: PaginationStateService) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, public _builder: FormBuilder, private alertService: AlertService, private paginationState: PaginationStateService, private accountService: AccountService) {}
+
+    /** El costo solo se consulta, se muestra y se edita para el rol Sistema. */
+    get isSystemUser(): boolean {
+        return this.accountService.isAdminUser();
+    }
 
     ngOnInit() {
 
@@ -54,7 +60,11 @@ export class ListProductForSaleComponent implements OnInit {
         this.productsForSale = undefined;
         let requestArray = [];
         if(this.storeID){
-            requestArray.push(this.dataService.getAllProductForSaleByFilterV3({"establishment_id": this.storeID, status_id: 50}));
+            // V4 devuelve además el costo; solo se pide cuando el usuario es Sistema.
+            const filter = {"establishment_id": this.storeID, status_id: 50};
+            requestArray.push(this.isSystemUser
+                ? this.dataService.getAllProductForSaleByFilterV4(filter)
+                : this.dataService.getAllProductForSaleByFilterV3(filter));
             forkJoin(requestArray).subscribe({
                 next: (result: any) => {
                     this.productsForSale = this.dataService.findJsonValue(result[0], 'json_result') || [];
@@ -76,6 +86,7 @@ export class ListProductForSaleComponent implements OnInit {
             this.productsForSale.forEach(element => {
                 let descriptions = [
                     {name:'Tienda', value: element.establishment?.name},
+                    {name:'Costo', value: this.isSystemUser && element.cost != null ? this.dataService.getFormatedPrice(Number(element.cost)) : null},
                     {name:'Medida', value: element.finishedProduct?.measure?.identifier},
                     {name:'Descripción', value: element.finishedProduct?.description},
                     {name:'Creado', value: element.creationDate ? this.dataService.getLocalDateTimeFromUTCTime(element.creationDate) : null},
@@ -94,6 +105,9 @@ export class ListProductForSaleComponent implements OnInit {
                         // {title: 'Eliminar', value: 'delete', link: '/productsForSale/delete/' + element.id, params: { store: this.storeID }},
                     ]
                 };
+                if (this.isSystemUser){
+                    currentCard.buttons.push({title: 'Editar costo', value: 'payments', link: '/productsForSale/cost/edit/' + element.id, params: { store: this.storeID }});
+                }
                 newCards.push(currentCard);
             });
             this.cards = newCards;
@@ -127,6 +141,34 @@ export class ListProductForSaleComponent implements OnInit {
             });
     }
 
+    /** Filas del diálogo de edición masiva de costos: nombre, precio de referencia y costo actual. */
+    get costItems() {
+        return (this.allProductsForSale ?? []).map(p => ({
+            id: p.id!,
+            title: p.finishedProduct?.name,
+            subtitle: p.price != null ? 'Precio de venta: ' + this.dataService.getFormatedPrice(Number(p.price)) : undefined,
+            cost: p.cost
+        }));
+    }
+
+    onSaveCosts(items: { id: string, cost: number }[]) {
+        if (!items.length) return;
+        this.savingCosts = true;
+        this.dataService.updateManyProductForSaleCost(items)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                    this.savingCosts = false;
+                    this.alertService.success('Costos actualizados correctamente');
+                    this.retriveProductsForSale();
+                },
+                error: () => {
+                    this.savingCosts = false;
+                    this.alertService.error('No se pudieron actualizar los costos, intente nuevamente');
+                }
+            });
+    }
+
     search(value: any): void {
         if (this.allProductsForSale){
             this.productsForSale = this.allProductsForSale?.filter((val) => {
@@ -136,7 +178,8 @@ export class ListProductForSaleComponent implements OnInit {
                     const descriptionMatch = val.finishedProduct?.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const establishmentMatch = val.establishment?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const priceMatch = String(val.price ?? '').includes(this.searchTerm);
-                    return nameMatch || measureMatch || descriptionMatch || establishmentMatch || priceMatch;
+                    const costMatch = this.isSystemUser && String(val.cost ?? '').includes(this.searchTerm);
+                    return nameMatch || measureMatch || descriptionMatch || establishmentMatch || priceMatch || costMatch;
                 }
                 return true;
             });

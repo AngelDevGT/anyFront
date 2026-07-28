@@ -148,7 +148,7 @@ CREATE TABLE inventory_element_action ( id int4 DEFAULT nextval('inventory_eleme
 
 -- DROP TABLE product_for_sale;
 
-CREATE TABLE product_for_sale ( id uuid DEFAULT gen_random_uuid() NOT NULL, price numeric(10, 2) NOT NULL, establishment_id uuid NOT NULL, finished_product_id uuid NOT NULL, status_id int4 NOT NULL, creator_user_id uuid NOT NULL, creation_date timestamp DEFAULT timezone('UTC'::text, CURRENT_TIMESTAMP) NOT NULL, updated_date timestamp NULL, sort_order int4 NULL, CONSTRAINT product_for_sale_pkey PRIMARY KEY (id), CONSTRAINT product_for_sale_fk_creator_user_id FOREIGN KEY (creator_user_id) REFERENCES "user"(id), CONSTRAINT product_for_sale_fk_establishment_id FOREIGN KEY (establishment_id) REFERENCES establishment(id), CONSTRAINT product_for_sale_fk_finished_product_id FOREIGN KEY (finished_product_id) REFERENCES finished_product(id), CONSTRAINT product_for_sale_fk_status_id FOREIGN KEY (status_id) REFERENCES status(id));
+CREATE TABLE product_for_sale ( id uuid DEFAULT gen_random_uuid() NOT NULL, price numeric(10, 2) NOT NULL, cost numeric(10, 2) NULL, establishment_id uuid NOT NULL, finished_product_id uuid NOT NULL, status_id int4 NOT NULL, creator_user_id uuid NOT NULL, creation_date timestamp DEFAULT timezone('UTC'::text, CURRENT_TIMESTAMP) NOT NULL, updated_date timestamp NULL, sort_order int4 NULL, CONSTRAINT product_for_sale_pkey PRIMARY KEY (id), CONSTRAINT product_for_sale_fk_creator_user_id FOREIGN KEY (creator_user_id) REFERENCES "user"(id), CONSTRAINT product_for_sale_fk_establishment_id FOREIGN KEY (establishment_id) REFERENCES establishment(id), CONSTRAINT product_for_sale_fk_finished_product_id FOREIGN KEY (finished_product_id) REFERENCES finished_product(id), CONSTRAINT product_for_sale_fk_status_id FOREIGN KEY (status_id) REFERENCES status(id));
 
 
 -- public.product_for_sale_store_order definition
@@ -388,3 +388,27 @@ CREATE TRIGGER trg_shop_sale_assign_number
     BEFORE INSERT ON shop_sale
     FOR EACH ROW
     EXECUTE FUNCTION shop_sale_assign_number();
+
+
+-- =============================================
+-- product_for_sale.cost — costo por producto para venta (solo rol Sistema)
+-- Ver src/database/migrations/2026-07-27-add-product-for-sale-cost.sql
+-- =============================================
+
+-- Trigger: al crearse un producto para venta, el costo nace con el mismo valor
+-- del precio. Después son independientes: editar el precio NO re-sincroniza el
+-- costo. Solo actúa si no viene un costo explícito en el INSERT.
+CREATE OR REPLACE FUNCTION product_for_sale_default_cost() RETURNS trigger AS $$
+BEGIN
+    IF NEW.cost IS NULL THEN
+        NEW.cost := NEW.price;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_product_for_sale_default_cost ON product_for_sale;
+CREATE TRIGGER trg_product_for_sale_default_cost
+    BEFORE INSERT ON product_for_sale
+    FOR EACH ROW
+    EXECUTE FUNCTION product_for_sale_default_cost();

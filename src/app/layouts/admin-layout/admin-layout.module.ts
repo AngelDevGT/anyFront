@@ -51,6 +51,7 @@ import { ListWarehouseInventoryRMPComponent } from "@app/pages/inventory-rmp-bod
 import { AddEditProductoForSaleComponent } from "@app/pages/product-for-sale/add-edit/add-edit-product-for-sale.component";
 import { ListProductForSaleComponent } from "@app/pages/product-for-sale/list/list-product-for-sale.component";
 import { ViewProductForSaleComponent } from "@app/pages/product-for-sale/view/view-product-for-sale.component";
+import { EditCostProductForSaleComponent } from "@app/pages/product-for-sale/edit-cost/edit-cost-product-for-sale.component";
 import { AddEditProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/add-edit/add-edit-pfs-order.component";
 import { ListProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/list-store/list-pfs-store-order.component";
 import { ViewProductForSaleOrderComponent } from "@app/pages/product-for-sale-order/view/view-pfs-order.component";
@@ -146,6 +147,7 @@ export const MY_DATE_FORMATS = {
       AddEditProductoForSaleComponent,
       ListProductForSaleComponent,
       ViewProductForSaleComponent,
+      EditCostProductForSaleComponent,
       AddEditProductForSaleOrderComponent,
       ListProductForSaleOrderComponent,
       ViewProductForSaleOrderComponent,

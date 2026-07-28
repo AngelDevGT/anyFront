@@ -1,0 +1,60 @@
+<div class="genericCard pt-3">
+    <mat-card class="mat-elevation-z8">
+        <mat-card-header style="justify-content: center;">
+            <mat-card-title>Editar Costo</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <br>
+            <div *ngIf="loading" class="text-center m-5">
+                <span class="spinner-border spinner-border-lg align-center"></span>
+            </div>
+            <form *ngIf="!loading && productForSale" [formGroup]="costForm" (ngSubmit)="onSaveForm()">
+                <div class="container">
+                    <div class="row justify-content-center">
+
+                        <!-- Datos de referencia, en solo lectura -->
+                        <div class="col-12 text-center pb-2">
+                            <h2 class="product-name">{{productForSale.finishedProduct?.name}}</h2>
+                            <p class="product-reference">
+                                <span>{{productForSale.establishment?.name}}</span>
+                                <span *ngIf="productForSale.finishedProduct?.measure?.identifier">
+                                    &middot; {{productForSale.finishedProduct?.measure?.identifier}}
+                                </span>
+                            </p>
+                            <p class="product-reference">Precio de venta: <strong>{{formatedPrice}}</strong></p>
+                        </div>
+
+                        <div class="row justify-content-center col-12">
+                            <mat-form-field class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
+                                <mat-label>Costo (Quetzales)</mat-label>
+                                <input id="costo-form-pfs" type="text" #cost maxlength="{{listMaxLength['cost']}}"
+                                    formControlName="cost" matInput [ngClass]="{ 'is-invalid': f['cost'].errors }" />
+                                <mat-hint align="end">{{cost.value.length}} / {{listMaxLength['cost']}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['cost'].errors">
+                                    <div *ngIf="f['cost'].hasError('required')">
+                                        Costo requerido
+                                    </div>
+                                    <div *ngIf="f['cost'].hasError('pattern')">
+                                        Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong>
+                                    </div>
+                                </div>
+                            </mat-form-field>
+                        </div>
+
+                        <div class="col-sm-12 text-center p-2">
+                            <button type="button" (click)="onCancel()" [disabled]="submitting"
+                                class="btn btn-outline-secondary btn-lg me-2">
+                                Cancelar
+                            </button>
+                            <button id="boton-form-actualizar-costo-pfs" type="submit"
+                                [disabled]="submitting || costForm.invalid" class="btn btn-outline-success btn-lg">
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                Guardar Costo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

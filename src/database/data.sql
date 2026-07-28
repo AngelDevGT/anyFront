@@ -3192,3 +3192,99 @@ from product_for_sale_store_order pfsso
 left join establishment e on e.id = pfsso.establishment_id
 left join status s on s.id = pfsso.store_status_id
 left join status s2 on s2.id = pfsso.factory_status_id','product_for_sale_store_order','POST');
+
+-- Costo por producto para venta (product_for_sale.cost), visible/editable solo por el rol Sistema.
+-- Las queries de lectura son clones de /retrieveProductsForSaleV3 y /getProductForSale con `cost`
+-- agregado, en endpoints aparte: el front solo los llama cuando el usuario es Sistema, asi el
+-- payload de un usuario de tienda no lleva el costo. Es ocultamiento, no control de acceso: el
+-- backend no valida rol, cualquier usuario autenticado podria llamarlos a mano.
+-- Ver src/database/migrations/2026-07-27-add-product-for-sale-cost.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('retrieveProductsForSaleV4','/retrieveProductsForSaleV4','WITH products_ordered AS (
+    SELECT pfs1.id, pfs1.creation_date, pfs1.updated_date, pfs1.price, pfs1.cost, pfs1.sort_order,
+           fp.id AS fp_id, fp.name AS fp_name, fp.photo, fp.thumb, fp.description,
+           ub.name AS ub_name, ub."type" AS ub_type,
+           s.name AS s_name, s.id as status_id, s."type" AS s_type,
+           e.id AS establishment_id, e.name AS e_name
+    FROM product_for_sale pfs1
+    LEFT JOIN finished_product fp ON pfs1.finished_product_id = fp.id
+    LEFT JOIN unit_base ub ON fp.unit_base_id = ub.id
+    LEFT JOIN establishment e ON e.id = pfs1.establishment_id
+    LEFT JOIN status s ON s.id = pfs1.status_id
+)
+SELECT json_agg(
+    json_build_object(
+        ''id'', pfs.id,
+        ''creationDate'', pfs.creation_date,
+        ''updatedDate'', coalesce(pfs.updated_date, pfs.creation_date),
+        ''price'', pfs.price,
+        ''cost'', pfs.cost,
+        ''sortOrder'', pfs.sort_order,
+        ''finishedProduct'', json_build_object(
+            ''id'', pfs.fp_id,
+            ''name'', pfs.fp_name,
+            ''photo'', pfs.photo,
+            ''thumb'', pfs.thumb,
+            ''description'', pfs.description,
+            ''measure'', json_build_object(
+                ''identifier'', pfs.ub_name,
+                ''type'', pfs.ub_type
+            )
+        ),
+        ''status'', json_build_object(
+        	''id'', pfs.status_id,
+            ''name'', pfs.s_name,
+            ''type'', pfs.s_type
+        ),
+        ''establishment'', json_build_object(
+            ''id'', pfs.establishment_id,
+            ''name'', pfs.e_name
+        )
+    )
+    ORDER BY pfs.sort_order NULLS LAST, pfs.creation_date
+) AS json_result
+FROM products_ordered pfs','product_for_sale','POST'),
+	 ('getProductForSaleWithCost','/getProductForSaleWithCost','SELECT json_build_object(
+    ''id'', pfs.id,
+    ''price'', pfs.price,
+    ''cost'', pfs.cost,
+    ''creationDate'', pfs.creation_date,
+    ''updatedDate'', coalesce(pfs.updated_date, pfs.creation_date),
+    ''finishedProduct'', json_build_object(
+        ''id'', fp.id,
+        ''name'', fp.name,
+        ''photo'', fp.photo,
+        ''description'', fp.description,
+        ''measure'', json_build_object(
+            ''identifier'', ub.name,
+            ''type'', ub."type"
+        )
+    ),
+    ''status'', json_build_object(
+        ''name'', s.name,
+        ''identifier'', s.name,
+        ''type'', s."type"
+    ),
+    ''establishment'', json_build_object(
+        ''id'', e.id,
+        ''name'', e.name
+    ),
+    ''creatorUser'', json_build_object(
+        ''id'', u.id,
+        ''name'', u.username,
+        ''email'', u.email
+    )
+) as json_result
+FROM product_for_sale pfs
+LEFT JOIN finished_product fp ON pfs.finished_product_id = fp.id
+LEFT JOIN unit_base ub ON fp.unit_base_id = ub.id
+LEFT JOIN establishment e ON e.id = pfs.establishment_id
+LEFT JOIN status s ON s.id = pfs.status_id
+left join "user" u on u.id = pfs.creator_user_id','product_for_sale','POST'),
+	 ('updateProductForSaleCost','/updateProductForSaleCost','update product_for_sale
+set cost = $1::numeric, updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $2::uuid','product_for_sale','PATCH'),
+	 ('updateManyProductForSaleCost','/updateManyProductForSaleCost','UPDATE product_for_sale AS pfs
+SET cost = v.cost, updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+FROM jsonb_to_recordset($1::jsonb) AS v(id uuid, cost numeric)
+WHERE pfs.id = v.id','product_for_sale','PATCH');

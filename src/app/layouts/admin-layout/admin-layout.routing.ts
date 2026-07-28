@@ -25,6 +25,7 @@ import { ViewProductForSaleOrderComponent } from "@app/pages/product-for-sale-or
 import { AddEditProductoForSaleComponent } from "@app/pages/product-for-sale/add-edit/add-edit-product-for-sale.component";
 import { ListProductForSaleComponent } from "@app/pages/product-for-sale/list/list-product-for-sale.component";
 import { ViewProductForSaleComponent } from "@app/pages/product-for-sale/view/view-product-for-sale.component";
+import { EditCostProductForSaleComponent } from "@app/pages/product-for-sale/edit-cost/edit-cost-product-for-sale.component";
 import { AddEditRawMaterialComponent } from "@app/pages/raw-material-base/add-edit/add-edit-raw-material.component";
 import { ListRawMaterialComponent } from "@app/pages/raw-material-base/list/list-raw-material.component";
 import { ViewRawMaterialComponent } from "@app/pages/raw-material-base/view/view-raw-material.component";
@@ -79,6 +80,7 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'productsForSale/order/view/:id', component: ViewProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/create', component: AddEditProductoForSaleComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/edit/:id', component: AddEditProductoForSaleComponent , canActivate: [canActivateV2]},
+    { path: 'productsForSale/cost/edit/:id', component: EditCostProductForSaleComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale', component: ListProductForSaleComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/view/:id', component: ViewProductForSaleComponent , canActivate: [canActivateV2]},
     { path: 'establishments', component: ListEstablishmentComponent, canActivate: [canActivateV2]},
