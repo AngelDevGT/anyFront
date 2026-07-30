@@ -354,11 +354,11 @@ export class PdfService {
                         ]
                     }
                 },
-                ...(option === "factory" ? [] : [{
+                {
                     text: "Monto Total: " + this.dataService.getFormatedPrice(Number(productForSaleOrder?.finalAmount)),
                     bold: true,
                     marginTop: 10
-                }]),
+                },
                 {
                     text: 'Detalles del pedido',
                     style: 'sectionHeader'
