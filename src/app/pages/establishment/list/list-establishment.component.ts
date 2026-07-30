@@ -75,6 +75,7 @@ export class ListEstablishmentComponent implements OnInit {
                         { type: 'button', routerLink: '/store/sales/history/' + element.id, is_absolute: true, colorClass: 'dt-btn-view', icon: { class: 'material-icons', icon: 'shopping_bag' }, title: 'Ventas' },
                         { type: 'button', routerLink: '/productsForSale/order', is_absolute: true, query_params: { opt: 'store', store: element.id, name: element.name }, colorClass: 'dt-btn-secondary', icon: { class: 'material-icons', icon: 'local_shipping' }, title: 'Pedidos' },
                         { type: 'button', routerLink: '/store/expenses/history/' + element.id, is_absolute: true, colorClass: 'dt-btn-warning', icon: { class: 'material-icons', icon: 'money_off' }, title: 'Gastos' },
+                        { type: 'button', routerLink: '/store/customers/' + element.id, is_absolute: true, colorClass: 'dt-btn-info', icon: { class: 'material-icons', icon: 'group' }, title: 'Clientes' },
                         { type: 'button', routerLink: '/cashClosing/' + element.id, is_absolute: true, colorClass: 'dt-btn-delete', icon: { class: 'material-icons', icon: 'dns' }, title: 'Caja' }
                     ]
                 };
@@ -90,7 +91,8 @@ export class ListEstablishmentComponent implements OnInit {
                     button: [
                         { type: 'button', routerLink: 'view/' + element.id, query_params: { opt: this.viewOption }, colorClass: 'dt-btn-view', icon: { class: 'material-icons', icon: 'visibility' }, title: 'Ver' },
                         { type: 'button', routerLink: 'edit/' + element.id, query_params: { opt: this.viewOption }, colorClass: 'dt-btn-edit', icon: { class: 'material-icons', icon: 'edit' }, title: 'Editar' },
-                        { type: 'button', routerLink: '/productsForSale', query_params: { store: element.id }, is_absolute: true, colorClass: 'dt-btn-delete', icon: { class: 'material-icons', icon: 'shopping_bag' }, title: 'Productos' }
+                        { type: 'button', routerLink: '/productsForSale', query_params: { store: element.id }, is_absolute: true, colorClass: 'dt-btn-delete', icon: { class: 'material-icons', icon: 'shopping_bag' }, title: 'Productos' },
+                        { type: 'button', routerLink: 'customers/' + element.id, colorClass: 'dt-btn-info', icon: { class: 'material-icons', icon: 'group' }, title: 'Clientes' }
                     ]
                 };
                 curr_row = [

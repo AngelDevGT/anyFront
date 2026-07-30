@@ -1,0 +1,45 @@
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h4 class="page-title">Saldos de clientes — {{ establishment?.name || 'Tienda' }}</h4>
+      <p class="page-subtitle">Saldo pendiente de las ventas activas de cada cliente en esta tienda</p>
+    </div>
+  </div>
+
+  <div class="balance-summary" *ngIf="allCustomers">
+    <div class="balance-tile">
+      <span class="balance-tile-label">Saldo pendiente total</span>
+      <span class="balance-tile-value accent">{{ formatPrice(totalPendingBalance) }}</span>
+    </div>
+    <div class="balance-tile">
+      <span class="balance-tile-label">Clientes con saldo</span>
+      <span class="balance-tile-value">{{ customersWithDebt }}</span>
+    </div>
+    <div class="balance-tile">
+      <span class="balance-tile-label">Clientes asignados</span>
+      <span class="balance-tile-value">{{ allCustomers.length }}</span>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="material-icons search-icon">search</i>
+        <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search()" />
+      </div>
+      <div class="toolbar-right">
+        <button type="button" class="filter-btn" [class.active]="onlyPending" (click)="togglePendingFilter()">
+          <i class="material-icons">filter_alt</i>
+          Solo con saldo
+        </button>
+      </div>
+    </div>
+
+    <data-table *ngIf="allCustomers" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"></data-table>
+    <div *ngIf="!allCustomers" class="loading-wrap">
+      <span class="spinner-border spinner-border-lg"></span>
+    </div>
+  </div>
+
+</div>

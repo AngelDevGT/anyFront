@@ -370,11 +370,15 @@
                                         </span>
                                     </button>
                                     <p *ngIf="!filteredCustomers.length" class="pos-customer-empty">
-                                        Sin clientes que coincidan
+                                        {{ customerOptions.length
+                                            ? 'Sin clientes que coincidan'
+                                            : 'Esta tienda no tiene clientes asignados' }}
                                     </p>
                                 </div>
                                 <p class="pos-customer-hint">
-                                    Una venta al crédito debe registrarse a nombre de un cliente existente.
+                                    {{ customerOptions.length
+                                        ? 'Una venta al crédito debe registrarse a nombre de un cliente existente.'
+                                        : 'Asigna clientes a la tienda desde Sistema > Tiendas > Clientes.' }}
                                 </p>
                             </ng-container>
                         </div>

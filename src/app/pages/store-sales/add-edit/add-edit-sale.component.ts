@@ -4,7 +4,6 @@ import {concatMap, first} from 'rxjs/operators';
 import { NgxImageCompressService } from 'ngx-image-compress';
 
 import { statusValues, AlertService, DataService, measureUnitsConst } from '@app/services';
-import { customerStatusValues } from '@app/services/data/data.service';
 import { Customer } from '@app/models/system/customer.model';
 import {
 FormBuilder,
@@ -378,7 +377,8 @@ export class AddEditSaleComponent implements OnInit{
             requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
             requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventoryV2'));
             requestArray.push(this.dataService.getEstablishmentById(establishmentId));
-            requestArray.push(this.dataService.getAllCustomersByFilter({ status_id: customerStatusValues.activo.status.id }));
+            // Solo los clientes asignados a esta tienda
+            requestArray.push(this.dataService.getEstablishmentCustomers(establishmentId));
 
             forkJoin(requestArray).subscribe({
                 next: (result: any) => {

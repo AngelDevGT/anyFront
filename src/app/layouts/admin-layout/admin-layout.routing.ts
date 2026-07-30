@@ -53,6 +53,8 @@ import { ListStoreExpensesComponent } from "@app/pages/store-expenses/list/list-
 import { ListCustomerComponent } from "@app/pages/customers/list/list-customer.component";
 import { AddEditCustomerComponent } from "@app/pages/customers/add-edit/add-edit-customer.component";
 import { ViewCustomerComponent } from "@app/pages/customers/view/view-customer.component";
+import { AssignEstablishmentCustomerComponent } from "@app/pages/establishment-customer/assign/assign-establishment-customer.component";
+import { ListCustomerBalanceComponent } from "@app/pages/establishment-customer/balance/list-customer-balance.component";
 import { AddEditExpenseComponent } from "@app/pages/store-expenses/add-edit/add-edit-expense.component";
 import { ViewExpenseComponent } from "@app/pages/store-expenses/view/view-expense.component";
 
@@ -87,6 +89,7 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'establishments/create', component: AddEditEstablishmentComponent, canActivate: [canActivateV2]},
     { path: 'establishments/edit/:id', component: AddEditEstablishmentComponent, canActivate: [canActivateV2]},
     { path: 'establishments/view/:id', component: ViewEstablishmentComponent, canActivate: [canActivateV2]},
+    { path: 'establishments/customers/:id', component: AssignEstablishmentCustomerComponent, canActivate: [canActivateV2]},
     { path: 'providers', component: ListProviderComponent, canActivate: [canActivateV2]},
     { path: 'providers/create', component: AddEditProviderComponent, canActivate: [canActivateV2]},
     { path: 'providers/edit/:id', component: AddEditProviderComponent, canActivate: [canActivateV2]},
@@ -121,6 +124,7 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'inventory/factory/finishedProduct', component: ListFactoryInventoryFPComponent, canActivate: [canActivateV2]},
     { path: 'store', component: ListEstablishmentComponent, canActivate: [canActivateV2]},
     { path: 'store/inventory/:id', component: ListStoreInventoryPFSComponent, canActivate: [canActivateV2]},
+    { path: 'store/customers/:id', component: ListCustomerBalanceComponent, canActivate: [canActivateV2]},
     { path: 'productCreation', component: AddEditProductCreationComponent, canActivate: [canActivateV2]},
     { path: 'consumeRawMaterial', component: ConsumeRawMaterialComponent, canActivate: [canActivateV2]},
     { path: 'consumePackagingMaterial', component: ConsumeRawMaterialComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},

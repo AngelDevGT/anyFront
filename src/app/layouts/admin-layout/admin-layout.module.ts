@@ -81,6 +81,8 @@ import { ViewExpenseComponent } from "@app/pages/store-expenses/view/view-expens
 import { ListCustomerComponent } from "@app/pages/customers/list/list-customer.component";
 import { AddEditCustomerComponent } from "@app/pages/customers/add-edit/add-edit-customer.component";
 import { ViewCustomerComponent } from "@app/pages/customers/view/view-customer.component";
+import { AssignEstablishmentCustomerComponent } from "@app/pages/establishment-customer/assign/assign-establishment-customer.component";
+import { ListCustomerBalanceComponent } from "@app/pages/establishment-customer/balance/list-customer-balance.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 export const MY_DATE_FORMATS = {
@@ -174,6 +176,8 @@ export const MY_DATE_FORMATS = {
       ListCustomerComponent,
       AddEditCustomerComponent,
       ViewCustomerComponent,
+      AssignEstablishmentCustomerComponent,
+      ListCustomerBalanceComponent,
       // UsersLayoutComponent
   ],
   providers: [

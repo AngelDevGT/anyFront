@@ -1,0 +1,96 @@
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h4 class="page-title">Clientes de {{ establishment?.name || 'la tienda' }}</h4>
+      <p class="page-subtitle">Solo estos clientes se podrán seleccionar en las ventas de esta tienda</p>
+    </div>
+    <button *ngIf="assignedCustomers" type="button" class="btn-add"
+      data-bs-toggle="modal" data-bs-target="#assignCustomerModal" (click)="openAssignModal()">
+      <i class="material-icons">person_add</i>
+      Asignar cliente
+    </button>
+  </div>
+
+  <div class="content-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="material-icons search-icon">search</i>
+        <input type="text" class="search-input" placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="search()" />
+      </div>
+    </div>
+
+    <data-table *ngIf="assignedCustomers" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"
+      (modalAction)="receiveData($event.data)"></data-table>
+    <div *ngIf="!assignedCustomers" class="loading-wrap">
+      <span class="spinner-border spinner-border-lg"></span>
+    </div>
+  </div>
+
+  <!-- ── Modal: asignar cliente ─────────────────────────────── -->
+  <div class="modal fade" id="assignCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Asignar cliente</h5>
+          <button #assignCloseBtn type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-search">
+            <i class="material-icons">search</i>
+            <input type="text" placeholder="Buscar cliente por nombre o NIT" [(ngModel)]="modalSearchTerm" />
+          </div>
+
+          <div class="customer-pick-list">
+            <div class="customer-pick-row" *ngFor="let customer of unassignedCustomers">
+              <div class="customer-pick-info">
+                <span class="customer-pick-name">{{ customer.name }}</span>
+                <span class="customer-pick-meta">
+                  NIT {{ customer.nit || 'C/F' }}
+                  <ng-container *ngIf="customer.phone"> · {{ customer.phone }}</ng-container>
+                </span>
+              </div>
+              <button type="button" class="customer-pick-btn" [disabled]="submitting"
+                (click)="assignCustomer(customer)">
+                <i class="material-icons">add</i>
+                Seleccionar
+              </button>
+            </div>
+
+            <p *ngIf="!unassignedCustomers.length" class="customer-pick-empty">
+              No hay clientes disponibles para asignar
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: confirmar quitar asignación ─────────────────── -->
+  <div class="modal fade" id="removeAssignmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Quitar cliente de la tienda</h5>
+          <button #removeCloseBtn type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="remove-text">
+            <strong>{{ selectedAssignment?.name }}</strong> ya no se podrá seleccionar en las ventas de esta tienda.
+          </p>
+          <p class="remove-hint">
+            Las ventas ya registradas a su nombre no se modifican y su saldo pendiente se mantiene.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" [disabled]="submitting" (click)="removeAssignment()">
+            <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+            Quitar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

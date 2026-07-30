@@ -799,6 +799,36 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/deleteCustomer`, parameters);
     }
 
+    /** CLIENTES POR TIENDA */
+
+    /**
+     * Clientes asignados a una tienda, con los datos de la asignación y el
+     * saldo pendiente del cliente en esa tienda.
+     */
+    getEstablishmentCustomers(establishmentId: string) {
+        let parameters = JSON.stringify({
+            ec: { "establishment_id": establishmentId }
+        });
+        return this.http.post(`${environment.apiUrlV3}/retrieveEstablishmentCustomers`, parameters);
+    }
+
+    addEstablishmentCustomer(establishmentId: string, customerId: string) {
+        let parameters = JSON.stringify({
+            "$1": establishmentId,
+            "$2": customerId,
+            "$3": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addEstablishmentCustomer`, parameters);
+    }
+
+    /** Recibe el id de la asignación (establishment_customer.id). */
+    deleteEstablishmentCustomer(assignmentId: string) {
+        let parameters = JSON.stringify({
+            "$1": assignmentId
+        });
+        return this.http.patch(`${environment.apiUrlV3}/deleteEstablishmentCustomer`, parameters);
+    }
+
     /** PRICE */
 
     getFormatedPrice(price: number){
