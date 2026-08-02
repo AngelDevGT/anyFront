@@ -1,0 +1,17 @@
+# Imagen de DESARROLLO del frontend. No se usa para desplegar: produccion se publica como
+# Azure Static Web App, que compila con Oryx desde la raiz del repositorio.
+#
+# Node 18 y no una version mas nueva: Angular 15 soporta oficialmente hasta Node 18, y con
+# versiones posteriores el CLI puede fallar de formas poco evidentes.
+#
+# El archivo vive en docker/ y no en la raiz a proposito: el Static Web App construye con
+# app_location "/" y no conviene dejarle un Dockerfile en la raiz que altere su deteccion.
+FROM node:18-bookworm-slim
+
+WORKDIR /app
+
+# Las dependencias se instalan en el arranque (ver el command del docker-compose), porque
+# node_modules vive en un volumen propio y no en la imagen. Asi cambiar package.json no obliga
+# a reconstruir la imagen.
+
+EXPOSE 4200

@@ -1,0 +1,43 @@
+# Entorno de desarrollo del frontend.
+#
+#   docker compose up
+#   -> http://localhost:4200  con recarga automatica al guardar
+#
+# Levanta el portal apuntando al backend local (enviroment.local.ts). El backend se levanta
+# aparte, desde el repositorio any_func_sql:
+#
+#   cd ../any_func_sql && docker compose up -d
+#
+# No hace falta unir las redes de los dos compose: el navegador corre en tu maquina y llama a
+# http://localhost:7071, que el otro compose publica.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: any_front_local
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/app
+      # node_modules en un volumen propio: sin esto el bind mount de arriba taparia las
+      # dependencias instaladas dentro del contenedor.
+      - any_front_node_modules:/app/node_modules
+    environment:
+      # --poll hace que el hot reload detecte cambios a traves del volumen montado; en macOS y
+      # Windows los eventos del sistema de archivos no cruzan bien hacia el contenedor.
+      NG_CLI_ANALYTICS: "false"
+    # npm ci y no npm install: instala exactamente lo que dice package-lock.json y, sobre todo,
+    # NO lo reescribe. Con install, la version de npm del contenedor y la de tu maquina se
+    # pisan mutuamente el lockfile y aparecen cambios espurios en cada arranque.
+    command: >
+      sh -c "if [ ! -d node_modules/@angular/cli ]; then
+               echo '==> Instalando dependencias (solo la primera vez)';
+               npm ci --no-audit --no-fund;
+             fi;
+             echo '==> ng serve en :4200 (configuracion local)';
+             npx ng serve --configuration local --host 0.0.0.0 --port 4200 --poll 2000"
+
+volumes:
+  any_front_node_modules:

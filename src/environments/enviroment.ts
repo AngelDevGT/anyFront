@@ -9,9 +9,9 @@
  *
  * Para trabajar contra el backend local: descomentar el bloque de localhost.
  */
+// Para trabajar contra el backend local NO se edita este archivo: se usa
+// `npm run start:local`, que lo sustituye por enviroment.local.ts.
 const apiUrlBase = 'https://any-function-sql.azurewebsites.net/api';
-// Para trabajar contra el backend local, cambiar por esta linea (y NO commitear el cambio):
-// const apiUrlBase = 'http://localhost:7071/api';
 
 export const environment = {
     production: false,

@@ -1,0 +1,10 @@
+# El contexto de build se manda entero al daemon de Docker; sin esto se copiarian cientos de
+# megas de dependencias y artefactos que el contenedor no necesita (node_modules vive en un
+# volumen propio).
+node_modules
+dist
+.git
+.angular
+coverage
+*.log
+.DS_Store
