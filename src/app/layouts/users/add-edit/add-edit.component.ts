@@ -128,19 +128,19 @@ export class AddEditComponent implements OnInit {
             };
 
             updatedUser.status.text = String(updatedUser.status?.id);
-            this.accountService.update(this.id!, updatedUser)
-            .pipe(concatMap((result: any) => {
-                return this.accountService.updateUserV3(this.id!, updatedUser);
-            }))
+            // Una sola escritura, contra Postgres. La contrasena solo viaja si el formulario
+            // trae una nueva; si va vacia, el backend deja la actual sin tocar.
+            this.accountService.updateUserV3(this.id!, updatedUser)
             .subscribe({
                 next: () => {
                     this.alertService.success('Usuario guardado', { keepAfterRouteChange: true });
                     this.router.navigateByUrl('/users');
                 },
                 error: error => {
-                    let errorResponse = error.error;
-                    errorResponse = errorResponse.newUserResponse ? errorResponse.newUserResponse : errorResponse.updateUserResponse ? errorResponse.updateUserResponse : 'Error, consulte con el administrador';
-                    this.alertService.error(errorResponse.AcknowledgementDescription);
+                    let errorResponse = this.dataService.findJsonValue(error, 'information')
+                        || this.dataService.findJsonValue(error, 'AcknowledgementDescription')
+                        || 'Error, consulte con el administrador';
+                    this.alertService.error(errorResponse);
                     this.submitting = false;
                 }
             });
@@ -151,21 +151,16 @@ export class AddEditComponent implements OnInit {
                 role: this.selectedRole
             }
 
-            this.accountService.create(newUser)
-            .pipe(concatMap((result: any) => {
-                return this.accountService.getUserByEmailV2(newUser.email!);
-            }), concatMap((usr: any) => {
-                let user = usr.retrieveUsersResponse?.users;
-                newUser = { ...newUser, ext_id: user[0]._id };
-                return this.accountService.createUserV3(newUser);
-            }))
+            this.accountService.createUserV3(newUser)
             .subscribe({
                 next: () => {
                     this.alertService.success('Usuario creado', { keepAfterRouteChange: true });
                     this.router.navigateByUrl('/users');
                 },
                 error: error => {
-                    let errorResponse = this.dataService.findJsonValue(error, 'AcknowledgementDescription') || 'Error, consulte con el administrador';
+                    let errorResponse = this.dataService.findJsonValue(error, 'information')
+                        || this.dataService.findJsonValue(error, 'AcknowledgementDescription')
+                        || 'Error, consulte con el administrador';
                     this.alertService.error(errorResponse);
                     this.submitting = false;
                 }

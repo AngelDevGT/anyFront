@@ -1,5 +1,5 @@
 import { Component, OnInit} from '@angular/core';
-import { concatMap, first } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
 
 import { AccountService, AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -45,10 +45,9 @@ export class ViewUserComponent implements OnInit{
 
     deleteUser() {
         this.submitting = true;
+        // Una sola escritura, contra Postgres. deleteUserV3 devuelve true si el usuario se
+        // elimino a si mismo, en cuyo caso hay que cerrarle la sesion.
         this.accountService.deleteUserV3(this.user!.id!)
-            .pipe(concatMap((result: any) => {
-                return this.accountService.deleteUser(this.user);
-            }))
             .subscribe({
                 next: (logOut) => {
                     if(logOut){

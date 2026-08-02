@@ -66,8 +66,12 @@ import { RouterModule } from '@angular/router';
     //   UsersLayoutComponent
   ],
   providers: [
-      { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
+      // El orden importa: en la RESPUESTA los interceptores corren al reves que en la peticion.
+      // Con ErrorInterceptor primero, el 401 llega antes a JwtInterceptor, que intenta renovar
+      // la sesion y reintentar. Solo si el refresh falla el error sigue hasta ErrorInterceptor,
+      // que ahi si cierra la sesion. Invertirlos haria logout sin intentar renovar nunca.
       { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
+      { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
 
       // provider used to create fake backend
       // fakeBackendProvider

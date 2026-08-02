@@ -2,48 +2,22 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { concatMap, map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import jwt_decode from 'jwt-decode';
 
 import { environment } from '@environments/enviroment';
 import { User } from '@app/models/system/user.model';
 import { Role } from '@app/models';
 
-const undefinedStatus = {
-  status: {
-    id: 1,
-    status: 1,
-    text: '0',
-    identifier: 'Inactivo',
-  },
-};
+/** Claves de localStorage de la sesion. */
+export const USER_KEY = 'user';
+export const ACCESS_TOKEN_KEY = 'accessToken';
+export const REFRESH_TOKEN_KEY = 'refreshToken';
 
-const activeStatus = {
-  status: {
-    id: 2,
-    status: 1,
-    text: '1',
-    identifier: 'Activo',
-  },
-};
-
-const deleteStatus = {
-  status: {
-    id: 3,
-    status: 1,
-    text: '2',
-    identifier: 'Eliminado',
-  },
-};
-
-const undefinedRole = {
-  role: {
-    id: 6,
-    status: 1,
-    text: '6',
-    identifier: 'Indefinido',
-  },
-};
+// Nota: aqui vivian undefinedStatus/activeStatus/deleteStatus/undefinedRole, que codificaban
+// el catalogo de estados del backend Mongo (ids 1/2/3). Ya no aplican: en Postgres los estados
+// de usuario son 2 Activo, 6 Inactivo, 8 Eliminado. El deleteStatus que sigue en uso es el
+// exportado por data.service.ts, que es otro.
 
 const menuItemsOptions: any = [
   {
@@ -411,87 +385,139 @@ export class AccountService {
     return logedUser;
   }
 
+  /**
+   * Inicia sesion contra el backend Postgres. Una sola llamada: la respuesta ya trae el perfil
+   * completo con role.paths, asi que no hace falta pedir /getUser despues (esa llamada iba sin
+   * autenticar y ademas devolvia el hash de la contrasena).
+   */
   login(email: string, password: string) {
-    let headers = new HttpHeaders({
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Allow-Methods': 'POST',
-      'Access-Control-Allow-Origin': '*',
-    });
-    let options = { headers: headers };
-    let loginUser = JSON.stringify({
-      loginUser: {
-        email: email,
-        password: password,
-      },
-    });
     return this.http
-      .post(`${environment.apiUrlV2}/LoginUser`, loginUser, options)
+      .post<any>(`${environment.apiUrlBase}/Login`, { email, password })
       .pipe(
-        concatMap((user: any) => {
-          let usr = user.loginUserResponse.token;
-          // store user details and jwt token in local storage to keep user logged in between page refreshes
-          let jwd_decoded_usr: any = jwt_decode(usr);
-          let logedUser: User = {
-            ...jwd_decoded_usr,
-            name: jwd_decoded_usr.name,
-            email: jwd_decoded_usr.correo,
-            _id: jwd_decoded_usr.userID,
-          };
-          localStorage.setItem('user', JSON.stringify(jwt_decode(usr)));
-          this.userSubject.next(logedUser);
-          return this.getUserByEmail(logedUser.email!);
+        map((response) => {
+          this.startSession(response);
+          return response.user as User;
         }),
       );
   }
 
-  logout() {
-    // remove user from local storage and set current user to null
-    localStorage.removeItem('user');
+  /**
+   * Guarda la sesion. El token crudo se persiste: sin esto el JwtInterceptor no tiene nada que
+   * adjuntar y las peticiones salen anonimas (era el fallo de raiz del esquema anterior).
+   */
+  private startSession(response: any) {
+    const decoded: any = jwt_decode(response.token);
+    const profile = response.user ?? {};
+
+    const logedUser: User = {
+      ...profile,
+      id: profile.id,
+      uuid: profile.id,
+      name: profile.name,
+      email: profile.email,
+      role: profile.role,
+      status: profile.status,
+    };
+
+    localStorage.setItem(ACCESS_TOKEN_KEY, response.token);
+    if (response.refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
+    }
+    localStorage.setItem(USER_KEY, JSON.stringify({ ...decoded, ...logedUser }));
+
+    this.userSubject.next({ ...decoded, ...logedUser });
+  }
+
+  public get accessToken(): string | null {
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
+  }
+
+  public get refreshToken(): string | null {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  }
+
+  /** true si no hay token o si su `exp` ya paso. Un token ilegible se trata como vencido. */
+  public isAccessTokenExpired(): boolean {
+    const token = this.accessToken;
+    if (!token) {
+      return true;
+    }
+
+    try {
+      const { exp }: any = jwt_decode(token);
+      return !exp || exp * 1000 <= Date.now();
+    } catch {
+      return true;
+    }
+  }
+
+  /**
+   * Canjea el refresh token por una sesion nueva. El backend rota el refresh en cada uso, por
+   * eso hay que guardar el que devuelve.
+   */
+  refreshSession(): Observable<boolean> {
+    const refreshToken = this.refreshToken;
+
+    if (!refreshToken) {
+      return of(false);
+    }
+
+    return this.http
+      .post<any>(`${environment.apiUrlBase}/Refresh`, { refreshToken })
+      .pipe(
+        map((response) => {
+          this.startSession(response);
+          return true;
+        }),
+        catchError(() => of(false)),
+      );
+  }
+
+  private clearSession() {
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     this.userSubject.next(null);
+  }
+
+  /**
+   * Cierra la sesion. Se avisa al backend para revocar el refresh token: sin eso el token
+   * seguiria siendo valido hasta expirar aunque el usuario haya salido.
+   */
+  logout() {
+    const refreshToken = this.refreshToken;
+
+    if (refreshToken) {
+      this.http
+        .post(`${environment.apiUrlBase}/Logout`, { refreshToken })
+        .pipe(catchError(() => of(null)))
+        .subscribe();
+    }
+
+    this.clearSession();
     this.router.navigate(['/account/login']);
   }
 
-  register(user: User) {
-    let newUser = JSON.stringify({
-      newUser: {
-        ...user,
-        ...undefinedStatus,
-      },
+  /** Autorregistro publico. El backend fuerza rol Indefinido y estado Inactivo. */
+  registerV3(user: User & { password?: string }) {
+    return this.http.post(`${environment.apiUrlBase}/RegisterUser`, {
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      phone: user.phone ? Number(user.phone) : 0,
     });
-    // let newUser = { ...user };
-    return this.http.post(`${environment.apiUrlV2}/newUser`, newUser);
   }
 
-  registerV3(user: User) {
-    let newUser = JSON.stringify({
-      $1: user.ext_id,
-      $2: user.name,
-      $3: user.email,
-      $4: user.role?.id,
+  /** Alta desde el portal. Va por funcion propia porque guarda el hash de la contrasena. */
+  createUserV3(user: User & { password?: string }) {
+    return this.http.post(`${environment.apiUrlBase}/CreateUser`, {
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      phone: user.phone ? Number(user.phone) : 0,
+      roleId: user.role?.id,
+      statusId: user.status?.id,
     });
-    return this.http.patch(`${environment.apiUrlV3}/registerUser`, newUser);
-  }
-
-  create(user: User) {
-    let newUser = JSON.stringify({
-      newUser: {
-        ...user,
-      },
-    });
-    // let newUser = { ...user };
-    return this.http.post(`${environment.apiUrlV2}/newUser`, newUser);
-  }
-
-  createUserV3(user: User) {
-    let newUser = JSON.stringify({
-      $1: user.name,
-      $2: user.status?.id,
-      $3: user.email,
-      $4: user.phone ? user.phone : 0,
-      $5: user.role?.id,
-      $6: user.ext_id,
-    });
-    return this.http.patch(`${environment.apiUrlV3}/createUser`, newUser);
   }
 
   getAllUsersByFilter(params: any) {
@@ -512,39 +538,31 @@ export class AccountService {
     return this.http.post(`${environment.apiUrlV3}/getUser`, params);
   }
 
-  getUserByIdV2(id: string) {
-    let params = JSON.stringify({ retrieveUsers: { _id: id } });
-    return this.http.post(`${environment.apiUrlV2}/retrieveUsers`, params);
-  }
-
   getUserByEmail(email: string) {
     let params = JSON.stringify({ u: { email: email } });
     return this.http.post(`${environment.apiUrlV3}/getUser`, params);
   }
 
-  getUserByEmailV2(email: string) {
-    let params = JSON.stringify({ retrieveUsers: { email: email } });
-    return this.http.post(`${environment.apiUrlV2}/retrieveUsers`, params);
-  }
-
-  update(id: string, params: any) {
-    let modifyUser = JSON.stringify({
-      updateUser: {
-        _id: params.ext_id,
-        ...params,
-      },
-    });
+  /**
+   * Edicion desde el portal. Va por funcion propia porque puede cambiar la contrasena, que
+   * necesita el hash del backend. `password` es opcional: si no viene, no se toca.
+   */
+  updateUserV3(id: string, params: any) {
     return this.http
-      .post(`${environment.apiUrlV2}/ModifyUser`, modifyUser)
+      .post(`${environment.apiUrlBase}/UpdateUser`, {
+        id,
+        name: params.name,
+        phone: params.phone ? Number(params.phone) : 0,
+        statusId: params.status?.id,
+        roleId: params.role?.id,
+        ...(params.password ? { password: params.password } : {}),
+      })
       .pipe(
         map((x) => {
-          // update stored user if the logged in user updated their own record
-          if (id == this.userValue?._id) {
-            // update local storage
+          // Si el usuario se edito a si mismo, refrescar la copia local de la sesion.
+          if (id === this.userValue?.uuid) {
             const user = { ...this.userValue, ...params };
-            localStorage.setItem('user', JSON.stringify(user));
-
-            // publish updated user to subscribers
+            localStorage.setItem(USER_KEY, JSON.stringify(user));
             this.userSubject.next(user);
           }
           return x;
@@ -552,43 +570,14 @@ export class AccountService {
       );
   }
 
-  updateUserV3(id: string, params: any) {
-    let modifyUser = JSON.stringify({
-      $1: params.name,
-      $2: params.phone ? params.phone : 0,
-      $3: params.status?.id,
-      $4: params.role?.id,
-      $5: id,
-    });
-    return this.http.patch(`${environment.apiUrlV3}/updateUser`, modifyUser);
-  }
-
+  /** Baja logica (status Eliminado). Devuelve true si el usuario se elimino a si mismo. */
   deleteUserV3(id: string) {
     let modifyUser = JSON.stringify({
       $1: id,
     });
-    return this.http.patch(`${environment.apiUrlV3}/deleteUser`, modifyUser);
-  }
-
-  deleteUser(params: any) {
-    let deleteUser = JSON.stringify({
-      updateUser: {
-        _id: params.ext_id,
-        ...params,
-        ...deleteStatus,
-      },
-    });
     return this.http
-      .post(`${environment.apiUrlV2}/ModifyUser`, deleteUser)
-      .pipe(
-        map((x) => {
-          // auto logout if the logged in user deleted their own record
-          if (params._id === this.userValue?.userID) {
-            return true;
-          }
-          return false;
-        }),
-      );
+      .patch(`${environment.apiUrlV3}/deleteUser`, modifyUser)
+      .pipe(map(() => id === this.userValue?.uuid));
   }
 
   isActiveUser() {
@@ -607,8 +596,21 @@ export class AccountService {
     return this.userValue.userID === userId;
   }
 
-  checkLogin(): Observable<boolean> {
-    return of(this.userValue);
+  /**
+   * Resuelve la sesion actual para los guards. Antes solo miraba localStorage, asi que un token
+   * vencido seguia dando acceso al portal; ahora, si expiro, intenta renovarlo y solo deja
+   * pasar si el backend acepta el refresh.
+   */
+  checkLogin(): Observable<any> {
+    if (!this.userValue || !this.accessToken) {
+      return of(null);
+    }
+
+    if (!this.isAccessTokenExpired()) {
+      return of(this.userValue);
+    }
+
+    return this.refreshSession().pipe(map((ok) => (ok ? this.userValue : null)));
   }
 
   // checkUserRole(enabledRoles: string[]): Observable<boolean> {

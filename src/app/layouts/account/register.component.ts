@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { concatMap, first } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
 
 import { AccountService, AlertService, DataService } from '@app/services';
 import { Role } from '@app/models';
@@ -14,9 +14,7 @@ import { User } from '@app/models/system/user.model';
 export class RegisterComponent implements OnInit {
     registerForm!: FormGroup;
     loading = false;
-    loadingRoles = false;
     submitted = false;
-    roleOptions?: Role[];
 
     constructor(
         private dataService: DataService,
@@ -28,13 +26,9 @@ export class RegisterComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        this.loadingRoles = true;
-        this.dataService.getAnyComponent({ r: {status: 1}}, 'getRoles')
-            .pipe(first())
-            .subscribe((roles: any) =>{
-                this.roleOptions = this.dataService.findJsonValue(roles, 'json_result');
-                this.loadingRoles = false;
-            });
+        // Antes se cargaban los roles para asignar "Indefinido" desde el cliente. Ya no: esta
+        // pagina es publica y /getRoles ahora exige token, asi que la peticion fallaria y el
+        // formulario se quedaria colgado en el spinner. El rol lo fija el backend.
         this.registerForm = this.formBuilder.group({
             name: ['', [Validators.required, Validators.pattern(/^(?!\s*$).+/)]],
             email: ['', [Validators.required, Validators.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)]],
@@ -61,25 +55,20 @@ export class RegisterComponent implements OnInit {
         }
 
         this.loading = true;
-        let newUser: User = {
-            ...this.registerForm.value,
-            role: this.roleOptions?.find(role => role.identifier === "Indefinido")
-        }
-        this.accountService.register(newUser)
-            .pipe(concatMap((result: any) => {
-                return this.accountService.getUserByEmailV2(newUser.email!);
-            }), concatMap((usr: any) => {
-                let user = usr.retrieveUsersResponse?.users;
-                newUser = { ...newUser, ext_id: user[0]._id };
-                return this.accountService.registerV3(newUser);
-            }))
+        // Una sola escritura, contra Postgres. El backend asigna rol Indefinido y estado
+        // Inactivo: la cuenta queda a la espera de que un administrador la habilite.
+        const newUser: User = { ...this.registerForm.value };
+
+        this.accountService.registerV3(newUser)
             .subscribe({
-                next: (user) => {
+                next: () => {
                     this.alertService.success('Se ha registrado correctamente', { keepAfterRouteChange: true });
                     this.router.navigate(['../login'], { relativeTo: this.route });
                 },
                 error: (error) => {
-                    this.alertService.error(error.error.newUserResponse.AcknowledgementDescription);
+                    const errorMsg = this.accountService.findJsonValue(error, 'information')
+                        || 'No fue posible completar el registro, intente de nuevo.';
+                    this.alertService.error(errorMsg);
                     this.loading = false;
                 }
             });

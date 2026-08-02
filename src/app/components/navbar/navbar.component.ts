@@ -22,7 +22,6 @@ export class NavbarComponent implements OnInit {
   @Input() isMenuCollapsed = true;
   @Output() isMenuCollapsedResponse: EventEmitter<boolean> = new EventEmitter();
 
-  token: any;
   userId?: string;
   formControl?: FormControl;
 
@@ -72,13 +71,6 @@ export class NavbarComponent implements OnInit {
 
   viewUser(){
     this.router.navigate(['/users/view/', this.accountService.userValue.uuid]);
-  }
-
-  onKey(event: any) {
-    if (!this.token) {
-      this.token = localStorage.getItem('token');
-      this.token = JSON.parse(this.token).token;
-    }
   }
 
   navigateWithParams(routerLink: string, queryParams?: { [key: string]: any }){

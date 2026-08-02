@@ -846,21 +846,17 @@ export class DataService {
 
     /** IMAGE */
 
+    /**
+     * Sube la imagen y devuelve el nombre del blob generado ({epoch}_{archivo}), que es lo que
+     * se guarda en las columnas photo/thumb. No se fija Content-Type a mano: el navegador debe
+     * poner el boundary del multipart.
+     */
     uploadImage(imageFile: File) {
         const formData = new FormData();
         formData.append('image', imageFile, imageFile.name);
         formData.append('imageName', imageFile.name);
-    
-        const headers = new HttpHeaders({
-          'enctype': 'multipart/form-data'
-        });
-    
-        return this.http.post(`${environment.apiUrlV2}/ImageUpload`, formData, { headers });
-    }
 
-    getImageById(id: string) {
-        let params = JSON.stringify({getImage: { "_id": id}});
-        return this.http.post(`${environment.apiUrlV2}/getImage`, params);
+        return this.http.post(`${environment.apiUrlBase}/UploadImage`, formData);
     }
 
     getImageWithURL(imgName: string) {

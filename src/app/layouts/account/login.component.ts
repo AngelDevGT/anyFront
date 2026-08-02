@@ -45,29 +45,20 @@ export class LoginComponent implements OnInit {
         }
 
         this.loading = true;
+        // AccountService.login ya guarda tokens y perfil: la respuesta trae el usuario completo
+        // con role.paths, asi que aqui solo queda navegar.
         this.accountService.login(this.f['email'].value, this.f['password'].value)
             .subscribe({
-                next: (usr) => {
-                    let user : User = this.accountService.findJsonValue(usr, 'json_result');
-                    if (user){
-                        const userValue = this.accountService.userValue;
-                        const logedUser: User = { 
-                            ...userValue,
-                            status: user.status,
-                            role: user.role,
-                            uuid: user.id
-                        };
-                        localStorage.removeItem('user');
-                        localStorage.setItem('user', JSON.stringify(logedUser));
-                        this.accountService.setUserSubject(logedUser);
-                    }
+                next: () => {
                     const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
                     this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
                         this.router.navigate([returnUrl]);
                     });
                 },
                 error: (error) => {
-                    let errorMsg = this.accountService.findJsonValue(error, 'AcknowledgementDescription');
+                    const errorMsg = this.accountService.findJsonValue(error, 'information')
+                        || this.accountService.findJsonValue(error, 'AcknowledgementDescription')
+                        || 'No fue posible iniciar sesión, intente de nuevo.';
                     this.alertService.error(errorMsg);
                     this.loading = false;
                 }
