@@ -347,6 +347,7 @@ export class ViewCashClosingComponent implements OnInit{
                     {icon : "credit_card", name : "Tipo de pago", value : payment.paymentType?.identifier ?? '--'},
                     {icon : "local_shipping", name : "Destino", value : this.getPaymentTargetLabel(payment.paymentTarget)},
                     {icon : "calendar_today", name : "Fecha de pago", value : this.dataService.getLocalDateTimeFromUTCTime(payment.date?.replaceAll("\"","") || payment.date)},
+                    {icon : "chat_bubble_outline", name : "Comentario", value : payment.comment ? payment.comment : '--'},
                 ],
                 shopSaleId: payment.shopSale?.id
             };

@@ -1,7 +1,7 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
-import { AlertService, DataService} from '@app/services';
+import { AlertService, DataService, DateRangeState, DateRangeStateService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { DateRange } from '@angular/material/datepicker';
 import { Measure } from '@app/models';
@@ -49,6 +49,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
     appliedStartDate?: Date;
     appliedEndDate?: Date;
     selectedDateRange: DateRange<Date> | null = null;
+    private dateRange!: DateRangeState;
     saleStatusFilters: string[] = [];
     orderPaymentStatusFilters: string[] = [];
     deliveryPaymentStatusFilters: string[] = [];
@@ -59,18 +60,16 @@ export class ListStoreSalesPFSComponent implements OnInit {
     orderPaymentExpanded = true;
     deliveryPaymentExpanded = true;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService) {}
 
     ngOnInit() {
         this.establishmentId = this.route.snapshot.params['id'];
 
-        // Rango por defecto: últimos 15 días desde la fecha actual
-        const today = new Date();
-        const start = new Date();
-        start.setDate(today.getDate() - 14);
-        this.appliedStartDate = start;
-        this.appliedEndDate = today;
-        this.selectedDateRange = new DateRange<Date>(start, today);
+        // Rango guardado en la pestaña o, si no hay, los últimos 15 días desde la fecha actual
+        this.dateRange = this.dateRangeState.createRange(14);
+        this.appliedStartDate = this.dateRange.start;
+        this.appliedEndDate = this.dateRange.end;
+        this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);
 
         const requestArray = [
             this.dataService.getAllShopHistory(this.buildSalesParams()),
@@ -168,10 +167,8 @@ export class ListStoreSalesPFSComponent implements OnInit {
     }
 
     resetDateRange() {
-        const today = new Date();
-        const start = new Date();
-        start.setDate(today.getDate() - 14);
-        this.selectedDateRange = new DateRange<Date>(start, today);
+        const { start, end } = this.dateRange.defaultRange();
+        this.selectedDateRange = new DateRange<Date>(start, end);
     }
 
     applyDateRange() {
@@ -181,6 +178,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
         }
         this.appliedStartDate = this.selectedDateRange.start;
         this.appliedEndDate = this.selectedDateRange.end;
+        this.dateRange.apply(this.appliedStartDate, this.appliedEndDate);
         this.datePanelOpen = false;
         this.fetchSales();
     }

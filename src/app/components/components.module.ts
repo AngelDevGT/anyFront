@@ -31,6 +31,7 @@ import { DataTableComponent } from './data-table/data-table.component';
 import { SortOrderDialogComponent } from './sort-order-dialog/sort-order-dialog.component';
 import { BulkCostDialogComponent } from './bulk-cost-dialog/bulk-cost-dialog.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 
 @NgModule({
   imports: [
@@ -41,6 +42,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     ReactiveFormsModule,
     FormsModule,
     DragDropModule,
+    ScrollingModule,
     MatSelectModule,
     MatFormFieldModule,
     MatIconModule,

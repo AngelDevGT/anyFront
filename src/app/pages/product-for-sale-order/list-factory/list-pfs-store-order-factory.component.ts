@@ -4,7 +4,7 @@ import { first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, DataService, paymentStatusValues, statusValues, storeOrderStatus} from '@app/services';
+import { AccountService, AlertService, DataService, DateRangeState, DateRangeStateService, paymentStatusValues, statusValues, storeOrderStatus} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { DateRange } from '@angular/material/datepicker';
 import { Establishment } from '@app/models/establishment.model';
@@ -46,8 +46,9 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
     appliedStartDate?: Date;
     appliedEndDate?: Date;
     selectedDateRange: DateRange<Date> | null = null;
+    private dateRange!: DateRangeState;
 
-    constructor(private dataService: DataService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private datePipe: DatePipe) {}
+    constructor(private dataService: DataService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService) {}
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
@@ -55,13 +56,11 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
         });
         this.pageTitle = 'Pedidos';
 
-        // Rango por defecto: último mes desde la fecha actual
-        const today = new Date();
-        const start = new Date();
-        start.setDate(today.getDate() - 30);
-        this.appliedStartDate = start;
-        this.appliedEndDate = today;
-        this.selectedDateRange = new DateRange<Date>(start, today);
+        // Rango guardado en la pestaña o, si no hay, el último mes desde la fecha actual
+        this.dateRange = this.dateRangeState.createRange(30);
+        this.appliedStartDate = this.dateRange.start;
+        this.appliedEndDate = this.dateRange.end;
+        this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);
 
         this.retrieveProductForSaleStoreOrders();
     }
@@ -114,10 +113,8 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
     }
 
     resetDateRange() {
-        const today = new Date();
-        const start = new Date();
-        start.setDate(today.getDate() - 30);
-        this.selectedDateRange = new DateRange<Date>(start, today);
+        const { start, end } = this.dateRange.defaultRange();
+        this.selectedDateRange = new DateRange<Date>(start, end);
     }
 
     applyDateRange() {
@@ -127,6 +124,7 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
         }
         this.appliedStartDate = this.selectedDateRange.start;
         this.appliedEndDate = this.selectedDateRange.end;
+        this.dateRange.apply(this.appliedStartDate, this.appliedEndDate);
         this.datePanelOpen = false;
         this.retrieveProductForSaleStoreOrders();
     }

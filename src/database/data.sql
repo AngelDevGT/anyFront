@@ -1313,6 +1313,21 @@ from cash_closing cc
 left join "user" u on u.id = cc.validator_user
 left join "user" u2 on u2.id = cc.confirm_user
 left join status s on s.id = cc.status_id','cash_closing','POST');
+
+-- ============================================================
+-- OJO: las versiones que consume el front hoy NO están en este archivo; se
+-- derivan de las de arriba con replace() dentro de las migraciones, para no
+-- duplicar ~200 líneas de SQL en cada versión:
+--   /getNewStoreCashClosing   -> V2 (migration_shop_sale_customer.sql)
+--                             -> V3 (migrations/2026-08-02-add-shop-sale-payment-comment.sql)
+--   /retrieveStoreCashClosing -> V3 (migration_shop_sale_customer.sql)
+--                             -> V4 (migrations/2026-08-02-add-shop-sale-payment-comment.sql)
+--   /getStoreCashClosingV2    -> V3 (migration_shop_sale_customer.sql)
+--                             -> V4 (migrations/2026-08-02-add-shop-sale-payment-comment.sql)
+-- Al sembrar una base nueva: correr este archivo y después las migraciones en
+-- orden cronológico.
+-- ============================================================
+
 INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
 	 ('getProductForSale','/getProductForSale','SELECT json_build_object(
     ''id'', pfs.id,
@@ -2230,6 +2245,22 @@ INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,
         ''id'', ssp.id,
         ''amount'', ssp.amount,
         ''date'', ssp.date,
+        ''paymentTarget'', ssp.payment_target,
+        ''paymentType'', json_build_object(
+            ''id'', pt.id,
+            ''identifier'', pt."name"
+        )
+    ) ORDER BY ssp.date ASC
+) AS json_result
+FROM shop_sale_payment ssp
+LEFT JOIN payment_type pt ON pt.id = ssp.payment_type_id','shop_sale_payment','POST'),
+	 ('addShopSalePaymentV4','/addShopSalePaymentV4','call add_shop_sale_payment_v3($1::uuid,$2::numeric,$3::int,$4,nullif($5::text,''''),nullif($6::text,'''')::timestamp)','shop_sale_payment','PATCH'),
+	 ('getShopSalePaymentsV3','/getShopSalePaymentsV3','SELECT json_agg(
+    json_build_object(
+        ''id'', ssp.id,
+        ''amount'', ssp.amount,
+        ''date'', ssp.date,
+        ''comment'', ssp."comment",
         ''paymentTarget'', ssp.payment_target,
         ''paymentType'', json_build_object(
             ''id'', pt.id,
@@ -3179,7 +3210,7 @@ INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,
                     )
                 )
             )
-            ORDER BY fp.sort_order NULLS LAST, fp.name
+            --ORDER BY fp.sort_order NULLS LAST, fp.name
         )
         FROM product_for_sale_store_order_element pfssoe
         LEFT JOIN product_for_sale pfs ON pfs.id = pfssoe.product_for_sale_id

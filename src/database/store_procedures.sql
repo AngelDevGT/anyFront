@@ -2345,3 +2345,89 @@ BEGIN
 END;
 $procedure$
 ;
+
+-- ============================================================
+-- add_shop_sale_payment_v3
+-- Igual que add_shop_sale_payment_v2 pero además guarda:
+--   _comment -> comentario libre del abono (máx. 200, opcional)
+--   _date    -> fecha y hora del abono en UTC (opcional, default now())
+-- La fecha se escribe en shop_sale_payment."date", que es la columna que ya
+-- usan los filtros de período de cash_closing.
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE public.add_shop_sale_payment_v3(
+    IN _shop_sale_id uuid,
+    IN _amount numeric,
+    IN _payment_type_id integer,
+    IN _payment_target varchar DEFAULT 'ORDER',
+    IN _comment varchar DEFAULT NULL,
+    IN _date timestamp DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    _paid_amount NUMERIC(9,2);
+    _pending_amount NUMERIC(9,2);
+    _base_amount NUMERIC(9,2);   -- subtotal del pedido (total - delivery) o monto del envío
+    _payment_status_id INT;
+    _paid_status_id INT := 5;
+    _partial_status_id INT := 4;
+    _payment_date TIMESTAMP;
+    _clean_comment VARCHAR(200);
+BEGIN
+    BEGIN
+        _payment_date := COALESCE(_date, timezone('UTC'::text, CURRENT_TIMESTAMP));
+        _clean_comment := left(NULLIF(btrim(_comment), ''), 200);
+
+        IF _payment_target = 'DELIVERY' THEN
+            SELECT delivery_paid_amount, delivery, delivery_payment_status_id
+            INTO _paid_amount, _base_amount, _payment_status_id
+            FROM shop_sale
+            WHERE id = _shop_sale_id
+            FOR UPDATE;
+        ELSE
+            SELECT paid_amount, (total - delivery), payment_status_id
+            INTO _paid_amount, _base_amount, _payment_status_id
+            FROM shop_sale
+            WHERE id = _shop_sale_id
+            FOR UPDATE;
+        END IF;
+
+        _paid_amount := _paid_amount + _amount;
+        _pending_amount := _base_amount - _paid_amount;
+
+        IF _pending_amount < 0 THEN
+            RAISE EXCEPTION 'El monto del pago excede el monto pendiente.';
+        END IF;
+
+        IF _pending_amount <= 0 THEN
+            _payment_status_id := _paid_status_id;
+        ELSIF _pending_amount < _base_amount THEN
+            _payment_status_id := _partial_status_id;
+        END IF;
+
+        INSERT INTO shop_sale_payment (shop_sale_id, amount, payment_type_id, payment_target, "comment", "date")
+        VALUES (_shop_sale_id, _amount, _payment_type_id, _payment_target, _clean_comment, _payment_date);
+
+        IF _payment_target = 'DELIVERY' THEN
+            UPDATE shop_sale
+            SET delivery_payment_status_id = _payment_status_id,
+                delivery_paid_amount = _paid_amount,
+                delivery_pending_amount = _pending_amount,
+                updated_date = timezone('UTC'::text, CURRENT_TIMESTAMP)
+            WHERE id = _shop_sale_id;
+        ELSE
+            UPDATE shop_sale
+            SET payment_status_id = _payment_status_id,
+                paid_amount = _paid_amount,
+                pending_amount = _pending_amount,
+                updated_date = timezone('UTC'::text, CURRENT_TIMESTAMP)
+            WHERE id = _shop_sale_id;
+        END IF;
+
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Error en adición de pago para venta: %', SQLERRM;
+    END;
+END;
+$procedure$
+;

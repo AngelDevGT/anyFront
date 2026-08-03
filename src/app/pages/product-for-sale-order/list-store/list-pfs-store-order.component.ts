@@ -3,7 +3,7 @@ import { DatePipe } from '@angular/common';
 import { first } from 'rxjs/operators';
 import { forkJoin } from 'rxjs';
 
-import { AlertService, DataService, PdfService, storeOrderStatus} from '@app/services';
+import { AlertService, DataService, DateRangeState, DateRangeStateService, PdfService, storeOrderStatus} from '@app/services';
 import { DateRange } from '@angular/material/datepicker';
 import { Establishment } from '@app/models/establishment.model';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
@@ -39,8 +39,9 @@ export class ListProductForSaleOrderComponent implements OnInit {
     appliedStartDate?: Date;
     appliedEndDate?: Date;
     selectedDateRange: DateRange<Date> | null = null;
+    private dateRange!: DateRangeState;
 
-    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe, private readonly pdfService: PdfService) {}
+    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe, private readonly pdfService: PdfService, private readonly dateRangeState: DateRangeStateService) {}
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
@@ -52,13 +53,11 @@ export class ListProductForSaleOrderComponent implements OnInit {
             ? `Pedidos de Producto para Venta (${this.storeName})`
             : `Pedidos de Producto Terminado (${this.storeName})`;
 
-        // Rango por defecto: último mes desde la fecha actual
-        const today = new Date();
-        const start = new Date();
-        start.setDate(today.getDate() - 30);
-        this.appliedStartDate = start;
-        this.appliedEndDate = today;
-        this.selectedDateRange = new DateRange<Date>(start, today);
+        // Rango guardado en la pestana o, si no hay, el último mes desde la fecha actual
+        this.dateRange = this.dateRangeState.createRange(30);
+        this.appliedStartDate = this.dateRange.start;
+        this.appliedEndDate = this.dateRange.end;
+        this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);
 
         this.retrieveProductForSaleStoreOrders(this.storeOption);
     }
@@ -112,10 +111,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
     }
 
     resetDateRange() {
-        const today = new Date();
-        const start = new Date();
-        start.setDate(today.getDate() - 30);
-        this.selectedDateRange = new DateRange<Date>(start, today);
+        const { start, end } = this.dateRange.defaultRange();
+        this.selectedDateRange = new DateRange<Date>(start, end);
     }
 
     applyDateRange() {
@@ -125,6 +122,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
         }
         this.appliedStartDate = this.selectedDateRange.start;
         this.appliedEndDate = this.selectedDateRange.end;
+        this.dateRange.apply(this.appliedStartDate, this.appliedEndDate);
         this.datePanelOpen = false;
         this.retrieveProductForSaleStoreOrders(this.storeOption);
     }

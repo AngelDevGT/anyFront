@@ -15,7 +15,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
 
-            <div class="modal-body">
+            <div class="modal-body" cdkScrollable>
                 <div class="sort-order__toolbar">
                     <div class="sort-order__dropdown">
                         <button type="button" class="sort-order__sortby-btn" (click)="sortMenuOpen = !sortMenuOpen">
@@ -36,7 +36,11 @@
 
                 <p class="sort-order__hint">Arrastra los elementos para definir el orden en que se mostrarán.</p>
 
-                <div cdkDropList class="sort-order__list" (cdkDropListDropped)="drop($event)">
+                <!-- La lista es su propio contenedor de scroll: el CDK siempre auto-scrollea
+                     el elemento del cdkDropList, así el arrastre puede recorrer todas las
+                     posiciones sin depender del scroll del modal. -->
+                <div cdkDropList cdkScrollable class="sort-order__list" [cdkDropListAutoScrollStep]="18"
+                    (cdkDropListDropped)="drop($event)">
                     <div class="sort-order__item" *ngFor="let item of working; let i = index" cdkDrag>
                         <div class="sort-order__handle" cdkDragHandle>
                             <i class="material-icons">drag_indicator</i>

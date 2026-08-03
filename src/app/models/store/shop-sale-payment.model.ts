@@ -4,6 +4,7 @@ export interface ShopSalePayment {
     id?: string;
     amount?: string;
     date?: string;
+    comment?: string;
     paymentTarget?: string; // 'ORDER' | 'DELIVERY'
     paymentType?: PaymentType;
 }

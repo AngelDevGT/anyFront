@@ -412,3 +412,19 @@ CREATE TRIGGER trg_product_for_sale_default_cost
     BEFORE INSERT ON product_for_sale
     FOR EACH ROW
     EXECUTE FUNCTION product_for_sale_default_cost();
+
+
+-- =============================================
+-- shop_sale_payment.comment — comentario del abono de una venta al crédito
+-- Ver src/database/migrations/2026-08-02-add-shop-sale-payment-comment.sql
+-- =============================================
+
+-- Nullable a propósito: los abonos ya registrados no tienen comentario.
+ALTER TABLE shop_sale_payment
+    ADD COLUMN IF NOT EXISTS "comment" varchar(200) NULL;
+
+-- La fecha/hora del abono sigue siendo shop_sale_payment."date" (UTC). Antes
+-- solo la asignaba el default; a partir de add_shop_sale_payment_v3 el usuario
+-- puede enviarla desde el formulario y el default now() se aplica si viene NULL.
+-- Se reutiliza esa columna en lugar de crear otra porque es la que ya usan los
+-- filtros de período de cash_closing (creditPayments).

@@ -11,9 +11,6 @@ pdfMake.vfs = pdfFonts.pdfMake.vfs;
 @Injectable({ providedIn: 'root' })
 export class PdfService {
 
-    private readonly logoPath = 'assets/img/brand/embutidos_any_900x150_black.png';
-    private logoBase64?: Promise<string>;
-
     private readonly pdfStyles = {
         sectionHeader: {
             bold: true,
@@ -185,39 +182,18 @@ export class PdfService {
     }
 
     /**
-     * Genera un unico PDF con varios pedidos: una hoja de portada y cada pedido en su propia hoja.
+     * Genera un unico PDF con varios pedidos: cada pedido en su propia hoja.
      */
     async generateMultipleProductForSaleOrdersPDF(orders: ProductForSaleStoreOrder[], option?: string, storeName?: string) {
         const store = storeName || orders[0]?.establishment?.name || '';
-        const logo = await this.getLogoBase64();
 
         let content: Content[] = [];
 
-        // Portada
-        if (logo) {
-            content.push({ image: logo, width: 300, alignment: 'center', marginTop: 60 });
-        }
-        content.push({
-            text: option === "factory" ? 'Pedidos de producto terminado' : 'Pedidos de producto para venta',
-            fontSize: 16,
-            alignment: 'center',
-            color: 'grey',
-            marginTop: logo ? 40 : 100
-        });
-        content.push({
-            text: store,
-            fontSize: 20,
-            bold: true,
-            alignment: 'center',
-            color: '#ff6e20',
-            marginTop: 10
-        });
-
         // Un pedido por hoja
-        orders.forEach(order => {
+        orders.forEach((order, orderIndex) => {
             const orderContent = this.buildProductForSaleOrderContent(order, option);
             orderContent.forEach((element: any, index: number) => {
-                if (index === 0) element.pageBreak = 'before';
+                if (index === 0 && orderIndex > 0) element.pageBreak = 'before';
                 content.push(element);
             });
         });
@@ -235,32 +211,6 @@ export class PdfService {
         const date = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
         const store = storeName ? storeName.trim().toLowerCase().replace(/\s+/g, '-') : 'pedidos';
         return `pedidos-${store}-${date}.pdf`;
-    }
-
-    /**
-     * pdfMake 0.2 solo resuelve imagenes desde una URL absoluta (http/https), por lo que el logo
-     * se convierte a data URI. La promesa queda cacheada para no descargarlo en cada exportacion.
-     */
-    private getLogoBase64(): Promise<string> {
-        if (!this.logoBase64) {
-            this.logoBase64 = fetch(this.logoPath)
-                .then(response => response.blob())
-                .then(blob => {
-                    if (!blob.type.startsWith('image/')) throw new Error('Logo no disponible');
-                    return new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result as string);
-                        reader.onerror = () => reject(reader.error);
-                        reader.readAsDataURL(blob);
-                    });
-                })
-                .catch(() => {
-                    // Si el logo falla se genera el PDF sin portada grafica, no se pierde la exportacion
-                    this.logoBase64 = undefined;
-                    return '';
-                });
-        }
-        return this.logoBase64;
     }
 
     private buildProductForSaleOrderContent(productForSaleOrder: ProductForSaleStoreOrder, option?: string): Content[] {
@@ -355,7 +305,7 @@ export class PdfService {
                     }
                 },
                 {
-                    text: "Monto Total: " + this.dataService.getFormatedPrice(Number(productForSaleOrder?.finalAmount)),
+                    text: "Monto Total: " + this.dataService.getFormatedPriceWithSeparators(Number(productForSaleOrder?.finalAmount)),
                     bold: true,
                     marginTop: 10
                 },

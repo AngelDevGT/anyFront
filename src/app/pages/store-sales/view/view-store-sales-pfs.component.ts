@@ -10,6 +10,14 @@ import { ShopSalePayment } from '@app/models/store/shop-sale-payment.model';
 import { PaymentType } from '@app/models';
 import { ActivityLog } from '@app/models/system/activity-log';
 
+/** Abono listo para mandarse: monto, tipo de pago, comentario y fecha ya en UTC. */
+interface PaymentEntry {
+    amount: string;
+    paymentType: string;
+    comment: string;
+    date: string;
+}
+
 @Component({
     selector: 'page-view-store-sales-pfs',
     templateUrl: 'view-store-sales-pfs.component.html',
@@ -35,6 +43,8 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     orderPendingAmount = 0;
     deliveryPendingAmount = 0;
     paymentError?: string;
+    /** Tope del comentario del abono — igual al varchar(200) de shop_sale_payment.comment */
+    readonly commentMaxLength = 200;
 
     // Payment history
     shopSalePayments?: ShopSalePayment[];
@@ -128,7 +138,8 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                 title: `Cobro de ${this.dataService.getFormatedPrice(Number(p.amount))} (${p.paymentType?.identifier ?? '--'})`,
                 subtitle: `${userName}${at}`,
                 tag: this.getPaymentTargetLabel(p.paymentTarget),
-                date: p.date
+                date: p.date,
+                comment: p.comment
             });
         });
 
@@ -197,8 +208,12 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         return new FormGroup({
             orderAmount: new FormControl('', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             orderPaymentType: new FormControl(''),
+            orderComment: new FormControl('', [Validators.maxLength(this.commentMaxLength)]),
+            orderDate: new FormControl(this.dataService.getLocalDateTimeInputValue()),
             deliveryAmount: new FormControl('', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
-            deliveryPaymentType: new FormControl('')
+            deliveryPaymentType: new FormControl(''),
+            deliveryComment: new FormControl('', [Validators.maxLength(this.commentMaxLength)]),
+            deliveryDate: new FormControl(this.dataService.getLocalDateTimeInputValue())
         });
     }
 
@@ -220,17 +235,24 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         }
     }
 
-    private buildPaymentEntry(amount: any, paymentType: any): { amount: string; paymentType: string } | null {
+    private buildPaymentEntry(amount: any, paymentType: any, comment: any, date: any): PaymentEntry | null {
         const amt = Number(amount);
         if (!amount || Number.isNaN(amt) || amt <= 0 || !paymentType) return null;
-        return { amount: String(amount), paymentType: String(paymentType) };
+        return {
+            amount: String(amount),
+            paymentType: String(paymentType),
+            comment: (comment ?? '').toString().trim(),
+            // El input entrega hora local; la BD guarda UTC. Si viene vacío se
+            // manda cadena vacía y la procedure aplica su now().
+            date: this.dataService.getUTCTimeFromLocalDateTime(date)
+        };
     }
 
     get canSubmitPayment(): boolean {
         if (this.paymentForm.invalid) return false;
         const v = this.paymentForm.value;
-        const order = this.canPayOrder ? this.buildPaymentEntry(v.orderAmount, v.orderPaymentType) : null;
-        const delivery = this.canPayDelivery ? this.buildPaymentEntry(v.deliveryAmount, v.deliveryPaymentType) : null;
+        const order = this.canPayOrder ? this.buildPaymentEntry(v.orderAmount, v.orderPaymentType, v.orderComment, v.orderDate) : null;
+        const delivery = this.canPayDelivery ? this.buildPaymentEntry(v.deliveryAmount, v.deliveryPaymentType, v.deliveryComment, v.deliveryDate) : null;
         return !!(order || delivery);
     }
 
@@ -242,12 +264,14 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         const v = this.paymentForm.value;
         const calls = [];
         if (this.canPayOrder) {
-            const order = this.buildPaymentEntry(v.orderAmount, v.orderPaymentType);
-            if (order) calls.push(this.dataService.addShopSalePayment(this.shopResume.id, order.amount, order.paymentType, 'ORDER'));
+            const order = this.buildPaymentEntry(v.orderAmount, v.orderPaymentType, v.orderComment, v.orderDate);
+            if (order) calls.push(this.dataService.addShopSalePayment(this.shopResume.id, order.amount, order.paymentType, 'ORDER',
+                order.comment, order.date));
         }
         if (this.canPayDelivery) {
-            const delivery = this.buildPaymentEntry(v.deliveryAmount, v.deliveryPaymentType);
-            if (delivery) calls.push(this.dataService.addShopSalePayment(this.shopResume.id, delivery.amount, delivery.paymentType, 'DELIVERY'));
+            const delivery = this.buildPaymentEntry(v.deliveryAmount, v.deliveryPaymentType, v.deliveryComment, v.deliveryDate);
+            if (delivery) calls.push(this.dataService.addShopSalePayment(this.shopResume.id, delivery.amount, delivery.paymentType, 'DELIVERY',
+                delivery.comment, delivery.date));
         }
         if (calls.length === 0) {
             this.paymentError = 'Ingrese al menos un monto a pagar';
@@ -272,7 +296,13 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     }
 
     closePaymentModal() {
-        this.paymentForm.reset();
+        // reset() a secas dejaría las fechas vacías; se re-siembran con "ahora"
+        // para que al reabrir el modal el input ya venga con la hora actual.
+        const now = this.dataService.getLocalDateTimeInputValue();
+        this.paymentForm.reset({
+            orderAmount: '', orderPaymentType: '', orderComment: '', orderDate: now,
+            deliveryAmount: '', deliveryPaymentType: '', deliveryComment: '', deliveryDate: now
+        });
         this.paymentError = undefined;
     }
 

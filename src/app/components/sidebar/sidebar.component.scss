@@ -13,6 +13,9 @@
   top: 0;
   left: 0;
   height: 100vh;
+  // En móvil 100vh mide el viewport "grande" (barra de direcciones oculta),
+  // lo que deja la sección de usuario fuera de pantalla. dvh sigue al viewport real.
+  height: 100dvh;
   width: 240px;
   background-color: #1e2128;
   z-index: 1031;
@@ -27,6 +30,8 @@
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     width: 240px !important;
+    // Evita que los botones queden bajo el indicador de inicio (iOS)
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 
     &.mobile-open {
       transform: translateX(0);

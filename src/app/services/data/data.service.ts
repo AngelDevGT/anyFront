@@ -893,6 +893,28 @@ export class DataService {
         // return date.toJSON().slice(0, 10);
     }
 
+    /**
+     * Convierte el valor de un <input type="datetime-local"> (hora local, sin
+     * zona) al formato UTC 'YYYY-MM-DD HH:mm:ss' que espera la base de datos.
+     * Devuelve cadena vacía si el valor no es una fecha válida.
+     */
+    getUTCTimeFromLocalDateTime(localDateTime?: string){
+        if(!localDateTime) return "";
+        const date = new Date(localDateTime);
+        if(Number.isNaN(date.getTime())) return "";
+        return date.toISOString().slice(0, 19).replace("T", " ");
+    }
+
+    /**
+     * Fecha y hora local en el formato 'YYYY-MM-DDTHH:mm' que requiere un
+     * <input type="datetime-local">. Sin argumentos devuelve el momento actual.
+     */
+    getLocalDateTimeInputValue(date: Date = new Date()){
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T` +
+            `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
     /** MEASURE */
 
     getMeasureByName(measure: string){
@@ -1706,21 +1728,29 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/registerShopV4`, parameters);
     }
 
-    addShopSalePayment(shopSaleId: string, amount: string, paymentTypeId: string, paymentTarget: string = 'ORDER') {
+    /**
+     * `comment` y `date` son opcionales: si se mandan vacíos la procedure aplica
+     * sus defaults (comentario NULL y fecha = now() en UTC).
+     * `date` debe venir ya convertida a UTC con getUTCTimeFromLocalDateTime().
+     */
+    addShopSalePayment(shopSaleId: string, amount: string, paymentTypeId: string, paymentTarget: string = 'ORDER',
+        comment: string = '', date: string = '') {
         let params = JSON.stringify({
             "$1": shopSaleId,
             "$2": amount,
             "$3": paymentTypeId,
-            "$4": paymentTarget
+            "$4": paymentTarget,
+            "$5": comment,
+            "$6": date
         });
-        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV3`, params);
+        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV4`, params);
     }
 
     getShopSalePayments(shopSaleId: string) {
         let params = JSON.stringify({
             ssp: { shop_sale_id: shopSaleId }
         });
-        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV2`, params);
+        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV3`, params);
     }
 
     /**
@@ -1860,17 +1890,17 @@ export class DataService {
 
     getNewCashClosing(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV2`, params);
+        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV3`, params);
     }
 
     getCashClosingById(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV3`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV4`, params);
     }
 
     getCashClosingByIdV2(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV3`, params);
+        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV4`, params);
     }
 
     addCashClosingV2(notes: string, establishment_id: string){
