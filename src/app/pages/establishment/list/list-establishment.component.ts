@@ -34,7 +34,7 @@ export class ListEstablishmentComponent implements OnInit {
 
     retriveEstablishments() {
         this.establishments = undefined;
-        this.dataService.getAllEstablishmentsByFilter({status_id: 27})
+        this.dataService.getAllEstablishmentsByFilter({status_id: 28})
             .pipe(first())
             .subscribe({
                 next: (establishments: any) => {
