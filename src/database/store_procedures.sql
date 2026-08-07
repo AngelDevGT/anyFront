@@ -2431,3 +2431,228 @@ BEGIN
 END;
 $procedure$
 ;
+
+-- ============================================================
+-- register_shop_sale_with_elements_v5
+-- Igual que register_shop_sale_with_elements_v4 pero además, cuando la venta
+-- se paga con Depósito, guarda el comentario y la fecha del depósito como una
+-- fila de shop_sale_payment marcada con is_sale_payment = true.
+--
+-- Sin comentario no se inserta nada: la venta se guarda igual que en la v4.
+--
+-- El pago es SOLO informativo (boleta, banco, fecha real de la transferencia).
+-- La venta con Depósito ya nace con paid_amount completo y estado Pagado, así
+-- que se inserta directo y NO se llama a add_shop_sale_payment_v3, que volvería
+-- a sumar al paid_amount y fallaría por monto excedido.
+--
+-- Campos opcionales que lee de _sale_properties:
+--   depositComment / depositDate                  -> pago del pedido
+--   deliveryDepositComment / deliveryDepositDate   -> pago del envío
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE public.register_shop_sale_with_elements_v5(
+    IN _sale_properties jsonb,
+    IN _sale_elements jsonb,
+    IN _creator_user_id uuid
+)
+LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    _new_ss_id uuid;
+    _status_id INT := 52;
+    _item JSONB;
+    _establishment_id uuid;
+    _customer_id uuid;
+    _price NUMERIC;
+    _subtotal NUMERIC;
+    _total NUMERIC;
+    _total_discount NUMERIC;
+    _delivery NUMERIC;
+    _order_amount NUMERIC;
+    _product_for_sale_id UUID;
+    _quantity NUMERIC;
+    _measure_id INT;
+    _discount NUMERIC;
+    _payment_type_id INT;
+    _delivery_payment_type_id INT;
+    _payment_type_identifier VARCHAR;
+    _delivery_payment_identifier VARCHAR;
+    _paid_amount NUMERIC(10,2);
+    _pending_amount NUMERIC(10,2);
+    _payment_status_id INT;
+    _delivery_paid_amount NUMERIC(10,2);
+    _delivery_pending_amount NUMERIC(10,2);
+    _delivery_payment_status_id INT;
+    _paid_status_id INT := 5;
+    _pending_status_id INT := 3;
+    -- Depósito registrado junto con la venta
+    _deposit_comment VARCHAR(200);
+    _deposit_date TIMESTAMP;
+    _delivery_deposit_comment VARCHAR(200);
+    _delivery_deposit_date TIMESTAMP;
+BEGIN
+    BEGIN
+        _establishment_id := (_sale_properties -> 'establishment' ->> 'id')::UUID;
+        _customer_id := NULLIF(_sale_properties -> 'customer' ->> 'id', '')::UUID;
+        _total := ROUND((_sale_properties->>'total')::NUMERIC, 2);
+        _total_discount := ROUND((_sale_properties->>'totalDiscount')::NUMERIC, 2);
+        _delivery := ROUND(COALESCE((_sale_properties->>'delivery')::NUMERIC, 0), 2);
+        _order_amount := ROUND(_total - _delivery, 2);
+
+        _payment_type_id := (_sale_properties->'paymentType'->>'id')::INT;
+        _delivery_payment_type_id := (_sale_properties->'deliveryPaymentType'->>'id')::INT;
+
+        SELECT pt."name" INTO _payment_type_identifier FROM payment_type pt WHERE pt.id = _payment_type_id;
+        SELECT pt."name" INTO _delivery_payment_identifier FROM payment_type pt WHERE pt.id = _delivery_payment_type_id;
+
+        -- Una venta al crédito exige cliente registrado
+        IF _customer_id IS NULL
+           AND (_payment_type_identifier = 'Crédito'
+                OR (_delivery_payment_identifier = 'Crédito' AND _delivery > 0)) THEN
+            RAISE EXCEPTION 'Una venta al crédito requiere un cliente registrado.';
+        END IF;
+
+        -- Crédito del pedido (subtotal)
+        IF _payment_type_identifier = 'Crédito' THEN
+            _payment_status_id := _pending_status_id;
+            _paid_amount := 0;
+            _pending_amount := _order_amount;
+        ELSE
+            _payment_status_id := _paid_status_id;
+            _paid_amount := _order_amount;
+            _pending_amount := 0;
+        END IF;
+
+        -- Crédito del envío
+        IF _delivery_payment_identifier = 'Crédito' THEN
+            _delivery_payment_status_id := _pending_status_id;
+            _delivery_paid_amount := 0;
+            _delivery_pending_amount := _delivery;
+        ELSE
+            _delivery_payment_status_id := _paid_status_id;
+            _delivery_paid_amount := _delivery;
+            _delivery_pending_amount := 0;
+        END IF;
+
+        INSERT INTO public.shop_sale(
+            name_client,
+            nota,
+            delivery,
+            nit_client,
+            customer_id,
+            establishment_id,
+            status_id,
+            total,
+            total_discount,
+            payment_type_id,
+            creator_user_id,
+            paid_amount,
+            pending_amount,
+            payment_status_id,
+            delivery_payment_type_id,
+            delivery_paid_amount,
+            delivery_pending_amount,
+            delivery_payment_status_id
+        )
+        VALUES (
+            CASE WHEN _customer_id IS NULL
+                 THEN NULLIF(_sale_properties->>'nameClient', '')
+                 ELSE NULL END,
+            _sale_properties->>'nota',
+            _delivery,
+            CASE WHEN _customer_id IS NULL
+                 THEN NULLIF(_sale_properties->>'nitClient', '')::VARCHAR(10)
+                 ELSE NULL END,
+            _customer_id,
+            _establishment_id,
+            _status_id,
+            _total,
+            _total_discount,
+            _payment_type_id,
+            _creator_user_id,
+            _paid_amount,
+            _pending_amount,
+            _payment_status_id,
+            _delivery_payment_type_id,
+            _delivery_paid_amount,
+            _delivery_pending_amount,
+            _delivery_payment_status_id
+        )
+        RETURNING id INTO _new_ss_id;
+
+        -- ── Depósito: comentario y fecha del pago hecho al vender ───────────
+        -- Sin comentario no hay fila: la venta queda como siempre.
+        _deposit_comment := left(NULLIF(btrim(_sale_properties->>'depositComment'), ''), 200);
+        _delivery_deposit_comment := left(NULLIF(btrim(_sale_properties->>'deliveryDepositComment'), ''), 200);
+
+        IF _payment_type_identifier = 'Depósito' AND _deposit_comment IS NOT NULL AND _order_amount > 0 THEN
+            _deposit_date := COALESCE(
+                NULLIF(btrim(_sale_properties->>'depositDate'), '')::TIMESTAMP,
+                timezone('UTC'::text, CURRENT_TIMESTAMP));
+
+            INSERT INTO shop_sale_payment (
+                shop_sale_id, amount, payment_type_id, payment_target, "comment", "date", is_sale_payment)
+            VALUES (
+                _new_ss_id, _order_amount, _payment_type_id, 'ORDER', _deposit_comment, _deposit_date, TRUE);
+        END IF;
+
+        IF _delivery_payment_identifier = 'Depósito' AND _delivery_deposit_comment IS NOT NULL AND _delivery > 0 THEN
+            _delivery_deposit_date := COALESCE(
+                NULLIF(btrim(_sale_properties->>'deliveryDepositDate'), '')::TIMESTAMP,
+                timezone('UTC'::text, CURRENT_TIMESTAMP));
+
+            INSERT INTO shop_sale_payment (
+                shop_sale_id, amount, payment_type_id, payment_target, "comment", "date", is_sale_payment)
+            VALUES (
+                _new_ss_id, _delivery, _delivery_payment_type_id, 'DELIVERY', _delivery_deposit_comment, _delivery_deposit_date, TRUE);
+        END IF;
+
+        FOR _item IN SELECT * FROM jsonb_array_elements(_sale_elements)
+        LOOP
+            _price := (_item->>'price')::NUMERIC;
+            _subtotal := ROUND((_item->>'subtotal')::NUMERIC, 2);
+            _total := ROUND((_item->>'total')::NUMERIC, 2);
+            _total_discount := ROUND((_item->>'totalDiscount')::NUMERIC, 2);
+            _product_for_sale_id := (_item -> 'productForSale' ->> 'id')::UUID;
+            _quantity := ROUND((_item ->> 'quantity')::NUMERIC, 2);
+            _measure_id := (_item -> 'measure' ->> 'id')::INT;
+            _discount := ROUND((_item->>'discount')::NUMERIC, 2);
+
+            CALL add_remove_inventory_element(
+                'product_for_sale',
+                _establishment_id::text,
+                _product_for_sale_id,
+                _measure_id,
+                _quantity,
+                _creator_user_id,
+                'Venta de producto en tienda',
+                14);
+
+            INSERT INTO public.shop_sale_element(
+                shop_sale_id,
+                product_for_sale_id,
+                price,
+                subtotal,
+                total,
+                discount,
+                total_discount,
+                quantity,
+                measure_id)
+            VALUES(
+                _new_ss_id,
+                _product_for_sale_id,
+                _price,
+                _subtotal,
+                _total,
+                _discount,
+                _total_discount,
+                _quantity,
+                _measure_id);
+        END LOOP;
+
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Error en registro de venta v5: %', SQLERRM;
+    END;
+END;
+$procedure$
+;

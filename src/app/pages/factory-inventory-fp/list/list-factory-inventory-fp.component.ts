@@ -82,7 +82,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventoryV2'));
+        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventoryV3'));
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 
         forkJoin(requestArray).subscribe({

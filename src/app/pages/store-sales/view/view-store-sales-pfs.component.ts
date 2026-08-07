@@ -133,9 +133,14 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         const events: any[] = [];
 
         (this.shopSalePayments || []).forEach(p => {
+            const amount = this.dataService.getFormatedPrice(Number(p.amount));
+            const type = p.paymentType?.identifier ?? '--';
             events.push({
-                icon: 'payments',
-                title: `Cobro de ${this.dataService.getFormatedPrice(Number(p.amount))} (${p.paymentType?.identifier ?? '--'})`,
+                // El depósito se registra junto con la venta; el resto son abonos
+                icon: p.isSalePayment ? 'account_balance' : 'payments',
+                title: p.isSalePayment
+                    ? `Pago de ${amount} al registrar la venta (${type})`
+                    : `Cobro de ${amount} (${type})`,
                 subtitle: `${userName}${at}`,
                 tag: this.getPaymentTargetLabel(p.paymentTarget),
                 date: p.date,

@@ -81,7 +81,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        const inventoryQuery = this.materialType === 2 ? 'retrievePackagingMaterialInventoryV2' : 'retrieveRawMaterialInventoryV2';
+        const inventoryQuery = this.materialType === 2 ? 'retrievePackagingMaterialInventoryV3' : 'retrieveRawMaterialInventoryV3';
         requestArray.push(this.dataService.getInventoryByType({}, inventoryQuery));
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 

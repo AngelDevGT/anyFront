@@ -331,12 +331,65 @@
                             </select>
                         </div>
 
+                        <!-- Depósito del pedido: con comentario se registra el pago; sin él, no -->
+                        <div class="pos-deposit-box" *ngIf="isDepositOrder">
+                            <div class="pos-deposit-head">
+                                <i class="material-icons">receipt_long</i>
+                                <span>Datos del depósito</span>
+                            </div>
+                            <div class="pos-pay-field">
+                                <textarea class="form-control" rows="2" formControlName="depositComment"
+                                    [maxlength]="commentMaxLength"
+                                    placeholder="No. de boleta, banco, referencia..."></textarea>
+                                <span class="pos-deposit-counter">
+                                    {{ f['depositComment'].value?.length || 0 }}/{{ commentMaxLength }}
+                                </span>
+                            </div>
+                            <div class="pos-pay-field" *ngIf="showDepositDate">
+                                <label>Fecha y hora del depósito</label>
+                                <input type="datetime-local" class="form-control form-control-lg"
+                                    formControlName="depositDate" />
+                            </div>
+                            <p class="pos-deposit-hint">
+                                {{ showDepositDate
+                                    ? 'Se registrará el pago del pedido con este comentario y esta fecha.'
+                                    : 'Deja el comentario en blanco si no necesitas registrar el detalle del depósito.' }}
+                            </p>
+                        </div>
+
                         <div class="pos-pay-field" *ngIf="showDelivery && delivery > 0">
                             <label>Método de pago (envío)</label>
                             <select class="form-select form-select-lg" formControlName="deliveryPaymentType"
                                 (change)="selectedDeliveryPaymentTypeSubject.next($any($event.target).value)">
                                 <option *ngFor="let pt of deliveryPaymentTypeOptions" value="{{ pt.id }}">{{ pt.identifier }}</option>
                             </select>
+                        </div>
+
+                        <!-- Depósito del envío: mismo criterio que el del pedido -->
+                        <div class="pos-deposit-box" *ngIf="isDepositDelivery">
+                            <div class="pos-deposit-head">
+                                <i class="material-icons">receipt_long</i>
+                                <span>Datos del depósito (envío)</span>
+                            </div>
+                            <div class="pos-pay-field">
+                                <label>Comentario (opcional)</label>
+                                <textarea class="form-control" rows="2" formControlName="deliveryDepositComment"
+                                    [maxlength]="commentMaxLength"
+                                    placeholder="No. de boleta, banco, referencia..."></textarea>
+                                <span class="pos-deposit-counter">
+                                    {{ f['deliveryDepositComment'].value?.length || 0 }}/{{ commentMaxLength }}
+                                </span>
+                            </div>
+                            <div class="pos-pay-field" *ngIf="showDeliveryDepositDate">
+                                <label>Fecha y hora del depósito</label>
+                                <input type="datetime-local" class="form-control form-control-lg"
+                                    formControlName="deliveryDepositDate" />
+                            </div>
+                            <p class="pos-deposit-hint">
+                                {{ showDeliveryDepositDate
+                                    ? 'Se registrará el pago del envío con este comentario y esta fecha.'
+                                    : 'Deja el comentario en blanco si no necesitas registrar el detalle del depósito.' }}
+                            </p>
                         </div>
 
                         <!-- Cliente obligatorio para ventas al crédito -->

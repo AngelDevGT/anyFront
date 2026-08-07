@@ -53,8 +53,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
             ? `Pedidos de Producto para Venta (${this.storeName})`
             : `Pedidos de Producto Terminado (${this.storeName})`;
 
-        // Rango guardado en la pestana o, si no hay, el último mes desde la fecha actual
-        this.dateRange = this.dateRangeState.createRange(30);
+        // Rango guardado en la pestaña o, si no hay, los últimos 15 días desde la fecha actual
+        this.dateRange = this.dateRangeState.createRange(14);
         this.appliedStartDate = this.dateRange.start;
         this.appliedEndDate = this.dateRange.end;
         this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);

@@ -428,3 +428,24 @@ ALTER TABLE shop_sale_payment
 -- puede enviarla desde el formulario y el default now() se aplica si viene NULL.
 -- Se reutiliza esa columna en lugar de crear otra porque es la que ya usan los
 -- filtros de período de cash_closing (creditPayments).
+
+
+-- =============================================
+-- shop_sale_payment.is_sale_payment — el depósito registrado con la venta
+-- Ver src/database/migrations/2026-08-06-add-shop-sale-deposit-payment.sql
+-- =============================================
+
+-- Una venta pagada con Depósito puede guardar el comentario y la fecha del
+-- depósito reutilizando shop_sale_payment. Esa fila NO es un abono de crédito:
+-- la venta ya nace con paid_amount completo, así que el pago se inserta directo
+-- (register_shop_sale_with_elements_v5) sin recalcular montos ni estados.
+--
+-- Esta columna la distingue. El bloque `creditPayments` del cierre de caja lee
+-- todas las filas del período sin filtrar, y sin la marca contaría el mismo
+-- dinero dos veces: como venta con depósito y como cobro de crédito. Las
+-- queries /getNewStoreCashClosingV4, /retrieveStoreCashClosingV5 y
+-- /getStoreCashClosingV5 la excluyen.
+--
+-- DEFAULT false: todas las filas anteriores son abonos.
+ALTER TABLE shop_sale_payment
+    ADD COLUMN IF NOT EXISTS is_sale_payment boolean NOT NULL DEFAULT false;

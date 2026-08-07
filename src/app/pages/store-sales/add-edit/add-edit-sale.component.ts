@@ -57,6 +57,8 @@ export class AddEditSaleComponent implements OnInit{
     cobrarModalOpen = false;
     /** Venta en edición cuyo cliente es un registro de customer (no editable). */
     isRegisteredCustomerSale = false;
+    /** Tope del comentario del depósito — igual al varchar(200) de shop_sale_payment.comment */
+    readonly commentMaxLength = 200;
 
     get filteredInventoryElements(): InventoryElement[] | undefined {
         if (!this.saleSearchTerm) return this.inventoryElements;
@@ -109,6 +111,59 @@ export class AddEditSaleComponent implements OnInit{
     /** El pago del pedido es al crédito. */
     get isCreditOrder(): boolean {
         return this.selectedPaymentType?.identifier === 'Crédito';
+    }
+
+    /** ── Depósito ─────────────────────────────────────────────── */
+
+    /**
+     * El pedido se paga con depósito, así que se puede anotar la boleta y la
+     * fecha real de la transferencia.
+     */
+    get isDepositOrder(): boolean {
+        return this.selectedPaymentType?.identifier === 'Depósito';
+    }
+
+    /** El envío tiene costo y se paga con depósito. */
+    get isDepositDelivery(): boolean {
+        return this.showDelivery && this.delivery > 0
+            && this.selectedDeliveryPaymentType?.identifier === 'Depósito';
+    }
+
+    /**
+     * La fecha solo se pide si hay algo que fechar: sin comentario no se
+     * registra ningún pago, así que tampoco hay fecha que elegir.
+     */
+    get showDepositDate(): boolean {
+        return !!this.depositCommentValue;
+    }
+
+    get showDeliveryDepositDate(): boolean {
+        return !!this.deliveryDepositCommentValue;
+    }
+
+    private get depositCommentValue(): string {
+        return (this.orderForm?.get('depositComment')?.value ?? '').trim();
+    }
+
+    private get deliveryDepositCommentValue(): string {
+        return (this.orderForm?.get('deliveryDepositComment')?.value ?? '').trim();
+    }
+
+    /**
+     * Los datos del depósito solo tienen sentido mientras el pago sea depósito:
+     * si el usuario cambia de método se descartan para no mandarlos por error.
+     * El formulario de edición no tiene estos campos, de ahí los null-checks.
+     */
+    private clearUnusedDepositFields() {
+        const now = this.dataService.getLocalDateTimeInputValue();
+        if (!this.isDepositOrder) {
+            this.orderForm?.get('depositComment')?.setValue('');
+            this.orderForm?.get('depositDate')?.setValue(now);
+        }
+        if (!this.isDepositDelivery) {
+            this.orderForm?.get('deliveryDepositComment')?.setValue('');
+            this.orderForm?.get('deliveryDepositDate')?.setValue(now);
+        }
     }
 
     /** El envío tiene costo y se cobra al crédito. */
@@ -237,6 +292,7 @@ export class AddEditSaleComponent implements OnInit{
         this.delivery = 0;
         this.f['delivery'].setValue('0');
         this.syncCustomerRequirement();
+        this.clearUnusedDepositFields();
     }
 
     addCommentRow() {
@@ -487,6 +543,8 @@ export class AddEditSaleComponent implements OnInit{
             }
             return this.dataService.updateShopHistory(updatedShopResume);
         } else {
+            const depositComment = this.isDepositOrder ? this.depositCommentValue : '';
+            const deliveryDepositComment = this.isDepositDelivery ? this.deliveryDepositCommentValue : '';
             let newShopResume: ShopResume = {
                 ...this.orderForm.value,
                 // Con cliente registrado la venta viaja solo con la referencia:
@@ -501,6 +559,17 @@ export class AddEditSaleComponent implements OnInit{
                 paymentType: this.selectedPaymentType,
                 deliveryPaymentType: this.selectedDeliveryPaymentType,
                 itemsList: this.itemsList,
+                // Depósito: sin comentario la base no registra ningún pago, así
+                // que la fecha tampoco se manda. El input da hora local y la BD
+                // guarda UTC.
+                depositComment: depositComment,
+                depositDate: depositComment
+                    ? this.dataService.getUTCTimeFromLocalDateTime(this.f['depositDate'].value)
+                    : '',
+                deliveryDepositComment: deliveryDepositComment,
+                deliveryDepositDate: deliveryDepositComment
+                    ? this.dataService.getUTCTimeFromLocalDateTime(this.f['deliveryDepositDate'].value)
+                    : '',
             }
             return this.dataService.registerShop(newShopResume);
         }
@@ -612,11 +681,13 @@ export class AddEditSaleComponent implements OnInit{
     setPaymentType(payment: any){
         this.selectedPaymentType = this.findPaymentType(payment);
         this.syncCustomerRequirement();
+        this.clearUnusedDepositFields();
     }
 
     setDeliveryPaymentType(payment: any){
         this.selectedDeliveryPaymentType = this.findPaymentType(payment);
         this.syncCustomerRequirement();
+        this.clearUnusedDepositFields();
     }
 
     get deliveryPaymentTypeSelect(){
@@ -711,6 +782,7 @@ export class AddEditSaleComponent implements OnInit{
         this.f['delivery'].setValue(v);
         this.delivery = Number(v) || 0;
         this.syncCustomerRequirement();
+        this.clearUnusedDepositFields();
     }
 
     calculateTotal(){
@@ -807,6 +879,12 @@ export class AddEditSaleComponent implements OnInit{
             paymentType: new FormControl('', [Validators.required]),
             deliveryPaymentType: new FormControl('', [Validators.required]),
             delivery: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            // Depósito: solo se usan cuando el pago es con depósito. Con el
+            // comentario vacío la venta se guarda sin registrar ningún pago.
+            depositComment: new FormControl('', [Validators.maxLength(this.commentMaxLength)]),
+            depositDate: new FormControl(this.dataService.getLocalDateTimeInputValue()),
+            deliveryDepositComment: new FormControl('', [Validators.maxLength(this.commentMaxLength)]),
+            deliveryDepositDate: new FormControl(this.dataService.getLocalDateTimeInputValue()),
         //   applyDate: new FormControl('', [Validators.required])
         });
     }

@@ -171,7 +171,7 @@ export class ConsumeRawMaterialComponent implements OnInit{
 
         let requestArray = [];
 
-        const inventoryQuery = this.materialType === 2 ? 'retrievePackagingMaterialInventoryV2' : 'retrieveRawMaterialInventoryV2';
+        const inventoryQuery = this.materialType === 2 ? 'retrievePackagingMaterialInventoryV3' : 'retrieveRawMaterialInventoryV3';
         requestArray.push(this.dataService.getAllProvidersByFilter({"status_id": 30})); // providerRequest
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
         requestArray.push(this.dataService.getInventoryByType({}, inventoryQuery));

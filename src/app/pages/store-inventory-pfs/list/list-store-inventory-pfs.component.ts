@@ -72,7 +72,8 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventoryV2'));
+        // V3 devuelve ademas el costo del producto para venta; solo se pide cuando el usuario es Sistema.
+        requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, this.isAdmin() ? 'retrieveProductForSaleInventoryV3' : 'retrieveProductForSaleInventoryV2'));
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 
         forkJoin(requestArray).subscribe({
@@ -147,6 +148,18 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                     { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getConvertedPrice(Number(element.productForSale?.price), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Precio", style: "width: 15%", exportValue: this.dataService.getConvertedPriceRaw(Number(element.productForSale?.price), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), exportFormat: '"Q. "#,##0.00' }
             ];
+            // El costo solo viaja en la respuesta (V3) cuando el usuario es Sistema.
+            if(this.isAdmin()){
+                const cost = element.productForSale?.cost;
+                curr_row.push({
+                    type: "text",
+                    value: cost != null ? this.dataService.getConvertedPrice(Number(cost), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure) : '-',
+                    header_name: "Costo",
+                    style: "width: 15%",
+                    exportValue: cost != null ? this.dataService.getConvertedPriceRaw(Number(cost), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure) : null,
+                    exportFormat: cost != null ? '"Q. "#,##0.00' : undefined
+                });
+            }
             if(this.isAdmin()){
                 curr_row.push({
                     type: "modal_button",

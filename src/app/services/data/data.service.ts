@@ -1717,6 +1717,11 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/getShopSaleV3`, parameters);
     }
 
+    /**
+     * `depositComment` / `depositDate` (y sus equivalentes de envío) viajan
+     * dentro de params: si el comentario viene vacío la procedure no registra
+     * ningún pago y la venta se guarda igual que siempre.
+     */
     registerShop(params: ShopResume) {
         let parameters = JSON.stringify({
             "$1": JSON.stringify({
@@ -1725,7 +1730,7 @@ export class DataService {
             "$2": JSON.stringify(params.itemsList),
             "$3": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/registerShopV4`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/registerShopV5`, parameters);
     }
 
     /**
@@ -1750,7 +1755,7 @@ export class DataService {
         let params = JSON.stringify({
             ssp: { shop_sale_id: shopSaleId }
         });
-        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV3`, params);
+        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV4`, params);
     }
 
     /**
@@ -1888,19 +1893,25 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/listStoreCashClosing`, parameters);
     }
 
+    /**
+     * Las tres versiones del cierre dejan fuera de `creditPayments` los pagos
+     * registrados junto con la venta (depósito): ese dinero ya viene contado
+     * como venta con depósito y contarlo otra vez inflaría el cierre y el saldo
+     * de crédito.
+     */
     getNewCashClosing(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV3`, params);
+        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV4`, params);
     }
 
     getCashClosingById(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV4`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV5`, params);
     }
 
     getCashClosingByIdV2(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV4`, params);
+        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV5`, params);
     }
 
     addCashClosingV2(notes: string, establishment_id: string){

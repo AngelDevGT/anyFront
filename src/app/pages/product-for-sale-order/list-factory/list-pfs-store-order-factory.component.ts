@@ -56,8 +56,8 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
         });
         this.pageTitle = 'Pedidos';
 
-        // Rango guardado en la pestaña o, si no hay, el último mes desde la fecha actual
-        this.dateRange = this.dateRangeState.createRange(30);
+        // Rango guardado en la pestaña o, si no hay, los últimos 15 días desde la fecha actual
+        this.dateRange = this.dateRangeState.createRange(14);
         this.appliedStartDate = this.dateRange.start;
         this.appliedEndDate = this.dateRange.end;
         this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);

@@ -49,7 +49,7 @@ export class SummaryRawMaterialByProviderInventoryFactoryComponent implements On
         let requestArray = [];
         this.inventoryElements = undefined;
 
-        const inventoryQuery = 'retrieveRawMaterialInventoryV2';
+        const inventoryQuery = 'retrieveRawMaterialInventoryV3';
         requestArray.push(this.dataService.getInventoryByType({}, inventoryQuery));
         // requestArray.push(this.dataService.getAllInventoryByFilter({ _id: "64d7240f838808573bd7e9ee"}));
         requestArray.push(this.dataService.getAnyComponent({s: {type: "raw_material"}}, 'getStatus')); 

@@ -34,4 +34,15 @@ export interface ShopResume {
     paymentType?: PaymentType;
     deliveryPaymentType?: PaymentType;
     payments?: ShopSalePayment[];
+
+    /**
+     * Solo de ida, al registrar una venta pagada con Depósito. Si el comentario
+     * va vacío no se registra ningún pago y la venta se guarda como siempre;
+     * con comentario, la base crea el shop_sale_payment del depósito. La fecha
+     * ya debe venir en UTC (getUTCTimeFromLocalDateTime).
+     */
+    depositComment?: string;
+    depositDate?: string;
+    deliveryDepositComment?: string;
+    deliveryDepositDate?: string;
 }

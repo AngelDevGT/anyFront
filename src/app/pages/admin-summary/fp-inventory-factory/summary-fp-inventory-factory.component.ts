@@ -49,7 +49,7 @@ export class SummaryFinishedProductInventoryFactoryComponent implements OnInit {
         let requestArray = [];
         this.inventoryElements = undefined;
 
-        const inventoryQuery = 'retrieveFinishedProductInventoryV2';
+        const inventoryQuery = 'retrieveFinishedProductInventoryV3';
         requestArray.push(this.dataService.getInventoryByType({}, inventoryQuery));
         requestArray.push(this.dataService.getAnyComponent({s: {type: "inventory"}}, 'getStatus')); 
 

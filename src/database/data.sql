@@ -3319,3 +3319,303 @@ where id = $2::uuid','product_for_sale','PATCH'),
 SET cost = v.cost, updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
 FROM jsonb_to_recordset($1::jsonb) AS v(id uuid, cost numeric)
 WHERE pfs.id = v.id','product_for_sale','PATCH');
+
+-- Costo en el inventario de producto para venta de tienda.
+-- Clon exacto de /retrieveProductForSaleInventoryV2 con ''cost'' agregado dentro de productForSale.
+-- La V2 queda intacta: la sigue usando la pantalla de venta de tienda y los usuarios no-Sistema.
+-- Ver src/database/migrations/2026-08-04-add-cost-to-store-inventory-pfs.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('retrieveProductForSaleInventoryV3','/retrieveProductForSaleInventoryV3','WITH inventory_elements_ordered AS (
+    SELECT
+        ie.inventory_id,
+        ie.id AS ie_id,
+        ie.element_type,
+        ie.quantity,
+        pfs.id AS pfs_id,
+        pfs.price AS pfs_price,
+        pfs.cost AS pfs_cost,
+        pfs.creation_date AS pfs_creation_date,
+        pfs.sort_order AS pfs_sort_order,
+        fp.id AS fp_id,
+        fp.name AS fp_name,
+        fp.photo AS fp_photo,
+        m.id AS m_id,
+        m.name AS m_name,
+        m.unit_base_quantity,
+        ub.id AS ub_id,
+        ub.name AS ub_name,
+        sie.id AS sie_id,
+        sie.name AS sie_name,
+        srm.id AS srm_id,
+        srm.name AS srm_name
+    FROM inventory_element ie
+    JOIN product_for_sale pfs ON ie.element_fk = pfs.id
+    LEFT JOIN finished_product fp ON fp.id = pfs.finished_product_id
+    LEFT JOIN status sie ON sie.id = pfs.status_id
+    LEFT JOIN measure m ON m.id = ie.measure_id
+    LEFT JOIN unit_base ub ON ub.id = m.unit_base_id
+    LEFT JOIN status srm ON srm.id = fp.status_id
+    WHERE ie.element_type = ''product_for_sale''
+      AND sie."name" = ''Activo''
+)
+SELECT json_build_object(
+    ''id'', i.id,
+    ''inventoryType'', i.inventory_type,
+    ''unitName'', i.unit_name,
+    ''creationDate'', i.creation_date,
+    ''establishment'', json_build_object(
+        ''id'', e.id,
+        ''name'', e."name"
+    ),
+    ''inventoryElements'', (
+        SELECT json_agg(
+            json_build_object(
+                ''id'', oe.ie_id,
+                ''element_type'', oe.element_type,
+                ''quantity'', oe.quantity,
+                ''status'', json_build_object(
+                    ''identifier'', oe.sie_name,
+                    ''id'', oe.sie_id
+                ),
+                ''measure'', json_build_object(
+                    ''id'', oe.m_id,
+                    ''identifier'', oe.m_name,
+                    ''unitBase'', json_build_object(
+                        ''quantity'', oe.unit_base_quantity,
+                        ''name'', oe.ub_name,
+                        ''id'', oe.ub_id
+                    )
+                ),
+                ''productForSale'', json_build_object(
+                    ''id'', oe.pfs_id,
+                    ''price'', oe.pfs_price,
+                    ''cost'', oe.pfs_cost,
+                    ''finishedProduct'', json_build_object(
+                        ''id'', oe.fp_id,
+                        ''name'', oe.fp_name,
+                        ''photo'', oe.fp_photo,
+                        ''status'', json_build_object(
+                            ''id'', oe.srm_id,
+                            ''identifier'', oe.srm_name
+                        ),
+                        ''measure'', json_build_object(
+                            ''identifier'', oe.ub_name
+                        )
+                    )
+                )
+            ) ORDER BY oe.pfs_sort_order NULLS LAST, oe.pfs_creation_date asc
+        )
+        FROM inventory_elements_ordered oe
+        WHERE oe.inventory_id = i.id
+    )
+) AS json_result
+FROM inventory i
+LEFT JOIN establishment e ON e.id::text = i.unit_name','inventory','POST');
+
+
+-- Comentario y fecha del depósito al registrar una venta.
+-- registerShopV5        -> clon de /registerShopV4 que llama a la procedure v5.
+-- getShopSalePaymentsV4 -> clon de /getShopSalePaymentsV3 + ''isSalePayment''.
+-- La V4 / V3 quedan intactas.
+--
+-- La misma migración deriva /getNewStoreCashClosingV4, /retrieveStoreCashClosingV5
+-- y /getStoreCashClosingV5 con un replace() sobre la fila viva de la versión
+-- anterior (excluyen de creditPayments los pagos con is_sale_payment), por eso
+-- no se escriben aquí.
+-- Ver src/database/migrations/2026-08-06-add-shop-sale-deposit-payment.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('registerShopV5','/registerShopV5','call register_shop_sale_with_elements_v5($1,$2,$3::uuid)','shop_sale','PATCH'),
+	 ('getShopSalePaymentsV4','/getShopSalePaymentsV4','SELECT json_agg(
+    json_build_object(
+        ''id'', ssp.id,
+        ''amount'', ssp.amount,
+        ''date'', ssp.date,
+        ''comment'', ssp."comment",
+        ''isSalePayment'', ssp.is_sale_payment,
+        ''paymentTarget'', ssp.payment_target,
+        ''paymentType'', json_build_object(
+            ''id'', pt.id,
+            ''identifier'', pt."name"
+        )
+    ) ORDER BY ssp.date ASC
+) AS json_result
+FROM shop_sale_payment ssp
+LEFT JOIN payment_type pt ON pt.id = ssp.payment_type_id','shop_sale_payment','POST');
+
+
+-- Inventarios de fábrica/bodega que EXCLUYEN los elementos eliminados
+-- (finished_product.status_id = 37 / raw_material.status_id = 33).
+-- Clones de las V2 con una sola línea extra en el WHERE.
+-- Ver src/database/migrations/2026-08-06-filter-deleted-elements-inventory.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('retrieveFinishedProductInventoryV3','/retrieveFinishedProductInventoryV3','SELECT json_build_object(
+    ''id'', i.id,
+    ''inventoryType'', i.inventory_type,
+    ''unitName'', i.unit_name,
+    ''creationDate'', i.creation_date,
+    ''inventoryElements'', (
+        SELECT json_agg(
+            json_build_object(
+                ''id'', ie.id,
+                ''element_type'', ie.element_type,
+                ''creationDate'', ie.creation_date,
+                ''quantity'', ie.quantity,
+                ''status'', json_build_object(
+                    ''identifier'', sie.name,
+                    ''id'', sie.id
+                ),
+                ''measure'', json_build_object(
+                    ''id'', m.id,
+                    ''identifier'', m.name,
+                    ''unitBase'', json_build_object(
+                        ''quantity'', m.unit_base_quantity,
+                        ''name'', ub.name,
+                        ''id'', ub.id
+                    )
+                ),
+                ''finishedProduct'', json_build_object(
+                    ''id'', fp.id,
+                    ''name'', fp.name,
+                    ''photo'', fp.photo,
+                    ''finishedProductTypeId'', fp.finished_product_type_id,
+                    ''status'', json_build_object(
+                        ''id'', srm.id,
+                        ''identifier'', srm.name
+                    ),
+                    ''measure'', json_build_object(
+                        ''identifier'', ub2.name
+                    )
+                )
+            )
+            ORDER BY fp.sort_order NULLS LAST, fp.creation_date
+        )
+        FROM inventory_element ie
+        LEFT JOIN status sie ON sie.id = ie.status_id
+        LEFT JOIN measure m ON m.id = ie.measure_id
+        LEFT JOIN unit_base ub ON ub.id = m.unit_base_id
+        left JOIN finished_product fp ON fp.id = ie.element_fk
+        left join unit_base ub2 on ub2.id = fp.unit_base_id
+        LEFT JOIN status srm ON srm.id = fp.status_id
+        WHERE ie.element_type = ''finished_product''
+          AND ie.inventory_id = i.id
+          AND fp.status_id <> 37
+    )
+) AS json_result
+FROM inventory i
+WHERE i.inventory_type = ''finished_product''','inventory','POST'),
+	 ('retrieveRawMaterialInventoryV3','/retrieveRawMaterialInventoryV3','SELECT json_build_object(
+    ''id'', i.id,
+    ''name'', i."name",
+    ''inventoryType'', i.inventory_type,
+    ''unitName'', i.unit_name,
+    ''creationDate'', i.creation_date,
+    ''updatedDate'', i.updated_date,
+    ''inventoryElements'', (
+        SELECT json_agg(
+            json_build_object(
+                ''id'', ie.id,
+                ''element_type'', ie.element_type,
+                ''quantity'', ie.quantity,
+                ''status'', json_build_object(
+                    ''identifier'', sie.name,
+                    ''id'', sie.id
+                ),
+                ''measure'', json_build_object(
+                    ''id'', m.id,
+                    ''identifier'', m.name,
+                    ''unitBase'', json_build_object(
+                        ''quantity'', m.unit_base_quantity,
+                        ''name'', ub.name,
+                        ''id'', ub.id
+                    )
+                ),
+                ''rawMaterialBase'', json_build_object(
+                    ''id'', rm.id,
+                    ''name'', rm.name,
+                    ''photo'', rm.photo,
+                    ''status'', json_build_object(
+                        ''id'', srm.id,
+                        ''identifier'', srm.name
+                    ),
+                    ''measure'', json_build_object(
+                        ''identifier'', ub.name
+                    )
+                )
+            )
+            ORDER BY rm.sort_order NULLS LAST, rm.creation_date
+        )
+        FROM inventory_element ie
+        LEFT JOIN status sie ON ie.status_id = sie.id
+        LEFT JOIN measure m ON ie.measure_id = m.id
+        LEFT JOIN unit_base ub ON m.unit_base_id = ub.id
+        JOIN raw_material rm ON ie.element_fk = rm.id
+        left join unit_base ub2 on ub2.id = rm.unit_base_id
+        LEFT JOIN status srm ON srm.id = rm.status_id
+        WHERE ie.element_type = ''raw_material''
+          AND ie.inventory_id = i.id
+          AND rm.status_id <> 33
+    )
+) as json_result
+FROM inventory i
+where i.inventory_type = ''raw_material''','inventory','POST'),
+	 ('retrievePackagingMaterialInventoryV3','/retrievePackagingMaterialInventoryV3','SELECT json_build_object(
+    ''id'', i.id,
+    ''name'', i."name",
+    ''inventoryType'', i.inventory_type,
+    ''unitName'', i.unit_name,
+    ''creationDate'', i.creation_date,
+    ''updatedDate'', i.updated_date,
+    ''inventoryElements'', (
+        SELECT json_agg(
+            json_build_object(
+                ''id'', ie.id,
+                ''element_type'', ie.element_type,
+                ''quantity'', ie.quantity,
+                ''status'', json_build_object(
+                    ''identifier'', sie.name,
+                    ''id'', sie.id
+                ),
+                ''measure'', json_build_object(
+                    ''id'', m.id,
+                    ''identifier'', m.name,
+                    ''unitBase'', json_build_object(
+                        ''quantity'', m.unit_base_quantity,
+                        ''name'', ub.name,
+                        ''id'', ub.id
+                    )
+                ),
+                ''rawMaterialBase'', json_build_object(
+                    ''id'', rm.id,
+                    ''name'', rm.name,
+                    ''photo'', rm.photo,
+                    ''status'', json_build_object(
+                        ''id'', srm.id,
+                        ''identifier'', srm.name
+                    ),
+                    ''measure'', json_build_object(
+                        ''identifier'', ub.name
+                    )
+                )
+            )
+            ORDER BY rm.sort_order NULLS LAST, rm.creation_date
+        )
+        FROM inventory_element ie
+        LEFT JOIN status sie ON ie.status_id = sie.id
+        LEFT JOIN measure m ON ie.measure_id = m.id
+        LEFT JOIN unit_base ub ON m.unit_base_id = ub.id
+        JOIN raw_material rm ON ie.element_fk = rm.id
+        LEFT JOIN unit_base ub2 ON ub2.id = rm.unit_base_id
+        LEFT JOIN status srm ON srm.id = rm.status_id
+        WHERE ie.element_type = ''packaging_material''
+          AND ie.inventory_id = i.id
+          AND rm.status_id <> 33
+          AND EXISTS (
+              SELECT 1 FROM raw_material_by_provider rmbp
+              WHERE rmbp.raw_material_base_id = rm.id
+                AND rmbp.raw_material_by_provider_type_id = 2
+                AND rmbp.status_id <> 35
+          )
+    )
+) AS json_result
+FROM inventory i
+WHERE i.inventory_type = ''packaging_material''','inventory','POST');
