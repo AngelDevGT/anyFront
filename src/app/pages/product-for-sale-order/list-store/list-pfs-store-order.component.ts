@@ -33,6 +33,10 @@ export class ListProductForSaleOrderComponent implements OnInit {
     statusFilter: string | null = null;
     selectedOrderIds: string[] = [];
     exportingPdf = false;
+    /** Modo consulta: sin crear/editar y con la tienda elegida en la propia pantalla. */
+    readOnly = false;
+    storePicker = false;
+    storeSelected = false;
 
     datePanelOpen = false;
     maxDate = new Date();
@@ -44,14 +48,21 @@ export class ListProductForSaleOrderComponent implements OnInit {
     constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe, private readonly pdfService: PdfService, private readonly dateRangeState: DateRangeStateService) {}
 
     ngOnInit() {
-        this.route.queryParams.subscribe(params => {
-            this.viewOption = params['opt'];
-            this.storeOption = params['store'];
-            this.storeName = params['name'];
-        });
-        this.pageTitle = this.viewOption === 'store'
-            ? `Pedidos de Producto para Venta (${this.storeName})`
-            : `Pedidos de Producto Terminado (${this.storeName})`;
+        this.readOnly = !!this.route.snapshot.data['readOnly'];
+        this.storePicker = !!this.route.snapshot.data['storePicker'];
+
+        // En modo consulta la tienda la manda el selector, no los query params, y los pedidos
+        // siempre se ven desde la tienda (con precios y total)
+        if (this.storePicker) {
+            this.viewOption = 'store';
+        } else {
+            this.route.queryParams.subscribe(params => {
+                this.viewOption = params['opt'];
+                this.storeOption = params['store'];
+                this.storeName = params['name'];
+            });
+        }
+        this.setPageTitle();
 
         // Rango guardado en la pestaña o, si no hay, los últimos 15 días desde la fecha actual
         this.dateRange = this.dateRangeState.createRange(14);
@@ -59,6 +70,39 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.appliedEndDate = this.dateRange.end;
         this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);
 
+        // Con selector de tienda se espera a que store-picker emita antes de pedir los pedidos
+        if (!this.storePicker) {
+            this.storeSelected = true;
+            this.retrieveProductForSaleStoreOrders(this.storeOption);
+        }
+    }
+
+    private setPageTitle() {
+        if (this.storePicker) {
+            this.pageTitle = this.storeName ? `Pedidos (${this.storeName})` : 'Pedidos';
+            return;
+        }
+        this.pageTitle = this.viewOption === 'store'
+            ? `Pedidos de Producto para Venta (${this.storeName})`
+            : `Pedidos de Producto Terminado (${this.storeName})`;
+    }
+
+    /** Cambio de tienda desde el selector: sin tienda no se consulta nada y la tabla queda vacía. */
+    onStoreChange(store?: Establishment) {
+        this.storeOption = store?.id ?? '';
+        this.storeName = store?.name ?? '';
+        this.storeSelected = !!store;
+        this.setPageTitle();
+
+        if (!this.storeSelected) {
+            this.productForSaleOrdes = undefined;
+            this.allProductForSaleOrdes = undefined;
+            this.availableStatuses = [];
+            this.statusFilter = null;
+            this.selectedOrderIds = [];
+            this.tableElementsValues = [];
+            return;
+        }
         this.retrieveProductForSaleStoreOrders(this.storeOption);
     }
 
@@ -124,7 +168,9 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.appliedEndDate = this.selectedDateRange.end;
         this.dateRange.apply(this.appliedStartDate, this.appliedEndDate);
         this.datePanelOpen = false;
-        this.retrieveProductForSaleStoreOrders(this.storeOption);
+        if (this.storeSelected) {
+            this.retrieveProductForSaleStoreOrders(this.storeOption);
+        }
     }
 
     sortDataByDate(sortOpt: string) {

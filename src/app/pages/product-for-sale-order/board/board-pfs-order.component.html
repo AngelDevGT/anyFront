@@ -1,0 +1,204 @@
+<div class="page-wrapper">
+
+    <!-- Encabezado y filtro: fuera del tablero, siempre visibles arriba -->
+    <div class="page-header">
+        <div class="page-header-left">
+            <h4 class="page-title">Tablero de pedidos</h4>
+            <p class="page-subtitle">Pedidos de producto terminado en bodega</p>
+        </div>
+
+        <div class="date-wrapper" (click)="$event.stopPropagation()">
+            <button class="filter-main-btn" [class.open]="datePanelOpen" type="button" (click)="toggleDatePanel($event)">
+                <i class="material-icons" style="font-size:17px">event</i>
+                Fecha
+                <span *ngIf="dateRangeLabel" class="date-range-label">{{ dateRangeLabel }}</span>
+                <i class="material-icons chevron-icon">keyboard_arrow_down</i>
+            </button>
+
+            <div class="date-panel" *ngIf="datePanelOpen">
+                <div class="date-panel-header">
+                    <span class="date-panel-title">
+                        <i class="material-icons" style="font-size:16px">event</i>
+                        Rango de fechas
+                    </span>
+                    <button class="date-close-btn" type="button" (click)="closeDatePanel()">
+                        <i class="material-icons" style="font-size:18px">close</i>
+                    </button>
+                </div>
+
+                <div class="date-panel-body">
+                    <mat-calendar
+                        [selected]="selectedDateRange"
+                        [maxDate]="maxDate"
+                        (selectedChange)="onDateRangeChange($event)">
+                    </mat-calendar>
+                </div>
+
+                <div class="date-panel-footer">
+                    <button class="btn-reset" type="button" (click)="resetDateRange()">Últimos 15 días</button>
+                    <button class="btn-date-apply" type="button" (click)="applyDateRange()">Buscar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="loadingOrders" class="loading-wrap">
+        <span class="spinner-border spinner-border-lg"></span>
+    </div>
+
+    <!-- Tablero -->
+    <div class="board" *ngIf="!loadingOrders">
+        <div class="board-column" *ngFor="let column of columns">
+
+            <div class="board-column__header" [style.borderTopColor]="column.color">
+                <span class="board-column__title">{{ column.title }}</span>
+                <span class="board-column__count" [style.background]="column.color">{{ column.orders.length }}</span>
+            </div>
+
+            <div class="board-column__list"
+                 cdkDropList
+                 [id]="'board-col-' + column.statusId"
+                 [cdkDropListData]="column"
+                 [cdkDropListConnectedTo]="dropListIds"
+                 [cdkDropListEnterPredicate]="canDrop"
+                 (cdkDropListDropped)="drop($event)">
+
+                <div class="board-card"
+                     *ngFor="let order of column.orders; trackBy: trackByOrderId"
+                     cdkDrag
+                     [cdkDragData]="order"
+                     [cdkDragDisabled]="!isDraggable(order)"
+                     [class.board-card--locked]="!isDraggable(order)">
+
+                    <div class="board-card__title">{{ order.name }}</div>
+
+                    <!-- Horas: aparecen solo cuando el pedido ya pasó por esa etapa -->
+                    <div class="board-card__times" *ngIf="order.startDate || order.readyDate">
+                        <span *ngIf="order.startDate" class="board-card__time">
+                            <i class="material-icons">play_arrow</i>
+                            {{ formatShortDateTime(order.startDate) }}
+                        </span>
+                        <span *ngIf="order.readyDate" class="board-card__time">
+                            <i class="material-icons">check</i>
+                            {{ formatShortDateTime(order.readyDate) }}
+                        </span>
+                    </div>
+
+                    <!-- Encargado -->
+                    <div class="board-card__owner" *ngIf="order.assignedUser?.name as ownerName">
+                        <div class="board-card__avatar" [style.background]="getAvatarColor(ownerName)">
+                            {{ getInitials(ownerName) }}
+                        </div>
+                        <span class="board-card__owner-name">{{ ownerName }}</span>
+                    </div>
+
+                    <!-- Tienda: cápsula al ancho del nombre, alineada a la izquierda -->
+                    <div class="board-card__store-row">
+                        <span class="board-card__store" [style.background]="getStoreColor(order.establishment?.id)">
+                            {{ order.establishment?.name }}
+                        </span>
+                    </div>
+
+                    <button type="button" class="board-card__products-btn"
+                            data-bs-toggle="modal" data-bs-target="#boardProductsModal"
+                            (click)="openProducts(order)">
+                        <i class="material-icons">inventory_2</i>
+                        Ver productos
+                    </button>
+
+                    <!--
+                        Vista previa propia. Sin esto el CDK clona la tarjeta
+                        entera y la monta en <body>, donde pierde el layout.
+                        Mientras se arrastra alcanza con saber qué pedido es y
+                        para qué tienda; al soltarla vuelve la tarjeta completa.
+                    -->
+                    <div class="board-card__preview" *cdkDragPreview>
+                        <span class="board-card__preview-title">{{ order.name }}</span>
+                        <span class="board-card__store" [style.background]="getStoreColor(order.establishment?.id)">
+                            {{ order.establishment?.name }}
+                        </span>
+                    </div>
+
+                    <div class="board-card__placeholder" *cdkDragPlaceholder></div>
+                </div>
+
+                <p *ngIf="!column.orders.length" class="board-column__empty">Sin pedidos</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Confirmación: única transición que mueve inventario -->
+<div class="board-confirm" *ngIf="pendingMove">
+    <div class="board-confirm__box">
+        <h5 class="board-confirm__title">Marcar pedido como listo</h5>
+        <p class="board-confirm__text">
+            El pedido <strong>{{ pendingMove.order.name }}</strong> se va a marcar como
+            <strong>Listo</strong>. Esto descuenta el producto terminado de bodega y lo
+            registra como producto en tránsito hacia
+            <strong>{{ pendingMove.order.establishment?.name }}</strong>.
+        </p>
+        <p class="board-confirm__warning">Esta acción no se puede deshacer desde el tablero.</p>
+        <div class="board-confirm__actions">
+            <button type="button" class="board-confirm__btn board-confirm__btn--cancel"
+                    [disabled]="submitting" (click)="cancelPendingMove()">Cancelar</button>
+            <button type="button" class="board-confirm__btn board-confirm__btn--ok"
+                    [disabled]="submitting" (click)="confirmPendingMove()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: productos del pedido -->
+<div class="modal fade" id="boardProductsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ selectedOrder?.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div *ngIf="loadingElements" class="board-products__loading">
+                    <span class="spinner-border spinner-border-sm"></span>
+                    Cargando productos...
+                </div>
+
+                <table class="board-products" *ngIf="!loadingElements && selectedElements?.length">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th class="text-end">Cantidad</th>
+                            <th>Medida</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let element of selectedElements">
+                            <td>{{ element.productForSale?.finishedProduct?.name }}</td>
+                            <td class="text-end">{{ element.quantity }}</td>
+                            <td>{{ element.measure?.identifier }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p *ngIf="!loadingElements && !selectedElements?.length" class="board-products__empty">
+                    Este pedido no tiene productos.
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="board-confirm__btn board-confirm__btn--cancel" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay mientras se aplica un movimiento -->
+<div *ngIf="submitting" class="board-loading-overlay">
+    <div class="board-loading-overlay__content">
+        <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
+        <p class="text-light mt-3 mb-0 fs-5">Actualizando pedido...</p>
+    </div>
+</div>

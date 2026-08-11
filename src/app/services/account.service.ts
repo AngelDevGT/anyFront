@@ -303,6 +303,14 @@ const menuItemsOptions: any = [
       },
       {
         root_class: 'list-group list-group-flush',
+        router_link: '/finishedProduct/order/board',
+        link_class: 'list-group-item py-2 ripple',
+        link_name: 'Tablero de pedidos',
+        icon_name: 'arrow_right',
+        icon_class: 'material-icons icon',
+      },
+      {
+        root_class: 'list-group list-group-flush',
         router_link: '/abarrotes',
         link_class: 'list-group-item py-2 ripple',
         link_name: 'Listado de abarrotes',
@@ -359,6 +367,42 @@ const menuItemsOptions: any = [
         router_link: '/store/sales/summary',
         link_class: 'list-group-item py-2 ripple',
         link_name: 'Resumen de ventas',
+        icon_name: 'arrow_right',
+        icon_class: 'material-icons icon',
+      },
+    ],
+  },
+  {
+    button_type: 'button',
+    button_class: 'list-group-item principal-bottom',
+    button_toggle: 'collapse',
+    button_data_bs_toggle: 'collapse',
+    button_data_bs_target: '#consultas-lvl1',
+    button_aria_controls: 'consultas-lvl1',
+    button_aria_expanded: 'false',
+    button_icon_class: 'material-icons icon',
+    button_icon: 'fact_check',
+    button_name: 'Consultas',
+    button_dropdown_icon_class: 'material-icons icon',
+    button_dropdown_icon: 'arrow_drop_down',
+    root_id: 'consultas-lvl1',
+    root_class: 'panel-collapse collapse',
+    sub_class: 'position-sticky',
+    is_tree: true,
+    childs: [
+      {
+        root_class: 'list-group list-group-flush',
+        router_link: '/consultas/pedidos',
+        link_class: 'list-group-item py-2 ripple',
+        link_name: 'Pedidos',
+        icon_name: 'arrow_right',
+        icon_class: 'material-icons icon',
+      },
+      {
+        root_class: 'list-group list-group-flush',
+        router_link: '/consultas/ventas',
+        link_class: 'list-group-item py-2 ripple',
+        link_name: 'Ventas',
         icon_name: 'arrow_right',
         icon_class: 'material-icons icon',
       },
@@ -637,6 +681,26 @@ export class AccountService {
       /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b/g;
     const matches = text.match(emailPattern);
     return matches ?? [];
+  }
+
+  /**
+   * ¿La tienda está asignada al usuario logueado? La asignación se hace escribiendo su correo en la
+   * descripción del establecimiento. El admin ve todas sin necesidad de estar asignado.
+   */
+  isAssignedEstablishment(establishment: any): boolean {
+    if (this.isAdminUser()) {
+      return true;
+    }
+    const userEmail = this.userEmail;
+    if (!userEmail) {
+      return false;
+    }
+    return this.extractEmails(establishment?.description).includes(userEmail);
+  }
+
+  /** Deja solo las tiendas que el usuario tiene asignadas (todas si es admin). */
+  filterAssignedEstablishments<T>(establishments?: T[]): T[] {
+    return (establishments || []).filter(establishment => this.isAssignedEstablishment(establishment));
   }
 
   getUserMenuItems() {

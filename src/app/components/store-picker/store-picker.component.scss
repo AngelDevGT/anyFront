@@ -1,0 +1,48 @@
+.store-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.store-picker-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  .material-icons { font-size: 18px; color: #c94e00; }
+}
+
+.store-picker-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.store-picker-select {
+  min-width: 220px;
+  padding: 7px 12px;
+  background: #fff;
+  color: #333;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:hover:not(:disabled) { border-color: #c94e00; box-shadow: 0 2px 8px rgba(201, 78, 0, 0.12); }
+  &:focus { outline: none; border-color: #c94e00; }
+  &:disabled { background: #f7f7f7; color: #aaa; cursor: not-allowed; }
+}
+
+.store-picker-spinner { color: #c94e00; }
+
+.store-picker-empty {
+  font-size: 12px;
+  color: #c0392b;
+}

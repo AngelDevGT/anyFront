@@ -3,9 +3,12 @@
   <div class="page-header">
     <div class="page-header-left">
       <h4 class="page-title">{{pageTitle}}</h4>
-      <p class="page-subtitle">Consulta y gestiona los pedidos de productos para venta</p>
+      <p class="page-subtitle">{{ readOnly ? 'Consulta los pedidos de productos para venta' : 'Consulta y gestiona los pedidos de productos para venta' }}</p>
     </div>
-    <button *ngIf="productForSaleOrdes && viewOption != 'factory'" type="button" (click)="navigateWithParams()" class="btn-add">
+    <store-picker *ngIf="storePicker"
+                  storageKey="/consultas/pedidos"
+                  (storeChange)="onStoreChange($event)"></store-picker>
+    <button *ngIf="!readOnly && productForSaleOrdes && viewOption != 'factory'" type="button" (click)="navigateWithParams()" class="btn-add">
       <i class="material-icons">add</i>
       Crear Pedido
     </button>
@@ -86,7 +89,12 @@
       </div>
     </div>
 
-    <data-table *ngIf="productForSaleOrdes"
+    <div *ngIf="storePicker && !storeSelected" class="empty-state">
+      <i class="material-icons">storefront</i>
+      <p>Selecciona una tienda para ver sus pedidos</p>
+    </div>
+
+    <data-table *ngIf="storeSelected && productForSaleOrdes"
                 [tableElements]="tableElementsValues"
                 [initialPageSize]="pageSize"
                 [selectable]="true"

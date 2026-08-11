@@ -17,4 +17,10 @@ export class ProductForSaleStoreOrder {
     creatorUser?: User;
     creationDate?: string;
     updatedDate?: string;
+    // Tablero de bodega: se llenan al pasar el pedido a En curso / Listo.
+    // Quedan en null para los pedidos anteriores al tablero y para los que
+    // pasan a Listo desde la vista de tabla vieja.
+    assignedUser?: User;
+    startDate?: string;
+    readyDate?: string;
 }

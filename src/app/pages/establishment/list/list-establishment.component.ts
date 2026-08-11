@@ -62,7 +62,6 @@ export class ListEstablishmentComponent implements OnInit {
 
     setTableElements(elements: any) {
         this.tableElementsValues = [];
-        const userEmail = this.accountService.userEmail;
         elements?.forEach((element: any) => {
             let curr_row: any[];
             let buttonsRow: any;
@@ -102,10 +101,7 @@ export class ListEstablishmentComponent implements OnInit {
                     buttonsRow
                 ];
             }
-            const emails = this.accountService.extractEmails(element.description);
-            if (this.accountService.isAdminUser()) {
-                this.tableElementsValues.push(curr_row);
-            } else if (emails.length > 0 && userEmail && emails.includes(userEmail)) {
+            if (this.accountService.isAssignedEstablishment(element)) {
                 this.tableElementsValues.push(curr_row);
             }
         });

@@ -47,7 +47,9 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     storeName = '';
     errorMessage = '';
     confirmReceiveOption = false;
-    
+    /** Modo consulta: el detalle solo se ve y se exporta a PDF, sin acciones sobre el pedido. */
+    readOnly = false;
+
 
     constructor(private dataService: DataService, private alertService: AlertService, private accountService: AccountService,
         private route: ActivatedRoute, private pdfService: PdfService, private router: Router, private dialog: MatDialog) {
@@ -56,6 +58,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     ngOnInit(): void {
 
         this.id = this.route.snapshot.params['id'];
+        this.readOnly = !!this.route.snapshot.data['readOnly'];
 
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
@@ -92,6 +95,10 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     }
 
     setElementOptions(pfsOrder: ProductForSaleStoreOrder){
+        // En modo consulta ninguna acción queda habilitada; solo se deja el botón de PDF
+        if (this.readOnly){
+            return;
+        }
         const elemStatus = pfsOrder.factoryStatus;
         if (elemStatus){
             if(this.isFactory){

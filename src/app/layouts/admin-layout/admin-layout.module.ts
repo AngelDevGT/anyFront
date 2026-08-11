@@ -16,6 +16,9 @@ import {MatAutocompleteModule} from '@angular/material/autocomplete';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatListModule} from '@angular/material/list';
 import {MatCheckboxModule} from '@angular/material/checkbox';
+// ComponentsModule importa DragDropModule pero no lo exporta, así que el
+// tablero necesita importarlo acá por su cuenta.
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { AdminLayoutRoutes } from "./admin-layout.routing";
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -71,6 +74,7 @@ import { ListCashClosingComponent } from "@app/pages/cash-closing/list/list-cash
 import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash-closing.component";
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
+import { BoardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/board/board-pfs-order.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DATE_FORMATS } from '@angular/material/core';
@@ -120,6 +124,7 @@ export const MY_DATE_FORMATS = {
     MatCheckboxModule,
     MatDialogModule,
     MatExpansionModule,
+    DragDropModule,
   ],
   declarations: [
       HomeComponent,
@@ -170,6 +175,7 @@ export const MY_DATE_FORMATS = {
       ViewCashClosingComponent,
       AddEditCashClosingComponent,
       ListFinishedProductOrderInFactoryComponent,
+      BoardFinishedProductOrderComponent,
       ListStoreExpensesComponent,
       AddEditExpenseComponent,
       ViewExpenseComponent,

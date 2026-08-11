@@ -101,6 +101,17 @@
 
 .loading-wrap { display: flex; justify-content: center; padding: 48px; color: #aaa; }
 
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 56px 24px;
+  color: #aaa;
+  .material-icons { font-size: 44px; color: #ddd; }
+  p { margin: 0; font-size: 14px; }
+}
+
 // Date filter
 .date-wrapper { position: relative; }
 

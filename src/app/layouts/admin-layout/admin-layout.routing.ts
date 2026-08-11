@@ -46,6 +46,7 @@ import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { canActivateV2 } from "@app/helpers";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
+import { BoardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/board/board-pfs-order.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
 import { SummaryStoreSalesComponent } from "@app/pages/store-sales/summary/summary-store-sales.component";
@@ -77,6 +78,7 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'abarroteCreation', component: AddEditProductCreationComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
     { path: 'productsForSale/order', component: ListProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'finishedProduct/order', component: ListFinishedProductOrderInFactoryComponent, canActivate: [canActivateV2]},
+    { path: 'finishedProduct/order/board', component: BoardFinishedProductOrderComponent, canActivate: [canActivateV2]},
     { path: 'productsForSale/order/create', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/order/edit/:id', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/order/view/:id', component: ViewProductForSaleOrderComponent , canActivate: [canActivateV2]},
@@ -146,6 +148,11 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'store/expenses/history/view/:id', component: ViewExpenseComponent, canActivate: [canActivateV2]},
     { path: 'store/expenses/create', component: AddEditExpenseComponent, canActivate: [canActivateV2]},
     { path: 'store/expenses/history/edit/:id', component: AddEditExpenseComponent, canActivate: [canActivateV2]},
+    // Consultas — solo lectura: se elige la tienda en la propia pantalla y solo se lista, ve y exporta a PDF
+    { path: 'consultas/pedidos', component: ListProductForSaleOrderComponent, data: { readOnly: true, storePicker: true }, canActivate: [canActivateV2]},
+    { path: 'consultas/pedidos/view/:id', component: ViewProductForSaleOrderComponent, data: { readOnly: true }, canActivate: [canActivateV2]},
+    { path: 'consultas/ventas', component: ListStoreSalesPFSComponent, data: { readOnly: true, storePicker: true }, canActivate: [canActivateV2]},
+    { path: 'consultas/ventas/view/:id', component: ViewStoreSalesPFSComponent, data: { readOnly: true }, canActivate: [canActivateV2]},
     { path: 'cashClosing/:id', component: ListCashClosingComponent, canActivate: [canActivateV2]},
     { path: 'cashClosing/view/:id', component: ViewCashClosingComponent, canActivate: [canActivateV2]},
     { path: 'cashClosing/create/:id', component: AddEditCashClosingComponent, canActivate: [canActivateV2]},

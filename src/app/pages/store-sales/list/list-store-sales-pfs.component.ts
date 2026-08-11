@@ -42,6 +42,11 @@ export class ListStoreSalesPFSComponent implements OnInit {
     availableOrderPaymentStatuses: string[] = [];
     availableDeliveryPaymentStatuses: string[] = [];
 
+    /** Modo consulta: sin registrar ventas y con la tienda elegida en la propia pantalla. */
+    readOnly = false;
+    storePicker = false;
+    storeSelected = false;
+
     filterPanelOpen = false;
     datePanelOpen = false;
     maxDate = new Date();
@@ -63,6 +68,8 @@ export class ListStoreSalesPFSComponent implements OnInit {
     constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService) {}
 
     ngOnInit() {
+        this.readOnly = !!this.route.snapshot.data['readOnly'];
+        this.storePicker = !!this.route.snapshot.data['storePicker'];
         this.establishmentId = this.route.snapshot.params['id'];
 
         // Rango guardado en la pestaña o, si no hay, los últimos 15 días desde la fecha actual
@@ -71,6 +78,16 @@ export class ListStoreSalesPFSComponent implements OnInit {
         this.appliedEndDate = this.dateRange.end;
         this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);
 
+        this.rawMaterialForm = this.createMaterialFormGroup();
+
+        // Con selector de tienda se espera a que store-picker emita antes de pedir las ventas
+        if (!this.storePicker) {
+            this.storeSelected = true;
+            this.loadStore();
+        }
+    }
+
+    private loadStore() {
         const requestArray = [
             this.dataService.getAllShopHistory(this.buildSalesParams()),
             this.dataService.getAnyComponent({}, 'getMeasure'),
@@ -88,7 +105,26 @@ export class ListStoreSalesPFSComponent implements OnInit {
                 this.storeName = this.establishment?.name;
             }
         });
-        this.rawMaterialForm = this.createMaterialFormGroup();
+    }
+
+    /** Cambio de tienda desde el selector: sin tienda no se consulta nada y la tabla queda vacía. */
+    onStoreChange(store?: Establishment) {
+        this.establishment = store;
+        this.establishmentId = store?.id ?? '';
+        this.storeName = store?.name;
+        this.storeSelected = !!store;
+
+        if (!this.storeSelected) {
+            this.shopResumes = undefined;
+            this.allShopResumes = undefined;
+            this.availableSaleStatuses = [];
+            this.availableOrderPaymentStatuses = [];
+            this.availableDeliveryPaymentStatuses = [];
+            this.tableElementsValues = [];
+            return;
+        }
+        // La tienda ya viene del selector, solo faltan sus ventas
+        this.fetchSales();
     }
 
     private buildSalesParams(): any {
@@ -180,7 +216,9 @@ export class ListStoreSalesPFSComponent implements OnInit {
         this.appliedEndDate = this.selectedDateRange.end;
         this.dateRange.apply(this.appliedStartDate, this.appliedEndDate);
         this.datePanelOpen = false;
-        this.fetchSales();
+        if (this.storeSelected) {
+            this.fetchSales();
+        }
     }
 
     get activeFilterCount(): number {
@@ -295,8 +333,9 @@ export class ListStoreSalesPFSComponent implements OnInit {
                 },
                 { type: 'text', value: this.dataService.getFormatedPrice(Number(element.delivery)), header_name: 'Total envío' }
             ];
-            curr_row.rowLink = '/store/sales/history/view/' + element.id;
-            curr_row.rowLinkAbsolute = true;
+            // En modo consulta el detalle vive bajo la ruta del propio listado (/consultas/ventas/view/:id)
+            curr_row.rowLink = this.readOnly ? 'view/' + element.id : '/store/sales/history/view/' + element.id;
+            curr_row.rowLinkAbsolute = !this.readOnly;
             this.tableElementsValues.push(curr_row);
         });
     }

@@ -19,10 +19,10 @@
             <button class="btn-ghost" type="button" (click)="generatePDF()" [disabled]="submitting">
                 <i class="material-icons">download</i> Descargar PDF
             </button>
-            <button *ngIf="shopResume?.status?.id == 52" class="btn-ghost" type="button" (click)="editSale()" [disabled]="submitting">
+            <button *ngIf="canManageSale" class="btn-ghost" type="button" (click)="editSale()" [disabled]="submitting">
                 <i class="material-icons">edit</i> Editar
             </button>
-            <button *ngIf="shopResume?.status?.id == 52" class="btn-ghost btn-ghost-danger" type="button" (click)="cancelSale()" [disabled]="submitting">
+            <button *ngIf="canManageSale" class="btn-ghost btn-ghost-danger" type="button" (click)="cancelSale()" [disabled]="submitting">
                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                 <i class="material-icons">cancel</i> Cancelar
             </button>
@@ -173,7 +173,7 @@
                     </div>
                 </ng-container>
 
-                <button *ngIf="showPayButton && shopResume?.status?.id == 52"
+                <button *ngIf="showPayButton && canManageSale"
                         type="button" class="side-pay-btn"
                         data-bs-toggle="modal" data-bs-target="#payModal">
                     <i class="material-icons">payments</i> Registrar pago

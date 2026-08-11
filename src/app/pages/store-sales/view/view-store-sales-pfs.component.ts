@@ -34,6 +34,8 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     deleteOption = false;
     activityLogName = "Acciones de Producto para Venta en tienda";
     activityLog?: ActivityLog;
+    /** Modo consulta: la venta solo se ve y se exporta a PDF, sin editar, cancelar ni cobrar. */
+    readOnly = false;
 
     @ViewChild('payModalCloseBtn') payModalCloseBtnRef?: ElementRef;
 
@@ -78,7 +80,12 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     }
 
     get showPayButton(): boolean {
-        return this.canPayOrder || this.canPayDelivery;
+        return !this.readOnly && (this.canPayOrder || this.canPayDelivery);
+    }
+
+    /** Editar y cancelar solo aplican a una venta activa y fuera del modo consulta. */
+    get canManageSale(): boolean {
+        return !this.readOnly && this.shopResume?.status?.id == 52;
     }
 
     get nonCreditPaymentTypes(): PaymentType[] {
@@ -91,6 +98,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
 
     ngOnInit(): void {
         this.id = this.route.snapshot.params['id'];
+        this.readOnly = !!this.route.snapshot.data['readOnly'];
         this.loading = true;
         this.paymentForm = this.createPaymentFormGroup();
 
@@ -122,6 +130,11 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     }
 
     goBack() {
+        if (this.readOnly) {
+            // El listado de consultas recuerda la tienda, así que no hace falta pasarla en la ruta
+            this.router.navigateByUrl('/consultas/ventas');
+            return;
+        }
         this.router.navigateByUrl('/store/sales/history/' + (this.shopResume?.establecimiento?.id ?? this.shopResume?.establishment?.id ?? ''));
     }
 

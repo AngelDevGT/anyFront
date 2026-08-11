@@ -1,0 +1,547 @@
+// ── Encabezado de página (mismo patrón que el listado de tiendas) ────────────
+
+.page-wrapper { padding: 24px; }
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin: 0 0 2px; }
+.page-subtitle { font-size: 13px; color: #888; margin: 0; }
+
+.loading-wrap { display: flex; justify-content: center; padding: 48px; color: #aaa; }
+
+// ── Tablero ──────────────────────────────────────────────────────────────────
+
+.board {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    // Los listados se reparten el ancho disponible. Al llegar al min-width el
+    // tablero scrollea horizontalmente, nunca la página.
+    overflow-x: auto;
+    // El padding evita que overflow-x recorte la sombra de los listados.
+    padding: 4px 4px 12px;
+}
+
+.board-column {
+    flex: 1 1 0;
+    min-width: 240px;
+    background: #f7f8fa;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 210px);
+    box-shadow: 0 2px 12px rgba(9, 30, 66, 0.10);
+    transition: box-shadow 0.2s ease;
+}
+
+.board-column__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 14px 10px;
+    border-top: 4px solid #ccc;
+    border-radius: 12px 12px 0 0;
+}
+
+.board-column__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #172b4d;
+}
+
+.board-column__count {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 11px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.board-column__list {
+    padding: 4px 10px 12px;
+    overflow-y: auto;
+    min-height: 90px;
+    flex: 1;
+}
+
+.board-column__empty {
+    margin: 12px 0;
+    text-align: center;
+    font-size: 12px;
+    color: #8993a4;
+}
+
+// ── Tarjeta ──────────────────────────────────────────────────────────────────
+
+.board-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(9, 30, 66, 0.16);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: grab;
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
+    // Entrada suave al renderizarse. Con trackBy por id, las tarjetas que ya
+    // estaban no se recrean, así que solo se anima lo que realmente es nuevo:
+    // la carga inicial y la tarjeta que acaba de cambiar de listado.
+    //
+    // OJO: la animación usa la propiedad `translate`, NO `transform`. Las
+    // animaciones CSS ganan sobre los estilos inline, y el CDK posiciona lo que
+    // se arrastra con `transform: translate3d(...)` inline. Animar `transform`
+    // acá lo pisa y deja la tarjeta clavada en la esquina superior izquierda.
+    animation: board-card-in 0.22s ease-out both;
+
+    // Sin destino válido (ej. no sos el encargado): se ve, no se arrastra.
+    &--locked {
+        cursor: default;
+        opacity: 0.85;
+    }
+}
+
+// El realce solo aplica fuera de un arrastre: durante el drag el CDK ya maneja
+// la elevación de la tarjeta y encimar otro transform se ve mal.
+.board-column__list:not(.cdk-drop-list-dragging) .board-card:not(.board-card--locked):hover {
+    box-shadow: 0 4px 12px rgba(9, 30, 66, 0.18);
+    transform: translateY(-2px);
+}
+
+@keyframes board-card-in {
+    from { opacity: 0; translate: 0 6px; }
+    to   { opacity: 1; translate: 0 0; }
+}
+
+
+// Respeta la preferencia del sistema de reducir movimiento.
+@media (prefers-reduced-motion: reduce) {
+    .board-card {
+        animation: none;
+        transition: box-shadow 0.18s ease;
+    }
+    .board-column__list:not(.cdk-drop-list-dragging) .board-card:not(.board-card--locked):hover {
+        transform: none;
+    }
+}
+
+.board-card__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #172b4d;
+    word-break: break-word;
+}
+
+.board-card__times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 3px;
+}
+
+.board-card__time {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    color: #6b778c;
+
+    .material-icons { font-size: 13px; }
+}
+
+.board-card__owner {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 8px;
+}
+
+.board-card__avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.board-card__owner-name {
+    font-size: 12px;
+    color: #42526e;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.board-card__store-row {
+    margin-top: 8px;
+}
+
+// Cápsula al ancho de su contenido, no de la tarjeta.
+.board-card__store {
+    display: inline-block;
+    max-width: 100%;
+    padding: 4px 10px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.board-card__products-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 5px 8px;
+    background: #fff;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 6px;
+    color: #42526e;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: border-color 0.15s, color 0.15s;
+
+    .material-icons { font-size: 15px; }
+    &:hover { border-color: #c94e00; color: #c94e00; }
+}
+
+// ── Estados del CDK durante el arrastre ──────────────────────────────────────
+
+.board-card__placeholder {
+    background: #dfe1e6;
+    border: 1px dashed #b3bac5;
+    border-radius: 8px;
+    min-height: 72px;
+}
+
+// Vista previa propia (*cdkDragPreview): reemplaza al clon de la tarjeta, que
+// al montarse fuera de la columna perdía el layout.
+.board-card__preview {
+    width: 240px;
+    max-width: 90vw;
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 10px 26px rgba(9, 30, 66, 0.32);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    cursor: grabbing;
+    rotate: 2deg;
+}
+
+.board-card__preview-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #172b4d;
+    word-break: break-word;
+}
+
+.cdk-drag-animating {
+    transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.board-column__list.cdk-drop-list-dragging .board-card:not(.cdk-drag-placeholder) {
+    transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// Resalta el listado destino cuando el predicate acepta la tarjeta.
+.board-column__list.cdk-drop-list-receiving {
+    background: rgba(201, 78, 0, 0.06);
+    border-radius: 8px;
+}
+
+// ── Confirmación ─────────────────────────────────────────────────────────────
+
+.board-confirm {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1060;
+    padding: 16px;
+}
+
+.board-confirm__box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 22px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.board-confirm__title {
+    margin: 0 0 12px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #172b4d;
+}
+
+.board-confirm__text {
+    font-size: 14px;
+    color: #42526e;
+    margin-bottom: 8px;
+}
+
+.board-confirm__warning {
+    font-size: 13px;
+    font-weight: 600;
+    color: #c0392b;
+    margin-bottom: 18px;
+}
+
+.board-confirm__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.board-confirm__btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+
+    &--cancel {
+        background: #fff;
+        color: #555;
+        border-color: #ddd;
+        &:hover { border-color: #c94e00; color: #c94e00; }
+    }
+
+    &--ok {
+        background: #c94e00;
+        color: #fff;
+        &:hover { background: #a83e00; }
+    }
+
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+// ── Modal de productos ───────────────────────────────────────────────────────
+
+.board-products {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+        padding: 9px 12px;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 13px;
+    }
+
+    th {
+        text-align: left;
+        font-weight: 700;
+        color: #6b778c;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.4px;
+    }
+
+    td { color: #172b4d; }
+
+    .text-end { text-align: right; }
+}
+
+.board-products__loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 18px;
+    font-size: 13px;
+    color: #6b778c;
+}
+
+.board-products__empty {
+    padding: 18px;
+    text-align: center;
+    font-size: 13px;
+    color: #8993a4;
+}
+
+// ── Cargas ───────────────────────────────────────────────────────────────────
+
+.board-loading {
+    display: flex;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.board-loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1070;
+}
+
+.board-loading-overlay__content {
+    text-align: center;
+}
+
+// ── Filtro de fechas (mismo patrón que el listado de pedidos) ────────────────
+
+.date-wrapper { position: relative; }
+
+.filter-main-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: #fff;
+    color: #333;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+    .material-icons:first-child { color: #c94e00; }
+    &:hover { border-color: #c94e00; box-shadow: 0 2px 8px rgba(201, 78, 0, 0.12); }
+    .chevron-icon { font-size: 18px; color: #888; transition: transform 0.2s; }
+    &.open .chevron-icon { transform: rotate(180deg); }
+}
+
+.date-range-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #888;
+    white-space: nowrap;
+}
+
+.date-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 330px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    overflow: hidden;
+
+    @media (max-width: 576px) {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        width: 100%;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.date-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.date-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #222;
+}
+
+.date-close-btn {
+    background: none;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #888;
+    padding: 0;
+    transition: border-color 0.15s, color 0.15s;
+    &:hover { border-color: #c94e00; color: #c94e00; }
+}
+
+.date-panel-body {
+    padding: 4px 8px;
+
+    ::ng-deep .mat-calendar { width: 100%; height: auto; }
+    ::ng-deep .mat-calendar-body-selected {
+        background-color: #c94e00;
+        color: #fff;
+    }
+    ::ng-deep .mat-calendar-body-in-range::before { background: rgba(201, 78, 0, 0.15); }
+    ::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) { border-color: #c94e00; }
+}
+
+.date-panel-footer {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+}
+
+.btn-reset {
+    flex: 1;
+    padding: 8px;
+    background: #fff;
+    color: #555;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    &:hover { border-color: #c94e00; color: #c94e00; }
+}
+
+.btn-date-apply {
+    flex: 1;
+    padding: 8px;
+    background: #c94e00;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    &:hover { background: #a83e00; }
+}

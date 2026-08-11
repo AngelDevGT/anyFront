@@ -1603,6 +1603,57 @@ export class DataService {
     }
 
     /**
+     * Listado para el tablero de bodega. Igual al listado normal más
+     * assignedUser, startDate y readyDate; sin los elementos del pedido, que se
+     * piden aparte con getProductForSaleOrderById al abrir "Ver productos".
+     */
+    getAllProductForSaleOrderForBoard(params: any) {
+        let parameters = JSON.stringify({
+            pfsso: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrderBoard`, parameters);
+    }
+
+    /**
+     * Pendiente -> En curso. Asigna al usuario actual como encargado y marca la
+     * hora de inicio. No mueve inventario.
+     */
+    startProductForSaleOrder(pfsOrderId: string){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/startProductForSaleStoreOrder`, params);
+    }
+
+    /**
+     * En curso -> Pendiente. Libera el pedido y limpia encargado y hora de
+     * inicio. Solo lo permite la base si quien llama es el encargado o un admin.
+     */
+    releaseProductForSaleOrder(pfsOrderId: string){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/releaseProductForSaleStoreOrder`, params);
+    }
+
+    /**
+     * En curso -> Listo usando el procedure v2, que valida que solo el
+     * encargado (o un admin) pueda hacerlo y registra la hora de finalización.
+     * Mueve inventario: bodega -> in_transit.
+     */
+    manageProductForSaleOrderStateReadyV2(pfsOrderId: string){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": pfsFactoryOrderStatusValues.listo.status.id,
+            "$3": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrderV2`, params);
+    }
+
+    /**
      * Version reducida de getProductForSaleOrderById: solo los campos que se imprimen en el PDF.
      */
     getProductForSaleOrderByIdForPdf(id: string) {

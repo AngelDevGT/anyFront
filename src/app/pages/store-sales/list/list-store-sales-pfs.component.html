@@ -2,11 +2,14 @@
 
   <div class="page-header">
     <div class="page-header-left">
-      <h4 class="page-title">Ventas de Tienda</h4>
+      <h4 class="page-title">{{ readOnly ? 'Ventas' : 'Ventas de Tienda' }}</h4>
       <p *ngIf="storeName" class="store-name-label">{{ storeName }}</p>
       <p class="page-subtitle">Historial de ventas registradas</p>
     </div>
-    <button *ngIf="shopResumes" type="button" (click)="saveSale()" class="btn-add">
+    <store-picker *ngIf="storePicker"
+                  storageKey="/consultas/ventas"
+                  (storeChange)="onStoreChange($event)"></store-picker>
+    <button *ngIf="!readOnly && shopResumes" type="button" (click)="saveSale()" class="btn-add">
       <i class="material-icons">add</i>
       Registrar venta
     </button>
@@ -120,8 +123,13 @@
       </div>
     </div>
 
-    <data-table *ngIf="shopResumes" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"></data-table>
-    <div *ngIf="!shopResumes" class="loading-wrap">
+    <div *ngIf="storePicker && !storeSelected" class="empty-state">
+      <i class="material-icons">storefront</i>
+      <p>Selecciona una tienda para ver sus ventas</p>
+    </div>
+
+    <data-table *ngIf="storeSelected && shopResumes" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"></data-table>
+    <div *ngIf="storeSelected && !shopResumes" class="loading-wrap">
       <span class="spinner-border spinner-border-lg"></span>
     </div>
   </div>
