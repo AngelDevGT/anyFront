@@ -29,6 +29,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DataTableComponent } from './data-table/data-table.component';
 import { StorePickerComponent } from './store-picker/store-picker.component';
+import { DateRangeFilterComponent } from './date-range-filter/date-range-filter.component';
 import { SortOrderDialogComponent } from './sort-order-dialog/sort-order-dialog.component';
 import { BulkCostDialogComponent } from './bulk-cost-dialog/bulk-cost-dialog.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -73,6 +74,7 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     SortOrderDialogComponent,
     BulkCostDialogComponent,
     StorePickerComponent,
+    DateRangeFilterComponent,
   ],
   exports: [
     MenuComponent,
@@ -87,6 +89,7 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     SortOrderDialogComponent,
     BulkCostDialogComponent,
     StorePickerComponent,
+    DateRangeFilterComponent,
   ]
 })
 export class ComponentsModule { }

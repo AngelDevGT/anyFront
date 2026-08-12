@@ -45,6 +45,9 @@ const undefinedRole = {
   },
 };
 
+/** Rol Sistema. Es el unico que puede asignar o quitar el rol Sistema a un usuario. */
+export const SYSTEM_ROLE_ID = 1;
+
 const menuItemsOptions: any = [
   {
     button_type: 'button',
@@ -392,12 +395,20 @@ const menuItemsOptions: any = [
     childs: [
       {
         root_class: 'list-group list-group-flush',
-        router_link: '/consultas/pedidos',
+        router_link: '/consultas/pedidos/dashboard',
         link_class: 'list-group-item py-2 ripple',
-        link_name: 'Pedidos',
+        link_name: 'Pedidos por tienda',
         icon_name: 'arrow_right',
         icon_class: 'material-icons icon',
       },
+      // {
+      //   root_class: 'list-group list-group-flush',
+      //   router_link: '/consultas/pedidos',
+      //   link_class: 'list-group-item py-2 ripple',
+      //   link_name: 'Pedidos',
+      //   icon_name: 'arrow_right',
+      //   icon_class: 'material-icons icon',
+      // },
       // {
       //   root_class: 'list-group list-group-flush',
       //   router_link: '/consultas/ventas',
@@ -640,7 +651,33 @@ export class AccountService {
   }
 
   isAdminUser() {
-    return this.userValue.role.id === 1;
+    return this.isSystemRole(this.userValue?.role);
+  }
+
+  /** ¿El rol recibido es el rol Sistema? */
+  isSystemRole(role?: Role | null): boolean {
+    return role != null && String(role.id) === String(SYSTEM_ROLE_ID);
+  }
+
+  /**
+   * ¿Puede el usuario logueado asignar este rol? El rol Sistema solo lo asigna un usuario Sistema;
+   * cualquier otro rol lo puede asignar quien tenga acceso al mantenimiento de usuarios.
+   */
+  canAssignRole(role?: Role | null): boolean {
+    return this.isAdminUser() || !this.isSystemRole(role);
+  }
+
+  /** Roles que el usuario logueado puede asignar (todos menos Sistema si no es Sistema). */
+  assignableRoles(roles?: Role[] | null): Role[] {
+    return (roles || []).filter((role) => this.canAssignRole(role));
+  }
+
+  /**
+   * ¿Puede el usuario logueado cambiar el rol del usuario recibido? El rol de un usuario Sistema
+   * (asignarlo o quitarlo) solo lo modifica otro usuario Sistema.
+   */
+  canEditUserRole(user?: User | null): boolean {
+    return this.canAssignRole(user?.role);
   }
 
   isSalesUser() {

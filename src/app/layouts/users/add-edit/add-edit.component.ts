@@ -16,6 +16,8 @@ export class AddEditComponent implements OnInit {
     userForm!: FormGroup;
     currentUser?: User;
     roleOptions?: Role[];
+    /** Catalogo completo de roles; roleOptions solo expone los que el usuario logueado puede asignar. */
+    allRoleOptions?: Role[];
     statusOptions?: Status[];
     selectedStatus?: Status;
     selectedStatusSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
@@ -61,7 +63,8 @@ export class AddEditComponent implements OnInit {
         this.dataService.getAnyComponent({r: {status: 1}}, 'getRoles')
             .pipe(
                 concatMap((roles: any) => {
-                    this.roleOptions = this.dataService.findJsonValue(roles, 'json_result');
+                    this.allRoleOptions = this.dataService.findJsonValue(roles, 'json_result');
+                    this.setRoleOptions();
                     return this.dataService.getAnyComponent({s: {type: "user"}}, 'getStatus')
                 }),
                 concatMap((status: any) => {
@@ -82,8 +85,12 @@ export class AddEditComponent implements OnInit {
                         this.currentUser = user;
                         this.selectedRole = this.currentUser?.role;
                         this.selectedStatus = this.currentUser?.status;
+                        this.setRoleOptions();
                         this.roleSelect?.patchValue(String(this.selectedRole?.id));
                         this.statusSelect?.patchValue(String(this.selectedStatus?.id));
+                        if (this.roleLocked){
+                            this.roleSelect?.disable();
+                        }
                         this.loading = false;
                     }
                 }
@@ -101,6 +108,27 @@ export class AddEditComponent implements OnInit {
         return this.userForm.get('status');
     }
 
+    /**
+     * El rol del usuario editado no se puede tocar: es un usuario Sistema y quien edita no lo es.
+     * Asignar el rol Sistema (o quitarselo a quien lo tiene) es exclusivo del rol Sistema.
+     */
+    get roleLocked(): boolean {
+        return !!this.id && !this.accountService.canEditUserRole(this.currentUser);
+    }
+
+    /**
+     * Deja en el desplegable solo los roles que el usuario logueado puede asignar. Si se esta
+     * editando, el rol actual se mantiene visible aunque no sea asignable, para no perderlo.
+     */
+    setRoleOptions(){
+        const assignableRoles = this.accountService.assignableRoles(this.allRoleOptions);
+        const currentRole = this.currentUser?.role;
+        const currentRoleListed = assignableRoles.some(role => String(role.id) === String(currentRole?.id));
+        this.roleOptions = currentRole && !currentRoleListed
+            ? [...assignableRoles, currentRole]
+            : assignableRoles;
+    }
+
     selectRole(roleId?: string){
         if (roleId){
             this.selectedRole = this.roleOptions?.find(role => String(role.id) === roleId);
@@ -113,9 +141,26 @@ export class AddEditComponent implements OnInit {
         }
     }
 
+    /**
+     * Solo un usuario Sistema puede asignar el rol Sistema o cambiarle el rol a quien ya lo tiene.
+     * El resto de roles los puede asignar cualquier usuario con acceso a esta pantalla.
+     */
+    roleChangeAllowed(){
+        const currentRole = this.currentUser?.role;
+        if (String(this.selectedRole?.id) === String(currentRole?.id)){
+            return true;
+        }
+        return this.accountService.canAssignRole(this.selectedRole) && this.accountService.canAssignRole(currentRole);
+    }
+
     onSubmit() {
         // reset alerts on submit
         this.alertService.clear();
+
+        if (!this.roleChangeAllowed()){
+            this.alertService.error('Solo un usuario con rol Sistema puede asignar o modificar el rol Sistema');
+            return;
+        }
 
         this.submitting = true;
         if(this.id){

@@ -5,6 +5,7 @@ import { CdkDrag, CdkDragDrop, CdkDropList, transferArrayItem } from '@angular/c
 import { DateRange } from '@angular/material/datepicker';
 
 import { AccountService, AlertService, DataService, pfsFactoryOrderStatusValues } from '@app/services';
+import { getStoreColor } from '@app/helpers';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
 import { ProductForSaleStoreOrderElement } from '@app/models/product-for-sale/product-for-sale-store-order-element.model';
 
@@ -80,10 +81,6 @@ export class BoardFinishedProductOrderComponent implements OnInit {
         '#e76f51', '#06d6a0', '#f72585', '#4cc9f0'
     ];
 
-    private readonly storePalette = [
-        '#2563eb', '#7c3aed', '#db2777', '#059669',
-        '#d97706', '#0891b2', '#4f46e5', '#be123c'
-    ];
 
     constructor(
         private dataService: DataService,
@@ -343,17 +340,11 @@ export class BoardFinishedProductOrderComponent implements OnInit {
     }
 
     /**
-     * Color de la cápsula de tienda. Se deriva del id porque `establishment` no
-     * tiene columna de color. Se hashea el id completo y no la inicial del
-     * nombre, si no dos tiendas con la misma letra saldrían iguales.
+     * Color de la cápsula de tienda. Vive en un helper compartido para que el tablero y el
+     * dashboard de pedidos pinten la misma tienda del mismo color.
      */
     getStoreColor(establishmentId?: string): string {
-        if (!establishmentId) return this.storePalette[0];
-        let hash = 0;
-        for (let i = 0; i < establishmentId.length; i++) {
-            hash = (hash * 31 + establishmentId.charCodeAt(i)) | 0;
-        }
-        return this.storePalette[Math.abs(hash) % this.storePalette.length];
+        return getStoreColor(establishmentId);
     }
 
     trackByOrderId(_index: number, order: ProductForSaleStoreOrder) {

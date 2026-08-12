@@ -1788,6 +1788,7 @@ export class DataService {
      * `comment` y `date` son opcionales: si se mandan vacíos la procedure aplica
      * sus defaults (comentario NULL y fecha = now() en UTC).
      * `date` debe venir ya convertida a UTC con getUTCTimeFromLocalDateTime().
+     * `$7` es el usuario que cobra, que no siempre es el que hizo la venta.
      */
     addShopSalePayment(shopSaleId: string, amount: string, paymentTypeId: string, paymentTarget: string = 'ORDER',
         comment: string = '', date: string = '') {
@@ -1797,16 +1798,17 @@ export class DataService {
             "$3": paymentTypeId,
             "$4": paymentTarget,
             "$5": comment,
-            "$6": date
+            "$6": date,
+            "$7": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV4`, params);
+        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV5`, params);
     }
 
     getShopSalePayments(shopSaleId: string) {
         let params = JSON.stringify({
             ssp: { shop_sale_id: shopSaleId }
         });
-        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV4`, params);
+        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV5`, params);
     }
 
     /**
@@ -1948,21 +1950,22 @@ export class DataService {
      * Las tres versiones del cierre dejan fuera de `creditPayments` los pagos
      * registrados junto con la venta (depósito): ese dinero ya viene contado
      * como venta con depósito y contarlo otra vez inflaría el cierre y el saldo
-     * de crédito.
+     * de crédito. Cada abono trae además el usuario que lo cobró (`creatorUser`,
+     * vacío en los abonos anteriores a 2026-08-11).
      */
     getNewCashClosing(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV4`, params);
+        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV5`, params);
     }
 
     getCashClosingById(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV5`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV6`, params);
     }
 
     getCashClosingByIdV2(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV5`, params);
+        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV6`, params);
     }
 
     addCashClosingV2(notes: string, establishment_id: string){

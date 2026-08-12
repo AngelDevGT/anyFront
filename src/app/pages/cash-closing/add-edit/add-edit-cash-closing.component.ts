@@ -392,6 +392,11 @@ export class AddEditCashClosingComponent implements OnInit{
                     {icon : "local_shipping", name : "Destino", value : this.getPaymentTargetLabel(payment.paymentTarget)},
                     {icon : "calendar_today", name : "Fecha de pago", value : this.dataService.getLocalDateTimeFromUTCTime(payment.date?.replaceAll("\"","") || payment.date)},
                     {icon : "chat_bubble_outline", name : "Comentario", value : payment.comment ? payment.comment : '--'},
+                    // Los abonos anteriores a 2026-08-11 no guardaron usuario: ahí
+                    // la fila no se muestra en lugar de dejarla vacía
+                    ...(payment.creatorUser?.name
+                        ? [{icon : "badge", name : "Cobrado por", value : payment.creatorUser.name}]
+                        : []),
                 ],
                 shopSaleId: payment.shopSale?.id
             };

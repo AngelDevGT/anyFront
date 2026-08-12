@@ -1,0 +1,155 @@
+<div class="pfs-dashboard">
+
+    <div class="pfs-dashboard__content">
+
+        <!-- ── Encabezado ─────────────────────────────────────────────────── -->
+        <header class="page-header">
+            <div>
+                <h4 class="page-title">Pedidos por tienda</h4>
+                <p class="page-subtitle">
+                    <span *ngIf="dateRangeLabel">Del {{ dateRangeLabel }}</span>
+                    <span *ngIf="!loadingOrders && hasStores" class="page-subtitle__sep">·</span>
+                    <span *ngIf="!loadingOrders && hasStores">
+                        {{ totalOrders }} pedido{{ totalOrders === 1 ? '' : 's' }} en {{ cards.length }} tienda{{ cards.length === 1 ? '' : 's' }}
+                    </span>
+                </p>
+            </div>
+
+            <div class="page-header__actions">
+                <date-range-filter
+                    [start]="appliedStartDate"
+                    [end]="appliedEndDate"
+                    [maxDate]="maxDate"
+                    [defaultDays]="14"
+                    (rangeApply)="onRangeApply($event)"></date-range-filter>
+
+                <button type="button" class="icon-btn" title="Recargar" aria-label="Recargar"
+                        [disabled]="loadingOrders" (click)="retrieveOrders()">
+                    <i class="material-icons">refresh</i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ── Resumen de todas las tiendas ───────────────────────────────── -->
+        <div class="summary-row" *ngIf="!loadingOrders && hasStores">
+            <section class="summary-card summary-card--total" aria-label="Total de pedidos">
+                <span class="summary__total-value">{{ totalOrders }}</span>
+                <span class="summary__total-label">Pedidos totales</span>
+            </section>
+
+            <section class="summary-card summary-card--states" aria-label="Pedidos por estado">
+                <div class="summary__chips">
+                    <div class="summary__chip" *ngFor="let status of statusViews; trackBy: trackByStatusKey"
+                         [class.summary__chip--empty]="!totals[status.key]"
+                         [style.--chip]="status.color">
+                        <i class="material-icons summary__chip-icon">{{ status.icon }}</i>
+                        <span class="summary__chip-value">{{ totals[status.key] || 0 }}</span>
+                        <span class="summary__chip-label">{{ status.label }}</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ── Buscador y orden ───────────────────────────────────────────── -->
+        <div class="toolbar" *ngIf="!loadingOrders && hasStores">
+            <div class="search">
+                <i class="material-icons search__icon">search</i>
+                <input type="text" class="search__input" placeholder="Buscar tienda"
+                       aria-label="Buscar tienda"
+                       [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" />
+                <button type="button" class="search__clear" *ngIf="searchTerm"
+                        aria-label="Limpiar búsqueda" (click)="clearSearch()">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- ── Esqueleto de carga ─────────────────────────────────────────── -->
+        <div class="cards-grid" *ngIf="loadingOrders">
+            <div class="store-card store-card--skeleton" *ngFor="let skeleton of skeletons">
+                <div class="skeleton skeleton--head"></div>
+                <div class="skeleton skeleton--bar"></div>
+                <div class="skeleton skeleton--row"></div>
+                <div class="skeleton skeleton--row"></div>
+                <div class="skeleton skeleton--foot"></div>
+            </div>
+        </div>
+
+        <!-- ── Tarjetas ───────────────────────────────────────────────────── -->
+        <div class="cards-grid" *ngIf="!loadingOrders && visibleCards.length">
+            <article class="store-card"
+                     *ngFor="let card of visibleCards; trackBy: trackByCardId"
+                     [style.--store]="card.color"
+                     [style.--store-text]="card.textColor"
+                     tabindex="0"
+                     role="button"
+                     [attr.aria-label]="'Ver pedidos de ' + card.name"
+                     (click)="goToOrders(card)"
+                     (keydown.enter)="onCardKey($event, card)"
+                     (keydown.space)="onCardKey($event, card)">
+
+                <span class="store-card__accent" aria-hidden="true"></span>
+
+                <header class="store-card__head">
+                    <div class="store-card__id">
+                        <h5 class="store-card__name">{{ card.name }}</h5>
+                        <span class="store-card__total">
+                            {{ card.total }} pedido{{ card.total === 1 ? '' : 's' }}
+                        </span>
+                    </div>
+
+                    <!-- Reparto por estado. Los números exactos están abajo, en los contadores,
+                         así que para un lector de pantalla esto no aporta nada nuevo. -->
+                    <span class="store-card__pie" *ngIf="card.total"
+                          [style.background]="card.pieGradient"
+                          [title]="card.pieTitle"
+                          aria-hidden="true"></span>
+                </header>
+
+                <ul class="store-card__stats" *ngIf="card.total">
+                    <li class="stat" *ngFor="let status of statusViews; trackBy: trackByStatusKey"
+                        [class.stat--zero]="!getCount(card, status.key)"
+                        [style.--stat]="status.color">
+                        <i class="material-icons stat__icon">{{ status.icon }}</i>
+                        <span class="stat__value">{{ getCount(card, status.key) }}</span>
+                        <span class="stat__label">{{ status.label }}</span>
+                    </li>
+                </ul>
+
+                <p class="store-card__other" *ngIf="card.otherCount">
+                    {{ card.otherCount }} en otro estado
+                </p>
+
+                <p class="store-card__empty" *ngIf="!card.total">
+                    Sin pedidos en este rango
+                </p>
+
+                <footer class="store-card__foot">
+                    <span class="store-card__moved" *ngIf="card.lastMovementLabel"
+                          [title]="'Último movimiento: ' + card.lastMovementLabel">
+                        <i class="material-icons">history</i>
+                        {{ card.lastMovementLabel }}
+                    </span>
+                    <span class="store-card__cta">
+                        Ver pedidos
+                        <i class="material-icons">arrow_forward</i>
+                    </span>
+                </footer>
+            </article>
+        </div>
+
+        <!-- ── Vacíos ─────────────────────────────────────────────────────── -->
+        <div class="empty-state" *ngIf="!loadingOrders && !hasStores">
+            <i class="material-icons">storefront</i>
+            <p>No hay tiendas asignadas a tu usuario.</p>
+        </div>
+
+        <div class="empty-state" *ngIf="!loadingOrders && hasStores && !visibleCards.length">
+            <i class="material-icons">search_off</i>
+            <p>Ninguna tienda coincide con "{{ searchTerm }}".</p>
+            <button type="button" class="empty-state__btn" (click)="clearSearch()">Limpiar búsqueda</button>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,35 @@
+<button class="filter-main-btn" [class.open]="panelOpen" type="button"
+        [attr.aria-expanded]="panelOpen" aria-haspopup="dialog"
+        (click)="togglePanel()">
+    <i class="material-icons" style="font-size:17px">event</i>
+    {{ label }}
+    <span *ngIf="rangeLabel" class="date-range-label">{{ rangeLabel }}</span>
+    <i class="material-icons chevron-icon">keyboard_arrow_down</i>
+</button>
+
+<div class="date-panel" *ngIf="panelOpen" role="dialog" aria-label="Rango de fechas">
+    <div class="date-panel-header">
+        <span class="date-panel-title">
+            <i class="material-icons" style="font-size:16px">event</i>
+            Rango de fechas
+        </span>
+        <button class="date-close-btn" type="button" aria-label="Cerrar" (click)="closePanel()">
+            <i class="material-icons" style="font-size:18px">close</i>
+        </button>
+    </div>
+
+    <div class="date-panel-body">
+        <mat-calendar
+            [selected]="selectedRange"
+            [maxDate]="maxDate"
+            (selectedChange)="onDateChange($event)">
+        </mat-calendar>
+    </div>
+
+    <p *ngIf="validationError" class="date-panel-error">{{ validationError }}</p>
+
+    <div class="date-panel-footer">
+        <button class="btn-reset" type="button" (click)="resetRange()">{{ resetLabel }}</button>
+        <button class="btn-date-apply" type="button" (click)="applyRange()">Buscar</button>
+    </div>
+</div>

@@ -140,9 +140,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
 
     /** Builds the activity timeline from the sale creation and registered payments. */
     buildTimeline() {
-        const userName = this.shopResume?.creatorUser?.name ?? 'Sistema';
-        const place = this.shopResume?.establecimiento?.name;
-        const at = place ? ` en ${place}` : '';
+        const saleUserName = this.shopResume?.creatorUser?.name ?? 'Sistema';
         const events: any[] = [];
 
         (this.shopSalePayments || []).forEach(p => {
@@ -154,7 +152,11 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                 title: p.isSalePayment
                     ? `Pago de ${amount} al registrar la venta (${type})`
                     : `Cobro de ${amount} (${type})`,
-                subtitle: `${userName}${at}`,
+                // Solo el usuario que quedó guardado con el pago. Quien cobra no
+                // siempre es quien vendió, así que no se deriva de la venta: los
+                // pagos sin usuario (abonos anteriores a 2026-08-11 y el depósito
+                // registrado con la venta) no muestran ninguno.
+                subtitle: p.creatorUser?.name ?? '',
                 tag: this.getPaymentTargetLabel(p.paymentTarget),
                 date: p.date,
                 comment: p.comment
@@ -165,7 +167,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
             events.push({
                 icon: 'add_circle',
                 title: 'Venta Registrada',
-                subtitle: `${userName}${at}`,
+                subtitle: saleUserName,
                 date: this.shopResume.creationDate
             });
         }

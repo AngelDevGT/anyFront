@@ -449,3 +449,28 @@ ALTER TABLE shop_sale_payment
 -- DEFAULT false: todas las filas anteriores son abonos.
 ALTER TABLE shop_sale_payment
     ADD COLUMN IF NOT EXISTS is_sale_payment boolean NOT NULL DEFAULT false;
+
+
+-- =============================================
+-- shop_sale_payment.creator_user_id — quién registró el abono
+-- Ver src/database/migrations/2026-08-11-add-shop-sale-payment-user.sql
+-- =============================================
+
+-- Antes el abono no guardaba usuario y el historial de la venta mostraba a
+-- shop_sale.creator_user_id, o sea quién hizo la VENTA y no quién cobró. Desde
+-- add_shop_sale_payment_v4 el front manda el uuid del usuario logueado.
+--
+-- Nullable a propósito, y hay dos casos legítimos de NULL:
+--   * Abonos anteriores a esta migración.
+--   * El depósito registrado con la venta (is_sale_payment = true), que inserta
+--     register_shop_sale_with_elements_v5 con el mismo usuario que ya queda en
+--     shop_sale.creator_user_id.
+-- En ambos el front cae al usuario de la venta, que es el dato correcto.
+ALTER TABLE shop_sale_payment
+    ADD COLUMN IF NOT EXISTS creator_user_id uuid NULL;
+
+ALTER TABLE shop_sale_payment
+    DROP CONSTRAINT IF EXISTS shop_sale_payment_fk_creator_user_id;
+ALTER TABLE shop_sale_payment
+    ADD CONSTRAINT shop_sale_payment_fk_creator_user_id
+    FOREIGN KEY (creator_user_id) REFERENCES "user"(id);

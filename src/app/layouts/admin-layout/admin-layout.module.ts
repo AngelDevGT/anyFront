@@ -75,6 +75,7 @@ import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
 import { BoardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/board/board-pfs-order.component";
+import { DashboardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/dashboard/dashboard-pfs-order.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DATE_FORMATS } from '@angular/material/core';
@@ -176,6 +177,7 @@ export const MY_DATE_FORMATS = {
       AddEditCashClosingComponent,
       ListFinishedProductOrderInFactoryComponent,
       BoardFinishedProductOrderComponent,
+      DashboardFinishedProductOrderComponent,
       ListStoreExpensesComponent,
       AddEditExpenseComponent,
       ViewExpenseComponent,

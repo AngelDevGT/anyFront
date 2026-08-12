@@ -102,6 +102,7 @@
                                         [ngClass]="{ 'is-invalid': f['role'].errors }" (valueChange)="selectedRoleSubject.next($event)">
                                         <mat-option *ngFor="let role of roleOptions" value="{{role.id}}">{{role.identifier}}</mat-option>
                                     </mat-select>
+                                    <mat-hint *ngIf="roleLocked">Solo un usuario con rol Sistema puede modificar este rol</mat-hint>
                                     <div class="invalid-feedback" *ngIf="f['role'].errors">
                                         <div *ngIf="f['role'].errors['required']">
                                             Rol requerido

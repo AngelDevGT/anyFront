@@ -19,8 +19,26 @@
   }
 }
 
+// Fondo de la app: color plano más la retícula de puntos.
+//
+// Va acá y no en `body` porque este contenedor se pinta por encima del fondo del documento y lo
+// tapaba justo en la zona de contenido. El `min-height` es la otra mitad del arreglo: sin él el
+// contenedor mide solo lo que mide el contenido y el patrón se cortaba a media pantalla cuando
+// había pocas tarjetas.
+//
+// Para volver al fondo liso de siempre, quitar `background-image` y `background-size`.
 .main-container {
+  min-height: 100vh;
   background-color: $background-color;
+  background-image: radial-gradient(circle, rgba(51, 65, 85, 0.22) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+// En móvil la barra superior fija ya consume 50px del alto
+@media (max-width: 991.97px) {
+  .main-container {
+    min-height: calc(100vh - 50px);
+  }
 }
 
 // Mobile-only top bar
