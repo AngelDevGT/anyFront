@@ -84,7 +84,7 @@
 .summary-card {
   display: flex;
   align-items: center;
-  padding: 14px 18px;
+  padding: 16px 22px;
   border-radius: 14px;
   background: #fff;
   border: 1px solid #eceff4;
@@ -105,24 +105,24 @@
 }
 
 .summary__total-value {
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 700;
   line-height: 1;
   color: #111827;
 }
 
 .summary__total-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: #9ca3af;
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .summary__chips {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
   flex: 1;
 }
@@ -130,7 +130,7 @@
 .summary__chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 6px 10px;
   color: #4b5563;
 
@@ -141,18 +141,18 @@
 }
 
 .summary__chip-icon {
-  font-size: 17px;
+  font-size: 21px;
   color: var(--chip, #6b7280);
 }
 
 .summary__chip-value {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   color: #111827;
 }
 
 .summary__chip-label {
-  font-size: 12px;
+  font-size: 15px;
   color: #6b7280;
   white-space: nowrap;
 }
@@ -219,8 +219,8 @@
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 22px;
   align-items: stretch;
 }
 
@@ -233,8 +233,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 16px 16px 12px;
-  border-radius: 16px;
+  padding: 20px 20px 16px;
+  border-radius: 18px;
   background: #fff;
   border: 1px solid #eceff4;
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.07);
@@ -271,8 +271,8 @@
 .store-card__head {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
 .store-card__id {
@@ -284,8 +284,8 @@
 // El aro interior la despega del blanco de la tarjeta cuando un estado ocupa el círculo entero.
 .store-card__pie {
   flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.10);
 }
@@ -301,8 +301,8 @@
  * nombre largo sin espacios que si no desbordaría la tarjeta.
  */
 .store-card__name {
-  margin: 0 0 3px;
-  font-size: 20px;
+  margin: 0 0 4px;
+  font-size: 23px;
   font-weight: 300;
   line-height: 1.25;
   letter-spacing: 0.07em;
@@ -312,7 +312,7 @@
 }
 
 .store-card__total {
-  font-size: 12px;
+  font-size: 13px;
   color: #6b7280;
 }
 
@@ -321,9 +321,9 @@
 .store-card__stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 10px;
+  gap: 12px 14px;
   list-style: none;
-  margin: 0 0 12px;
+  margin: 0 0 16px;
   padding: 0;
   flex: 1;
 }
@@ -331,32 +331,34 @@
 .stat {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
 
   // Un cero no compite con lo que sí hay que atender
   &--zero {
     opacity: 0.45;
-    .stat__icon, .stat__value { color: #9ca3af; }
+    .stat__icon, .stat__value, .stat__label { color: #9ca3af; }
   }
 }
 
+// Ícono, número y etiqueta comparten el color del estado
 .stat__icon {
-  font-size: 19px;
+  font-size: 21px;
   color: var(--stat, #6b7280);
   flex: 0 0 auto;
 }
 
 .stat__value {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-  color: #111827;
-  min-width: 16px;
+  color: var(--stat, #111827);
+  min-width: 18px;
 }
 
 .stat__label {
-  font-size: 14px;
-  color: #4b5563;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--stat, #4b5563);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -364,8 +366,8 @@
 
 .store-card__other,
 .store-card__empty {
-  margin: 0 0 10px;
-  font-size: 12px;
+  margin: 0 0 12px;
+  font-size: 13px;
   color: #9ca3af;
 }
 
@@ -374,7 +376,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px 0;
+  padding: 24px 0;
   font-style: italic;
 }
 
@@ -382,35 +384,35 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding-top: 10px;
+  gap: 10px;
+  padding-top: 14px;
   border-top: 1px solid rgba(17, 24, 39, 0.07);
 }
 
 .store-card__moved {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 12px;
   color: #9ca3af;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 
-  .material-icons { font-size: 14px; }
+  .material-icons { font-size: 15px; }
 }
 
 // También es texto, así que va con el tono oscuro y no con el del relleno
 .store-card__cta {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--store-text, var(--accent));
   white-space: nowrap;
 
-  .material-icons { font-size: 16px; transition: transform 0.18s ease; }
+  .material-icons { font-size: 18px; transition: transform 0.18s ease; }
 }
 
 .store-card:hover .store-card__cta .material-icons { transform: translateX(3px); }
@@ -495,21 +497,21 @@
     margin-bottom: 12px;
   }
 
-  .summary-card { padding: 10px 14px; }
+  .summary-card { padding: 12px 16px; }
 
   .summary-card--total {
     flex-direction: row;
     align-items: baseline;
-    gap: 8px;
+    gap: 10px;
   }
 
-  .summary__total-value { font-size: 21px; }
-  .summary__total-label { margin-top: 0; }
+  .summary__total-value { font-size: 26px; }
+  .summary__total-label { margin-top: 0; font-size: 12px; }
 
   .summary__chips {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 10px;
+    gap: 10px 12px;
   }
 
   .summary__chip { padding: 2px 0; }
@@ -517,6 +519,8 @@
   .toolbar { margin-bottom: 12px; }
   .search { max-width: none; }
 
-  .cards-grid { grid-template-columns: 1fr; gap: 14px; }
-  .store-card__name { font-size: 18px; }
+  .cards-grid { grid-template-columns: 1fr; gap: 16px; }
+  .store-card { padding: 16px 16px 12px; }
+  .store-card__name { font-size: 20px; }
+  .store-card__pie { width: 46px; height: 46px; }
 }

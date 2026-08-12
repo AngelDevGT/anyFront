@@ -66,13 +66,19 @@ interface StoreCard {
 })
 export class DashboardFinishedProductOrderComponent implements OnInit {
 
-    /** Orden de aparicion en la tarjeta y en el resumen global. */
+    /**
+     * Orden de aparicion en la tarjeta y en el resumen global.
+     *
+     * Los colores son tonos oscuros a proposito: ahora tiñen tambien el numero y la etiqueta, y
+     * como texto sobre blanco los vivos no llegaban al minimo de contraste —el ambar se quedaba en
+     * 3:1 y el verde en 3.3:1—. Estos pasan holgados y siguen funcionando como relleno del pie.
+     */
     readonly statusViews: OrderStatusView[] = [
-        { key: 'pendiente', id: pfsStoreOrderStatusValues.pendiente.status.id, label: 'Pendiente', icon: 'schedule',       color: '#64748b' },
-        { key: 'en_camino', id: pfsStoreOrderStatusValues.en_camino.status.id, label: 'En camino', icon: 'local_shipping', color: '#d97706' },
+        { key: 'pendiente', id: pfsStoreOrderStatusValues.pendiente.status.id, label: 'Pendiente', icon: 'schedule',       color: '#475569' },
+        { key: 'en_camino', id: pfsStoreOrderStatusValues.en_camino.status.id, label: 'En camino', icon: 'local_shipping', color: '#a15c00' },
         { key: 'listo',     id: pfsStoreOrderStatusValues.listo.status.id,     label: 'Listo',     icon: 'inventory_2',    color: '#2563eb' },
-        { key: 'recibido',  id: pfsStoreOrderStatusValues.recibido.status.id,  label: 'Recibido',  icon: 'task_alt',       color: '#059669' },
-        { key: 'devuelto',  id: pfsStoreOrderStatusValues.devuelto.status.id,  label: 'Devuelto',  icon: 'undo',           color: '#dc2626' },
+        { key: 'recibido',  id: pfsStoreOrderStatusValues.recibido.status.id,  label: 'Recibido',  icon: 'task_alt',       color: '#067a55' },
+        { key: 'devuelto',  id: pfsStoreOrderStatusValues.devuelto.status.id,  label: 'Devuelto',  icon: 'undo',           color: '#c41818' },
     ];
 
     cards: StoreCard[] = [];
@@ -92,6 +98,8 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
     private dateRange!: DateRangeState;
 
     private readOnly = false;
+    /** Bodega despacha a todas las tiendas, así que no se filtra por las asignadas al usuario. */
+    private allStores = false;
     private ordersRoute = '/consultas/pedidos';
 
     constructor(
@@ -106,6 +114,7 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
 
     ngOnInit() {
         this.readOnly = !!this.route.snapshot.data['readOnly'];
+        this.allStores = !!this.route.snapshot.data['allStores'];
         this.ordersRoute = this.readOnly ? '/consultas/pedidos' : '/productsForSale/order';
 
         // Rango guardado en la pestaña o, si no hay, los últimos 15 días desde la fecha actual
@@ -123,6 +132,13 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
 
     get hasStores(): boolean {
         return this.cards.length > 0;
+    }
+
+    /** Sin tiendas el motivo cambia: en bodega no hay ninguna activa, en consultas ninguna asignada. */
+    get emptyStoresMessage(): string {
+        return this.allStores
+            ? 'No hay tiendas activas.'
+            : 'No hay tiendas asignadas a tu usuario.';
     }
 
     onRangeApply(range: { start: Date, end: Date }) {
@@ -155,8 +171,12 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
             next: (result: any) => {
                 const orders: ProductForSaleStoreOrder[] = this.dataService.findJsonValue(result[0], 'json_result') || [];
                 const establishments: Establishment[] = this.dataService.findJsonValue(result[1], 'json_result') || [];
-                // Solo las tiendas asignadas al usuario, la misma regla que aplica el selector de tienda
-                this.buildCards(this.accountService.filterAssignedEstablishments(establishments), orders);
+                // En consultas, solo las tiendas asignadas al usuario —la misma regla del selector
+                // de tienda—; en bodega, todas, porque desde ahí se despacha a cualquiera
+                this.buildCards(
+                    this.allStores ? establishments : this.accountService.filterAssignedEstablishments(establishments),
+                    orders
+                );
                 this.loadingOrders = false;
             },
             // Sin este else el spinner se quedaba girando para siempre: `complete` no corre tras un error

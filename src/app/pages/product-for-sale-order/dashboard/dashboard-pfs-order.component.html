@@ -142,7 +142,7 @@
         <!-- ── Vacíos ─────────────────────────────────────────────────────── -->
         <div class="empty-state" *ngIf="!loadingOrders && !hasStores">
             <i class="material-icons">storefront</i>
-            <p>No hay tiendas asignadas a tu usuario.</p>
+            <p>{{ emptyStoresMessage }}</p>
         </div>
 
         <div class="empty-state" *ngIf="!loadingOrders && hasStores && !visibleCards.length">

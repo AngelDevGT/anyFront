@@ -45,7 +45,6 @@ import { ListCashClosingComponent } from "@app/pages/cash-closing/list/list-cash
 import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash-closing.component";
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { canActivateV2 } from "@app/helpers";
-import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
 import { BoardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/board/board-pfs-order.component";
 import { DashboardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/dashboard/dashboard-pfs-order.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
@@ -78,7 +77,9 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'inventory/factory/abarrote', component: ListFactoryInventoryFPComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
     { path: 'abarroteCreation', component: AddEditProductCreationComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
     { path: 'productsForSale/order', component: ListProductForSaleOrderComponent , canActivate: [canActivateV2]},
-    { path: 'finishedProduct/order', component: ListFinishedProductOrderInFactoryComponent, canActivate: [canActivateV2]},
+    // Bodega: mismo dashboard que consultas, pero sobre todas las tiendas y con enlace al listado
+    // de fábrica. `ListFinishedProductOrderInFactoryComponent` queda sin ruta, no borrado.
+    { path: 'finishedProduct/order', component: DashboardFinishedProductOrderComponent, data: { allStores: true }, canActivate: [canActivateV2]},
     { path: 'finishedProduct/order/board', component: BoardFinishedProductOrderComponent, canActivate: [canActivateV2]},
     { path: 'productsForSale/order/create', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/order/edit/:id', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
