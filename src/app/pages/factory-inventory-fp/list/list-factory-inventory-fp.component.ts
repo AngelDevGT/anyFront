@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import { actionTypeValues } from '@app/services';
 import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, DataService, ExcelService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -111,8 +111,14 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         this.finishedProductForm = this.createFinishedProductFormGroup();
     }
 
-    isAdmin(){
-        return this.accountService.isAdminUser();
+    /**
+     * Los botones de agregar y quitar. La pantalla sirve dos inventarios distintos segun
+     * productType, asi que cada uno tiene su propia capacidad.
+     */
+    canWriteInventory(){
+        return this.accountService.can(this.productType === 2
+            ? CAPABILITIES.inventoryFactoryAbarroteWrite
+            : CAPABILITIES.inventoryFactoryFinishedProductWrite);
     }
 
     setWeightMeasure(measureId: string){
@@ -157,7 +163,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
                     
                   ];
-                  if(this.isAdmin()){
+                  if(this.canWriteInventory()){
                     curr_row.push({
                         type: "modal_button",
                         style: "white-space: nowrap width: 30%",

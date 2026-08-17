@@ -3,7 +3,7 @@ import { first } from 'rxjs/operators';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { AccountService, AlertService, DataService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService } from '@app/services';
 import { ProductForSale } from '@app/models/product/producto-for-sale.model';
 
 /**
@@ -35,9 +35,10 @@ export class EditCostProductForSaleComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        // El guard de rutas solo valida la ruta, no el rol: aquí se corta el acceso
-        // de cualquier usuario que no sea Sistema.
-        if (!this.accountService.isAdminUser()){
+        // El guard de rutas solo valida la ruta, no la capacidad: aquí se corta el acceso
+        // de quien no pueda editar costos. Se pide tambien costRead porque la pantalla
+        // muestra el valor actual antes de cambiarlo.
+        if (!this.accountService.can(CAPABILITIES.costRead) || !this.accountService.can(CAPABILITIES.costWrite)){
             this.router.navigate(['/productsForSale']);
             return;
         }

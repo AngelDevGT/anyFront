@@ -8,7 +8,7 @@ import {
     UploadResponse,
 } from 'ngx-image-compress';
 
-import { AccountService, statusValues, AlertService, DataService, paymentStatusValues } from '@app/services';
+import { AccountService, statusValues, AlertService, CAPABILITIES, DataService, paymentStatusValues } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -199,8 +199,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         if(this.productForSaleOrder?.storeStatus?.id === 19){
             this.areTablesVisible = true;
         }
-        if(this.accountService.isAdminUser() || this.accountService.isSalesUser()){
-        // if(this.accountService.isSalesUser()){
+        if(this.accountService.can(CAPABILITIES.ordersViewProperties)){
             this.isPropertiesVisible = true;
         }
         // this.providertSelect?.patchValue(String(this.rawMaterialOrder?.provider?._id));

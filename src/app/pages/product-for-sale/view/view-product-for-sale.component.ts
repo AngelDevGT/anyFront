@@ -2,7 +2,7 @@ import { Component, OnInit} from '@angular/core';
 import { from, of } from 'rxjs';
 import { concatMap, first, last } from 'rxjs/operators';
 
-import { AccountService, AlertService, DataService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
@@ -27,9 +27,14 @@ export class ViewProductForSaleComponent implements OnInit{
         private route: ActivatedRoute, private router: Router, private accountService: AccountService) {
     }
 
-    /** El costo solo se consulta y se muestra para el rol Sistema. */
-    get isSystemUser(): boolean {
-        return this.accountService.isAdminUser();
+    /** Ver el costo. Define ademas que endpoint se pide: solo uno de los dos trae el costo. */
+    get canReadCost(): boolean {
+        return this.accountService.can(CAPABILITIES.costRead);
+    }
+
+    /** El boton EDITAR COSTO. Sin canReadCost la pantalla de edicion no muestra el valor actual. */
+    get canWriteCost(): boolean {
+        return this.canReadCost && this.accountService.can(CAPABILITIES.costWrite);
     }
 
     ngOnInit(): void {
@@ -41,7 +46,7 @@ export class ViewProductForSaleComponent implements OnInit{
         this.loading = true;
 
         if (this.id){
-            const request = this.isSystemUser
+            const request = this.canReadCost
                 ? this.dataService.getProductForSaleByIdWithCost(this.id)
                 : this.dataService.getProductForSaleById(this.id);
             request
@@ -79,7 +84,7 @@ export class ViewProductForSaleComponent implements OnInit{
     setProductForSaleElements(product: ProductForSale){
         this.elements.push({icon : "person", name : "Establecimiento", value : product.establishment?.name });
         this.elements.push({icon : "monetization_on", name : "Precio", value : this.dataService.getFormatedPrice(Number(product.price))});
-        if (this.isSystemUser && product.cost != null){
+        if (this.canReadCost && product.cost != null){
             this.elements.push({icon : "payments", name : "Costo", value : this.dataService.getFormatedPrice(Number(product.cost))});
         }
 

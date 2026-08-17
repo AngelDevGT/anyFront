@@ -1,133 +1,66 @@
 import { Component, OnInit } from '@angular/core';
 
-import { User } from '@app/models/system/user.model';
-import { AccountService, DataService } from '@app/services';
-import {
-AbstractControl,
-FormBuilder,
-FormGroup,
-Validators,
-FormControl,
-} from '@angular/forms';
-import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
-import { forkJoin } from 'rxjs';
-import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
-import { ShopResume } from '@app/models/store/shop-resume.model';
-import { CashClosing } from '@app/models/store/cash-closing.model';
+import { AccountService, RecentRoute, RecentRoutesService } from '@app/services';
 
-@Component({ 
+@Component({
     selector: 'app-home',
     templateUrl: 'home.component.html',
     styleUrls: ['home.component.scss']
 })
-export class HomeComponent implements OnInit{
+export class HomeComponent implements OnInit {
 
-    isLoading = false;
-    rawMaterialOrders?: RawMaterialOrder[];
-    productForSaleOrdes?: ProductForSaleStoreOrder[];
-    shopResumes?: ShopResume[];
-    cashClosings?: CashClosing[];
-    stats?: any = {};
-    currentUserName?: string;
+    /** "Buenos días", "Buenas tardes" o "Buenas noches", segun la hora de la maquina. */
+    greeting = '';
+    /** Solo el nombre de pila: el saludo con el nombre completo suena a carta formal. */
+    firstName = '';
+    /** La fecha de hoy, que es el dato con el que se trabaja en casi toda la aplicacion. */
+    todayLabel = '';
+    roleName?: string;
 
-    constructor(private dataService: DataService, private accountService: AccountService) {
-        
-    }
+    recentRoutes: RecentRoute[] = [];
+
+    constructor(
+        private readonly accountService: AccountService,
+        private readonly recentRoutesService: RecentRoutesService
+    ) {}
 
     ngOnInit() {
-        
-        let requestArray = [];
-        this.currentUserName = this.accountService.userName;
+        const now = new Date();
+        const fullName = (this.accountService.userName || '').trim();
 
-        // requestArray.push(this.dataService.getAllRawMaterialOrderByFilter({"status": 1}));
-        // requestArray.push(this.dataService.getAllProducForSaleOrder());
-        // requestArray.push(this.dataService.getShopHistory({}));
-        // // requestArray.push(this.dataService.getAllCashClosingByFilter({}));
-        // forkJoin(requestArray).subscribe({
-        //     next: (result: any) => {
-        //         this.shopResumes = result[0].retrieveShopHistoryResponse?.FinishedProducts;
-        //         // this.rawMaterialOrders = result[0].retrieveRawMaterialOrderResponse?.rawMaterial;
-        //         // this.productForSaleOrdes = result[1].retrieveProductForSaleStoreOrderResponse?.saleStoreOrder;
-        //         // this.shopResumes = result[2].retrieveShopHistoryResponse?.FinishedProducts;
-        //         // this.cashClosings = result[3].retrieveStoreCashClosingResponse?.StoreCashClosing;
-        //     },
-        //     error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
-        //     complete: () => {
-        //         this.setStats();
-        //         this.isLoading = false;
-        //     }
-        // });
+        this.greeting = this.buildGreeting(now.getHours());
+        this.firstName = fullName.split(/\s+/)[0] || '';
+        this.todayLabel = this.buildTodayLabel(now);
+        this.roleName = this.accountService.userRole?.identifier;
+
+        this.recentRoutes = this.recentRoutesService.getRecent();
     }
 
-    setStats(){
-        let rawMaterialOrdersStats = {
-            total: 0,
-            active: 0,
-            received: 0,
-            verified: 0
-        };
-
-        let productForSaleOrdersStats = {
-            total: 0,
-            pending: 0,
-            onWay: 0,
-            received: 0,
-            ready: 0
-        };
-
-        let storeSalesStats = {
-            total: this.shopResumes?.length,
-            pending: 0,
-            received: 0,
-            ready: 0
-        };
-
-        // let cashClosingStats = {
-        //     total: 0,
-        //     pending: 0,
-        //     active: 0,
-        //     verified: 0
-        // };
-
-        this.rawMaterialOrders?.forEach((order) => {
-            rawMaterialOrdersStats.total++;
-            if(order.status?.id == 2){
-                rawMaterialOrdersStats.active++;
-            } else if(order.status?.id == 10){
-                rawMaterialOrdersStats.verified++;
-            } else if(order.status?.id == 7){
-                rawMaterialOrdersStats.received++;
-            }
-        });
-        
-        this.productForSaleOrdes?.forEach((order) => {
-            productForSaleOrdersStats.total++;
-            if(order.storeStatus?.id == 1){
-                productForSaleOrdersStats.pending++;
-            } else if(order.storeStatus?.id == 2){
-                productForSaleOrdersStats.onWay++;
-            } else if(order.storeStatus?.id == 7){
-                productForSaleOrdersStats.ready++;
-            } else if(order.storeStatus?.id == 3){
-                productForSaleOrdersStats.received++;
-            }
-        });
-
-        // this.cashClosings?.forEach((order) => {
-        //     cashClosingStats.total++;
-        //     if(order.status?.id == 10){
-        //         cashClosingStats.verified++;
-        //     } else if(order.status?.id == 2){
-        //         cashClosingStats.active++;
-        //     }
-        
-        // });
-
-        this.stats.rawMaterialOrders = rawMaterialOrdersStats;
-        this.stats.productForSaleOrders = productForSaleOrdersStats;
-        this.stats.shopResumes = storeSalesStats;
-        // this.stats.cashClosing = cashClosingStats;
-
+    private buildGreeting(hour: number): string {
+        if (hour < 12) {
+            return 'Buenos días';
+        }
+        if (hour < 19) {
+            return 'Buenas tardes';
+        }
+        return 'Buenas noches';
     }
 
+    /**
+     * "Sábado, 16 de agosto". Sin el año, que en el dia a dia no aporta y alarga la linea en movil.
+     * Se arma con `toLocaleDateString` y no con DatePipe porque el locale es-GT no esta registrado
+     * en la aplicacion; el del navegador sirve igual, como en el dashboard de pedidos.
+     */
+    private buildTodayLabel(date: Date): string {
+        const label = date.toLocaleDateString('es-GT', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long'
+        });
+        return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+
+    trackByUrl(_index: number, route: RecentRoute) {
+        return route.url;
+    }
 }

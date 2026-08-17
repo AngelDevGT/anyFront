@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { actionTypeValues } from '@app/services';
 
-import { AccountService, AlertService, DataService, ExcelService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -72,8 +72,8 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.inventory = undefined;
         let requestArray = [];
 
-        // V3 devuelve ademas el costo del producto para venta; solo se pide cuando el usuario es Sistema.
-        requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, this.isAdmin() ? 'retrieveProductForSaleInventoryV3' : 'retrieveProductForSaleInventoryV2'));
+        // V3 devuelve ademas el costo del producto para venta; solo se pide con la capacidad costRead.
+        requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, this.canReadCost() ? 'retrieveProductForSaleInventoryV3' : 'retrieveProductForSaleInventoryV2'));
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 
         forkJoin(requestArray).subscribe({
@@ -106,8 +106,14 @@ export class ListStoreInventoryPFSComponent implements OnInit {
         this.productForSaleForm = this.createProductForSaleFormGroup();
     }
 
-    isAdmin(){
-        return this.accountService.isAdminUser();
+    /** Los botones de agregar, quitar y devolver a bodega. */
+    canWriteInventory(){
+        return this.accountService.can(CAPABILITIES.inventoryStoreWrite);
+    }
+
+    /** La columna Costo. Define ademas que endpoint se pide: solo V3 trae el costo. */
+    canReadCost(){
+        return this.accountService.can(CAPABILITIES.costRead);
     }
 
     search(value: any): void {
@@ -148,8 +154,8 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                     { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 15%" },
                     { type: "text", value: this.dataService.getConvertedPrice(Number(element.productForSale?.price), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Precio", style: "width: 15%", exportValue: this.dataService.getConvertedPriceRaw(Number(element.productForSale?.price), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), exportFormat: '"Q. "#,##0.00' }
             ];
-            // El costo solo viaja en la respuesta (V3) cuando el usuario es Sistema.
-            if(this.isAdmin()){
+            // El costo solo viaja en la respuesta (V3) cuando el usuario tiene costRead.
+            if(this.canReadCost()){
                 const cost = element.productForSale?.cost;
                 curr_row.push({
                     type: "text",
@@ -160,7 +166,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                     exportFormat: cost != null ? '"Q. "#,##0.00' : undefined
                 });
             }
-            if(this.isAdmin()){
+            if(this.canWriteInventory()){
                 curr_row.push({
                     type: "modal_button",
                     style: "white-space: nowrap width: 30%",

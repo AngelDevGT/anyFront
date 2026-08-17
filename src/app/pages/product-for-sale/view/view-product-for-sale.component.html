@@ -18,7 +18,7 @@
                     <span class="px-1">EDITAR</span>
                 </div>
                 </button>
-                <button *ngIf="isSystemUser"
+                <button *ngIf="canWriteCost"
                 type="button" routerLink="/productsForSale/cost/edit/{{productForSale!.id}}"
                 [queryParams]="{ store: storeID }" [disabled]="submitting"
                 class="btn btn-secondary m-2">

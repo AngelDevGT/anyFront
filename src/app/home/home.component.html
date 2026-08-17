@@ -1,146 +1,34 @@
+<div class="home">
 
-<body class="bg-default">
-  <div class="main-content">
-    <div class="header bg-gradient-primary p-4">
-      <div class="container-fluid">
-        <div class="header-body">
-          <span *ngIf="isLoading" class="spinner-border spinner-border-lg align-center"></span>
-          <div *ngIf="!isLoading" class="row">
-            <!-- <div class="col-xl-3 col-lg-6">
-              <div class="card card-stats mb-4 mb-xl-0">
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col">
-                      <h5 class="card-title text-uppercase text-muted mb-0">Pedidos de Bodega</h5>
-                      <span class="h2 font-weight-bold mb-0">{{stats.rawMaterialOrders.total}}</span>
-                    </div>
-                    <div class="col-auto">
-                      <div class="icon icon-shape bg-danger text-white rounded-circle shadow">
-                        <i class="large material-icons mat-menu-icon">trolley</i>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="d-flex flex-row p-1 text-success">
-                    <i class="large material-icons mat-menu-icon">done_outline</i>
-                    <span class="text-success mx-1"> {{stats.rawMaterialOrders.verified}} </span>
-                    <span class="text-nowrap"> Verificados </span>
-                  </div>
-                  <div class="d-flex flex-row p-1 text-warning">
-                    <i class="large material-icons mat-menu-icon">archive</i>
-                    <span class="text-warning mx-1"> {{stats.rawMaterialOrders.received}} </span>
-                    <span class="text-nowrap"> Recibidos </span>
-                  </div>
-                  <div class="d-flex flex-row p-1 text-primary">
-                    <i class="large material-icons mat-menu-icon">more_time</i>
-                    <span class="text-primary mx-1"> {{stats.rawMaterialOrders.active}} </span>
-                    <span class="text-nowrap"> Activos </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-3 col-lg-6">
-              <div class="card card-stats mb-4 mb-xl-0">
-                <div class="card-body">
-                    <div class="row">
-                      <div class="col">
-                        <h5 class="card-title text-uppercase text-muted mb-0">Pedidos de Tienda</h5>
-                        <span class="h2 font-weight-bold mb-0">{{stats.productForSaleOrders.total}}</span>
-                      </div>
-                      <div class="col-auto">
-                        <div class="icon icon-shape bg-warning text-white rounded-circle shadow">
-                          <i class="large material-icons mat-menu-icon">storefront</i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="d-flex flex-row p-1 text-success">
-                      <i class="large material-icons mat-menu-icon">done_outline</i>
-                      <span class="text-success mx-1"> {{stats.productForSaleOrders.ready}} </span>
-                      <span class="text-nowrap"> Listos </span>
-                    </div>
-                    <div class="d-flex flex-row p-1 text-warning">
-                      <i class="large material-icons mat-menu-icon">archive</i>
-                      <span class="text-warning mx-1"> {{stats.productForSaleOrders.received}} </span>
-                      <span class="text-nowrap"> Recibidos </span>
-                    </div>
-                    <div class="d-flex flex-row p-1 text-primary">
-                      <i class="large material-icons mat-menu-icon">more_time</i>
-                      <span class="text-primary mx-1"> {{stats.productForSaleOrders.pending}} </span>
-                      <span class="text-nowrap"> Pendientes </span>
-                    </div>
-                    <div class="d-flex flex-row p-1 text-muted">
-                      <i class="large material-icons mat-menu-icon">local_shipping</i>
-                      <span class="text-muted mx-1"> {{stats.productForSaleOrders.onWay}} </span>
-                      <span class="text-nowrap"> En Camino </span>
-                    </div>
-                  </div>
-              </div>
-            </div> -->
-            <div class="col-xl-3 col-lg-6">
-              <div class="card card-stats mb-4 mb-xl-0">
-                <div class="card-body">
-                    <div class="row">
-                      <div class="col">
-                        <h5 class="card-title text-uppercase text-muted mb-0">¡Bienvenido!</h5>
-                        <span class="h2 font-weight-bold mb-0">{{currentUserName}}</span>
-                      </div>
-                      <div class="col-auto">
-                        <div class="icon icon-shape bg-warning text-white rounded-circle shadow">
-                          <i class="large material-icons mat-menu-icon">sentiment_very_satisfied</i>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-              </div>
-            </div>
-            <!-- <div class="col-xl-3 col-lg-6">
-              <div class="card card-stats mb-4 mb-xl-0">
-                <div class="card-body">
-                    <div class="row">
-                      <div class="col">
-                        <h5 class="card-title text-uppercase text-muted mb-0">Ventas</h5>
-                        <span class="h2 font-weight-bold mb-0">{{stats.shopResumes.total}}</span>
-                      </div>
-                      <div class="col-auto">
-                        <div class="icon icon-shape bg-success text-white rounded-circle shadow">
-                          <i class="large material-icons mat-menu-icon">shopping_bag</i>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-              </div>
-            </div> -->
-            <!-- <div class="col-xl-3 col-lg-6">
-              <div class="card card-stats mb-4 mb-xl-0">
-                <div class="card-body">
-                    <div class="row">
-                      <div class="col">
-                        <h5 class="card-title text-uppercase text-muted mb-0">Cierres de caja</h5>
-                        <span class="h2 font-weight-bold mb-0">{{stats.cashClosing.total}}</span>
-                      </div>
-                      <div class="col-auto">
-                        <div class="icon icon-shape bg-information text-white rounded-circle shadow">
-                          <i class="large material-icons mat-menu-icon">dns</i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="d-flex flex-row p-1 text-success">
-                      <i class="large material-icons mat-menu-icon">done_outline</i>
-                      <span class="text-success mx-1"> {{stats.cashClosing.verified}} </span>
-                      <span class="text-nowrap"> Recibidos </span>
-                    </div>
-                    <div class="d-flex flex-row p-1 text-primary">
-                      <i class="large material-icons mat-menu-icon">more_time</i>
-                      <span class="text-primary mx-1"> {{stats.cashClosing.active}} </span>
-                      <span class="text-nowrap"> Pendientes </span>
-                    </div>
-                  </div>
-              </div>
-            </div> -->
-          </div>
+    <header class="home__greeting">
+        <h4 class="home__title">{{ greeting }}<span *ngIf="firstName">, {{ firstName }}</span></h4>
+        <p class="home__subtitle">
+            <span>{{ todayLabel }}</span>
+            <span *ngIf="roleName" class="home__subtitle-sep">·</span>
+            <span *ngIf="roleName">{{ roleName }}</span>
+        </p>
+    </header>
+
+    <section class="home__section" aria-labelledby="home-recientes">
+        <h5 class="home__section-title" id="home-recientes">Recientes</h5>
+
+        <div class="recent-grid" *ngIf="recentRoutes.length">
+            <a class="recent-card"
+               *ngFor="let route of recentRoutes; trackBy: trackByUrl"
+               [routerLink]="route.routerLink"
+               [queryParams]="route.queryParams">
+                <i class="material-icons recent-card__icon">{{ route.icon }}</i>
+                <span class="recent-card__text">
+                    <span class="recent-card__label">{{ route.label }}</span>
+                    <span class="recent-card__group">{{ route.group }}</span>
+                </span>
+                <i class="material-icons recent-card__arrow" aria-hidden="true">arrow_forward</i>
+            </a>
         </div>
-      </div>
-    </div>
-    <!-- Page content -->
-  </div>
-</body>
 
+        <p class="home__hint" *ngIf="!recentRoutes.length">
+            Las pantallas que uses van a aparecer aquí como accesos directos.
+        </p>
+    </section>
+
+</div>

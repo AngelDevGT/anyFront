@@ -1,7 +1,7 @@
 import { Component, OnInit} from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 
-import { AccountService, AlertService, DataService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { User } from '@app/models/system/user.model';
 import { concat } from 'rxjs';
@@ -64,8 +64,9 @@ export class ViewUserComponent implements OnInit{
             });
     }
 
-    isAdmin(){
-        return this.accountService.isAdminUser();
+    /** Los botones de editar y eliminar. Cambiar el rol Sistema sigue siendo exclusivo de Sistema. */
+    canManageUsers(){
+        return this.accountService.can(CAPABILITIES.usersManage);
     }
 
     isMine(){

@@ -10,8 +10,8 @@
             <br>
             <view-object [objectElements]="elements"></view-object>
             <div class="d-flex flex-wrap justify-content-center">
-                <!-- <button *ngIf="isAdmin() || isMine()" -->
-                <button *ngIf="isAdmin()"
+                <!-- <button *ngIf="canManageUsers() || isMine()" -->
+                <button *ngIf="canManageUsers()"
                 type="button" routerLink="/users/edit/{{user!.id}}" [disabled]="submitting"
                 class="btn btn-primary m-2">
                 <div class="d-flex flex-row p-1">
@@ -19,7 +19,7 @@
                     <span class="px-1">EDITAR</span>
                 </div>
                 </button>
-                <button *ngIf="isAdmin()"
+                <button *ngIf="canManageUsers()"
                 type="button" (click)="deleteUser()" [disabled]="submitting"
                 class="btn btn-danger m-2">
                 <div class="d-flex flex-row p-1">

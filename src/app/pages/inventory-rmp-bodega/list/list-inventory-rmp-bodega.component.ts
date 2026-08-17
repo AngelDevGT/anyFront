@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { actionTypeValues } from '@app/services';
 
-import { AccountService, AlertService, DataService} from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -142,8 +142,9 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
         this.setTableElements(this.inventoryElements);
     }
 
-    isAdmin(){
-        return this.accountService.isAdminUser();
+    /** Los botones de agregar y quitar. El de "Mover" lo conservan todos los roles. */
+    canWriteInventory(){
+        return this.accountService.can(CAPABILITIES.inventoryBodegaWrite);
     }
 
     setTableElements(elements?: InventoryElement[]){
@@ -160,8 +161,8 @@ export class ListWarehouseInventoryRMPComponent implements OnInit {
                         style: "white-space: nowrap",
                         header_name: "Acciones",
                         data: element,
-                        button: 
-                        this.isAdmin() ?
+                        button:
+                        this.canWriteInventory() ?
                         [
                             {
                                 type: "button",

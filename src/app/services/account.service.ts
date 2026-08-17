@@ -48,6 +48,43 @@ const undefinedRole = {
 /** Rol Sistema. Es el unico que puede asignar o quitar el rol Sistema a un usuario. */
 export const SYSTEM_ROLE_ID = 1;
 
+/**
+ * Acciones que se pueden delegar a un rol distinto de Sistema. Se declaran en la columna
+ * role.paths de la base como entradas "perm:<capacidad>", que viajan en el JWT junto con las
+ * rutas. El guard las ignora porque nunca matchean una URL; solo las lee AccountService.can().
+ *
+ * Habilitar una accion a un rol nuevo es un UPDATE en la tabla role, sin tocar este archivo.
+ * Ver src/database/migrations/2026-08-14-capacidades-por-rol.sql
+ */
+export const CAPABILITIES = {
+  /** Agregar, quitar y devolver a bodega en el inventario de tienda. */
+  inventoryStoreWrite: 'inventory.store.write',
+  /** Agregar y quitar en el inventario de productos de fabrica. */
+  inventoryFactoryFinishedProductWrite: 'inventory.factory.finishedProduct.write',
+  /** Agregar y quitar en el inventario de abarrotes (misma pantalla, productType 2). */
+  inventoryFactoryAbarroteWrite: 'inventory.factory.abarrote.write',
+  /** Agregar y quitar en el inventario de materia prima de fabrica. */
+  inventoryFactoryRawMaterialWrite: 'inventory.factory.rawMaterial.write',
+  /** Agregar y quitar en el inventario de material de empaque (misma pantalla, materialType 2). */
+  inventoryFactoryPackagingMaterialWrite: 'inventory.factory.packagingMaterial.write',
+  /** Agregar y quitar en el inventario de bodega. El boton "Mover" no depende de esto. */
+  inventoryBodegaWrite: 'inventory.bodega.write',
+  /** Ver el costo del producto para venta. Define ademas que endpoint se pide. */
+  costRead: 'cost.read',
+  /** Editar el costo del producto para venta, individual y masivo. */
+  costWrite: 'cost.write',
+  /** Editar un pedido que ya salio del estado Pendiente. */
+  ordersEditAfterPending: 'orders.editAfterPending',
+  /** Campos extra del formulario de alta y edicion de pedido. */
+  ordersViewProperties: 'orders.viewProperties',
+  /** Mover en el tablero tarjetas que tienen a otra persona como encargada. */
+  ordersBoardOverrideOwner: 'orders.board.overrideOwner',
+  /** Editar y eliminar usuarios. No alcanza para asignar el rol Sistema. */
+  usersManage: 'users.manage',
+  /** Ver todas las tiendas sin estar asignado por correo en la descripcion. */
+  establishmentsViewAll: 'establishments.viewAll',
+} as const;
+
 const menuItemsOptions: any = [
   {
     button_type: 'button',
@@ -660,6 +697,29 @@ export class AccountService {
   }
 
   /**
+   * ¿El rol del usuario logueado tiene esta capacidad? Se declaran en role.paths como entradas
+   * "perm:<capacidad>" y se evaluan con el mismo regex que las rutas, pero contra el nombre de la
+   * capacidad en vez de contra la URL. Como toda ruta empieza con "/" y toda capacidad con "perm:",
+   * los dos tipos de entrada nunca se cruzan.
+   *
+   * El rol Sistema las tiene todas sin necesidad de declararlas.
+   */
+  can(capability: string): boolean {
+    if (this.isAdminUser()) {
+      return true;
+    }
+    const paths = this.userValue?.role?.paths || [];
+    const target = 'perm:' + capability;
+    return paths.some((path: any) => {
+      // Sin patron no se evalua: new RegExp(undefined) matchea cualquier cosa.
+      if (!path?.matchPattern) {
+        return false;
+      }
+      return new RegExp(path.matchPattern).test(target);
+    });
+  }
+
+  /**
    * ¿Puede el usuario logueado asignar este rol? El rol Sistema solo lo asigna un usuario Sistema;
    * cualquier otro rol lo puede asignar quien tenga acceso al mantenimiento de usuarios.
    */
@@ -678,10 +738,6 @@ export class AccountService {
    */
   canEditUserRole(user?: User | null): boolean {
     return this.canAssignRole(user?.role);
-  }
-
-  isSalesUser() {
-    return this.userValue.role.id === 3;
   }
 
   isLoginUser(userId: string) {
@@ -722,10 +778,11 @@ export class AccountService {
 
   /**
    * ¿La tienda está asignada al usuario logueado? La asignación se hace escribiendo su correo en la
-   * descripción del establecimiento. El admin ve todas sin necesidad de estar asignado.
+   * descripción del establecimiento. Quien tenga establishmentsViewAll las ve todas sin necesidad
+   * de estar asignado; el rol Sistema entra por ahí.
    */
   isAssignedEstablishment(establishment: any): boolean {
-    if (this.isAdminUser()) {
+    if (this.can(CAPABILITIES.establishmentsViewAll)) {
       return true;
     }
     const userEmail = this.userEmail;
@@ -757,6 +814,10 @@ export class AccountService {
           destinationRoute = destinationRoute.slice(0, -1);
         }
         const destinationRouteFound = userPaths.find((route: any) => {
+          // Sin patron no se evalua: new RegExp(undefined) matchea cualquier ruta.
+          if (!route?.matchPattern) {
+            return false;
+          }
           const currRegex = new RegExp(route.matchPattern);
           const regex_test_result = currRegex.test(destinationRoute);
         //   console.log(`Testing route: ${destinationRoute} against pattern: ${route.matchPattern} - Result: ${regex_test_result}`);

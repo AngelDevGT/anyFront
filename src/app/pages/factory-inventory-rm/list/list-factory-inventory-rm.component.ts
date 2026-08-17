@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { actionTypeValues } from '@app/services';
 
-import { AccountService, AlertService, DataService, ExcelService} from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -125,8 +125,14 @@ export class ListFactoryInventoryRMComponent implements OnInit {
         this.setTableElements(this.inventoryElements);
     }
 
-    isAdmin(){
-        return this.accountService.isAdminUser();
+    /**
+     * Los botones de agregar y quitar. La pantalla sirve dos inventarios distintos segun
+     * materialType, asi que cada uno tiene su propia capacidad.
+     */
+    canWriteInventory(){
+        return this.accountService.can(this.materialType === 2
+            ? CAPABILITIES.inventoryFactoryPackagingMaterialWrite
+            : CAPABILITIES.inventoryFactoryRawMaterialWrite);
     }
 
     setTableElements(elements?: InventoryElement[]){
@@ -140,7 +146,7 @@ export class ListFactoryInventoryRMComponent implements OnInit {
                     // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
             ];
-            if(this.isAdmin()){
+            if(this.canWriteInventory()){
                 curr_row.push({
                     type: "modal_button",
                     style: "white-space: nowrap",

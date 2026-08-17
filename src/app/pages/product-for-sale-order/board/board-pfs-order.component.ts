@@ -4,7 +4,7 @@ import { first } from 'rxjs/operators';
 import { CdkDrag, CdkDragDrop, CdkDropList, transferArrayItem } from '@angular/cdk/drag-drop';
 import { DateRange } from '@angular/material/datepicker';
 
-import { AccountService, AlertService, DataService, pfsFactoryOrderStatusValues } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, pfsFactoryOrderStatusValues } from '@app/services';
 import { getStoreColor } from '@app/helpers';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
 import { ProductForSaleStoreOrderElement } from '@app/models/product-for-sale/product-for-sale-store-order-element.model';
@@ -148,9 +148,9 @@ export class BoardFinishedProductOrderComponent implements OnInit {
 
     // ── Reglas de transición ─────────────────────────────────────────────────
 
-    /** ¿El usuario actual es el encargado del pedido, o un admin? */
+    /** ¿El usuario actual es el encargado del pedido, o puede pasar por encima del encargado? */
     isOwner(order: ProductForSaleStoreOrder): boolean {
-        if (this.accountService.isAdminUser()) return true;
+        if (this.accountService.can(CAPABILITIES.ordersBoardOverrideOwner)) return true;
         // Un pedido sin encargado (tomado antes del tablero) no bloquea a nadie.
         if (!order.assignedUser?.id) return true;
         return order.assignedUser.id === this.accountService.userValue.uuid;

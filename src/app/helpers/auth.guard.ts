@@ -90,6 +90,10 @@ export const canActivate: CanActivateFn = (
           const userRoutes = userValue.role.paths || [];
           const destinationRoute = state.url;
           const destinationRouteFound = userRoutes.find((route: any) => {
+            // Sin patron no se evalua: new RegExp(undefined) matchea cualquier ruta.
+            if (!route?.matchPattern) {
+              return false;
+            }
             const currRegex = new RegExp(route.matchPattern);
             return currRegex.test(destinationRoute)
           });

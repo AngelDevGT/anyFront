@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {first, map, startWith} from 'rxjs/operators';
-import { AccountService, AlertService, DataService, PagerState, PaginationStateService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, PagerState, PaginationStateService } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -39,9 +39,14 @@ export class ListProductForSaleComponent implements OnInit {
 
     constructor(private dataService: DataService, private route: ActivatedRoute, public _builder: FormBuilder, private alertService: AlertService, private paginationState: PaginationStateService, private accountService: AccountService) {}
 
-    /** El costo solo se consulta, se muestra y se edita para el rol Sistema. */
-    get isSystemUser(): boolean {
-        return this.accountService.isAdminUser();
+    /** Ver el costo. Define ademas que endpoint se pide: solo V4 trae el costo. */
+    get canReadCost(): boolean {
+        return this.accountService.can(CAPABILITIES.costRead);
+    }
+
+    /** Editar el costo, individual y masivo. Sin canReadCost no se muestra el valor actual. */
+    get canWriteCost(): boolean {
+        return this.canReadCost && this.accountService.can(CAPABILITIES.costWrite);
     }
 
     ngOnInit() {
@@ -60,9 +65,9 @@ export class ListProductForSaleComponent implements OnInit {
         this.productsForSale = undefined;
         let requestArray = [];
         if(this.storeID){
-            // V4 devuelve además el costo; solo se pide cuando el usuario es Sistema.
+            // V4 devuelve además el costo; solo se pide con la capacidad costRead.
             const filter = {"establishment_id": this.storeID, status_id: 50};
-            requestArray.push(this.isSystemUser
+            requestArray.push(this.canReadCost
                 ? this.dataService.getAllProductForSaleByFilterV4(filter)
                 : this.dataService.getAllProductForSaleByFilterV3(filter));
             forkJoin(requestArray).subscribe({
@@ -86,7 +91,7 @@ export class ListProductForSaleComponent implements OnInit {
             this.productsForSale.forEach(element => {
                 let descriptions = [
                     {name:'Tienda', value: element.establishment?.name},
-                    {name:'Costo', value: this.isSystemUser && element.cost != null ? this.dataService.getFormatedPrice(Number(element.cost)) : null},
+                    {name:'Costo', value: this.canReadCost && element.cost != null ? this.dataService.getFormatedPrice(Number(element.cost)) : null},
                     {name:'Medida', value: element.finishedProduct?.measure?.identifier},
                     {name:'Descripción', value: element.finishedProduct?.description},
                     {name:'Creado', value: element.creationDate ? this.dataService.getLocalDateTimeFromUTCTime(element.creationDate) : null},
@@ -105,7 +110,7 @@ export class ListProductForSaleComponent implements OnInit {
                         // {title: 'Eliminar', value: 'delete', link: '/productsForSale/delete/' + element.id, params: { store: this.storeID }},
                     ]
                 };
-                if (this.isSystemUser){
+                if (this.canWriteCost){
                     currentCard.buttons.push({title: 'Editar costo', value: 'payments', link: '/productsForSale/cost/edit/' + element.id, params: { store: this.storeID }});
                 }
                 newCards.push(currentCard);
@@ -178,7 +183,7 @@ export class ListProductForSaleComponent implements OnInit {
                     const descriptionMatch = val.finishedProduct?.description?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const establishmentMatch = val.establishment?.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const priceMatch = String(val.price ?? '').includes(this.searchTerm);
-                    const costMatch = this.isSystemUser && String(val.cost ?? '').includes(this.searchTerm);
+                    const costMatch = this.canReadCost && String(val.cost ?? '').includes(this.searchTerm);
                     return nameMatch || measureMatch || descriptionMatch || establishmentMatch || priceMatch || costMatch;
                 }
                 return true;

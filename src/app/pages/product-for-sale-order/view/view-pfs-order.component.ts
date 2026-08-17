@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, Inject, inject, OnInit} from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 
-import { AccountService, AlertService, DataService, PdfService, pfsFactoryOrderStatusValues, pfsStoreOrderStatusValues, storeOrderStatus } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, PdfService, pfsFactoryOrderStatusValues, pfsStoreOrderStatusValues, storeOrderStatus } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -133,8 +133,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
             if (!(elemStatus.id == pfsFactoryOrderStatusValues.cancelado.status.id || elemStatus.id == pfsFactoryOrderStatusValues.recibido.status.id || elemStatus.id == pfsFactoryOrderStatusValues.eliminado.status.id)){
 
-                    if(elemStatus.id == pfsFactoryOrderStatusValues.pendiente.status.id || (this.accountService.isSalesUser() || this.accountService.isAdminUser())){
-                    // if(elemStatus.id == storeOrderStatus.pendiente.id || (this.accountService.isSalesUser())){
+                    if(elemStatus.id == pfsFactoryOrderStatusValues.pendiente.status.id || this.accountService.can(CAPABILITIES.ordersEditAfterPending)){
                         this.editOption = true;
                     }
 

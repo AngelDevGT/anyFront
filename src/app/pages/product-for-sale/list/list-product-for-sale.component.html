@@ -13,7 +13,7 @@
             <app-sort-order-dialog *ngIf="cards?.length" [items]="sortItems" title="Ordenar productos de la tienda"
                 [modalId]="'sortProductForSale'" [saving]="savingOrder" (save)="onSaveOrder($event)">
             </app-sort-order-dialog>
-            <app-bulk-cost-dialog *ngIf="isSystemUser && cards?.length" [items]="costItems"
+            <app-bulk-cost-dialog *ngIf="canWriteCost && cards?.length" [items]="costItems"
                 title="Editar costos de los productos" [modalId]="'bulkCostProductForSale'" [saving]="savingCosts"
                 (save)="onSaveCosts($event)">
             </app-bulk-cost-dialog>
