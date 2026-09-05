@@ -1,0 +1,332 @@
+// Paleta y radios tomados de bulk-inventory-dialog para que las dos pantallas de
+// movimiento de inventario se lean igual.
+
+// Los dos paneles son columnas flex de la misma altura (la `.row` de Bootstrap ya
+// los estira al más alto). Título y barra miden igual en ambos, así que el `flex: 1`
+// de `.eqp__scroll` hace que las dos tablas empiecen y terminen en la misma línea.
+.eqp__panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.eqp__title {
+    font-size: 1.25rem;
+    margin-bottom: 12px;
+}
+
+// Franja sobre la tabla: búsqueda en el panel izquierdo, contador en el derecho.
+// La altura mínima es lo que mantiene ambas tablas alineadas arriba, y está por
+// encima de la altura natural de las dos para que ninguna la desborde.
+.eqp__toolbar {
+    min-height: 46px;
+    margin-bottom: 10px;
+}
+
+.eqp__search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 8px;
+    padding: 8px 14px;
+
+    i {
+        font-size: 20px;
+        color: #9aa0a6;
+    }
+
+    input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 14px;
+        color: #1f2937;
+
+        &::placeholder {
+            color: #9aa0a6;
+        }
+    }
+
+    &:focus-within {
+        border-color: #b0b7c3;
+    }
+}
+
+.eqp__search-clear {
+    display: inline-flex;
+    align-items: center;
+    border: none;
+    background: transparent;
+    padding: 0;
+    color: #9aa0a6;
+    cursor: pointer;
+
+    &:hover {
+        color: #667085;
+    }
+
+    i {
+        font-size: 18px;
+    }
+}
+
+// `max-height` y no `height`: con tres filas no sobra hueco y con cuarenta no se
+// navega por una rendija de 200px. El `flex: 1` reparte a la caja todo el alto que
+// le sobra al panel, de modo que la tabla corta se estira hasta la larga en vez de
+// quedarse a media altura; el tope lo sigue poniendo `max-height`.
+.eqp__scroll {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: min(45vh, 420px);
+    overflow: auto;
+    border: 1px solid #eaecf0;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.eqp__table {
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+
+    thead th {
+        // Encabezado fijo: al scrollear se seguía sin saber qué columna era cuál.
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f9fafb;
+        border-bottom: 1px solid #eaecf0;
+        padding: 10px 12px;
+        text-align: left;
+        font-size: .75rem;
+        font-weight: 700;
+        color: #667085;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+        white-space: nowrap;
+    }
+
+    tbody td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #f2f4f7;
+        vertical-align: middle;
+        color: #344054;
+    }
+
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+}
+
+.eqp__row--filled td {
+    background: #fffaf1;
+}
+
+.eqp__row--invalid td {
+    background: #fffbfa;
+}
+
+.eqp__name {
+    display: block;
+    font-weight: 600;
+    color: #101828;
+}
+
+.eqp__subtitle {
+    display: block;
+    font-size: .75rem;
+    color: #667085;
+}
+
+.eqp__value {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.eqp__col-measure {
+    width: 130px;
+}
+
+.eqp__col-qty {
+    width: 120px;
+    text-align: right;
+}
+
+.eqp__col-actions {
+    width: 90px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.eqp__select,
+.eqp__col-qty input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1f2937;
+    outline: none;
+    background: #fff;
+
+    &:focus {
+        border-color: #f5a623;
+    }
+
+    &:disabled {
+        background: #f9fafb;
+        color: #98a2b3;
+    }
+}
+
+.eqp__col-qty input {
+    text-align: right;
+
+    &.is-invalid {
+        border-color: #d92d20;
+        background: #fffbfa;
+    }
+}
+
+.eqp__error {
+    display: block;
+    margin-top: 2px;
+    font-size: .7rem;
+    line-height: 1.2;
+    color: #d92d20;
+    text-align: right;
+}
+
+.eqp__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    padding: 0 3px;
+    cursor: pointer;
+
+    &--edit {
+        color: #0d6efd;
+    }
+
+    &--remove {
+        color: #dc3545;
+    }
+
+    &:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
+    i {
+        font-size: 20px;
+    }
+}
+
+.eqp__empty {
+    padding: 18px 12px !important;
+    text-align: center;
+    color: #667085;
+    font-size: .875rem;
+}
+
+// Se lee como franja de resumen, no como campo: relleno gris y sin borde de input.
+.eqp__counter {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 8px 14px;
+    border: 1px solid #eaecf0;
+    border-radius: 8px;
+    background: #f9fafb;
+    font-size: .8rem;
+    color: #667085;
+}
+
+// En teléfono una tabla de cuatro columnas con selects no cabe: cada fila pasa a
+// ser una tarjeta y el encabezado se reemplaza por la etiqueta de cada celda.
+@media (max-width: 767.98px) {
+    // Apilados no hay nada que alinear: cada panel vuelve a medir lo que ocupe.
+    .eqp__scroll {
+        flex: 0 0 auto;
+        max-height: none;
+        border: none;
+        background: transparent;
+        overflow: visible;
+    }
+
+    .eqp__table {
+        thead {
+            display: none;
+        }
+
+        tbody tr {
+            display: block;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border: 1px solid #eaecf0;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+        }
+
+        tbody td {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: auto;
+            padding: 6px 0;
+            border-bottom: none;
+            text-align: left;
+        }
+
+        tbody td[data-label]::before {
+            content: attr(data-label);
+            flex-shrink: 0;
+            font-size: .75rem;
+            font-weight: 700;
+            color: #667085;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+        }
+    }
+
+    .eqp__row--filled td,
+    .eqp__row--invalid td {
+        background: transparent;
+    }
+
+    .eqp__row--filled {
+        border-color: #f5a623 !important;
+        background: #fffaf1 !important;
+    }
+
+    .eqp__row--invalid {
+        border-color: #d92d20 !important;
+        background: #fffbfa !important;
+    }
+
+    .eqp__select,
+    .eqp__col-qty input {
+        width: 60%;
+    }
+
+    .eqp__empty {
+        display: block !important;
+        border: 1px dashed #eaecf0;
+        border-radius: 10px;
+    }
+
+    .eqp__empty::before {
+        content: none;
+    }
+}

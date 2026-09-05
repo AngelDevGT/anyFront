@@ -1,0 +1,378 @@
+.bulk-inv__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    background: #fff;
+    color: #344054;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease, border-color .15s ease;
+
+    &:hover:not(:disabled) {
+        background: #f9fafb;
+        border-color: #b0b7c3;
+    }
+
+    &:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
+    .material-icons {
+        font-size: 20px;
+    }
+}
+
+// --- Selector de accion: Agregar / Eliminar / Devolver ---
+.bulk-inv__actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+// Cada accion conserva el color con el que ya se la conoce en la tabla y en los
+// modales de fila: agregar verde, eliminar rojo, devolver amarillo. Inactiva va
+// en linea sobre blanco; activa, rellena.
+.bulk-inv__action {
+    flex: 1 1 0;
+    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #fff;
+    color: #475467;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+
+    .material-icons {
+        font-size: 20px;
+    }
+
+    &--add {
+        color: #198754;
+        border-color: #198754;
+
+        &:hover { background: #e9f5ee; }
+
+        // Misma especificidad que el :hover de arriba, pero despues: la activa gana.
+        &.bulk-inv__action--active {
+            background: #198754;
+            border-color: #198754;
+            color: #fff;
+        }
+    }
+
+    &--remove {
+        color: #dc3545;
+        border-color: #dc3545;
+
+        &:hover { background: #fdecee; }
+
+        &.bulk-inv__action--active {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #fff;
+        }
+    }
+
+    &--return {
+        // El amarillo puro no se lee sobre blanco: el texto va en un ambar mas
+        // oscuro y el #ffc107 se reserva para el borde y el relleno de la activa.
+        color: #a97a00;
+        border-color: #ffc107;
+
+        &:hover { background: #fff8e1; }
+
+        &.bulk-inv__action--active {
+            background: #ffc107;
+            border-color: #ffc107;
+            color: #4a3600;
+        }
+    }
+}
+
+.bulk-inv__comment {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+
+    label {
+        font-size: .8rem;
+        font-weight: 700;
+        color: #667085;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+    }
+
+    textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1f2937;
+        outline: none;
+        resize: vertical;
+
+        &:focus {
+            border-color: #c94e00;
+        }
+
+        &.is-invalid {
+            border-color: #d92d20;
+            background: #fffbfa;
+        }
+
+        &::placeholder {
+            color: #9aa0a6;
+        }
+    }
+}
+
+.bulk-inv__search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-bottom: 10px;
+
+    i {
+        font-size: 20px;
+        color: #9aa0a6;
+    }
+
+    input {
+        flex: 1;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 14px;
+        color: #1f2937;
+
+        &::placeholder {
+            color: #9aa0a6;
+        }
+    }
+
+    &:focus-within {
+        border-color: #b0b7c3;
+    }
+}
+
+.bulk-inv__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bulk-inv__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #eaecf0;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+
+    &--head {
+        background: #f9fafb;
+        border-color: #eaecf0;
+        box-shadow: none;
+        font-size: .8rem;
+        font-weight: 700;
+        color: #667085;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+    }
+
+    &--changed {
+        border-color: #f5a623;
+        background: #fffaf1;
+    }
+}
+
+.bulk-inv__col-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.bulk-inv__col-qty {
+    width: 160px;
+    flex-shrink: 0;
+}
+
+.bulk-inv__info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 2px;
+}
+
+.bulk-inv__name {
+    font-weight: 600;
+    color: #101828;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bulk-inv__quantities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+}
+
+.bulk-inv__quantity {
+    font-size: .8rem;
+    color: #667085;
+
+    strong {
+        color: #344054;
+    }
+
+    // La cantidad nueva toma el color de la accion en curso.
+    &--add strong { color: #198754; }
+    &--remove strong { color: #dc3545; }
+    &--return strong { color: #a97a00; }
+}
+
+.bulk-inv__field {
+    width: 160px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1f2937;
+        outline: none;
+        text-align: right;
+
+        &:focus {
+            border-color: #f5a623;
+        }
+
+        &.is-invalid {
+            border-color: #d92d20;
+            background: #fffbfa;
+        }
+    }
+}
+
+.bulk-inv__error {
+    font-size: .7rem;
+    color: #d92d20;
+    line-height: 1.2;
+}
+
+.bulk-inv__empty {
+    margin: 12px 0 0;
+    text-align: center;
+    font-size: .875rem;
+    color: #667085;
+}
+
+.bulk-inv__counter {
+    margin-right: auto;
+    font-size: .8rem;
+    color: #667085;
+}
+
+.bulk-inv__btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+
+    &--cancel {
+        background: #fff;
+        border-color: #d0d5dd;
+        color: #344054;
+    }
+
+    &--save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        &:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+    }
+
+    // El boton de guardar repite el color de la accion elegida, igual que los
+    // modales de fila (btn-success / btn-danger / btn-warning).
+    &--add {
+        background: #198754;
+        color: #fff;
+    }
+
+    &--remove {
+        background: #dc3545;
+        color: #fff;
+    }
+
+    &--return {
+        background: #ffc107;
+        color: #4a3600;
+    }
+}
+
+// --- Overlay de carga al aplicar los movimientos (bloquea toda la pantalla + blur) ---
+.bulk-inv__loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.bulk-inv__loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@media (max-width: 575.98px) {
+    .bulk-inv__row {
+        flex-direction: column;
+        align-items: stretch;
+
+        &--head {
+            display: none;
+        }
+    }
+
+    .bulk-inv__field,
+    .bulk-inv__col-qty {
+        width: 100%;
+    }
+}

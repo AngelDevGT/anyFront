@@ -106,6 +106,9 @@
                                 <span class="timeline-date">{{ getPaymentDate(ev.date) }}</span>
                             </div>
                             <p *ngIf="ev.subtitle" class="timeline-sub">{{ ev.subtitle }}</p>
+                            <p *ngIf="ev.detail" class="timeline-detail">
+                                <i class="material-icons">account_balance</i>{{ ev.detail }}
+                            </p>
                             <p *ngIf="ev.comment" class="timeline-comment">
                                 <i class="material-icons">chat_bubble_outline</i>{{ ev.comment }}
                             </p>
@@ -216,7 +219,9 @@
 
 <!-- ── Modal: Registrar Pago ─────────────────────────────────────────────── -->
 <div class="modal fade" id="payModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="payModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <!-- scrollable: con pedido Y envío al crédito, más los datos bancarios de cada uno, el
+         formulario pasa el alto de la pantalla. El header y el botón de pagar quedan fijos. -->
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="payModalLabel">Registrar Pago</h5>
@@ -225,88 +230,181 @@
             <div class="modal-body">
                 <form [formGroup]="paymentForm">
                     <!-- Pago del pedido -->
-                    <div *ngIf="canPayOrder" class="mb-4">
-                        <h6 class="text-muted">Pago del pedido</h6>
-                        <div class="row justify-content-center col-12 mb-2">
-                            <div class="descuento">
-                                <p class="subtotal-title">Pendiente (pedido)</p>
-                                <p class="subtotal-amount">Q{{ orderPendingAmount | number: '1.2-2' }}</p>
-                            </div>
+                    <div *ngIf="canPayOrder" class="pos-pay-section">
+                        <p class="pos-section-title" *ngIf="canPayDelivery">Pago del pedido</p>
+
+                        <div class="pos-total-box">
+                            <span class="pos-total-label">Pendiente (pedido)</span>
+                            <span class="pos-total-amount">Q{{ orderPendingAmount | number: '1.2-2' }}</span>
                         </div>
-                        <div class="d-flex flex-wrap justify-content-center col-12 gap-3">
-                            <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
-                                <mat-label>Monto a pagar (Q)</mat-label>
-                                <input type="text" formControlName="orderAmount" matInput
+
+                        <div class="pos-pay-row">
+                            <div class="pos-pay-field">
+                                <label>Monto a pagar (Q)</label>
+                                <input type="text" class="form-control form-control-lg"
+                                    formControlName="orderAmount"
                                     (input)="onOrderAmountInput($event)"
-                                    [ngClass]="{ 'is-invalid': paymentForm.get('orderAmount')?.errors && paymentForm.get('orderAmount')?.touched }" />
-                                <div class="invalid-feedback" *ngIf="paymentForm.get('orderAmount')?.errors">
-                                    <div *ngIf="paymentForm.get('orderAmount')?.hasError('pattern')">Solo números positivos (ej. 15.50)</div>
-                                </div>
-                            </mat-form-field>
-                            <div class="col-sm-12 col-md-5 pb-3">
+                                    [class.is-invalid]="paymentForm.get('orderAmount')?.errors && paymentForm.get('orderAmount')?.touched"
+                                    placeholder="0.00" />
+                                <p class="pos-field-error"
+                                    *ngIf="paymentForm.get('orderAmount')?.hasError('pattern') && paymentForm.get('orderAmount')?.touched">
+                                    Solo números positivos (ej. 15.50)
+                                </p>
+                            </div>
+
+                            <div class="pos-pay-field">
+                                <label>Método de pago</label>
                                 <select class="form-select form-select-lg" formControlName="orderPaymentType">
-                                    <option disabled selected value="">Tipo de pago</option>
+                                    <option value="">Selecciona el método</option>
                                     <option *ngFor="let pt of nonCreditPaymentTypes" value="{{pt.id}}">{{pt.identifier}}</option>
                                 </select>
                             </div>
-                            <mat-form-field class="col-12 custom-input" appearance="outline">
-                                <mat-label>Fecha y hora del pago</mat-label>
-                                <input type="datetime-local" formControlName="orderDate" matInput />
-                            </mat-form-field>
-                            <mat-form-field class="col-12 custom-input" appearance="outline">
-                                <mat-label>Comentario (opcional)</mat-label>
-                                <textarea formControlName="orderComment" matInput rows="2"
-                                    [maxlength]="commentMaxLength"></textarea>
-                                <mat-hint align="end">{{ paymentForm.get('orderComment')?.value?.length || 0 }}/{{ commentMaxLength }}</mat-hint>
-                            </mat-form-field>
+                        </div>
+
+                        <!-- Pago bancario (Depósito o Cheque): banco y referencia obligatorios -->
+                        <div class="pos-deposit-box" *ngIf="orderNeedsDetail">
+                            <div class="pos-deposit-head">
+                                <i class="material-icons">account_balance</i>
+                                <span>Datos del pago</span>
+                            </div>
+
+                            <p class="pos-deposit-warning" *ngIf="hasNoBanks">
+                                Esta tienda no tiene bancos cargados. Agrégalos desde
+                                Sistema &gt; Tiendas &gt; Bancos para poder registrar este pago.
+                            </p>
+
+                            <ng-container *ngIf="!hasNoBanks">
+                                <div class="pos-pay-field">
+                                    <label>Banco <span class="pos-required">*</span></label>
+                                    <select class="form-select form-select-lg" formControlName="orderBank">
+                                        <option value="">Selecciona el banco</option>
+                                        <option *ngFor="let bank of bankOptionsList" [value]="bank">{{ bank }}</option>
+                                    </select>
+                                </div>
+                                <div class="pos-pay-field">
+                                    <label>No. de referencia <span class="pos-required">*</span></label>
+                                    <input type="text" class="form-control form-control-lg"
+                                        formControlName="orderReferenceNo"
+                                        [maxlength]="referenceMaxLength"
+                                        placeholder="No. de transferencia o de cheque" />
+                                </div>
+                            </ng-container>
+                        </div>
+
+                        <div class="pos-pay-field">
+                            <label>Fecha y hora del pago</label>
+                            <input type="datetime-local" class="form-control form-control-lg"
+                                formControlName="orderDate" />
+                        </div>
+
+                        <div class="pos-pay-field">
+                            <label>Comentario (opcional)</label>
+                            <textarea class="form-control" rows="2" formControlName="orderComment"
+                                [maxlength]="commentMaxLength"
+                                placeholder="Nota adicional del pago"></textarea>
+                            <span class="pos-deposit-counter">
+                                {{ paymentForm.get('orderComment')?.value?.length || 0 }}/{{ commentMaxLength }}
+                            </span>
                         </div>
                     </div>
 
                     <!-- Pago del envío -->
-                    <div *ngIf="canPayDelivery" class="mb-2">
-                        <h6 class="text-muted">Pago del envío</h6>
-                        <div class="row justify-content-center col-12 mb-2">
-                            <div class="descuento">
-                                <p class="subtotal-title">Pendiente (envío)</p>
-                                <p class="subtotal-amount">Q{{ deliveryPendingAmount | number: '1.2-2' }}</p>
-                            </div>
+                    <div *ngIf="canPayDelivery" class="pos-pay-section">
+                        <p class="pos-section-title" *ngIf="canPayOrder">Pago del envío</p>
+
+                        <div class="pos-total-box">
+                            <span class="pos-total-label">Pendiente (envío)</span>
+                            <span class="pos-total-amount">Q{{ deliveryPendingAmount | number: '1.2-2' }}</span>
                         </div>
-                        <div class="d-flex flex-wrap justify-content-center col-12 gap-3">
-                            <mat-form-field class="col-sm-12 col-md-5 custom-input" appearance="outline">
-                                <mat-label>Monto a pagar (Q)</mat-label>
-                                <input type="text" formControlName="deliveryAmount" matInput
+
+                        <div class="pos-pay-row">
+                            <div class="pos-pay-field">
+                                <label>Monto a pagar (Q)</label>
+                                <input type="text" class="form-control form-control-lg"
+                                    formControlName="deliveryAmount"
                                     (input)="onDeliveryAmountInput($event)"
-                                    [ngClass]="{ 'is-invalid': paymentForm.get('deliveryAmount')?.errors && paymentForm.get('deliveryAmount')?.touched }" />
-                                <div class="invalid-feedback" *ngIf="paymentForm.get('deliveryAmount')?.errors">
-                                    <div *ngIf="paymentForm.get('deliveryAmount')?.hasError('pattern')">Solo números positivos (ej. 15.50)</div>
-                                </div>
-                            </mat-form-field>
-                            <div class="col-sm-12 col-md-5 pb-3">
+                                    [class.is-invalid]="paymentForm.get('deliveryAmount')?.errors && paymentForm.get('deliveryAmount')?.touched"
+                                    placeholder="0.00" />
+                                <p class="pos-field-error"
+                                    *ngIf="paymentForm.get('deliveryAmount')?.hasError('pattern') && paymentForm.get('deliveryAmount')?.touched">
+                                    Solo números positivos (ej. 15.50)
+                                </p>
+                            </div>
+
+                            <div class="pos-pay-field">
+                                <label>Método de pago</label>
                                 <select class="form-select form-select-lg" formControlName="deliveryPaymentType">
-                                    <option disabled selected value="">Tipo de pago</option>
+                                    <option value="">Selecciona el método</option>
                                     <option *ngFor="let pt of nonCreditPaymentTypes" value="{{pt.id}}">{{pt.identifier}}</option>
                                 </select>
                             </div>
-                            <mat-form-field class="col-12 custom-input" appearance="outline">
-                                <mat-label>Fecha y hora del pago</mat-label>
-                                <input type="datetime-local" formControlName="deliveryDate" matInput />
-                            </mat-form-field>
-                            <mat-form-field class="col-12 custom-input" appearance="outline">
-                                <mat-label>Comentario (opcional)</mat-label>
-                                <textarea formControlName="deliveryComment" matInput rows="2"
-                                    [maxlength]="commentMaxLength"></textarea>
-                                <mat-hint align="end">{{ paymentForm.get('deliveryComment')?.value?.length || 0 }}/{{ commentMaxLength }}</mat-hint>
-                            </mat-form-field>
                         </div>
+
+                        <!-- Pago bancario del envío: mismo criterio que el del pedido -->
+                        <div class="pos-deposit-box" *ngIf="deliveryNeedsDetail">
+                            <div class="pos-deposit-head">
+                                <i class="material-icons">account_balance</i>
+                                <span>Datos del pago</span>
+                            </div>
+
+                            <p class="pos-deposit-warning" *ngIf="hasNoBanks">
+                                Esta tienda no tiene bancos cargados. Agrégalos desde
+                                Sistema &gt; Tiendas &gt; Bancos para poder registrar este pago.
+                            </p>
+
+                            <ng-container *ngIf="!hasNoBanks">
+                                <div class="pos-pay-field">
+                                    <label>Banco <span class="pos-required">*</span></label>
+                                    <select class="form-select form-select-lg" formControlName="deliveryBank">
+                                        <option value="">Selecciona el banco</option>
+                                        <option *ngFor="let bank of bankOptionsList" [value]="bank">{{ bank }}</option>
+                                    </select>
+                                </div>
+                                <div class="pos-pay-field">
+                                    <label>No. de referencia <span class="pos-required">*</span></label>
+                                    <input type="text" class="form-control form-control-lg"
+                                        formControlName="deliveryReferenceNo"
+                                        [maxlength]="referenceMaxLength"
+                                        placeholder="No. de transferencia o de cheque" />
+                                </div>
+                            </ng-container>
+                        </div>
+
+                        <div class="pos-pay-field">
+                            <label>Fecha y hora del pago</label>
+                            <input type="datetime-local" class="form-control form-control-lg"
+                                formControlName="deliveryDate" />
+                        </div>
+
+                        <div class="pos-pay-field">
+                            <label>Comentario (opcional)</label>
+                            <textarea class="form-control" rows="2" formControlName="deliveryComment"
+                                [maxlength]="commentMaxLength"
+                                placeholder="Nota adicional del pago"></textarea>
+                            <span class="pos-deposit-counter">
+                                {{ paymentForm.get('deliveryComment')?.value?.length || 0 }}/{{ commentMaxLength }}
+                            </span>
+                        </div>
+
+                        <!-- Solo cuando el pedido se está cobrando y ya tiene banco y referencia -->
+                        <button type="button" class="pos-copy-btn"
+                            *ngIf="canCopyOrderPaymentDetail"
+                            (click)="copyOrderPaymentDetailToDelivery()">
+                            <i class="material-icons">content_copy</i>
+                            Copiar datos de pago
+                        </button>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="closePaymentModal()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-accent-modal"
+            <div class="modal-footer pos-pay-footer">
+                <button type="button" class="pos-cobrar-btn"
                     [disabled]="!canSubmitPayment || submittingPayment"
                     (click)="submitPayment()">
+                    <span *ngIf="submittingPayment" class="spinner-border spinner-border-sm me-1"></span>
                     Pagar
+                </button>
+                <button type="button" class="pos-cancel-btn" (click)="closePaymentModal()" data-bs-dismiss="modal">
+                    Cancelar
                 </button>
             </div>
         </div>

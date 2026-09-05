@@ -9,7 +9,12 @@
       <h4 class="page-title"><span *ngIf="storeName">{{storeName}}: </span>Inventario de Producto Para Venta</h4>
       <p class="page-subtitle">Consulta y gestiona el inventario de la tienda</p>
     </div>
-    <div class="page-header-actions">
+    <div class="page-header-actions" *ngIf="storeSelected && inventoryLoaded">
+      <app-bulk-inventory-dialog *ngIf="canWriteInventory() && inventoryActionItems.length"
+        [items]="inventoryActionItems" title="Acciones de inventario de productos"
+        [modalId]="'bulkInventoryStorePFS'" [saving]="savingInventoryActions"
+        (save)="onSaveInventoryActions($event)">
+      </app-bulk-inventory-dialog>
       <button *ngIf="inventory && inventory.id" type="button" (click)="goToActionsHistory()" class="btn-outline-action">
         <i class="material-icons">history</i>
         Historial
@@ -21,7 +26,9 @@
     </div>
   </div>
 
-  <div class="content-card">
+  <store-required *ngIf="!storeSelected" message="Selecciona una tienda para ver su inventario"></store-required>
+
+  <div class="content-card" *ngIf="storeSelected">
     <div class="table-toolbar">
       <div class="search-box">
         <i class="material-icons search-icon">search</i>

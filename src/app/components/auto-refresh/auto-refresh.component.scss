@@ -1,0 +1,126 @@
+// Switch e intervalo comparten una sola cápsula: se leen como un control.
+//
+// El host lo coloca dentro de su barra de acciones; el componente no pone márgenes
+// propios para no pelearse con el `gap` de esa barra.
+:host {
+    display: inline-flex;
+}
+
+.auto-refresh {
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    background: #fff;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    height: 36px;
+    overflow: visible;
+
+    &--on { border-color: #c94e00; }
+}
+
+.auto-refresh__toggle,
+.auto-refresh__interval {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s;
+}
+
+.auto-refresh--on .auto-refresh__toggle { color: #c94e00; }
+
+.auto-refresh__interval {
+    border-left: 1.5px solid #e5e5e5;
+    color: #333;
+
+    .chevron-icon { font-size: 18px; color: #888; transition: transform 0.2s; }
+    &.open .chevron-icon { transform: rotate(180deg); }
+    &:hover { color: #c94e00; }
+}
+
+.auto-refresh--on .auto-refresh__interval { border-left-color: rgba(201, 78, 0, 0.35); }
+
+.auto-refresh__icon { font-size: 17px; }
+
+// Gira solo mientras está encendida: es la señal de que la pantalla se refresca.
+.auto-refresh--on .auto-refresh__icon {
+    animation: auto-refresh-spin 2.4s linear infinite;
+}
+
+@keyframes auto-refresh-spin {
+    from { rotate: 0deg; }
+    to   { rotate: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auto-refresh--on .auto-refresh__icon { animation: none; }
+}
+
+.auto-refresh__switch {
+    position: relative;
+    width: 30px;
+    height: 16px;
+    border-radius: 8px;
+    background: #d5d8dd;
+    flex-shrink: 0;
+    transition: background 0.18s;
+}
+
+.auto-refresh__knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.18s;
+}
+
+.auto-refresh--on {
+    .auto-refresh__switch { background: #c94e00; }
+    .auto-refresh__knob { transform: translateX(14px); }
+}
+
+.auto-refresh__panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 130px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 5px;
+    z-index: 1000;
+}
+
+.auto-refresh__option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    .material-icons { font-size: 16px; }
+    &:hover { background: #f7f8fa; color: #c94e00; }
+    &.selected { color: #c94e00; font-weight: 700; }
+}

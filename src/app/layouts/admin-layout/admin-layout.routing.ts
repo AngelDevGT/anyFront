@@ -46,8 +46,10 @@ import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { canActivateV2 } from "@app/helpers";
 import { BoardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/board/board-pfs-order.component";
+import { PreparedFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/prepared/prepared-pfs-order.component";
 import { DashboardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/dashboard/dashboard-pfs-order.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
+import { RegisterProductCreationComponent } from "@app/pages/product-creation/register/register-product-creation.component";
 import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
 import { SummaryStoreSalesComponent } from "@app/pages/store-sales/summary/summary-store-sales.component";
 import { ListStoreExpensesComponent } from "@app/pages/store-expenses/list/list-store-expenses.component";
@@ -56,6 +58,7 @@ import { AddEditCustomerComponent } from "@app/pages/customers/add-edit/add-edit
 import { ViewCustomerComponent } from "@app/pages/customers/view/view-customer.component";
 import { AssignEstablishmentCustomerComponent } from "@app/pages/establishment-customer/assign/assign-establishment-customer.component";
 import { ListCustomerBalanceComponent } from "@app/pages/establishment-customer/balance/list-customer-balance.component";
+import { ListCustomerPaymentsComponent } from "@app/pages/establishment-customer/payments/list-customer-payments.component";
 import { AddEditExpenseComponent } from "@app/pages/store-expenses/add-edit/add-edit-expense.component";
 import { ViewExpenseComponent } from "@app/pages/store-expenses/view/view-expense.component";
 
@@ -75,12 +78,15 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'abarrotes/edit/:id', component: AddEditFinishedProductComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
     { path: 'abarrotes/view/:id', component: ViewFinishedProductComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
     { path: 'inventory/factory/abarrote', component: ListFactoryInventoryFPComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
-    { path: 'abarroteCreation', component: AddEditProductCreationComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
+    { path: 'abarroteCreation', component: RegisterProductCreationComponent, data: { productType: 2 }, canActivate: [canActivateV2]},
     { path: 'productsForSale/order', component: ListProductForSaleOrderComponent , canActivate: [canActivateV2]},
     // Bodega: mismo dashboard que consultas, pero sobre todas las tiendas y con enlace al listado
     // de fábrica. `ListFinishedProductOrderInFactoryComponent` queda sin ruta, no borrado.
     { path: 'finishedProduct/order', component: DashboardFinishedProductOrderComponent, data: { allStores: true }, canActivate: [canActivateV2]},
     { path: 'finishedProduct/order/board', component: BoardFinishedProductOrderComponent, canActivate: [canActivateV2]},
+    // Solo lectura sobre los pedidos Preparado(64), con sus productos desplegados. Lo único que
+    // escribe es la verificación; mover pedidos sigue siendo cosa del tablero.
+    { path: 'finishedProduct/order/prepared', component: PreparedFinishedProductOrderComponent, canActivate: [canActivateV2]},
     { path: 'productsForSale/order/create', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/order/edit/:id', component: AddEditProductForSaleOrderComponent , canActivate: [canActivateV2]},
     { path: 'productsForSale/order/view/:id', component: ViewProductForSaleOrderComponent , canActivate: [canActivateV2]},
@@ -128,8 +134,16 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'inventory/factory/finishedProduct', component: ListFactoryInventoryFPComponent, canActivate: [canActivateV2]},
     { path: 'store', component: ListEstablishmentComponent, canActivate: [canActivateV2]},
     { path: 'store/inventory/:id', component: ListStoreInventoryPFSComponent, canActivate: [canActivateV2]},
+    // Antes que 'store/customers/:id': el router resuelve en orden y la ruta con
+    // parametro se quedaria con /store/customers/payments. La tienda y el cliente
+    // viajan como query params (store, customer).
+    { path: 'store/customers/payments', component: ListCustomerPaymentsComponent, canActivate: [canActivateV2]},
     { path: 'store/customers/:id', component: ListCustomerBalanceComponent, canActivate: [canActivateV2]},
-    { path: 'productCreation', component: AddEditProductCreationComponent, canActivate: [canActivateV2]},
+    // Registrar producto terminado / abarrote en inventario: pantalla nueva con la
+    // cantidad en línea en la tabla (RegisterProductCreationComponent).
+    // PARA REVERTIR: cambiar acá y en 'abarroteCreation' (arriba) el component de
+    // vuelta a AddEditProductCreationComponent, que sigue declarado e intacto.
+    { path: 'productCreation', component: RegisterProductCreationComponent, canActivate: [canActivateV2]},
     { path: 'consumeRawMaterial', component: ConsumeRawMaterialComponent, canActivate: [canActivateV2]},
     { path: 'consumePackagingMaterial', component: ConsumeRawMaterialComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
     { path: 'users', loadChildren: usersModule, canActivate: [canActivateV2]},

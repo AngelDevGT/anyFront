@@ -1,0 +1,107 @@
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <button class="back-btn" type="button" (click)="goBack()" aria-label="Volver">
+        <i class="material-icons">arrow_back</i>
+      </button>
+      <div class="header-titles">
+        <h4 class="page-title">Historial de ventas — {{ customer?.name || 'Cliente' }}</h4>
+        <p class="page-subtitle">
+          Ventas del cliente en {{ establishment?.name || 'la tienda' }}
+          <ng-container *ngIf="customer?.nit"> · NIT {{ customer?.nit }}</ng-container>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="balance-summary" *ngIf="allSales">
+    <div class="balance-tile" [class.pending]="hasPendingBalance" [class.settled]="!hasPendingBalance">
+      <span class="balance-tile-label">Saldo pendiente</span>
+      <span class="balance-tile-value">{{ formatPrice(pendingBalance) }}</span>
+    </div>
+    <div class="balance-tile">
+      <span class="balance-tile-label">Total vendido</span>
+      <span class="balance-tile-value">{{ formatPrice(totalSold) }}</span>
+    </div>
+    <div class="balance-tile">
+      <span class="balance-tile-label">Total abonado</span>
+      <span class="balance-tile-value">{{ formatPrice(totalPaid) }}</span>
+    </div>
+    <div class="balance-tile">
+      <span class="balance-tile-label">Ventas registradas</span>
+      <span class="balance-tile-value">{{ salesCount }}</span>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="material-icons search-icon">search</i>
+        <input type="text" class="search-input" placeholder="Buscar por venta, tipo, monto o nota..."
+          [(ngModel)]="searchTerm" (input)="search()" />
+      </div>
+    </div>
+
+    <data-table *ngIf="allSales" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"
+      (modalAction)="receiveData($event.data)"></data-table>
+    <div *ngIf="!allSales" class="loading-wrap">
+      <span class="spinner-border spinner-border-lg"></span>
+    </div>
+  </div>
+
+  <!-- ── Modal: historial de una venta ──────────────────────── -->
+  <!-- Mismos eventos que el bloque "Historial" de la vista de la venta -->
+  <div class="modal fade" id="saleHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="material-icons title-icon">history</i>
+            Historial de la venta
+            <span *ngIf="selectedSale?.saleNumber != null" class="modal-sale-number">#{{ selectedSale?.saleNumber }}</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div *ngIf="!salePayments && !paymentsError" class="loading-wrap">
+            <span class="spinner-border"></span>
+          </div>
+
+          <p *ngIf="paymentsError" class="payments-error">{{ paymentsError }}</p>
+
+          <div *ngIf="salePayments" class="timeline">
+            <div class="timeline-item" *ngFor="let ev of timeline">
+              <div class="timeline-marker">
+                <i class="material-icons">{{ ev.icon }}</i>
+              </div>
+              <div class="timeline-body">
+                <div class="timeline-line">
+                  <span class="timeline-title">
+                    {{ ev.title }}
+                    <span *ngIf="ev.tag" class="timeline-tag">{{ ev.tag }}</span>
+                  </span>
+                  <span class="timeline-date">{{ formatDateTime(ev.date) }}</span>
+                </div>
+                <p *ngIf="ev.subtitle" class="timeline-sub">{{ ev.subtitle }}</p>
+                <p *ngIf="ev.detail" class="timeline-detail">
+                  <i class="material-icons">account_balance</i>{{ ev.detail }}
+                </p>
+                <p *ngIf="ev.comment" class="timeline-comment">
+                  <i class="material-icons">chat_bubble_outline</i>{{ ev.comment }}
+                </p>
+              </div>
+            </div>
+            <p *ngIf="!timeline.length" class="timeline-empty">Sin movimientos registrados</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

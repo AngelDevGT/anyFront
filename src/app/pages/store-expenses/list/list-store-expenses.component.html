@@ -5,13 +5,15 @@
       <h4 class="page-title">Gastos de Tienda</h4>
       <p class="page-subtitle">Administra los gastos registrados de la tienda</p>
     </div>
-    <button *ngIf="expenses" type="button" (click)="createExpense()" class="btn-add">
+    <button *ngIf="storeSelected && expenses" type="button" (click)="createExpense()" class="btn-add">
       <i class="material-icons">add</i>
       Registrar Gasto
     </button>
   </div>
 
-  <div class="content-card">
+  <store-required *ngIf="!storeSelected" message="Selecciona una tienda para ver sus gastos"></store-required>
+
+  <div class="content-card" *ngIf="storeSelected">
     <div class="table-toolbar">
       <div class="search-box">
         <i class="material-icons search-icon">search</i>

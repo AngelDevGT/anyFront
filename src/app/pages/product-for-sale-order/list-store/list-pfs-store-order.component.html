@@ -5,13 +5,15 @@
       <h4 class="page-title">{{pageTitle}}</h4>
       <p class="page-subtitle">{{ readOnly ? 'Consulta los pedidos de productos para venta' : 'Consulta y gestiona los pedidos de productos para venta' }}</p>
     </div>
-    <button *ngIf="!readOnly && productForSaleOrdes && viewOption != 'factory'" type="button" (click)="navigateWithParams()" class="btn-add">
+    <button *ngIf="!readOnly && storeSelected && productForSaleOrdes && viewOption != 'factory'" type="button" (click)="navigateWithParams()" class="btn-add">
       <i class="material-icons">add</i>
       Crear Pedido
     </button>
   </div>
 
-  <div class="content-card">
+  <store-required *ngIf="!storeSelected" message="Selecciona una tienda para ver sus pedidos"></store-required>
+
+  <div class="content-card" *ngIf="storeSelected">
     <div class="table-toolbar">
       <div class="search-box">
         <i class="material-icons search-icon">search</i>

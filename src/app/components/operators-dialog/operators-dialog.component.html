@@ -1,0 +1,104 @@
+<div class="op-dialog" *ngIf="open">
+    <div class="op-dialog__box">
+
+        <div class="op-dialog__head">
+            <h5 class="op-dialog__title">Operadores del pedido</h5>
+            <p class="op-dialog__subtitle" *ngIf="orderName">{{ orderName }}</p>
+        </div>
+
+        <!-- Lista en edición: arriba, para que se vea crecer al ir agregando -->
+        <div class="op-chips" [class.op-chips--empty]="!chips.length">
+            <span class="op-chip"
+                  *ngFor="let chip of chips; let i = index; trackBy: trackByChip"
+                  [class.op-chip--manual]="chip.source === 'manual'">
+                {{ chip.name }}
+                <button type="button" class="op-chip__remove"
+                        [attr.aria-label]="'Quitar ' + chip.name"
+                        [disabled]="saving"
+                        (click)="remove(i)">
+                    <i class="material-icons">close</i>
+                </button>
+            </span>
+            <p class="op-chips__placeholder" *ngIf="!chips.length"
+               [class.op-chips__placeholder--required]="required">
+                {{ required
+                    ? 'Agregá al menos un operador para continuar.'
+                    : 'Ningún operador agregado todavía.' }}
+            </p>
+        </div>
+
+        <div class="op-dialog__body">
+
+            <!-- ── Catálogo de clientes marcados como Operador ──────────────── -->
+            <section class="op-section">
+                <h6 class="op-section__title">Seleccionar operadores existentes</h6>
+
+                <div class="op-search" *ngIf="operatorCustomers.length > 6">
+                    <i class="material-icons op-search__icon">search</i>
+                    <input type="text" class="op-search__input"
+                           placeholder="Buscar operador"
+                           [(ngModel)]="searchTerm"
+                           [disabled]="saving">
+                </div>
+
+                <div class="op-catalog__loading" *ngIf="loadingCustomers">
+                    <span class="spinner-border spinner-border-sm"></span>
+                    Cargando operadores...
+                </div>
+
+                <div class="op-catalog" *ngIf="!loadingCustomers && filteredCustomers.length">
+                    <button type="button" class="op-catalog__item"
+                            *ngFor="let customer of filteredCustomers; trackBy: trackByCustomer"
+                            [class.op-catalog__item--selected]="isSelected(customer)"
+                            [disabled]="saving || isSelected(customer)"
+                            (click)="addFromCatalog(customer)">
+                        <i class="material-icons">{{ isSelected(customer) ? 'check_circle' : 'add_circle_outline' }}</i>
+                        {{ customer.name }}
+                    </button>
+                </div>
+
+                <p class="op-section__empty" *ngIf="!loadingCustomers && !filteredCustomers.length">
+                    <ng-container *ngIf="operatorCustomers.length">
+                        Ningún operador coincide con "{{ searchTerm }}".
+                    </ng-container>
+                    <ng-container *ngIf="!operatorCustomers.length">
+                        No hay clientes marcados como Operador. Se pueden marcar desde Clientes.
+                    </ng-container>
+                </p>
+            </section>
+
+            <!-- ── Nombres escritos a mano ──────────────────────────────────── -->
+            <section class="op-section">
+                <h6 class="op-section__title">Ingresar operadores manualmente</h6>
+
+                <div class="op-manual">
+                    <input type="text" class="op-manual__input"
+                           placeholder="Nombre del operador"
+                           [maxlength]="maxLength"
+                           [(ngModel)]="manualName"
+                           [disabled]="saving"
+                           (keydown.enter)="$event.preventDefault(); addManual()">
+                    <button type="button" class="op-manual__btn"
+                            [disabled]="!canAddManual || saving"
+                            (click)="addManual()">
+                        Agregar
+                    </button>
+                </div>
+
+                <p class="op-manual__hint" *ngIf="manualIsDuplicate">
+                    "{{ manualName }}" ya está en la lista.
+                </p>
+            </section>
+        </div>
+
+        <div class="op-dialog__actions">
+            <button type="button" class="op-btn op-btn--cancel"
+                    [disabled]="saving" (click)="onCancel()">Cancelar</button>
+            <button type="button" class="op-btn op-btn--ok"
+                    [disabled]="saving || missingRequired" (click)="onConfirm()">
+                <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+                Guardar
+            </button>
+        </div>
+    </div>
+</div>

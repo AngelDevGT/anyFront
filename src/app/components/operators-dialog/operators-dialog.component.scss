@@ -1,0 +1,282 @@
+// Overlay del modal de operadores. Sigue el lenguaje visual de la confirmacion del tablero
+// (.board-confirm) para que las dos ventanas del tablero se vean como la misma familia.
+
+.op-dialog {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1060;
+    padding: 16px;
+}
+
+.op-dialog__box {
+    background: #fff;
+    border-radius: 12px;
+    max-width: 560px;
+    width: 100%;
+    // El catalogo puede ser largo; la caja no crece mas que la ventana y el cuerpo scrollea.
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.op-dialog__head {
+    padding: 20px 22px 12px;
+}
+
+.op-dialog__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #172b4d;
+}
+
+.op-dialog__subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #6b778c;
+}
+
+.op-dialog__body {
+    padding: 0 22px;
+    overflow-y: auto;
+}
+
+// ── Capsulas ─────────────────────────────────────────────────────────────────
+
+.op-chips {
+    margin: 0 22px 14px;
+    padding: 10px;
+    min-height: 52px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-content: flex-start;
+    background: #f7f8f9;
+    border: 1px dashed #dfe1e6;
+    border-radius: 8px;
+}
+
+.op-chips--empty {
+    align-items: center;
+}
+
+.op-chips__placeholder {
+    margin: 0;
+    font-size: 13px;
+    color: #97a0af;
+}
+
+// Con `required` la lista vacia no es un estado neutro: es lo que impide guardar.
+.op-chips__placeholder--required {
+    color: #c0392b;
+    font-weight: 600;
+}
+
+// Del catalogo: el ambar de credito, el mismo que despues pinta las capsulas en la tarjeta y en
+// el detalle del pedido (OPERATOR_CHIP_COLOR en @app/helpers).
+.op-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px 4px 10px;
+    border-radius: 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid rgba(133, 100, 4, 0.18);
+}
+
+// Escrito a mano: se distingue SOLO acá dentro, mientras se arma la lista. Una vez guardado, el
+// origen no se conserva (operators es texto suelto) y todo sale del mismo color.
+.op-chip--manual {
+    background: #e2d9f3;
+    color: #432874;
+    border-color: rgba(67, 40, 116, 0.18);
+}
+
+.op-chip__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+
+    i {
+        font-size: 15px;
+    }
+
+    &:hover:not(:disabled) { opacity: 1; }
+    &:disabled { cursor: default; opacity: 0.3; }
+}
+
+// ── Secciones ────────────────────────────────────────────────────────────────
+
+.op-section {
+    margin-bottom: 18px;
+}
+
+.op-section__title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #6b778c;
+}
+
+.op-section__empty {
+    margin: 0;
+    font-size: 13px;
+    color: #97a0af;
+}
+
+.op-search {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.op-search__icon {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 17px;
+    color: #97a0af;
+}
+
+.op-search__input {
+    width: 100%;
+    padding: 7px 10px 7px 30px;
+    border: 1px solid #dfe1e6;
+    border-radius: 8px;
+    font-size: 13px;
+
+    &:focus { outline: none; border-color: #c94e00; }
+}
+
+.op-catalog {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.op-catalog__loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #6b778c;
+}
+
+.op-catalog__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border: 1px solid #dfe1e6;
+    border-radius: 14px;
+    background: #fff;
+    font-size: 13px;
+    color: #42526e;
+    cursor: pointer;
+
+    i { font-size: 15px; color: #97a0af; }
+
+    &:hover:not(:disabled) {
+        border-color: #c94e00;
+        color: #c94e00;
+        i { color: #c94e00; }
+    }
+}
+
+// Ya agregado: se deja visible en vez de sacarlo de la lista, para que no salte el layout.
+.op-catalog__item--selected {
+    background: #f4f5f7;
+    color: #97a0af;
+    cursor: default;
+
+    i { color: #36b37e; }
+}
+
+.op-manual {
+    display: flex;
+    gap: 8px;
+}
+
+.op-manual__input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid #dfe1e6;
+    border-radius: 8px;
+    font-size: 13px;
+
+    &:focus { outline: none; border-color: #c94e00; }
+}
+
+.op-manual__btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1.5px solid #c94e00;
+    background: #fff;
+    color: #c94e00;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) { background: #c94e00; color: #fff; }
+    &:disabled { opacity: 0.4; cursor: default; }
+}
+
+.op-manual__hint {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: #c0392b;
+}
+
+// ── Acciones ─────────────────────────────────────────────────────────────────
+
+.op-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 22px 20px;
+    border-top: 1px solid #f0f1f3;
+}
+
+.op-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+
+    &:disabled { opacity: 0.6; cursor: default; }
+
+    &--cancel {
+        background: #fff;
+        color: #555;
+        border-color: #ddd;
+        &:hover:not(:disabled) { border-color: #c94e00; color: #c94e00; }
+    }
+
+    &--ok {
+        background: #c94e00;
+        color: #fff;
+        &:hover:not(:disabled) { background: #a94100; }
+    }
+}

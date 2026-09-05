@@ -3,6 +3,7 @@ import { first } from 'rxjs/operators';
 
 import { AlertService, DataService } from '@app/services';
 import { customerStatusValues } from '@app/services/data/data.service';
+import { DEFAULT_SALE_TYPE_COLOR, OPERATOR_CHIP_COLOR } from '@app/helpers';
 import { Customer } from '@app/models/system/customer.model';
 
 @Component({
@@ -67,6 +68,17 @@ export class ListCustomerComponent implements OnInit {
                 { type: 'text', value: customer.name, header_name: 'Nombre' },
                 { type: 'text', value: customer.phone || '--', header_name: 'Telefono' },
                 { type: 'text', value: customer.nit || 'C/F', header_name: 'NIT' },
+                // Capsula en los dos casos, como la columna Estado. Un cliente sin
+                // el atributo tiene is_operator = false, pero los anteriores a la
+                // columna pueden venir en null: los dos son "No".
+                {
+                    type: 'badge',
+                    value: customer.isOperator ? 'Si' : 'No',
+                    identifier: customer.isOperator ? 'operador' : 'no-operador',
+                    bg_color: customer.isOperator ? OPERATOR_CHIP_COLOR.bg_color : DEFAULT_SALE_TYPE_COLOR.bg_color,
+                    color: customer.isOperator ? OPERATOR_CHIP_COLOR.color : DEFAULT_SALE_TYPE_COLOR.color,
+                    header_name: 'Operador'
+                },
                 {
                     type: 'badge',
                     value: customer.status?.identifier,

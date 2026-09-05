@@ -48,6 +48,16 @@
             <!-- Plain text -->
             <span *ngIf="cell.type === 'text'" class="dt-cell-text">{{ cell.value }}</span>
 
+            <!-- Link: navega igual que un boton de accion, pero se lee como enlace.
+                 Es un <button> y no un <a> para no inventar un href: la ruta la
+                 arma navigate() a partir de la URL actual. -->
+            <button *ngIf="cell.type === 'link'"
+                    type="button"
+                    class="dt-cell-link"
+                    (click)="$event.stopPropagation(); navigate(cell.routerLink, cell.query_params, cell.is_absolute)">
+              {{ cell.value }}
+            </button>
+
             <!-- Badge -->
             <span *ngIf="cell.type === 'badge'"
                   class="dt-badge"
@@ -71,13 +81,17 @@
               </button>
             </div>
 
-            <!-- Action buttons -->
+            <!-- Action buttons.
+                 Un boton con 'action' no navega: emite (modalAction) con ese nombre y la
+                 propiedad 'data' de la celda, para que la pagina abra su propio overlay.
+                 Asi conviven en la misma columna de Acciones los botones que navegan y los
+                 que no, sin pasar por el data-bs-toggle de Bootstrap. -->
             <div *ngIf="cell.type === 'button'" class="dt-actions">
               <button *ngFor="let btn of cell.button"
                       type="button"
                       class="dt-action-btn"
                       [ngClass]="[btn.colorClass, btn.title ? 'dt-action-btn--labeled' : '']"
-                      (click)="$event.stopPropagation(); navigate(btn.routerLink, btn.query_params, btn.is_absolute)">
+                      (click)="$event.stopPropagation(); btn.action ? emitModalAction(btn.action, cell.data) : navigate(btn.routerLink, btn.query_params, btn.is_absolute)">
                 <i class="material-icons">{{ btn.icon.icon }}</i>
                 <span *ngIf="btn.title" class="dt-btn-label">{{ btn.title }}</span>
               </button>

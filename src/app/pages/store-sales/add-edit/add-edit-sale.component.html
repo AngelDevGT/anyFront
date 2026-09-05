@@ -110,7 +110,9 @@
                             <span class="pos-product-name">{{ inventoryElement.productForSale?.finishedProduct?.name }}</span>
                             <span class="pos-product-price">{{ dataPrice(inventoryElement.productForSale?.price) }}</span>
                         </div>
-                        <span class="pos-stock">{{ inventoryElement.quantity | number: '1.0-2' }} {{ inventoryElement.measure?.identifier }}</span>
+                        <span class="pos-stock" [class.pos-stock--empty]="isOutOfStock(inventoryElement)">
+                            {{ inventoryElement.quantity | number: '1.0-2' }} {{ inventoryElement.measure?.identifier }}
+                        </span>
                     </button>
                     <p *ngIf="!filteredInventoryElements?.length" class="pos-empty">Sin productos disponibles</p>
                 </div>
@@ -331,30 +333,49 @@
                             </select>
                         </div>
 
-                        <!-- Depósito del pedido: con comentario se registra el pago; sin él, no -->
+                        <!-- Pago bancario del pedido (Depósito o Cheque): banco y referencia
+                             obligatorios, comentario opcional -->
                         <div class="pos-deposit-box" *ngIf="isDepositOrder">
                             <div class="pos-deposit-head">
-                                <i class="material-icons">receipt_long</i>
-                                <span>Datos del depósito</span>
+                                <i class="material-icons">account_balance</i>
+                                <span>Datos del pago</span>
                             </div>
-                            <div class="pos-pay-field">
-                                <textarea class="form-control" rows="2" formControlName="depositComment"
-                                    [maxlength]="commentMaxLength"
-                                    placeholder="No. de boleta, banco, referencia..."></textarea>
-                                <span class="pos-deposit-counter">
-                                    {{ f['depositComment'].value?.length || 0 }}/{{ commentMaxLength }}
-                                </span>
-                            </div>
-                            <div class="pos-pay-field" *ngIf="showDepositDate">
-                                <label>Fecha y hora del depósito</label>
-                                <input type="datetime-local" class="form-control form-control-lg"
-                                    formControlName="depositDate" />
-                            </div>
-                            <p class="pos-deposit-hint">
-                                {{ showDepositDate
-                                    ? 'Se registrará el pago del pedido con este comentario y esta fecha.'
-                                    : 'Deja el comentario en blanco si no necesitas registrar el detalle del depósito.' }}
+
+                            <p class="pos-deposit-warning" *ngIf="hasNoBanks">
+                                Esta tienda no tiene bancos cargados. Agrégalos desde
+                                Sistema &gt; Tiendas &gt; Bancos para poder registrar este pago.
                             </p>
+
+                            <ng-container *ngIf="!hasNoBanks">
+                                <div class="pos-pay-field">
+                                    <label>Banco <span class="pos-required">*</span></label>
+                                    <select class="form-select form-select-lg" formControlName="depositBank">
+                                        <option value="">Selecciona el banco</option>
+                                        <option *ngFor="let bank of bankOptionsList" [value]="bank">{{ bank }}</option>
+                                    </select>
+                                </div>
+                                <div class="pos-pay-field">
+                                    <label>No. de referencia <span class="pos-required">*</span></label>
+                                    <input type="text" class="form-control form-control-lg"
+                                        formControlName="depositReferenceNo"
+                                        [maxlength]="referenceMaxLength"
+                                        placeholder="No. de transferencia o de cheque" />
+                                </div>
+                                <div class="pos-pay-field">
+                                    <label>Fecha y hora del pago</label>
+                                    <input type="datetime-local" class="form-control form-control-lg"
+                                        formControlName="depositDate" />
+                                </div>
+                                <div class="pos-pay-field">
+                                    <label>Comentario (opcional)</label>
+                                    <textarea class="form-control" rows="2" formControlName="depositComment"
+                                        [maxlength]="commentMaxLength"
+                                        placeholder="Nota adicional del pago"></textarea>
+                                    <span class="pos-deposit-counter">
+                                        {{ f['depositComment'].value?.length || 0 }}/{{ commentMaxLength }}
+                                    </span>
+                                </div>
+                            </ng-container>
                         </div>
 
                         <div class="pos-pay-field" *ngIf="showDelivery && delivery > 0">
@@ -365,31 +386,56 @@
                             </select>
                         </div>
 
-                        <!-- Depósito del envío: mismo criterio que el del pedido -->
+                        <!-- Pago bancario del envío: mismo criterio que el del pedido -->
                         <div class="pos-deposit-box" *ngIf="isDepositDelivery">
                             <div class="pos-deposit-head">
-                                <i class="material-icons">receipt_long</i>
-                                <span>Datos del depósito (envío)</span>
+                                <i class="material-icons">account_balance</i>
+                                <span>Datos del pago (envío)</span>
                             </div>
-                            <div class="pos-pay-field">
-                                <label>Comentario (opcional)</label>
-                                <textarea class="form-control" rows="2" formControlName="deliveryDepositComment"
-                                    [maxlength]="commentMaxLength"
-                                    placeholder="No. de boleta, banco, referencia..."></textarea>
-                                <span class="pos-deposit-counter">
-                                    {{ f['deliveryDepositComment'].value?.length || 0 }}/{{ commentMaxLength }}
-                                </span>
-                            </div>
-                            <div class="pos-pay-field" *ngIf="showDeliveryDepositDate">
-                                <label>Fecha y hora del depósito</label>
-                                <input type="datetime-local" class="form-control form-control-lg"
-                                    formControlName="deliveryDepositDate" />
-                            </div>
-                            <p class="pos-deposit-hint">
-                                {{ showDeliveryDepositDate
-                                    ? 'Se registrará el pago del envío con este comentario y esta fecha.'
-                                    : 'Deja el comentario en blanco si no necesitas registrar el detalle del depósito.' }}
+
+                            <p class="pos-deposit-warning" *ngIf="hasNoBanks">
+                                Esta tienda no tiene bancos cargados. Agrégalos desde
+                                Sistema &gt; Tiendas &gt; Bancos para poder registrar este pago.
                             </p>
+
+                            <ng-container *ngIf="!hasNoBanks">
+                                <div class="pos-pay-field">
+                                    <label>Banco <span class="pos-required">*</span></label>
+                                    <select class="form-select form-select-lg" formControlName="deliveryDepositBank">
+                                        <option value="">Selecciona el banco</option>
+                                        <option *ngFor="let bank of bankOptionsList" [value]="bank">{{ bank }}</option>
+                                    </select>
+                                </div>
+                                <div class="pos-pay-field">
+                                    <label>No. de referencia <span class="pos-required">*</span></label>
+                                    <input type="text" class="form-control form-control-lg"
+                                        formControlName="deliveryDepositReferenceNo"
+                                        [maxlength]="referenceMaxLength"
+                                        placeholder="No. de transferencia o de cheque" />
+                                </div>
+                                <div class="pos-pay-field">
+                                    <label>Fecha y hora del pago</label>
+                                    <input type="datetime-local" class="form-control form-control-lg"
+                                        formControlName="deliveryDepositDate" />
+                                </div>
+                                <div class="pos-pay-field">
+                                    <label>Comentario (opcional)</label>
+                                    <textarea class="form-control" rows="2" formControlName="deliveryDepositComment"
+                                        [maxlength]="commentMaxLength"
+                                        placeholder="Nota adicional del pago"></textarea>
+                                    <span class="pos-deposit-counter">
+                                        {{ f['deliveryDepositComment'].value?.length || 0 }}/{{ commentMaxLength }}
+                                    </span>
+                                </div>
+
+                                <!-- Solo cuando el pedido ya tiene banco y referencia cargados -->
+                                <button type="button" class="pos-copy-btn"
+                                    *ngIf="canCopyOrderPaymentDetail"
+                                    (click)="copyOrderPaymentDetailToDelivery()">
+                                    <i class="material-icons">content_copy</i>
+                                    Copiar datos de pago
+                                </button>
+                            </ng-container>
                         </div>
 
                         <!-- Cliente obligatorio para ventas al crédito -->
@@ -438,7 +484,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="pos-cobrar-btn modal-cobrar"
-                            [disabled]="submitting || orderForm.invalid" (click)="onCobrar()">
+                            [disabled]="submitting || orderForm.invalid || missingPaymentDetail" (click)="onCobrar()">
                             <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                             Cobrar {{ dataPrice(grandTotal) }}
                         </button>

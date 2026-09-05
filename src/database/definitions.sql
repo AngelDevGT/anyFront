@@ -103,7 +103,7 @@ CREATE TABLE "user" ( id uuid DEFAULT gen_random_uuid() NOT NULL, username varch
 
 -- DROP TABLE establishment;
 
-CREATE TABLE establishment ( id uuid DEFAULT gen_random_uuid() NOT NULL, "name" varchar(50) NOT NULL, address varchar(50) NOT NULL, description text NULL, status_id int4 NOT NULL, creator_user_id uuid NOT NULL, creation_date timestamp DEFAULT timezone('UTC'::text, CURRENT_TIMESTAMP) NOT NULL, updated_date timestamp NULL, receive_pending_orders_enabled bool DEFAULT false NOT NULL, establishment_type_id int4 DEFAULT 1 NOT NULL, CONSTRAINT establishment_pkey PRIMARY KEY (id), CONSTRAINT establishment_establishment_type_fk FOREIGN KEY (establishment_type_id) REFERENCES establishment_type(id), CONSTRAINT finished_product_fk_creator_user_id FOREIGN KEY (creator_user_id) REFERENCES "user"(id), CONSTRAINT finished_product_fk_status_id FOREIGN KEY (status_id) REFERENCES status(id));
+CREATE TABLE establishment ( id uuid DEFAULT gen_random_uuid() NOT NULL, "name" varchar(50) NOT NULL, address varchar(50) NOT NULL, description text NULL, status_id int4 NOT NULL, creator_user_id uuid NOT NULL, creation_date timestamp DEFAULT timezone('UTC'::text, CURRENT_TIMESTAMP) NOT NULL, updated_date timestamp NULL, receive_pending_orders_enabled bool DEFAULT false NOT NULL, establishment_type_id int4 DEFAULT 1 NOT NULL, banks text NULL, CONSTRAINT establishment_pkey PRIMARY KEY (id), CONSTRAINT establishment_establishment_type_fk FOREIGN KEY (establishment_type_id) REFERENCES establishment_type(id), CONSTRAINT finished_product_fk_creator_user_id FOREIGN KEY (creator_user_id) REFERENCES "user"(id), CONSTRAINT finished_product_fk_status_id FOREIGN KEY (status_id) REFERENCES status(id));
 
 
 -- public.finished_product definition
@@ -474,3 +474,209 @@ ALTER TABLE shop_sale_payment
 ALTER TABLE shop_sale_payment
     ADD CONSTRAINT shop_sale_payment_fk_creator_user_id
     FOREIGN KEY (creator_user_id) REFERENCES "user"(id);
+
+
+-- =============================================
+-- shop_sale_payment.bank / .reference_no — de qué banco salió el pago y con
+-- qué número de transferencia o de cheque
+-- Ver src/database/migrations/2026-09-01-banco-y-referencia-en-pagos.sql
+-- =============================================
+
+-- Aplican a los pagos con Depósito y con Cheque, tanto el que se registra al
+-- vender como el abono de una venta al crédito. Antes ese dato vivía suelto
+-- dentro del comentario, que es texto libre y opcional, así que no se podía
+-- cuadrar contra el estado de cuenta del banco. El comentario queda para la
+-- nota libre y pasa a ser explícitamente opcional.
+--
+-- El banco se guarda como NOMBRE y no como FK: sale del listado
+-- establishment.banks de la tienda, y el pago es un registro histórico que tiene
+-- que conservar el banco que se eligió aunque la tienda edite su listado después.
+--
+-- Nullables y sin DEFAULT: los pagos en efectivo nunca los van a tener y los
+-- anteriores a 2026-09-01 no se rellenan hacia atrás.
+--
+-- Las escriben add_shop_sale_payment_v5 (abono) y
+-- register_shop_sale_with_elements_v6 (pago hecho al vender). La v6 además
+-- cambia una regla de la v5: la fila del pago bancario ya no depende de que haya
+-- comentario, y ahora también se registra para Cheque, que antes no generaba
+-- ninguna.
+ALTER TABLE shop_sale_payment
+    ADD COLUMN IF NOT EXISTS bank varchar(50) NULL,
+    ADD COLUMN IF NOT EXISTS reference_no varchar(50) NULL;
+
+
+-- ============================================================
+-- MIGRATION: número de pedido visible (correlativo POR TIENDA)
+-- Ver src/database/migrations/2026-08-18-add-pfs-store-order-number.sql
+--
+-- Mismo mecanismo que shop_sale.sale_number: cada establecimiento lleva su
+-- propia numeración 1, 2, 3... asignada por un trigger BEFORE INSERT atómico.
+-- Numera también los pedidos existentes en orden cronológico por tienda.
+--
+-- create_product_for_sale_order_with_elements NO cambia: el trigger asigna el
+-- número venga el INSERT de donde venga.
+-- ============================================================
+ALTER TABLE product_for_sale_store_order ADD COLUMN IF NOT EXISTS order_number bigint;
+
+-- Contador atómico por establecimiento
+CREATE TABLE IF NOT EXISTS product_for_sale_store_order_counter (
+    establishment_id uuid PRIMARY KEY REFERENCES establishment(id),
+    last_number bigint NOT NULL DEFAULT 0
+);
+
+-- Backfill cronológico por tienda (solo los pedidos que aún no tienen número)
+WITH base AS (
+    SELECT establishment_id, COALESCE(max(order_number), 0) AS mx
+    FROM product_for_sale_store_order
+    GROUP BY establishment_id
+),
+ordered AS (
+    SELECT id, establishment_id,
+           row_number() OVER (PARTITION BY establishment_id ORDER BY creation_date, id) AS rn
+    FROM product_for_sale_store_order
+    WHERE order_number IS NULL
+)
+UPDATE product_for_sale_store_order pfsso
+SET order_number = o.rn + b.mx
+FROM ordered o
+JOIN base b ON b.establishment_id = o.establishment_id
+WHERE pfsso.id = o.id;
+
+-- Inicializar los contadores con el máximo actual por tienda
+INSERT INTO product_for_sale_store_order_counter (establishment_id, last_number)
+SELECT establishment_id, max(order_number)
+FROM product_for_sale_store_order
+WHERE order_number IS NOT NULL
+GROUP BY establishment_id
+ON CONFLICT (establishment_id)
+DO UPDATE SET last_number = GREATEST(product_for_sale_store_order_counter.last_number, EXCLUDED.last_number);
+
+ALTER TABLE product_for_sale_store_order ALTER COLUMN order_number SET NOT NULL;
+
+-- Trigger: asigna el siguiente número de la tienda en cada inserción.
+-- Un pedido sin tienda sale sin tocar el contador: los triggers BEFORE corren
+-- antes de que se validen los NOT NULL, y sin este guard el error señalaría al
+-- contador en vez de a product_for_sale_store_order.establishment_id.
+CREATE OR REPLACE FUNCTION pfs_store_order_assign_number() RETURNS trigger AS $$
+BEGIN
+    IF NEW.establishment_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    IF NEW.order_number IS NULL THEN
+        INSERT INTO product_for_sale_store_order_counter (establishment_id, last_number)
+        VALUES (NEW.establishment_id, 1)
+        ON CONFLICT (establishment_id)
+        DO UPDATE SET last_number = product_for_sale_store_order_counter.last_number + 1
+        RETURNING last_number INTO NEW.order_number;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_pfs_store_order_assign_number ON product_for_sale_store_order;
+CREATE TRIGGER trg_pfs_store_order_assign_number
+    BEFORE INSERT ON product_for_sale_store_order
+    FOR EACH ROW
+    EXECUTE FUNCTION pfs_store_order_assign_number();
+
+-- Red de seguridad ante un INSERT manual con número explícito
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pfsso_establishment_order_number
+    ON product_for_sale_store_order (establishment_id, order_number);
+
+-- =============================================
+-- product_for_sale_store_order: fechas de En camino y Recibido
+-- Ver src/database/migrations/2026-08-19-detalle-pedido-fechas-y-encargado.sql
+-- =============================================
+
+-- Completan el ciclo de vida del pedido, que hasta ahora solo registraba
+-- creation_date, start_date y ready_date.
+--
+-- in_transit_date puede quedarse NULL para siempre y es correcto: un pedido
+-- puede ir de Listo(13) directo a Entregado(16) sin pasar por En camino. El
+-- diagrama de estados de la vista OMITE ese paso cuando la columna esta vacia,
+-- en vez de mostrarlo sin fecha.
+--
+-- Ninguna se rellena hacia atras: NULL significa "nunca se registro". Para los
+-- pedidos historicos el front cae a updated_date, y solo en el ultimo paso
+-- alcanzado del diagrama, que es el unico donde esa fecha es de verdad el
+-- momento de la transicion.
+ALTER TABLE product_for_sale_store_order
+    ADD COLUMN IF NOT EXISTS in_transit_date timestamp NULL,
+    ADD COLUMN IF NOT EXISTS received_date   timestamp NULL;
+
+
+-- =============================================
+-- OPERADORES DE PEDIDO
+-- =============================================
+-- Quienes prepararon el pedido en bodega, como texto separado por pipes:
+-- 'Juan Perez|Maria Lopez|Carlos'. Mezcla clientes marcados con el atributo
+-- Operador y nombres escritos a mano, sin distinguir el origen.
+--
+-- Es texto y no una tabla de relacion a proposito: evita resolver los nombres en
+-- cada lectura de pedido (tablero, listado, detalle y PDF), y hace que un pedido
+-- conserve el nombre que el cliente tenia cuando se preparo, que es lo correcto
+-- para un registro historico.
+--
+-- NULL = pedido sin operadores registrados: los anteriores a esta columna y los
+-- que se marcan como Listo desde la vista de detalle, que no los pide. Solo el
+-- tablero los solicita, al pasar el pedido a En curso.
+-- Ver src/database/migrations/2026-08-26-operadores-pedidos.sql
+ALTER TABLE product_for_sale_store_order
+    ADD COLUMN IF NOT EXISTS operators text NULL;
+
+-- Atributo Operador del cliente: lo hace aparecer en el catalogo del modal.
+-- El indice es parcial porque la unica consulta que lo usa pide is_operator = true.
+ALTER TABLE customer
+    ADD COLUMN IF NOT EXISTS is_operator boolean NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_customer_is_operator
+    ON customer (is_operator) WHERE is_operator;
+
+
+-- =============================================
+-- ESTADO "PREPARADO"
+-- =============================================
+-- Paso OPCIONAL del tablero de bodega entre En curso(12) y Listo(13). No mueve
+-- inventario y no cambia el estado que ve la tienda. El status se inserta con id
+-- EXPLICITO (64) porque el front lo referencia como
+-- pfsFactoryOrderStatusValues.preparado y necesita un numero estable.
+--
+-- prepared_date queda NULL para siempre en los pedidos que van de En curso
+-- directo a Listo, que es el camino corto y valido: el diagrama de la vista de
+-- detalle omite el paso cuando la columna esta vacia, igual que con
+-- in_transit_date.
+-- Ver src/database/migrations/2026-08-26-estado-preparado.sql
+ALTER TABLE product_for_sale_store_order
+    ADD COLUMN IF NOT EXISTS prepared_date timestamp NULL;
+
+
+-- =============================================
+-- VERIFICACION DEL PEDIDO
+-- =============================================
+-- NO es un estado del pedido: es una marca de control paralela a la secuencia
+-- Pendiente(11) / En curso(12) / Preparado(64) / Listo(13). Un pedido puede estar
+-- Preparado y verificado, Preparado y sin verificar, o Listo y verificado; lo que
+-- no puede es llegar a Listo sin verificar.
+--
+-- Se escribe por dos caminos, los dos con las dos columnas a la vez:
+--   a) obligatorio, al pasar a Listo (procedure manage_product_for_sale_order_state_v5);
+--   b) opcional, desde Preparado, con /verifyProductForSaleStoreOrderPrepared.
+--
+-- verified_by_user_id guarda la FK y no el nombre —al reves que operators—
+-- porque aca si es un usuario del sistema, con id estable. Es quien FIRMA la
+-- revision, elegido de una lista; no necesariamente quien ejecuta la accion, ya
+-- que el tablero corre en una maquina compartida de bodega.
+--
+-- Una vez escrito no se reemplaza: es un registro historico. NULL = pedido sin
+-- verificar, incluidos todos los anteriores a esta columna, que no se rellenan.
+-- Ver src/database/migrations/2026-08-29-verificacion-pedidos-bodega.sql
+ALTER TABLE product_for_sale_store_order
+    ADD COLUMN IF NOT EXISTS verified_by_user_id uuid NULL,
+    ADD COLUMN IF NOT EXISTS verified_date timestamp NULL;
+
+-- La FK se agrega en la migracion dentro de un DO, porque ADD CONSTRAINT no
+-- tiene IF NOT EXISTS:
+--   ALTER TABLE product_for_sale_store_order
+--       ADD CONSTRAINT pfsso_fk_verified_by_user_id
+--       FOREIGN KEY (verified_by_user_id) REFERENCES "user"(id);

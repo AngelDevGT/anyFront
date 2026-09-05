@@ -1,0 +1,583 @@
+// =============================================================================
+// Tarjetas de pedido de bodega — estilos compartidos
+//
+// Los usan las dos pantallas que pintan pedidos de producto terminado en
+// tarjetas: el tablero (/finishedProduct/order/board) y la vista de pedidos
+// preparados (/finishedProduct/order/prepared). Vive acá y no en el SCSS de una
+// de ellas porque los estilos de componente son scoped: sin un partial, la
+// segunda pantalla tendría que copiar el archivo entero y las dos se irían
+// separando con cada retoque.
+//
+// Se importa con `@import '/src/scss/order-product-card';` desde el SCSS de cada
+// componente, igual que hace admin-layout con /src/scss/colors.
+//
+// QUÉ VIVE ACÁ: la barra de herramientas (buscador), las cápsulas y marcas
+// comunes a las dos tarjetas (número, tienda, encargado, operadores, verificado)
+// y la tarjeta de productos completa.
+//
+// QUÉ NO: todo lo propio del tablero —columnas, arrastre, tarjeta de columna,
+// filtro de fechas, diálogos de confirmación—, que se queda en su componente.
+// =============================================================================
+
+
+// ── Buscador ─────────────────────────────────────────────────────────────────
+
+.board-search {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: #fff;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    padding: 0 8px 0 10px;
+    height: 36px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus-within {
+        border-color: #c94e00;
+        box-shadow: 0 2px 8px rgba(201, 78, 0, 0.12);
+    }
+}
+
+.board-search__icon {
+    font-size: 18px;
+    color: #c94e00;
+    flex-shrink: 0;
+}
+
+.board-search__input {
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0 6px;
+    width: 230px;
+    max-width: 100%;
+    font-size: 13px;
+    color: #333;
+
+    &::placeholder { color: #aaa; font-weight: 400; }
+
+    @media (max-width: 576px) { width: 150px; }
+}
+
+.board-search__clear {
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.15s;
+
+    .material-icons { font-size: 17px; }
+    &:hover { color: #c94e00; }
+}
+
+.board-search__no-results {
+    margin: 0 4px 12px;
+    padding: 14px;
+    text-align: center;
+    font-size: 13px;
+    color: #6b778c;
+    background: #f7f8fa;
+    border-radius: 8px;
+}
+
+
+// ── Cargas ───────────────────────────────────────────────────────────────────
+
+.loading-wrap { display: flex; justify-content: center; padding: 48px; color: #aaa; }
+
+// ── Confirmación ─────────────────────────────────────────────────────────────
+//
+// La usan el tablero (marcar listo, volver a En curso, descartar marcas) y la vista de pedidos
+// preparados (verificar). Es un overlay con *ngIf y NO un modal de Bootstrap: en el tablero se
+// abre al soltar una tarjeta, no con un data-bs-toggle.
+
+.board-confirm {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1060;
+    padding: 16px;
+}
+
+.board-confirm__box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 22px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.board-confirm__title {
+    margin: 0 0 12px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #172b4d;
+}
+
+.board-confirm__text {
+    font-size: 14px;
+    color: #42526e;
+    margin-bottom: 8px;
+}
+
+// La firma del pedido. Va en la confirmación para que quede claro que la verificación no se
+// salteó: o se cumplió antes, o la deja esta misma acción.
+.board-confirm__verified {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: #e6f4ea;
+    font-size: 13px;
+    color: #1e7e34;
+
+    .material-icons { font-size: 16px; }
+}
+
+.board-confirm__warning {
+    font-size: 13px;
+    font-weight: 600;
+    color: #c0392b;
+    margin-bottom: 18px;
+}
+
+.board-confirm__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.board-confirm__btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+
+    &--cancel {
+        background: #fff;
+        color: #555;
+        border-color: #ddd;
+        &:hover { border-color: #c94e00; color: #c94e00; }
+    }
+
+    &--ok {
+        background: #c94e00;
+        color: #fff;
+        &:hover { background: #a83e00; }
+    }
+
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+
+.board-loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1070;
+}
+
+.board-loading-overlay__content {
+    text-align: center;
+}
+
+
+// ── Entrada de las tarjetas ──────────────────────────────────────────────────
+
+// OJO: la animación usa la propiedad `translate`, NO `transform`. Las
+// animaciones CSS ganan sobre los estilos inline, y el CDK posiciona lo que se
+// arrastra con `transform: translate3d(...)` inline. Animar `transform` acá lo
+// pisa y deja la tarjeta clavada en la esquina superior izquierda.
+@keyframes board-card-in {
+    from { opacity: 0; translate: 0 6px; }
+    to   { opacity: 1; translate: 0 0; }
+}
+
+
+// ── Marcas y cápsulas del pedido ─────────────────────────────────────────────
+//
+// Las comparten la tarjeta del tablero y la de productos: son los datos del
+// pedido en sí (quién, para qué tienda, con qué número), no del contenedor.
+
+// Correlativo del pedido dentro de su tienda. Va antes del nombre y atenuado:
+// sirve para cantar el pedido por teléfono sin robarle peso visual al nombre.
+.board-card__number {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #ebecf0;
+    color: #5e6c84;
+    font-size: 11px;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+// Verde, el único de la tarjeta: es lo que dice de un vistazo, en una lista
+// llena, cuáles pedidos ya pasaron el control.
+.board-card__verified {
+    flex-shrink: 0;
+    font-size: 18px;
+    color: #1e7e34;
+    cursor: default;
+}
+
+.board-card__times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 3px;
+}
+
+.board-card__time {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    color: #6b778c;
+
+    .material-icons { font-size: 13px; }
+}
+
+.board-card__owner {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 8px;
+}
+
+.board-card__avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.board-card__owner-name {
+    font-size: 12px;
+    color: #42526e;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// Operadores del pedido. El color lo pone el componente desde OPERATOR_CHIP_COLOR: todos iguales,
+// porque una vez guardados no se distingue el operador del catálogo del escrito a mano.
+.board-card__operators {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.board-card__operator {
+    max-width: 100%;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// Cápsula al ancho de su contenido, no de la tarjeta.
+.board-card__store {
+    display: inline-block;
+    max-width: 100%;
+    padding: 4px 10px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+
+// ── Tarjeta de productos ─────────────────────────────────────────────────────
+
+// Con 2/5 de una pantalla ancha entran dos tarjetas por fila; al angostarse
+// caen a una sola sin que haya que declarar cada corte.
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.product-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(9, 30, 66, 0.12);
+    padding: 14px;
+    animation: board-card-in 0.22s ease-out both;
+}
+
+.product-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+// El nombre del pedido se lee de lejos: en bodega la pantalla no siempre está
+// al alcance de la mano.
+.product-card__title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #172b4d;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.product-card__head-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+// Avance del alistado. Discreto mientras falten productos y verde cuando el
+// pedido está completo: es la única lectura que interesa de lejos.
+.product-card__progress {
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: #f4f5f7;
+    color: #6b778c;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+
+    &--done {
+        background: #e3fcef;
+        color: #1a7f47;
+    }
+}
+
+.product-card__close {
+    flex-shrink: 0;
+    display: inline-flex;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #97a0af;
+    cursor: pointer;
+
+    .material-icons { font-size: 18px; }
+    &:hover { color: #c0392b; }
+}
+
+// La tienda a la izquierda y el acceso al detalle pegado al margen derecho.
+.product-card__store-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.product-card__store {
+    // El margen lo pone la fila.
+    font-size: 11px;
+}
+
+.product-card__loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0 4px;
+    font-size: 13px;
+    color: #6b778c;
+}
+
+.product-card__note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-left: 3px solid #f5a623;
+    border-radius: 4px;
+    background: #fff8e6;
+    color: #172b4d;
+    font-size: 13px;
+    line-height: 1.45;
+    white-space: pre-wrap;   // las notas suelen venir con saltos de línea
+    word-break: break-word;
+
+    i { flex-shrink: 0; font-size: 16px; color: #b8860b; }
+}
+
+// Sin encabezados: son dos columnas evidentes, y dos filas de títulos por
+// tarjeta costarían el espacio de un par de productos en cada una.
+.product-card__table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: collapse;
+
+    td {
+        padding: 7px 0;
+        // #c1c7d0, un escalón más fuerte que el borde estándar de la app: la
+        // lista se lee de pie y de lejos mientras se alista el pedido, y ahí las
+        // divisorias tienen que separar de verdad, no insinuarse.
+        border-bottom: 1px solid #c1c7d0;
+        vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+}
+
+.product-card__product {
+    font-size: 15px;
+    font-weight: 600;
+    color: #172b4d;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.product-card__qty {
+    text-align: right;
+    white-space: nowrap;
+    padding-left: 10px !important;
+    font-size: 16px;
+    font-weight: 700;
+    color: #c94e00;
+
+    span {
+        font-size: 12px;
+        font-weight: 600;
+        // El color de texto de la app, no el gris de dato secundario: la unidad
+        // cambia el significado del número (2 docenas no es 2 libras) y no es un
+        // detalle al que se pueda restar peso.
+        color: #172b4d;
+    }
+}
+
+// Toda la fila es el blanco del click: en bodega se toca con la mano ocupada y
+// la casilla sola es un objetivo de 20px. El hover va en las celdas y no en el
+// <tr> porque con border-collapse el fondo de la fila no siempre se pinta.
+.product-card__row--clickable {
+    cursor: pointer;
+
+    &:hover td {
+        background: #f7f8f9;
+    }
+}
+
+// Alistado: se atenúa y se tacha. Lo que queda por hacer tiene que saltar a la
+// vista, no lo que ya está hecho.
+.product-card__row--checked {
+    .product-card__check i { color: #17ad99; }
+
+    .product-card__product {
+        color: #8993a4;
+        text-decoration: line-through;
+    }
+
+    .product-card__qty {
+        color: #8993a4;
+
+        span { color: #a5adba; }
+    }
+}
+
+.product-card__check {
+    width: 26px;
+    padding-right: 6px !important;
+
+    i {
+        display: block;
+        font-size: 20px;
+        // Un paso por delante de las divisorias: al mismo valor que ellas la
+        // casilla vacía se leía como parte de la grilla y no como un control.
+        color: #8993a4;
+        user-select: none;
+    }
+}
+
+.product-card__empty {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: #8993a4;
+}
+
+// Solo existe con cambios sin guardar, así que no compite con la lista en el
+// estado normal de la tarjeta: aparece, se usa y se va.
+.product-card__save {
+    margin-top: 12px;
+    padding-top: 10px;
+    // Al mismo tono que las divisorias de la tabla: si quedara más claro se leería
+    // como una línea a medio pintar justo debajo de ellas.
+    border-top: 1px solid #c1c7d0;
+}
+
+.product-card__save-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 9px 12px;
+    border: none;
+    border-radius: 6px;
+    background: #17ad99;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    .material-icons { font-size: 18px; }
+
+    &:hover:not(:disabled) { background: #12907f; }
+
+    &:disabled {
+        opacity: 0.65;
+        cursor: default;
+    }
+}
+
+// Solo el icono, sin etiqueta: a qué pedido lleva ya lo dice la tarjeta que lo contiene, y así
+// no le roba una línea a la lista de productos, que es para lo que se abre el panel.
+.product-card__detail {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    background: none;
+    border: none;
+    color: #97a0af;
+    cursor: pointer;
+
+    .material-icons { font-size: 17px; }
+    &:hover { color: #c94e00; }
+}

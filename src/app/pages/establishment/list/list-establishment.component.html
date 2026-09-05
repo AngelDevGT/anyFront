@@ -20,10 +20,21 @@
       </div>
     </div>
 
-    <data-table *ngIf="establishments" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"></data-table>
+    <data-table *ngIf="establishments" [tableElements]="tableElementsValues" [initialPageSize]="pageSize"
+      (modalAction)="onTableAction($event)"></data-table>
     <div *ngIf="!establishments" class="loading-wrap">
       <span class="spinner-border spinner-border-lg"></span>
     </div>
   </div>
+
+  <app-banks-dialog
+    [open]="banksDialogOpen"
+    [storeName]="banksTarget?.name"
+    [initial]="initialBanks"
+    [loading]="loadingBanks"
+    [saving]="savingBanks"
+    (confirm)="onBanksConfirmed($event)"
+    (cancel)="onBanksCancelled()">
+  </app-banks-dialog>
 
 </div>

@@ -331,6 +331,22 @@ $accent-dark: #a83e00;
 }
 .timeline-date { font-size: 13px; color: #98a2b3; white-space: nowrap; }
 .timeline-sub { font-size: 13px; color: #98a2b3; margin: 2px 0 0; }
+
+// Banco y numero de referencia del pago. Va encima del comentario y con mas peso: es el dato con
+// el que se cuadra contra el estado de cuenta, el comentario es la nota suelta.
+.timeline-detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475467;
+    word-break: break-word;
+
+    .material-icons { font-size: 15px; line-height: 18px; color: #4361ee; }
+}
+
 .timeline-comment {
     display: flex;
     align-items: flex-start;
@@ -395,23 +411,178 @@ $accent-dark: #a83e00;
 .info-label { font-size: 14px; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; }
 .info-value { font-size: 14px; color: #667085; margin: 0; word-break: break-word; }
 
-// ── Payment modal helpers (kept from previous design) ─────
-.custom-input { padding: 0 10px; }
+// ── Modal Registrar Pago ──────────────────────────────────
+// Mismo lenguaje visual que el modal "Registrar Venta" del POS
+// (add-edit-sale.component.scss): inputs y selects nativos de Bootstrap con
+// label propio arriba, en lugar de mat-form-field. Cobrar un abono y cobrar una
+// venta son la misma tarea y se hacen en la misma tienda; leerlas distinto
+// obligaba a reaprender el formulario.
 
-.descuento {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
+// Separa los dos bloques cuando la venta tiene pedido Y envío al crédito.
+.pos-pay-section + .pos-pay-section {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #f2f4f7;
 }
-.subtotal-title { color: gray; font-size: medium; font-weight: bold; }
-.subtotal-amount { color: gray; font-size: medium; text-align: right; }
 
-.btn-accent-modal {
+.pos-section-title {
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #98a2b3;
+}
+
+.pos-total-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 18px;
+    background: #fff7f2;
+    border: 1px solid #ffe2d1;
+    border-radius: 12px;
+    margin-bottom: 18px;
+}
+.pos-total-label { font-size: 14px; font-weight: 600; color: #98a2b3; }
+.pos-total-amount { font-size: 34px; font-weight: 800; color: $accent; }
+
+.pos-pay-field {
+    margin-bottom: 14px;
+
+    label {
+        display: block;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #475467;
+        margin-bottom: 6px;
+    }
+}
+
+// Monto y método de pago van en la misma línea: son los dos campos cortos del
+// formulario y juntos ahorran una fila entera de alto, que es lo que hacía que
+// el modal no entrara en pantalla al cobrar pedido y envío a la vez.
+// Grid y no flex para que las dos celdas queden del mismo ancho aunque el monto
+// muestre su mensaje de error debajo.
+.pos-pay-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+
+    // En móvil se apilan; el margin-bottom de cada campo ya da la separación.
+    @media (max-width: 575.98px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pos-required { color: #e0556b; }
+
+// El error del monto va debajo del input: .invalid-feedback de Bootstrap solo se
+// muestra dentro de un formulario validado, y acá la validez la maneja el
+// FormGroup.
+.pos-field-error {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: #b42318;
+}
+
+// ── Pago bancario: banco y referencia ─────────────────────
+.pos-deposit-box {
+    background: #f8f9fb;
+    border: 1px solid #eef0f3;
+    border-radius: 12px;
+    padding: 14px 16px 4px;
+    margin-bottom: 14px;
+
+    .pos-pay-field:last-of-type { margin-bottom: 10px; }
+}
+.pos-deposit-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #475467;
+    margin-bottom: 10px;
+
+    i { font-size: 18px; color: #4361ee; }
+}
+.pos-deposit-counter {
+    display: block;
+    text-align: right;
+    font-size: 12px;
+    color: #98a2b3;
+    margin-top: 4px;
+}
+
+// La tienda no tiene bancos cargados: sin ellos no se puede cobrar con Depósito
+// ni Cheque, así que el aviso reemplaza a los campos en lugar de acompañarlos.
+.pos-deposit-warning {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    color: #b42318;
+}
+
+// Copiar el pago del pedido al del envío. Es un atajo, no una acción principal: va como botón
+// secundario al final del bloque para no competir con los campos que sí hay que llenar.
+.pos-copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-bottom: 14px;
+    padding: 9px;
+    border: 1.5px solid #d0d5dd;
+    border-radius: 10px;
+    background: #fff;
+    color: #475467;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+
+    i { font-size: 17px; }
+
+    &:hover { border-color: $accent; color: $accent; }
+}
+
+// ── Acciones ──────────────────────────────────────────────
+.pos-pay-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pos-cobrar-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
     background: $accent;
     color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover:not(:disabled) { background: $accent-dark; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.pos-cancel-btn {
+    width: 100%;
+    padding: 10px;
     border: none;
-    &:hover:not(:disabled) { background: $accent-dark; color: #fff; }
-    &:disabled { opacity: 0.6; }
+    border-radius: 12px;
+    background: transparent;
+    color: #98a2b3;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover { color: #475467; }
 }
 
 .payment-loading-overlay {

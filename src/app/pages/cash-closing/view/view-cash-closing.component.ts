@@ -222,6 +222,7 @@ export class ViewCashClosingComponent implements OnInit{
         });
         let totalActivityLogsAmountAdded = 0;
         let totalActivityLogsAmountRemoved = 0;
+        let totalActivityLogsAmountReturned = 0;
         let modifiedAmount = 0;
         let filteredInventoryElementActions = cashClosing.inventoryElementActions?.filter((element: InventoryElementAction) => {
                     return element.actionType?.type == 'REMOVE_PFS_MANUAL' || element.actionType?.type == 'ADD_PFS_MANUAL' || element.actionType?.type == 'RETURN_PFS_BY_DEVOLUTION';
@@ -232,8 +233,10 @@ export class ViewCashClosingComponent implements OnInit{
 
             if (element.actionType?.type == 'ADD_PFS_MANUAL'){
                 totalActivityLogsAmountAdded += totalAmount;
-            } else if (element.actionType?.type == 'REMOVE_PFS_MANUAL' || element.actionType?.type == 'RETURN_PFS_BY_DEVOLUTION'){
+            } else if (element.actionType?.type == 'REMOVE_PFS_MANUAL'){
                 totalActivityLogsAmountRemoved += totalAmount;
+            } else if (element.actionType?.type == 'RETURN_PFS_BY_DEVOLUTION'){
+                totalActivityLogsAmountReturned += totalAmount;
             }
 
             const curr_row = [
@@ -248,6 +251,7 @@ export class ViewCashClosingComponent implements OnInit{
         });
         this.activityLogsModifiedAmounts.added = totalActivityLogsAmountAdded;
         this.activityLogsModifiedAmounts.removed = totalActivityLogsAmountRemoved;
+        this.activityLogsModifiedAmounts.returned = totalActivityLogsAmountReturned;
         this.totalCreditSales = 0;
         this.totalCreditSalesFull = 0;
         this.totalDepositSales = 0;
@@ -347,6 +351,10 @@ export class ViewCashClosingComponent implements OnInit{
                     {icon : "credit_card", name : "Tipo de pago", value : payment.paymentType?.identifier ?? '--'},
                     {icon : "local_shipping", name : "Destino", value : this.getPaymentTargetLabel(payment.paymentTarget)},
                     {icon : "calendar_today", name : "Fecha de pago", value : this.dataService.getLocalDateTimeFromUTCTime(payment.date?.replaceAll("\"","") || payment.date)},
+                    // Los pagos en efectivo no llevan banco ni referencia, y los cierres
+                    // guardados antes de 2026-09-01 congelaron el snapshot sin estos campos
+                    {icon : "account_balance", name : "Banco", value : payment.bank ? payment.bank : '--'},
+                    {icon : "receipt_long", name : "No. de referencia", value : payment.referenceNo ? payment.referenceNo : '--'},
                     {icon : "chat_bubble_outline", name : "Comentario", value : payment.comment ? payment.comment : '--'},
                     // Los abonos anteriores a 2026-08-11 no guardaron usuario: ahí
                     // la fila no se muestra en lugar de dejarla vacía
@@ -368,7 +376,8 @@ export class ViewCashClosingComponent implements OnInit{
             + this.totalDiscountShopResumes)
             - (this.totalAmountStoreOrders[0] + this.totalAmountLastInventory)
             - totalActivityLogsAmountAdded
-            + totalActivityLogsAmountRemoved;
+            + totalActivityLogsAmountRemoved
+            + totalActivityLogsAmountReturned;
         this.sobrante = Number(cashClosing.sobrante || 0);
         this.totalIngresos = this.totalAmountShopResumes + this.totalDiscountShopResumes + this.totalDeliveryShopResumes + this.totalCreditPaymentsCash + this.totalCreditPaymentsDeposit + this.totalCreditPaymentsCheque + this.sobrante;
         this.totalEgresos = this.totalDiscountShopResumes + this.totalDepositSales + this.totalDeliveryDeposit + this.totalStoreExpenses + this.totalCreditSalesFull + this.totalCreditPaymentsDeposit + this.totalCreditPaymentsCheque;

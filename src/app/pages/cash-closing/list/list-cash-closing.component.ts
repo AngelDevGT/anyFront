@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { first } from 'rxjs/operators';
+import { first, switchMap } from 'rxjs/operators';
 
-import { AlertService, DataService, deleteStatus} from '@app/services';
+import { AlertService, DataService, StoreContextService, deleteStatus} from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CashClosing } from '@app/models/store/cash-closing.model';
+import { Establishment } from '@app/models/establishment.model';
 
 @Component({
     templateUrl: 'list-cash-closing.component.html',
@@ -17,14 +18,38 @@ export class ListCashClosingComponent implements OnInit {
     title = '';
     tableElementsValues?: any;
     establishmentId?: string;
+    storeName?: string;
+    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    storeSelected = false;
     availableStatuses: string[] = [];
     statusFilter: string | null = null;
 
-    constructor(private dataService: DataService, private router: Router, private route: ActivatedRoute, private alertService: AlertService) {}
+    constructor(private dataService: DataService, private router: Router, private route: ActivatedRoute, private alertService: AlertService, private storeContext: StoreContextService) {}
 
     ngOnInit() {
-        this.establishmentId = this.route.snapshot.params['id'];
         this.title = 'Cierres de caja';
+
+        // La tienda viaja en la ruta: al cambiarla desde el selector se navega a esta misma sección
+        // con otra tienda y Angular reutiliza el componente, así que ngOnInit ya no vuelve a correr.
+        this.route.paramMap
+            .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
+            .subscribe(store => this.onStoreChange(store));
+    }
+
+    private onStoreChange(store?: Establishment) {
+        this.storeSelected = !!store?.id;
+        this.establishmentId = store?.id;
+        this.storeName = store?.name;
+
+        if (!store?.id) {
+            this.cashClosings = undefined;
+            this.allCashClosings = undefined;
+            this.availableStatuses = [];
+            this.tableElementsValues = [];
+            return;
+        }
+        this.searchTerm = undefined;
+        this.statusFilter = null;
         this.retriveCashClosing();
     }
 

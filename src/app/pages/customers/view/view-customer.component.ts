@@ -57,6 +57,7 @@ export class ViewCustomerComponent implements OnInit {
         this.elements.push({ icon: 'call', name: 'Numero de teléfono', value: customer.phone || '--' });
         this.elements.push({ icon: 'mail', name: 'Correo Electronico', value: customer.email || '--' });
         this.elements.push({ icon: 'tag', name: 'NIT', value: customer.nit || 'C/F' });
+        this.elements.push({ icon: 'groups', name: 'Operador', value: customer.isOperator ? 'Si' : 'No' });
         this.elements.push({ icon: 'info', name: 'Estado', value: customer.status?.identifier });
         this.elements.push({ icon: 'calendar_today', name: 'Fecha Creación', value: this.dataService.getLocalDateTimeFromUTCTime(customer.creationDate?.replaceAll('"', '') || '') });
         this.elements.push({ icon: 'calendar_today', name: 'Fecha Actualización', value: customer.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(customer.updatedDate.replaceAll('"', '')) : '--' });

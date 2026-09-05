@@ -5,13 +5,15 @@
       <h4 class="page-title">{{title}}</h4>
       <p class="page-subtitle">Consulta y gestiona los cierres de caja</p>
     </div>
-    <button *ngIf="cashClosings" type="button" (click)="createCashClosing()" class="btn-add">
+    <button *ngIf="storeSelected && cashClosings" type="button" (click)="createCashClosing()" class="btn-add">
       <i class="material-icons">add</i>
       Crear Cierre de Caja
     </button>
   </div>
 
-  <div class="content-card">
+  <store-required *ngIf="!storeSelected" message="Selecciona una tienda para ver sus cierres de caja"></store-required>
+
+  <div class="content-card" *ngIf="storeSelected">
     <div class="table-toolbar">
       <div class="search-box">
         <i class="material-icons search-icon">search</i>

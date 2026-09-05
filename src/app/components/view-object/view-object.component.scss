@@ -32,6 +32,12 @@
     // text-align: right;
 }
 
+// Los saltos de linea del valor se ven; los espacios sobrantes no. Lo usan los campos que guardan
+// un listado en una sola columna de texto, como los bancos de la tienda.
+.element-value--multiline{
+    white-space: pre-line;
+}
+
 .element-title-class{
     display: flex;
     justify-content: space-between; /* Alinea los elementos a la izquierda y derecha */

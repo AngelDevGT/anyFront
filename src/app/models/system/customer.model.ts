@@ -7,6 +7,11 @@ export class Customer {
     phone?: string;
     email?: string;
     nit?: string;
+    /**
+     * Marca al cliente como operador: lo hace aparecer en el catálogo del modal
+     * de operadores del tablero de pedidos. No afecta nada más del cliente.
+     */
+    isOperator?: boolean;
     status?: Status;
     creatorUser?: User;
     creationDate?: string;

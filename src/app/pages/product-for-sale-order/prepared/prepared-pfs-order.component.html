@@ -1,0 +1,249 @@
+<div class="page-wrapper">
+
+    <!-- Encabezado: se queda arriba, la grilla es la que crece -->
+    <div class="page-header">
+        <div class="page-header-left">
+            <h4 class="page-title">Pedidos preparados</h4>
+            <p class="page-subtitle">
+                Pedidos alistados en bodega, a la espera de verificación
+                <span class="page-count" *ngIf="!loadingOrders && allOrders.length"
+                      [title]="orders.length === allOrders.length
+                        ? 'Pedidos preparados'
+                        : 'Pedidos que pasan los filtros, de ' + allOrders.length + ' preparados en total'">
+                    {{ orders.length }}<ng-container *ngIf="orders.length !== allOrders.length"> de {{ allOrders.length }}</ng-container>
+                </span>
+            </p>
+        </div>
+
+        <div class="page-header-actions">
+
+            <!-- Buscador local: filtra los pedidos ya cargados, no vuelve a consultar -->
+            <div class="board-search">
+                <i class="material-icons board-search__icon">search</i>
+                <input type="text"
+                       class="board-search__input"
+                       placeholder="Buscar por tienda o pedido"
+                       [(ngModel)]="searchTerm"
+                       (ngModelChange)="onSearchChange()">
+                <button *ngIf="searchTerm" type="button" class="board-search__clear"
+                        aria-label="Limpiar búsqueda" (click)="clearSearch()">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+
+            <app-auto-refresh [storageKey]="autoRefreshStorageKey"
+                              (refresh)="autoRefreshTick()">
+            </app-auto-refresh>
+
+            <!-- El mismo filtro de rango del tablero. Filtra por fecha de
+                 PREPARADO, que es la que ordena la lista; aplicarlo no consulta de
+                 nuevo, porque los pedidos ya están todos cargados -->
+            <date-range-filter
+                label="Fecha"
+                [start]="appliedStartDate"
+                [end]="appliedEndDate"
+                [maxDate]="maxDate"
+                [defaultDays]="defaultRangeDays"
+                (rangeApply)="onDateRangeApply($event)">
+            </date-range-filter>
+        </div>
+    </div>
+
+    <div *ngIf="loadingOrders" class="loading-wrap">
+        <span class="spinner-border spinner-border-lg"></span>
+    </div>
+
+    <!-- Con el rango por defecto puesto, "no hay nada" y "no hay nada en estas
+         fechas" se ven igual. El total sale acá para que se note la diferencia y
+         se sepa que ampliar el rango tiene sentido -->
+    <p *ngIf="!loadingOrders && noResults" class="board-search__no-results">
+        Ningún pedido preparado<ng-container *ngIf="searchTerm.trim()"> de "{{ searchTerm }}"</ng-container>
+        en el rango de fechas elegido.
+        Hay {{ allOrders.length }} preparado{{ allOrders.length === 1 ? '' : 's' }} en total:
+        amplía el rango para verlos.
+    </p>
+
+    <!-- Bodega al día: no es un error ni una pantalla vacía por accidente -->
+    <p *ngIf="!loadingOrders && !allOrders.length" class="prepared-empty">
+        <i class="material-icons">inventory</i>
+        No hay pedidos preparados en este momento.
+    </p>
+
+    <!-- Las tarjetas se acumulan a lo ancho y siguen hacia abajo: el scroll es el
+         de la página, no el de un panel. Es una lista para recorrer de arriba a
+         abajo mientras se revisa la mesa, no un tablero que entre en pantalla -->
+    <div class="products-grid" *ngIf="!loadingOrders && orders.length">
+        <article class="product-card" *ngFor="let order of orders; trackBy: trackByOrderId">
+
+            <div class="product-card__head">
+                <span class="product-card__title">
+                    <span class="board-card__number" *ngIf="order.orderNumber != null">#{{ order.orderNumber }}</span>
+                    {{ order.name }}
+                </span>
+
+                <div class="product-card__head-actions">
+                    <!-- Avance de la revisión, no del alistado del tablero: son dos
+                         marcas distintas, así que este contador arranca en 0 aunque
+                         bodega haya tildado el pedido entero -->
+                    <span class="product-card__progress"
+                          *ngIf="elementCount(order)"
+                          [class.product-card__progress--done]="checkedCount(order) === elementCount(order)"
+                          [title]="checkedCount(order) + ' de ' + elementCount(order) + ' productos revisados'">
+                        {{ checkedCount(order) }}/{{ elementCount(order) }}
+                    </span>
+
+                    <i class="material-icons board-card__verified" *ngIf="isVerified(order)"
+                       [title]="'Verificado por ' + order.verifiedUser?.name + ' · ' + formatShortDateTime(order.verifiedDate)">
+                        check_circle
+                    </i>
+                </div>
+            </div>
+
+            <!-- Desde cuándo está preparado: es lo que ordena la lista y lo que
+                 dice si un pedido lleva demasiado tiempo esperando -->
+            <div class="board-card__times" *ngIf="order.preparedDate">
+                <span class="board-card__time">
+                    <i class="material-icons">inventory</i>
+                    Preparado {{ formatShortDateTime(order.preparedDate) }}
+                </span>
+            </div>
+
+            <!-- Encargado y operadores: quién lo alistó, para preguntarle sin
+                 tener que abrir el detalle -->
+            <div class="board-card__owner" *ngIf="order.assignedUser?.name as ownerName">
+                <div class="board-card__avatar" [style.background]="getAvatarColor(ownerName)">
+                    {{ getInitials(ownerName) }}
+                </div>
+                <span class="board-card__owner-name">{{ ownerName }}</span>
+            </div>
+
+            <div class="board-card__operators" *ngIf="getOperators(order).length">
+                <span class="board-card__operator"
+                      *ngFor="let operator of getOperators(order)"
+                      [style.background]="operatorChipColor.bg_color"
+                      [style.color]="operatorChipColor.color">
+                    {{ operator }}
+                </span>
+            </div>
+
+            <div class="product-card__store-row">
+                <span class="board-card__store product-card__store"
+                      [style.background]="getStoreColor(order.establishment?.id)">
+                    {{ order.establishment?.name }}
+                </span>
+                <button type="button" class="product-card__detail"
+                        title="Ver detalle del pedido"
+                        [attr.aria-label]="'Ver detalle del pedido ' + order.name"
+                        (click)="goToOrderDetail(order)">
+                    <i class="material-icons">open_in_new</i>
+                </button>
+            </div>
+
+            <!-- Las notas son donde la tienda pide lo que no cabe en la lista de
+                 productos, así que van antes de la tabla -->
+            <div class="product-card__note" *ngIf="cleanComment(order.comment) as comment">
+                <i class="material-icons">sticky_note_2</i>
+                <span>{{ comment }}</span>
+            </div>
+
+            <!-- La segunda pasada de control: se marca lo que se va revisando
+                 contra la mesa. La fila entera es el área de click, igual que en el
+                 tablero: acá se toca de pie y con las manos ocupadas. La casilla
+                 siempre está —a diferencia del tablero, todos los pedidos de esta
+                 pantalla están en Preparado, que es cuando se puede marcar— -->
+            <table class="product-card__table" *ngIf="order.productForSaleStoreOrderElements?.length">
+                <tbody>
+                    <tr *ngFor="let element of order.productForSaleStoreOrderElements"
+                        class="product-card__row"
+                        [class.product-card__row--checked]="element.preparedCheck"
+                        [class.product-card__row--clickable]="isCheckable(order, element)"
+                        [attr.role]="isCheckable(order, element) ? 'button' : null"
+                        [attr.aria-pressed]="isCheckable(order, element) ? !!element.preparedCheck : null"
+                        (click)="togglePreparedCheck(order, element)">
+
+                        <td class="product-card__check">
+                            <i class="material-icons">
+                                {{ element.preparedCheck ? 'check_box' : 'check_box_outline_blank' }}
+                            </i>
+                        </td>
+
+                        <td class="product-card__product">{{ element.productForSale?.finishedProduct?.name }}</td>
+                        <td class="product-card__qty">
+                            {{ element.quantity }} <span>{{ element.measure?.identifier }}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p *ngIf="!order.productForSaleStoreOrderElements?.length" class="product-card__empty">
+                Este pedido no tiene productos.
+            </p>
+
+            <!-- Solo aparece con cambios sin guardar. Marcar y desmarcar el mismo
+                 producto lo vuelve a esconder: hasPreparedChanges compara contra lo
+                 que trajo el servidor, no contra "se tocó algo" -->
+            <div class="product-card__save" *ngIf="hasPreparedChanges(order)">
+                <button type="button" class="product-card__save-btn"
+                        [disabled]="isSavingPrepared(order)"
+                        (click)="savePreparedChecks(order)">
+                    <span *ngIf="isSavingPrepared(order)" class="spinner-border spinner-border-sm"></span>
+                    <i *ngIf="!isSavingPrepared(order)" class="material-icons">save</i>
+                    {{ isSavingPrepared(order) ? 'Guardando...' : 'Guardar revisión' }}
+                </button>
+            </div>
+
+            <!-- El pie de la tarjeta: la acción de esta pantalla. Botón al ancho
+                 completo y no la cápsula del tablero, porque acá verificar es a lo
+                 que se viene, no una acción al paso -->
+            <div class="prepared-card__foot">
+                <button *ngIf="canVerify(order)" type="button"
+                        class="prepared-card__verify-btn"
+                        [disabled]="submitting"
+                        (click)="openVerifyDialog(order)">
+                    <i class="material-icons">fact_check</i> Verificar
+                </button>
+
+                <p *ngIf="isVerified(order)" class="prepared-card__verified">
+                    <i class="material-icons">verified</i>
+                    Verificado por <strong>{{ order.verifiedUser?.name }}</strong>
+                    <span *ngIf="order.verifiedDate"> · {{ formatShortDateTime(order.verifiedDate) }}</span>
+                </p>
+
+                <!-- Sin la capacidad orders.verify no hay botón, y decirlo evita
+                     que se lea como una pantalla a medio cargar -->
+                <p *ngIf="!isVerified(order) && !canVerify(order)" class="prepared-card__no-permission">
+                    Sin verificar
+                </p>
+            </div>
+
+        </article>
+    </div>
+
+</div>
+
+<!-- Verificación: firma el usuario actual, así que no hay nada que elegir. Lo
+     único que se pide es confirmar, porque la firma queda a su nombre y no se
+     puede cambiar después. Reusa el estilo .board-confirm del tablero -->
+<div class="board-confirm" *ngIf="verifyDialogOpen && verifyingOrder">
+    <div class="board-confirm__box">
+        <h5 class="board-confirm__title">Verificar pedido</h5>
+        <p class="board-confirm__warning">
+            La verificación no se puede cambiar. Solo se borra si el pedido vuelve
+            a En curso o si se editan sus productos.
+        </p>
+        <div class="board-confirm__actions">
+            <button type="button" class="board-confirm__btn board-confirm__btn--cancel"
+                    [disabled]="submitting" (click)="cancelVerify()">Cancelar</button>
+            <button type="button" class="board-confirm__btn board-confirm__btn--ok"
+                    [disabled]="submitting" (click)="confirmVerify()">Verificar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay mientras se registra la firma -->
+<div *ngIf="submitting" class="board-loading-overlay">
+    <div class="board-loading-overlay__content">
+        <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
+        <p class="text-light mt-3 mb-0 fs-5">Verificando pedido...</p>
+    </div>
+</div>

@@ -846,6 +846,35 @@ END;
 $procedure$
 ;
 
+-- DROP PROCEDURE public.multi_return_pfs_to_warehouse(jsonb);
+
+-- Devolucion masiva de producto de tienda a bodega: una sola llamada para toda la
+-- tanda del dialogo "Acciones de inventario". Delega en return_pfs_to_warehouse, que
+-- es quien saca de tienda (accion 17) y entra a bodega (accion 18); sin bloque
+-- EXCEPTION para que un fallo revierta la tanda completa.
+-- Ver src/database/migrations/2026-08-27-acciones-masivas-inventario-tienda.sql
+CREATE OR REPLACE PROCEDURE public.multi_return_pfs_to_warehouse(IN _data jsonb)
+ LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    item jsonb;
+BEGIN
+    FOR item IN SELECT * FROM jsonb_array_elements(_data)
+    LOOP
+        call public.return_pfs_to_warehouse(
+            item ->> 'inventoryType',
+            item ->> 'unitName',
+            (item ->> 'elementId')::uuid,
+            (item ->> 'measureId')::integer,
+            (item ->> 'quantity')::numeric,
+            (item ->> 'creatorUserId')::uuid,
+            item ->> 'comment'
+        );
+    END LOOP;
+END;
+$procedure$
+;
+
 -- DROP FUNCTION public.pgp_armor_headers(in text, out text, out text);
 
 CREATE OR REPLACE FUNCTION public.pgp_armor_headers(text, OUT key text, OUT value text)
@@ -2652,6 +2681,360 @@ BEGIN
 
     EXCEPTION WHEN OTHERS THEN
         RAISE EXCEPTION 'Error en registro de venta v5: %', SQLERRM;
+    END;
+END;
+$procedure$
+;
+
+
+-- ============================================================
+-- add_shop_sale_payment_v5
+-- Igual que add_shop_sale_payment_v4 pero ademas guarda:
+--   _bank         -> banco del pago, del listado establishment.banks (max. 50)
+--   _reference_no -> numero de transferencia o de cheque (max. 50)
+-- Los dos opcionales y al final de la firma, para no alterar el orden de los
+-- parametros que ya usa la v4. Aplican a los pagos con Deposito y con Cheque;
+-- la obligatoriedad la valida el front, no la procedure.
+-- Ver src/database/migrations/2026-09-01-banco-y-referencia-en-pagos.sql
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE public.add_shop_sale_payment_v5(
+    IN _shop_sale_id uuid,
+    IN _amount numeric,
+    IN _payment_type_id integer,
+    IN _payment_target varchar DEFAULT 'ORDER',
+    IN _comment varchar DEFAULT NULL,
+    IN _date timestamp DEFAULT NULL,
+    IN _creator_user_id uuid DEFAULT NULL,
+    IN _bank varchar DEFAULT NULL,
+    IN _reference_no varchar DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    _paid_amount NUMERIC(9,2);
+    _pending_amount NUMERIC(9,2);
+    _base_amount NUMERIC(9,2);   -- subtotal del pedido (total - delivery) o monto del envío
+    _payment_status_id INT;
+    _paid_status_id INT := 5;
+    _partial_status_id INT := 4;
+    _payment_date TIMESTAMP;
+    _clean_comment VARCHAR(200);
+    _clean_bank VARCHAR(50);
+    _clean_reference_no VARCHAR(50);
+BEGIN
+    BEGIN
+        _payment_date := COALESCE(_date, timezone('UTC'::text, CURRENT_TIMESTAMP));
+        _clean_comment := left(NULLIF(btrim(_comment), ''), 200);
+        _clean_bank := left(NULLIF(btrim(_bank), ''), 50);
+        _clean_reference_no := left(NULLIF(btrim(_reference_no), ''), 50);
+
+        IF _payment_target = 'DELIVERY' THEN
+            SELECT delivery_paid_amount, delivery, delivery_payment_status_id
+            INTO _paid_amount, _base_amount, _payment_status_id
+            FROM shop_sale
+            WHERE id = _shop_sale_id
+            FOR UPDATE;
+        ELSE
+            SELECT paid_amount, (total - delivery), payment_status_id
+            INTO _paid_amount, _base_amount, _payment_status_id
+            FROM shop_sale
+            WHERE id = _shop_sale_id
+            FOR UPDATE;
+        END IF;
+
+        _paid_amount := _paid_amount + _amount;
+        _pending_amount := _base_amount - _paid_amount;
+
+        IF _pending_amount < 0 THEN
+            RAISE EXCEPTION 'El monto del pago excede el monto pendiente.';
+        END IF;
+
+        IF _pending_amount <= 0 THEN
+            _payment_status_id := _paid_status_id;
+        ELSIF _pending_amount < _base_amount THEN
+            _payment_status_id := _partial_status_id;
+        END IF;
+
+        INSERT INTO shop_sale_payment (
+            shop_sale_id, amount, payment_type_id, payment_target, "comment", "date",
+            creator_user_id, bank, reference_no)
+        VALUES (
+            _shop_sale_id, _amount, _payment_type_id, _payment_target, _clean_comment, _payment_date,
+            _creator_user_id, _clean_bank, _clean_reference_no);
+
+        IF _payment_target = 'DELIVERY' THEN
+            UPDATE shop_sale
+            SET delivery_payment_status_id = _payment_status_id,
+                delivery_paid_amount = _paid_amount,
+                delivery_pending_amount = _pending_amount,
+                updated_date = timezone('UTC'::text, CURRENT_TIMESTAMP)
+            WHERE id = _shop_sale_id;
+        ELSE
+            UPDATE shop_sale
+            SET payment_status_id = _payment_status_id,
+                paid_amount = _paid_amount,
+                pending_amount = _pending_amount,
+                updated_date = timezone('UTC'::text, CURRENT_TIMESTAMP)
+            WHERE id = _shop_sale_id;
+        END IF;
+
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Error en adición de pago para venta: %', SQLERRM;
+    END;
+END;
+$procedure$
+;
+
+
+-- ============================================================
+-- register_shop_sale_with_elements_v6
+-- Igual que register_shop_sale_with_elements_v5 pero el pago registrado con
+-- la venta guarda ademas banco y numero de referencia, y cambian dos reglas:
+--
+--   a) Antes solo miraba 'Deposito'. Ahora tambien 'Cheque', que no registraba
+--      nada y por lo tanto perdia el numero del cheque.
+--   b) Antes la fila existia solo si habia comentario. Ahora existe si hay
+--      banco, referencia O comentario; con banco obligatorio en el front, en
+--      la practica siempre. La condicion acepta cualquiera de los tres para
+--      que un front viejo -que solo manda comentario- siga funcionando igual.
+--
+-- El resto -montos, estados, validacion de credito, inventario y elementos-
+-- es identico a la v5.
+--
+-- Campos opcionales que lee de _sale_properties (los cuatro son nuevos):
+--   depositBank / depositReferenceNo                 -> pago del pedido
+--   deliveryDepositBank / deliveryDepositReferenceNo -> pago del envio
+-- Ver src/database/migrations/2026-09-01-banco-y-referencia-en-pagos.sql
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE public.register_shop_sale_with_elements_v6(
+    IN _sale_properties jsonb,
+    IN _sale_elements jsonb,
+    IN _creator_user_id uuid
+)
+LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    _new_ss_id uuid;
+    _status_id INT := 52;
+    _item JSONB;
+    _establishment_id uuid;
+    _customer_id uuid;
+    _price NUMERIC;
+    _subtotal NUMERIC;
+    _total NUMERIC;
+    _total_discount NUMERIC;
+    _delivery NUMERIC;
+    _order_amount NUMERIC;
+    _product_for_sale_id UUID;
+    _quantity NUMERIC;
+    _measure_id INT;
+    _discount NUMERIC;
+    _payment_type_id INT;
+    _delivery_payment_type_id INT;
+    _payment_type_identifier VARCHAR;
+    _delivery_payment_identifier VARCHAR;
+    _paid_amount NUMERIC(10,2);
+    _pending_amount NUMERIC(10,2);
+    _payment_status_id INT;
+    _delivery_paid_amount NUMERIC(10,2);
+    _delivery_pending_amount NUMERIC(10,2);
+    _delivery_payment_status_id INT;
+    _paid_status_id INT := 5;
+    _pending_status_id INT := 3;
+    -- Pago bancario registrado junto con la venta (Depósito o Cheque)
+    _deposit_comment VARCHAR(200);
+    _deposit_date TIMESTAMP;
+    _deposit_bank VARCHAR(50);
+    _deposit_reference_no VARCHAR(50);
+    _delivery_deposit_comment VARCHAR(200);
+    _delivery_deposit_date TIMESTAMP;
+    _delivery_deposit_bank VARCHAR(50);
+    _delivery_deposit_reference_no VARCHAR(50);
+BEGIN
+    BEGIN
+        _establishment_id := (_sale_properties -> 'establishment' ->> 'id')::UUID;
+        _customer_id := NULLIF(_sale_properties -> 'customer' ->> 'id', '')::UUID;
+        _total := ROUND((_sale_properties->>'total')::NUMERIC, 2);
+        _total_discount := ROUND((_sale_properties->>'totalDiscount')::NUMERIC, 2);
+        _delivery := ROUND(COALESCE((_sale_properties->>'delivery')::NUMERIC, 0), 2);
+        _order_amount := ROUND(_total - _delivery, 2);
+
+        _payment_type_id := (_sale_properties->'paymentType'->>'id')::INT;
+        _delivery_payment_type_id := (_sale_properties->'deliveryPaymentType'->>'id')::INT;
+
+        SELECT pt."name" INTO _payment_type_identifier FROM payment_type pt WHERE pt.id = _payment_type_id;
+        SELECT pt."name" INTO _delivery_payment_identifier FROM payment_type pt WHERE pt.id = _delivery_payment_type_id;
+
+        -- Una venta al crédito exige cliente registrado
+        IF _customer_id IS NULL
+           AND (_payment_type_identifier = 'Crédito'
+                OR (_delivery_payment_identifier = 'Crédito' AND _delivery > 0)) THEN
+            RAISE EXCEPTION 'Una venta al crédito requiere un cliente registrado.';
+        END IF;
+
+        -- Crédito del pedido (subtotal)
+        IF _payment_type_identifier = 'Crédito' THEN
+            _payment_status_id := _pending_status_id;
+            _paid_amount := 0;
+            _pending_amount := _order_amount;
+        ELSE
+            _payment_status_id := _paid_status_id;
+            _paid_amount := _order_amount;
+            _pending_amount := 0;
+        END IF;
+
+        -- Crédito del envío
+        IF _delivery_payment_identifier = 'Crédito' THEN
+            _delivery_payment_status_id := _pending_status_id;
+            _delivery_paid_amount := 0;
+            _delivery_pending_amount := _delivery;
+        ELSE
+            _delivery_payment_status_id := _paid_status_id;
+            _delivery_paid_amount := _delivery;
+            _delivery_pending_amount := 0;
+        END IF;
+
+        INSERT INTO public.shop_sale(
+            name_client,
+            nota,
+            delivery,
+            nit_client,
+            customer_id,
+            establishment_id,
+            status_id,
+            total,
+            total_discount,
+            payment_type_id,
+            creator_user_id,
+            paid_amount,
+            pending_amount,
+            payment_status_id,
+            delivery_payment_type_id,
+            delivery_paid_amount,
+            delivery_pending_amount,
+            delivery_payment_status_id
+        )
+        VALUES (
+            CASE WHEN _customer_id IS NULL
+                 THEN NULLIF(_sale_properties->>'nameClient', '')
+                 ELSE NULL END,
+            _sale_properties->>'nota',
+            _delivery,
+            CASE WHEN _customer_id IS NULL
+                 THEN NULLIF(_sale_properties->>'nitClient', '')::VARCHAR(10)
+                 ELSE NULL END,
+            _customer_id,
+            _establishment_id,
+            _status_id,
+            _total,
+            _total_discount,
+            _payment_type_id,
+            _creator_user_id,
+            _paid_amount,
+            _pending_amount,
+            _payment_status_id,
+            _delivery_payment_type_id,
+            _delivery_paid_amount,
+            _delivery_pending_amount,
+            _delivery_payment_status_id
+        )
+        RETURNING id INTO _new_ss_id;
+
+        -- ── Pago bancario: banco, referencia, comentario y fecha del pago ────
+        -- hecho al vender. Aplica a Depósito y a Cheque.
+        --
+        -- Con banco obligatorio en el front la fila existe siempre; la condición
+        -- acepta cualquiera de los tres datos para que un front viejo —que solo
+        -- manda comentario— siga funcionando igual que con la v5.
+        _deposit_comment := left(NULLIF(btrim(_sale_properties->>'depositComment'), ''), 200);
+        _deposit_bank := left(NULLIF(btrim(_sale_properties->>'depositBank'), ''), 50);
+        _deposit_reference_no := left(NULLIF(btrim(_sale_properties->>'depositReferenceNo'), ''), 50);
+
+        _delivery_deposit_comment := left(NULLIF(btrim(_sale_properties->>'deliveryDepositComment'), ''), 200);
+        _delivery_deposit_bank := left(NULLIF(btrim(_sale_properties->>'deliveryDepositBank'), ''), 50);
+        _delivery_deposit_reference_no := left(NULLIF(btrim(_sale_properties->>'deliveryDepositReferenceNo'), ''), 50);
+
+        IF _payment_type_identifier IN ('Depósito', 'Cheque')
+           AND (_deposit_bank IS NOT NULL
+                OR _deposit_reference_no IS NOT NULL
+                OR _deposit_comment IS NOT NULL)
+           AND _order_amount > 0 THEN
+            _deposit_date := COALESCE(
+                NULLIF(btrim(_sale_properties->>'depositDate'), '')::TIMESTAMP,
+                timezone('UTC'::text, CURRENT_TIMESTAMP));
+
+            INSERT INTO shop_sale_payment (
+                shop_sale_id, amount, payment_type_id, payment_target, "comment", "date",
+                is_sale_payment, bank, reference_no)
+            VALUES (
+                _new_ss_id, _order_amount, _payment_type_id, 'ORDER', _deposit_comment, _deposit_date,
+                TRUE, _deposit_bank, _deposit_reference_no);
+        END IF;
+
+        IF _delivery_payment_identifier IN ('Depósito', 'Cheque')
+           AND (_delivery_deposit_bank IS NOT NULL
+                OR _delivery_deposit_reference_no IS NOT NULL
+                OR _delivery_deposit_comment IS NOT NULL)
+           AND _delivery > 0 THEN
+            _delivery_deposit_date := COALESCE(
+                NULLIF(btrim(_sale_properties->>'deliveryDepositDate'), '')::TIMESTAMP,
+                timezone('UTC'::text, CURRENT_TIMESTAMP));
+
+            INSERT INTO shop_sale_payment (
+                shop_sale_id, amount, payment_type_id, payment_target, "comment", "date",
+                is_sale_payment, bank, reference_no)
+            VALUES (
+                _new_ss_id, _delivery, _delivery_payment_type_id, 'DELIVERY', _delivery_deposit_comment, _delivery_deposit_date,
+                TRUE, _delivery_deposit_bank, _delivery_deposit_reference_no);
+        END IF;
+
+        FOR _item IN SELECT * FROM jsonb_array_elements(_sale_elements)
+        LOOP
+            _price := (_item->>'price')::NUMERIC;
+            _subtotal := ROUND((_item->>'subtotal')::NUMERIC, 2);
+            _total := ROUND((_item->>'total')::NUMERIC, 2);
+            _total_discount := ROUND((_item->>'totalDiscount')::NUMERIC, 2);
+            _product_for_sale_id := (_item -> 'productForSale' ->> 'id')::UUID;
+            _quantity := ROUND((_item ->> 'quantity')::NUMERIC, 2);
+            _measure_id := (_item -> 'measure' ->> 'id')::INT;
+            _discount := ROUND((_item->>'discount')::NUMERIC, 2);
+
+            CALL add_remove_inventory_element(
+                'product_for_sale',
+                _establishment_id::text,
+                _product_for_sale_id,
+                _measure_id,
+                _quantity,
+                _creator_user_id,
+                'Venta de producto en tienda',
+                14);
+
+            INSERT INTO public.shop_sale_element(
+                shop_sale_id,
+                product_for_sale_id,
+                price,
+                subtotal,
+                total,
+                discount,
+                total_discount,
+                quantity,
+                measure_id)
+            VALUES(
+                _new_ss_id,
+                _product_for_sale_id,
+                _price,
+                _subtotal,
+                _total,
+                _discount,
+                _total_discount,
+                _quantity,
+                _measure_id);
+        END LOOP;
+
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Error en registro de venta v6: %', SQLERRM;
     END;
 END;
 $procedure$

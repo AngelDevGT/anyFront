@@ -16,6 +16,7 @@ import {MatAutocompleteModule} from '@angular/material/autocomplete';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatListModule} from '@angular/material/list';
 import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 // ComponentsModule importa DragDropModule pero no lo exporta, así que el
 // tablero necesita importarlo acá por su cuenta.
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -47,6 +48,7 @@ import { AddEditFinishedProductComponent } from "@app/pages/finished-product/add
 import { ListFinishedProductComponent } from "@app/pages/finished-product/list/list-finished-product.component";
 import { ViewFinishedProductComponent } from "@app/pages/finished-product/view/view-finished-product.component";
 import { AddEditProductCreationComponent } from "@app/pages/product-creation/add-edit/add-edit-product-creation.component";
+import { RegisterProductCreationComponent } from "@app/pages/product-creation/register/register-product-creation.component";
 import { MatDialogModule } from "@angular/material/dialog";
 import {MatExpansionModule} from '@angular/material/expansion';
 import { ViewRawMaterialOrderComponent } from "@app/pages/raw-material-by-provider-order/view/view-raw-material-order.component";
@@ -75,6 +77,7 @@ import { ViewCashClosingComponent } from "@app/pages/cash-closing/view/view-cash
 import { AddEditCashClosingComponent } from "@app/pages/cash-closing/add-edit/add-edit-cash-closing.component";
 import { ListFinishedProductOrderInFactoryComponent } from "@app/pages/product-for-sale-order/list-factory/list-pfs-store-order-factory.component";
 import { BoardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/board/board-pfs-order.component";
+import { PreparedFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/prepared/prepared-pfs-order.component";
 import { DashboardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/dashboard/dashboard-pfs-order.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
 import { MAT_DATE_LOCALE } from '@angular/material/core';
@@ -88,6 +91,7 @@ import { AddEditCustomerComponent } from "@app/pages/customers/add-edit/add-edit
 import { ViewCustomerComponent } from "@app/pages/customers/view/view-customer.component";
 import { AssignEstablishmentCustomerComponent } from "@app/pages/establishment-customer/assign/assign-establishment-customer.component";
 import { ListCustomerBalanceComponent } from "@app/pages/establishment-customer/balance/list-customer-balance.component";
+import { ListCustomerPaymentsComponent } from "@app/pages/establishment-customer/payments/list-customer-payments.component";
 // import { UsersLayoutComponent } from "../users/users-layout.component";
 
 export const MY_DATE_FORMATS = {
@@ -123,6 +127,7 @@ export const MY_DATE_FORMATS = {
     MatMenuModule,
     MatListModule,
     MatCheckboxModule,
+    MatSlideToggleModule,
     MatDialogModule,
     MatExpansionModule,
     DragDropModule,
@@ -148,6 +153,7 @@ export const MY_DATE_FORMATS = {
       ListFinishedProductComponent,
       ViewFinishedProductComponent,
       AddEditProductCreationComponent,
+      RegisterProductCreationComponent,
       ConsumeRawMaterialComponent,
       ListWarehouseInventoryRMPComponent,
       ListFactoryInventoryRMComponent,
@@ -177,6 +183,7 @@ export const MY_DATE_FORMATS = {
       AddEditCashClosingComponent,
       ListFinishedProductOrderInFactoryComponent,
       BoardFinishedProductOrderComponent,
+      PreparedFinishedProductOrderComponent,
       DashboardFinishedProductOrderComponent,
       ListStoreExpensesComponent,
       AddEditExpenseComponent,
@@ -186,6 +193,7 @@ export const MY_DATE_FORMATS = {
       ViewCustomerComponent,
       AssignEstablishmentCustomerComponent,
       ListCustomerBalanceComponent,
+      ListCustomerPaymentsComponent,
       // UsersLayoutComponent
   ],
   providers: [

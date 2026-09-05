@@ -1,0 +1,33 @@
+<!-- El switch enciende, la etiqueta abre el intervalo. El stopPropagation de la cápsula hace dos
+     cosas: que el listener de documento de este componente no cierre el panel que se acaba de
+     abrir, y que el del host no cierre los suyos al tocar este control -->
+<div class="auto-refresh" [class.auto-refresh--on]="enabled" (click)="$event.stopPropagation()">
+
+    <button type="button" class="auto-refresh__toggle"
+            [attr.aria-pressed]="enabled"
+            [title]="enabled
+                ? 'Recarga automática cada ' + minutes + ' min'
+                : 'Recarga automática apagada'"
+            (click)="toggle($event)">
+        <span class="auto-refresh__switch"><span class="auto-refresh__knob"></span></span>
+        <i class="material-icons auto-refresh__icon">autorenew</i>
+        Auto
+    </button>
+
+    <button type="button" class="auto-refresh__interval"
+            [class.open]="panelOpen"
+            (click)="togglePanel($event)">
+        {{ minutes }} min
+        <i class="material-icons chevron-icon">keyboard_arrow_down</i>
+    </button>
+
+    <div class="auto-refresh__panel" *ngIf="panelOpen">
+        <button type="button" class="auto-refresh__option"
+                *ngFor="let option of options"
+                [class.selected]="option === minutes"
+                (click)="selectInterval(option)">
+            {{ option }} min
+            <i *ngIf="option === minutes" class="material-icons">check</i>
+        </button>
+    </div>
+</div>

@@ -1,0 +1,31 @@
+.store-required {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 24px;
+  padding: 56px 24px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  text-align: center;
+}
+
+.store-required-icon {
+  font-size: 52px;
+  color: #ddd;
+}
+
+.store-required-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+}
+
+.store-required-subtitle {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #999;
+}

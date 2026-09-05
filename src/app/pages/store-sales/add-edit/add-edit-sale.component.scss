@@ -216,6 +216,14 @@ $accent-dark: #a83e00;
     border-radius: 999px;
     white-space: nowrap;
 }
+
+// Sin existencia. El producto se sigue pudiendo tocar —la venta descuenta igual y el inventario
+// queda en negativo, que es como opera la tienda hoy—; el gris lo apaga frente a los que si tienen
+// existencia, sin gritar como lo haria un rojo de error.
+.pos-stock--empty {
+    color: #667085;
+    background: #f2f4f7;
+}
 .pos-empty,
 .pos-cart-empty {
     text-align: center;
@@ -502,7 +510,7 @@ $accent-dark: #a83e00;
 }
 .modal-cobrar { margin-top: 0; }
 
-// ── Depósito: boleta y fecha de la transferencia ──────────
+// ── Pago bancario: banco, referencia, fecha y comentario ──
 .pos-deposit-box {
     background: #f8f9fb;
     border: 1px solid #eef0f3;
@@ -531,6 +539,38 @@ $accent-dark: #a83e00;
     margin-top: 4px;
 }
 .pos-deposit-hint { margin: 0 0 10px; font-size: 12.5px; color: #98a2b3; }
+
+// La tienda no tiene bancos cargados: sin ellos no se puede registrar el pago, asi que el aviso
+// va en rojo y reemplaza a los campos en lugar de acompanarlos.
+.pos-deposit-warning {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    color: #b42318;
+}
+
+// Copiar el pago del pedido al del envio. Es un atajo, no una accion principal: va como boton
+// secundario al final del bloque para no competir con los campos que si hay que llenar.
+.pos-copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 9px;
+    border: 1.5px solid #d0d5dd;
+    border-radius: 10px;
+    background: #fff;
+    color: #475467;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+
+    i { font-size: 17px; }
+
+    &:hover { border-color: $accent; color: $accent; }
+}
 
 // ── Selector de cliente registrado ────────────────────────
 // Dropdown propio en lugar de mat-autocomplete: el overlay de Material

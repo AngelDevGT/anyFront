@@ -1,0 +1,70 @@
+<div class="store-switcher" [class.card-variant]="variant === 'card'" [ngSwitch]="mode">
+
+  <span *ngSwitchCase="'loading'" class="store-switcher-loading">
+    <span class="spinner-border spinner-border-sm"></span>
+    Cargando tiendas...
+  </span>
+
+  <span *ngSwitchCase="'empty'" class="store-switcher-empty">
+    <i class="material-icons">error_outline</i>
+    No tienes tiendas asignadas
+  </span>
+
+  <span *ngSwitchCase="'single'" class="store-switcher-single">
+    <i class="material-icons">storefront</i>
+    {{ singleStoreName }}
+  </span>
+
+  <div *ngSwitchCase="'chips'" class="store-chips">
+    <button *ngFor="let store of stores"
+            type="button"
+            class="store-chip"
+            [class.active]="store.id === current?.id"
+            (click)="pick(store)">
+      <i class="material-icons">storefront</i>
+      {{ store.name }}
+    </button>
+  </div>
+
+  <div *ngSwitchCase="'dropdown'" class="store-dropdown" (click)="$event.stopPropagation()">
+    <button type="button" class="store-dropdown-btn" [class.open]="panelOpen" (click)="togglePanel($event)">
+      <i class="material-icons">storefront</i>
+      <span class="store-dropdown-name">{{ current?.name || 'Selecciona una tienda' }}</span>
+      <i class="material-icons chevron">keyboard_arrow_down</i>
+    </button>
+    <div class="store-panel" *ngIf="panelOpen">
+      <ng-container *ngTemplateOutlet="storeList"></ng-container>
+    </div>
+  </div>
+
+  <div *ngSwitchCase="'list'" class="store-inline-list" (click)="$event.stopPropagation()">
+    <ng-container *ngTemplateOutlet="storeList"></ng-container>
+  </div>
+
+</div>
+
+<ng-template #storeList>
+  <div class="store-panel-search">
+    <i class="material-icons">search</i>
+    <input type="text"
+           placeholder="Buscar tienda..."
+           [(ngModel)]="filterTerm"
+           (click)="$event.stopPropagation()" />
+  </div>
+  <ul class="store-panel-list">
+    <li *ngFor="let store of filteredStores">
+      <button type="button"
+              class="store-panel-item"
+              [class.active]="store.id === current?.id"
+              (click)="pick(store)">
+        <i class="material-icons">storefront</i>
+        <span class="store-panel-text">
+          <span class="store-panel-name">{{ store.name }}</span>
+          <span class="store-panel-address" *ngIf="store.address">{{ store.address }}</span>
+        </span>
+        <i class="material-icons check" *ngIf="store.id === current?.id">check</i>
+      </button>
+    </li>
+    <li *ngIf="!filteredStores.length" class="store-panel-none">Sin coincidencias</li>
+  </ul>
+</ng-template>

@@ -1,9 +1,10 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { first } from 'rxjs/operators';
-import { forkJoin } from 'rxjs';
+import { first, switchMap } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
 
-import { AlertService, DataService, DateRangeState, DateRangeStateService, PdfService, storeOrderStatus} from '@app/services';
+import { AlertService, DataService, DateRangeState, DateRangeStateService, PdfService, StoreContextService, storeOrderStatus} from '@app/services';
+import { formatOperators } from '@app/helpers';
 import { DateRange } from '@angular/material/datepicker';
 import { Establishment } from '@app/models/establishment.model';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
@@ -35,6 +36,8 @@ export class ListProductForSaleOrderComponent implements OnInit {
     exportingPdf = false;
     /** Modo consulta: se listan, ven y exportan pedidos, pero no se crean ni editan. */
     readOnly = false;
+    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    storeSelected = false;
 
     datePanelOpen = false;
     maxDate = new Date();
@@ -43,19 +46,10 @@ export class ListProductForSaleOrderComponent implements OnInit {
     selectedDateRange: DateRange<Date> | null = null;
     private dateRange!: DateRangeState;
 
-    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe, private readonly pdfService: PdfService, private readonly dateRangeState: DateRangeStateService) {}
+    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe, private readonly pdfService: PdfService, private readonly dateRangeState: DateRangeStateService, private readonly storeContext: StoreContextService) {}
 
     ngOnInit() {
         this.readOnly = !!this.route.snapshot.data['readOnly'];
-
-        // La tienda llega siempre por query params: desde el listado de tiendas, o desde el
-        // dashboard de pedidos en el caso de consultas
-        this.route.queryParams.subscribe(params => {
-            this.viewOption = params['opt'];
-            this.storeOption = params['store'];
-            this.storeName = params['name'];
-        });
-        this.setPageTitle();
 
         // Rango guardado en la pestaña o, si no hay, los últimos 15 días desde la fecha actual
         this.dateRange = this.dateRangeState.createRange(14);
@@ -63,13 +57,50 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.appliedEndDate = this.dateRange.end;
         this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);
 
+        // La tienda llega siempre por query params. Con opt=store es la sección de Tienda y la pone
+        // el selector global; con opt=factory (bodega) o en consultas la manda el tablero, que
+        // despacha a tiendas que el usuario no tiene asignadas, así que ahí se usa tal cual viene.
+        this.route.queryParamMap.pipe(
+            switchMap(params => {
+                this.viewOption = params.get('opt') ?? '';
+                const storeId = params.get('store');
+                if (this.readOnly || this.viewOption !== 'store') {
+                    const store: Establishment | undefined = storeId
+                        ? { id: storeId, name: params.get('name') ?? '' }
+                        : undefined;
+                    return of(store);
+                }
+                return this.storeContext.resolveFromRoute(storeId);
+            })
+        ).subscribe(store => this.onStoreChange(store));
+    }
+
+    /** Cambio de tienda: sin tienda no se consulta, para no listar los pedidos de todas. */
+    private onStoreChange(store?: Establishment) {
+        this.storeOption = store?.id ?? '';
+        this.storeName = store?.name ?? '';
+        // Consultas y bodega conservan el comportamiento previo: la pantalla abre con lo que traiga
+        // la URL, aunque no venga tienda
+        this.storeSelected = this.readOnly || this.viewOption !== 'store' || !!store?.id;
+        this.setPageTitle();
+
+        if (!this.storeSelected) {
+            this.productForSaleOrdes = undefined;
+            this.allProductForSaleOrdes = undefined;
+            this.availableStatuses = [];
+            this.selectedOrderIds = [];
+            this.tableElementsValues = [];
+            this.loadingOrders = false;
+            return;
+        }
         this.retrieveProductForSaleStoreOrders(this.storeOption);
     }
 
     private setPageTitle() {
-        this.pageTitle = this.viewOption === 'store'
-            ? `Pedidos de Producto para Venta (${this.storeName})`
-            : `Pedidos de Producto Terminado (${this.storeName})`;
+        const base = this.viewOption === 'store'
+            ? 'Pedidos de Producto para Venta'
+            : 'Pedidos de Producto Terminado';
+        this.pageTitle = this.storeName ? `${base} (${this.storeName})` : base;
     }
 
     private buildOrderParams(storeId?: string): any {
@@ -178,6 +209,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
             this.productForSaleOrdes = this.allProductForSaleOrdes.filter((val) => {
                 const textMatch = !this.searchTerm ||
                     val.name?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    String(val.orderNumber ?? '').includes(this.searchTerm) ||
                     (this.viewOption === 'factory'
                         ? val.factoryStatus?.identifier?.toLowerCase().includes(this.searchTerm.toLowerCase())
                         : val.storeStatus?.identifier?.toLowerCase().includes(this.searchTerm.toLowerCase()));
@@ -243,10 +275,19 @@ export class ListProductForSaleOrderComponent implements OnInit {
             if (element.factoryStatus?.id === storeOrderStatus.eliminado.id ||
                 element.storeStatus?.id === storeOrderStatus.eliminado.id) return;
 
-            const statusValue = this.viewOption === 'factory' ? element.factoryStatus : element.storeStatus;
-            const statusHeader = this.viewOption === 'factory' ? 'Estado en fábrica' : 'Estado en tienda';
+            const isFactory = this.viewOption === 'factory';
+            const statusValue = isFactory ? element.factoryStatus : element.storeStatus;
+            const statusHeader = isFactory ? 'Estado en fábrica' : 'Estado en tienda';
 
             const curr_row: any[] = [
+                // El número es el acceso al detalle: reemplaza al botón de ver
+                {
+                    type: 'link',
+                    value: element.orderNumber != null ? '#' + element.orderNumber : '--',
+                    routerLink: 'view/' + element.id,
+                    query_params: { opt: this.viewOption },
+                    header_name: 'No.'
+                },
                 { type: 'text', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: 'Fecha' },
                 { type: 'text', value: element.name, header_name: 'Nombre' },
                 { type: 'text', value: element.establishment?.name, header_name: 'Tienda' },
@@ -257,21 +298,22 @@ export class ListProductForSaleOrderComponent implements OnInit {
                     bg_color: statusValue?.bg_color,
                     color: statusValue?.color,
                     header_name: statusHeader
-                },
-                {
-                    type: 'button',
-                    header_name: 'Acciones',
-                    button: [
-                        {
-                            type: 'button',
-                            routerLink: 'view/' + element.id,
-                            query_params: { opt: this.viewOption },
-                            colorClass: 'dt-btn-view',
-                            icon: { class: 'material-icons', icon: 'visibility' }
-                        }
-                    ]
                 }
             ];
+
+            // Los operadores son un dato interno de bodega: la tienda no tiene por
+            // qué saber quién le está preparando el pedido. La columna se agrega
+            // solo en la vista de fábrica, nunca en la de tienda ni en consultas.
+            if (isFactory) {
+                // Los nombres en una línea: la tabla no renderiza cápsulas, y el
+                // detalle del pedido ya las muestra.
+                curr_row.splice(4, 0, {
+                    type: 'text',
+                    value: formatOperators(element.operators) || '--',
+                    header_name: 'Operadores'
+                });
+            }
+
             // Identificador usado por la columna de seleccion de la tabla
             (curr_row as any).rowKey = element.id;
             this.tableElementsValues.push(curr_row);

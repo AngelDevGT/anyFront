@@ -1,0 +1,244 @@
+$accent: #c94e00;
+
+.page-wrapper { padding: 24px; }
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-header-left { display: flex; align-items: center; gap: 14px; }
+.header-titles { line-height: 1.2; }
+.page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin: 0 0 2px; }
+.page-subtitle { font-size: 13px; color: #888; margin: 0; }
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #444;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  &:hover { border-color: $accent; color: $accent; background: #fff7f2; }
+  .material-icons { font-size: 22px; }
+}
+
+.content-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f7f7f7;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 260px;
+  &:focus-within { border-color: #ff6e20; background: #fff; }
+}
+.search-icon { font-size: 18px; color: #aaa; flex-shrink: 0; }
+.search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: #333;
+  width: 100%;
+  &::placeholder { color: #bbb; }
+}
+
+.loading-wrap { display: flex; justify-content: center; padding: 48px; color: #aaa; }
+
+// ── Resumen ───────────────────────────────────────────────
+.balance-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.balance-tile {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 14px 18px;
+}
+
+.balance-tile-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #98a2b3;
+}
+
+.balance-tile-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a2e;
+}
+
+// Rojo con saldo, verde en cero. Misma paleta que los badges de "Saldos de clientes".
+.balance-tile.pending {
+  background: #f8d7da;
+  .balance-tile-label { color: #a94452; }
+  .balance-tile-value { color: #721c24; }
+}
+
+.balance-tile.settled {
+  background: #d4edda;
+  .balance-tile-label { color: #3f7d52; }
+  .balance-tile-value { color: #155724; }
+}
+
+// ── Modal: historial de una venta ─────────────────────────
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  .title-icon { font-size: 19px; color: $accent; }
+}
+
+.modal-sale-number {
+  color: $accent;
+  font-weight: 700;
+}
+
+.payments-error {
+  text-align: center;
+  color: #c0392b;
+  font-size: 13.5px;
+  padding: 24px 0;
+  margin: 0;
+}
+
+// ── Timeline ──────────────────────────────────────────────
+// Mismos estilos que el bloque "Historial" de view-store-sales-pfs, para que
+// el modal se lea igual que la pantalla de la venta.
+.timeline { position: relative; }
+
+.timeline-item {
+  display: flex;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 18px;
+  &:last-child { padding-bottom: 0; }
+
+  // Línea que conecta un evento con el siguiente
+  &::before {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 36px;
+    bottom: -2px;
+    width: 2px;
+    background: #eceef1;
+  }
+  &:last-child::before { display: none; }
+}
+
+.timeline-marker {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff7f2;
+  border: 1px solid #ffe2d1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  .material-icons { font-size: 19px; color: $accent; }
+}
+
+.timeline-body { flex: 1; min-width: 0; padding-top: 1px; }
+
+.timeline-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.timeline-title { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+
+.timeline-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #f1f3f5;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.timeline-date { font-size: 13px; color: #98a2b3; white-space: nowrap; }
+.timeline-sub { font-size: 13px; color: #98a2b3; margin: 2px 0 0; }
+
+// Banco y numero de referencia del pago. Mismo tratamiento que en el historial de la venta:
+// encima del comentario y con mas peso, porque es el dato con el que se cuadra contra el banco.
+.timeline-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475467;
+  word-break: break-word;
+
+  .material-icons { font-size: 15px; line-height: 18px; color: #4361ee; }
+}
+
+.timeline-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8f9fb;
+  font-size: 13px;
+  color: #667085;
+  word-break: break-word;
+
+  .material-icons { font-size: 15px; line-height: 18px; color: #98a2b3; }
+}
+
+.timeline-empty {
+  color: #98a2b3;
+  font-size: 14px;
+  text-align: center;
+  padding: 12px 0;
+  margin: 0;
+}

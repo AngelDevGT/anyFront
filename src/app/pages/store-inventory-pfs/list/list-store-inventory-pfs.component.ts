@@ -1,10 +1,10 @@
 import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
-import { concatMap, first } from 'rxjs/operators';
+import { concatMap, first, switchMap } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { actionTypeValues } from '@app/services';
 
-import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService, StoreContextService } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -18,6 +18,7 @@ import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store
 import { ActivatedRoute, Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
 import { ActivityLog } from '@app/models/system/activity-log';
+import { BulkInventoryAction, InventoryActionItem } from '@app/components/bulk-inventory-dialog/bulk-inventory-dialog.component';
 
 @Component({ 
     templateUrl: 'list-store-inventory-pfs.component.html',
@@ -27,6 +28,9 @@ export class ListStoreInventoryPFSComponent implements OnInit {
 
     submitting = false;
     storeName?: string;
+    establishmentId?: string;
+    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    storeSelected = false;
     inventory?: Inventory;
     inventoryElements?: InventoryElement[];
     allInventoryElements?: InventoryElement[];
@@ -54,9 +58,11 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     pageSize = this.dataService.defaultPageSize;
     page = 1;
     tableElementsValues?: any;
-    activityLogName = "Acciones de Producto para Venta en tienda";
+    savingInventoryActions = false;
+    private readonly activityLogBaseName = "Acciones de Producto para Venta en tienda";
+    activityLogName = this.activityLogBaseName;
 
-    constructor(private accountService: AccountService, private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private excelService: ExcelService) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private excelService: ExcelService, private storeContext: StoreContextService) {}
 
     ngOnInit() {
 
@@ -68,8 +74,49 @@ export class ListStoreInventoryPFSComponent implements OnInit {
             this.setWeightMeasure(String(value));
         });
 
-        let establishmentId = this.route.snapshot.params['id'];
+        this.productForSaleForm = this.createProductForSaleFormGroup();
+
+        // La tienda viaja en la ruta. Al cambiarla desde el selector se navega a esta misma seccion
+        // con otra tienda: Angular reutiliza el componente y ngOnInit ya no vuelve a correr, asi que
+        // la recarga cuelga del parametro y no del ciclo de vida.
+        this.route.paramMap
+            .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
+            .subscribe(store => this.onStoreChange(store));
+    }
+
+    /** Cambio de tienda: sin tienda no se consulta nada y la tabla queda vacia. */
+    private onStoreChange(store?: Establishment) {
+        this.storeSelected = !!store?.id;
+        this.storeName = store?.name;
+        this.establishmentId = store?.id;
+
+        if (!store?.id) {
+            this.inventory = undefined;
+            this.inventoryElements = [];
+            this.allInventoryElements = [];
+            this.tableElementsValues = [];
+            return;
+        }
+        this.loadInventory(store.id);
+    }
+
+    /**
+     * La tabla ya usa `inventoryElements` sin definir como senal de carga; los botones del
+     * encabezado cuelgan de lo mismo para no quedar visibles sobre datos viejos mientras se
+     * repite la consulta (por ejemplo, al recargar despues de un movimiento).
+     */
+    get inventoryLoaded(): boolean {
+        return !!this.inventoryElements;
+    }
+
+    private loadInventory(establishmentId: string) {
         this.inventory = undefined;
+        this.inventoryElements = undefined;
+        // Se limpia tambien lo que alimenta al dialogo masivo y a Exportar: si sobrevive a la
+        // recarga, esas acciones trabajan sobre las cantidades anteriores.
+        this.allInventoryElements = undefined;
+        this.tableElementsValues = [];
+        this.searchTerm = undefined;
         let requestArray = [];
 
         // V3 devuelve ademas el costo del producto para venta; solo se pide con la capacidad costRead.
@@ -95,7 +142,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                     this.allInventoryElements = this.inventoryElements;
                     this.setTableElements(this.inventoryElements);
                     this.storeName = this.inventory.establishment?.name;
-                    this.activityLogName = this.activityLogName + "|||" + this.inventory.establishment?.id;
+                    this.activityLogName = this.activityLogBaseName + "|||" + this.inventory.establishment?.id;
                 } else {
                     this.inventoryElements = [];
                     this.allInventoryElements = [];
@@ -103,7 +150,6 @@ export class ListStoreInventoryPFSComponent implements OnInit {
                 }
             }
         });
-        this.productForSaleForm = this.createProductForSaleFormGroup();
     }
 
     /** Los botones de agregar, quitar y devolver a bodega. */
@@ -411,6 +457,66 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     //             this.alertService.error('Error en movimiento de inventario, contacte con Administracion');
     //     }});
     // }
+
+    /**
+     * Filas del dialogo de acciones masivas. La cantidad de `inventory_element` esta en la unidad
+     * base del elemento (Unidad / Libra), asi que se manda tal cual junto con su propia medida:
+     * lo escrito en la casilla es directamente comparable con lo que hay en inventario.
+     */
+    get inventoryActionItems(): InventoryActionItem[] {
+        return (this.allInventoryElements ?? []).map(element => ({
+            id: String(element.productForSale?.id),
+            title: element.productForSale?.finishedProduct?.name,
+            measureId: element.measure?.id,
+            unitName: element.measure?.unitBase?.name,
+            quantity: Number(element.quantity) || 0
+        }));
+    }
+
+    /** Agregar, eliminar o devolver varios productos de una sola vez, con un unico comentario. */
+    onSaveInventoryActions(event: BulkInventoryAction){
+        if(!event.items.length) return;
+
+        const movements = event.items.map(item => ({
+            inventoryType: this.inventory?.inventoryType,
+            unitName: this.inventory?.unitName,
+            elementId: item.id,
+            measureId: item.measureId,
+            quantity: item.quantity,
+            creatorUserId: this.accountService.userValue.uuid,
+            comment: event.comment
+        }));
+
+        // Devolver mueve dos inventarios (saca de tienda, entra a bodega) y tiene su propio endpoint.
+        const request = event.action === 'return'
+            ? this.dataService.multiReturnPFSToWarehouse(movements)
+            : this.dataService.multiAddRemoveInventoryElement(movements.map(movement => ({
+                ...movement,
+                actionTypeId: event.action === 'add'
+                    ? actionTypeValues.add_pfs_manual.actionType.id
+                    : actionTypeValues.remove_pfs_manual.actionType.id
+            })));
+
+        const successMessage = event.action === 'add'
+            ? 'Productos agregados al inventario correctamente'
+            : event.action === 'remove'
+                ? 'Productos eliminados del inventario correctamente'
+                : 'Devolución a bodega realizada correctamente';
+
+        this.savingInventoryActions = true;
+        request.pipe(first()).subscribe({
+            next: () => {
+                this.savingInventoryActions = false;
+                this.alertService.success(successMessage);
+                if(this.establishmentId) this.loadInventory(this.establishmentId);
+            },
+            error: error => {
+                this.savingInventoryActions = false;
+                let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error en movimiento de inventario, contacte con Administracion');
+                this.alertService.error(errorMessage);
+            }
+        });
+    }
 
     goToActionsHistory(){
         this.router.navigate(['/activityLog/view'], { queryParams: { type: this.inventory?.inventoryType, unit: this.inventory?.unitName } });

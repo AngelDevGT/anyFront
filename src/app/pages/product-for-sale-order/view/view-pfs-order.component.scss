@@ -1,54 +1,469 @@
-.genericCard {
-    /* margin-top: 10px; */
-    margin: 20px;
-}
+// Misma estética que el detalle de venta (view-store-sales-pfs). Los bloques
+// genéricos —topbar, card-block, btn-ghost, status-pill, sidebar— están copiados
+// y no extraídos a un parcial compartido a propósito: en este repo cada
+// componente lleva su SCSS autocontenido y ninguno importa parciales, así que
+// extraerlos obligaría a tocar el SCSS de la venta, que ya está en producción.
+$accent: #c94e00;
+$accent-dark: #a83e00;
+$step-pending: #dfe3e8;
+$danger: #dc3545;
 
-.custom-input{
-    padding: 0 10px;
-}
-
-// img{
-//     max-width: 250px;
-//     max-height: 250px;
-// }
-
-.responsive {
-    width: 90%;
-    height: auto;
-    align-self: center;
-}
-
-.form-group{
-    margin-bottom: 10px;
-    padding-top: 5px;
-    padding-bottom: 5px;
-}
-
-.element-icon{
-    color: #79d0ea;
-}
-
-.total-text{
-    color: black;
-    font-size: x-large;
-}
-
-.subtotal,
-  .descuento,
-  .total {
+.order-loading {
     display: flex;
-    justify-content: space-between; /* Alinea los elementos a la izquierda y derecha */
+    justify-content: center;
+    padding: 64px;
+    color: #aaa;
+}
+
+.order-view {
+    padding: 20px 24px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+// ── Top bar ───────────────────────────────────────────────
+.order-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #444;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    &:hover { border-color: $accent; color: $accent; background: #fff7f2; }
+    .material-icons { font-size: 22px; }
+}
+
+.topbar-titles { line-height: 1.2; min-width: 0; }
+.order-title { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; }
+// Tres líneas: número, nombre y tienda. El nombre es lo que la gente usa para
+// referirse al pedido, así que va casi al tamaño del título y en negro, pero
+// sin bold, para que el número siga siendo el ancla visual.
+.order-name {
+    font-size: 19px;
+    font-weight: 500;
+    color: #1a1a2e;
+    margin: 5px 0 0;
+    word-break: break-word;
+}
+.order-store { font-size: 14px; font-weight: 600; color: $accent; margin: 4px 0 0; }
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-ghost,
+.btn-accent {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    border: 1px solid #e0e0e0;
+    .material-icons { font-size: 18px; }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.btn-ghost {
+    background: #fff;
+    color: #444;
+    &:hover:not(:disabled) { border-color: $accent; color: $accent; background: #fff7f2; }
+}
+
+.btn-ghost-danger {
+    &:hover:not(:disabled) { border-color: $danger; color: $danger; background: #fff5f5; }
+}
+
+// Acción dentro del encabezado de un bloque, no de la barra superior: más chica, para que no
+// compita con el título del bloque.
+.btn-ghost-sm {
+    padding: 5px 11px;
+    font-size: 12.5px;
+    .material-icons { font-size: 15px; }
+}
+
+// ── Operadores ────────────────────────────────────────────
+// Todas las cápsulas del mismo color (OPERATOR_CHIP_COLOR, el ámbar de crédito): una vez
+// guardados no se distingue el operador del catálogo del escrito a mano, porque la columna es
+// texto y no conserva la FK del cliente.
+.operator-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.operator-chip {
+    padding: 4px 11px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.operator-empty {
+    margin: 0;
+    font-size: 13.5px;
+    color: #8a94a6;
+}
+
+.btn-accent {
+    background: $accent;
+    color: #fff;
+    border-color: $accent;
+    &:hover:not(:disabled) { background: $accent-dark; border-color: $accent-dark; }
+}
+
+// ── Grid layout ───────────────────────────────────────────
+.order-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    align-items: start;
+
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.order-main,
+.order-side {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+// ── Cards ─────────────────────────────────────────────────
+.card-block {
+    background: #fff;
+    border: 1px solid #eef0f3;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    padding: 18px 20px;
+}
+
+.card-block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.card-block-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+    .title-icon { font-size: 19px; color: $accent; }
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+// ── Diagrama de estados ───────────────────────────────────
+// Con 5 pasos en pantallas angostas no cabe nada legible, así que el diagrama
+// scrollea horizontalmente en vez de apretar los círculos.
+.steps {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding: 8px 0 4px;
+}
+
+.step {
+    position: relative;
+    flex: 1 0 96px;
+    min-width: 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 4px;
+}
+
+// Los dos medios tramos de la línea que une los círculos, por separado porque
+// el tramo derecho de un paso depende de si el SIGUIENTE está cumplido.
+.step::before,
+.step::after {
+    content: '';
+    position: absolute;
+    top: 25px;
+    height: 4px;
+    background: $step-pending;
+}
+.step::before { left: 0; right: 50%; }
+.step::after  { left: 50%; right: 0; }
+.step:first-child::before,
+.step:last-child::after { display: none; }
+
+.step--line-before::before { background: $accent; }
+.step--line-after::after   { background: $accent; }
+.step--failed::before      { background: $danger; }
+
+.step__dot {
+    position: relative;
+    z-index: 1;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $step-pending;
+    color: #fff;
+    .material-icons { font-size: 22px; }
+}
+
+// Paso no cumplido: círculo gris con punto claro al centro, sin check.
+.step:not(.step--done) .step__dot {
+    .material-icons { display: none; }
+    &::after {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #f4f6f8;
+    }
+}
+
+.step--done .step__dot { background: $accent; }
+.step--current .step__dot { box-shadow: 0 0 0 6px rgba(201, 78, 0, 0.18); }
+.step--failed .step__dot { background: $danger; }
+.step--failed.step--current .step__dot { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0.18); }
+
+.step__label {
+    margin: 10px 0 0;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #98a2b3;
+}
+.step--done .step__label { color: #1a1a2e; }
+.step--failed .step__label { color: $danger; }
+
+.step__date {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #98a2b3;
+    white-space: nowrap;
+}
+
+.step-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #eef0f3;
+}
+
+// ── Productos ─────────────────────────────────────────────
+.product-table {
     width: 100%;
-  }
+    border-collapse: collapse;
 
-  .total-amount {
-    color: black;
-    font-size: large;
-    text-align: right; /* Alinea el texto a la derecha */
-  }
+    th, td {
+        text-align: left;
+        vertical-align: middle;
+        white-space: nowrap;
+        padding-top: 13px;
+        padding-bottom: 13px;
+    }
 
-  .total-title {
-    color: black;
-    font-size: large;
-    font-weight: bold;
-  }
+    thead th {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1a1a2e;
+        padding-top: 0;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #eef0f3;
+    }
+
+    tbody td {
+        border-bottom: 1px solid #f2f4f7;
+        font-size: 14px;
+        color: #475467;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    .col-product { width: 100%; white-space: normal; padding-right: 22px; }
+    .col-num { padding-left: 22px; }
+}
+
+.product-name { font-size: 14.5px; font-weight: 600; color: #2563eb; margin: 0; }
+.product-meta {
+    font-size: 14.5px;
+    color: #98a2b3;
+    margin: 3px 0 0;
+    .dot { margin: 0 4px; }
+}
+.product-total { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+
+@media (max-width: 640px) {
+    .product-table {
+        thead { display: none; }
+        tbody { display: block; }
+
+        tr {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            column-gap: 12px;
+            row-gap: 2px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f2f4f7;
+        }
+        tbody tr:last-child { border-bottom: none; }
+
+        td {
+            display: block;
+            padding: 0;
+            border: none;
+            white-space: normal;
+        }
+
+        .col-product { grid-column: 1; grid-row: 1; width: auto; padding-right: 0; }
+
+        .col-qty {
+            grid-column: 1;
+            grid-row: 2;
+            font-size: 13px;
+            color: #98a2b3;
+            padding-left: 0;
+            &::before { content: 'Cantidad: '; }
+        }
+
+        .product-total {
+            grid-column: 2;
+            grid-row: 1 / 3;
+            align-self: center;
+            text-align: right;
+            font-size: 16px;
+            padding-left: 0;
+        }
+    }
+}
+
+// ── Totales ───────────────────────────────────────────────
+.totals-card { gap: 0; }
+.totals-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    font-size: 14px;
+    color: #667085;
+    span:last-child { font-weight: 600; color: #475467; }
+}
+.totals-total {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a2e;
+    span:last-child { font-size: 17px; font-weight: 800; color: #1a1a2e; }
+}
+
+// ── Notas ─────────────────────────────────────────────────
+.order-note {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #475467;
+    white-space: pre-wrap;   // las notas suelen venir con saltos de línea
+    word-break: break-word;
+}
+
+// ── Sidebar ───────────────────────────────────────────────
+.side-summary { padding: 6px 20px; }
+.side-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f2f4f7;
+    &:last-child { border-bottom: none; }
+}
+.side-label { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+
+// Verificación: misma píldora que el estado, porque es la otra marca de control del
+// pedido y se leen juntas. Los colores van acá y no inline como los de status-pill:
+// no sale del catálogo status, es una columna propia con solo dos valores posibles.
+.verify-pill {
+    background: #f2f4f7;
+    color: #667085;
+
+    .material-icons { font-size: 15px; }
+
+    &--on {
+        background: #e6f4ea;
+        color: #1e7e34;
+    }
+}
+.side-total { font-size: 17px; font-weight: 800; color: $accent; }
+
+.side-info { padding: 6px 20px; }
+.info-block {
+    padding: 13px 0;
+    border-bottom: 1px solid #f2f4f7;
+    &:last-child { border-bottom: none; }
+}
+.info-label { font-size: 14px; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; }
+.info-value { font-size: 14px; color: #667085; margin: 0; word-break: break-word; }
+
+// ── Overlay mientras se aplica una transición ─────────────
+.order-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.order-loading-overlay__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

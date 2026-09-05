@@ -8,6 +8,8 @@ export class Establishment {
     description?: string;
     receivePendingOrdersEnabled?: boolean;
     establishmentTypeId?: number;
+    /** Bancos con los que trabaja la tienda, separados por salto de linea. Ver @app/helpers/banks. */
+    banks?: string;
     creationDate?: string; //sistema
     updatedDate?: string; //sistema
     creatorUser?: User; //sistema

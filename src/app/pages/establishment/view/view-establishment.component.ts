@@ -4,7 +4,8 @@ import { first } from 'rxjs/operators';
 import { AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Establishment } from '@app/models/establishment.model';
-import pdfMake from "pdfmake/build/pdfmake";  
+import { formatBanks } from '@app/helpers';
+import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";  
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -35,7 +36,9 @@ export class ViewEstablishmentComponent implements OnInit{
             this.dataService.getEstablishmentById(this.id)
                 .pipe(first())
                 .subscribe((establ: any) =>{
-                    let establishment = establ.getEstablishmentResponse.data[0]?.json_result || null;
+                    // findJsonValue y no la clave del wrapper: esa se deriva del path, asi que
+                    // cambia con cada version del endpoint (hoy /getEstablishmentV2)
+                    let establishment = this.dataService.findJsonValue(establ, 'json_result');
                     if (establishment){
                         this.establishment = establishment;
                         this.setEstablishmentElements(this.establishment!);
@@ -71,6 +74,9 @@ export class ViewEstablishmentComponent implements OnInit{
         this.elements.push({icon : "pin_drop", name : "Direccion", value : establishment.address});
         this.elements.push({icon : "description", name : "Descripción", value : establishment.description});
         this.elements.push({icon : "storefront", name : "Tipo de tienda", value : establishment.establishmentTypeId === 2 ? "Abarrotes" : "Productos"});
+        // Se imprimen tal cual: vienen separados por salto de linea y multiline los muestra como
+        // listado. formatBanks recorta los espacios y las lineas vacias.
+        this.elements.push({icon : "account_balance", name : "Bancos", value : formatBanks(establishment.banks) || 'N/A', multiline : true});
         this.elements.push({icon : "info", name : "Estado", value : establishment.status?.identifier});
         this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(establishment.creationDate!.replaceAll("\"",""))});
         this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : establishment.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(establishment.updatedDate!.replaceAll("\"","")) : '--'});

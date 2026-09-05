@@ -24,6 +24,7 @@ import { ItemsList } from '@app/models/store/item-list.model';
 import { ShopResume } from '@app/models/store/shop-resume.model';
 import { Establishment } from '@app/models/establishment.model';
 import { ActivityLog } from '@app/models/system/activity-log';
+import { bankOptions, requiresPaymentDetail, BANK_NAME_MAX_LENGTH, REFERENCE_NO_MAX_LENGTH } from '@app/helpers';
 
 @Component({ 
     selector: 'page-add-edit-sale',
@@ -59,6 +60,15 @@ export class AddEditSaleComponent implements OnInit{
     isRegisteredCustomerSale = false;
     /** Tope del comentario del depósito — igual al varchar(200) de shop_sale_payment.comment */
     readonly commentMaxLength = 200;
+    /** Topes de shop_sale_payment.bank y .reference_no */
+    readonly bankMaxLength = BANK_NAME_MAX_LENGTH;
+    readonly referenceMaxLength = REFERENCE_NO_MAX_LENGTH;
+    /**
+     * Bancos de la tienda, para el select del pago. Salen de establishment.banks, que ya viene en
+     * la misma petición que arma la pantalla. Si la tienda no tiene ninguno cargado no se puede
+     * cobrar con Depósito ni con Cheque: el formulario lo dice y bloquea el registro.
+     */
+    bankOptionsList: string[] = [];
 
     get filteredInventoryElements(): InventoryElement[] | undefined {
         if (!this.saleSearchTerm) return this.inventoryElements;
@@ -71,6 +81,15 @@ export class AddEditSaleComponent implements OnInit{
     /** Productos cuando el buscador tiene foco o texto; opciones cuando no. */
     get showProductResults(): boolean {
         return this.searchFocused || !!this.saleSearchTerm;
+    }
+
+    /**
+     * Sin existencia: la pastilla de cantidad pasa a rojo. Se compara contra <= 0 y no contra 0
+     * exacto porque una existencia negativa tampoco es vendible, y pintarla de verde sería peor.
+     * quantity llega como texto desde el API, así que un !quantity no sirve: '0' es truthy.
+     */
+    isOutOfStock(inventoryElement?: InventoryElement): boolean {
+        return Number(inventoryElement?.quantity ?? 0) <= 0;
     }
 
     get itemsSubtotal(): number {
@@ -113,32 +132,83 @@ export class AddEditSaleComponent implements OnInit{
         return this.selectedPaymentType?.identifier === 'Crédito';
     }
 
-    /** ── Depósito ─────────────────────────────────────────────── */
+    /** ── Pago bancario (Depósito / Cheque) ────────────────────── */
 
     /**
-     * El pedido se paga con depósito, así que se puede anotar la boleta y la
-     * fecha real de la transferencia.
+     * El pedido se paga con Depósito o con Cheque, así que hay que registrar de qué banco salió y
+     * con qué número de transferencia o de cheque. El comentario sigue siendo opcional.
+     * Qué tipos de pago lo piden lo decide requiresPaymentDetail (@app/helpers).
      */
     get isDepositOrder(): boolean {
-        return this.selectedPaymentType?.identifier === 'Depósito';
+        return requiresPaymentDetail(this.selectedPaymentType?.identifier);
     }
 
-    /** El envío tiene costo y se paga con depósito. */
+    /** El envío tiene costo y se paga con Depósito o con Cheque. */
     get isDepositDelivery(): boolean {
         return this.showDelivery && this.delivery > 0
-            && this.selectedDeliveryPaymentType?.identifier === 'Depósito';
+            && requiresPaymentDetail(this.selectedDeliveryPaymentType?.identifier);
     }
 
     /**
-     * La fecha solo se pide si hay algo que fechar: sin comentario no se
-     * registra ningún pago, así que tampoco hay fecha que elegir.
+     * La fecha se pide siempre que aplique el detalle bancario. Antes dependía del comentario
+     * —sin comentario no se registraba pago—, pero ahora el pago se registra siempre, así que
+     * siempre hay una fecha que elegir.
      */
     get showDepositDate(): boolean {
-        return !!this.depositCommentValue;
+        return this.isDepositOrder;
     }
 
     get showDeliveryDepositDate(): boolean {
-        return !!this.deliveryDepositCommentValue;
+        return this.isDepositDelivery;
+    }
+
+    /** La tienda no tiene bancos cargados: no se puede registrar un pago con Depósito ni Cheque. */
+    get hasNoBanks(): boolean {
+        return !this.bankOptionsList.length;
+    }
+
+    /** Falta elegir banco o escribir la referencia en alguno de los dos pagos. */
+    get missingPaymentDetail(): boolean {
+        if (this.isDepositOrder && !(this.depositBankValue && this.depositReferenceValue)) return true;
+        if (this.isDepositDelivery && !(this.deliveryDepositBankValue && this.deliveryDepositReferenceValue)) return true;
+        return false;
+    }
+
+    private get depositBankValue(): string {
+        return (this.orderForm?.get('depositBank')?.value ?? '').trim();
+    }
+
+    private get depositReferenceValue(): string {
+        return (this.orderForm?.get('depositReferenceNo')?.value ?? '').trim();
+    }
+
+    private get deliveryDepositBankValue(): string {
+        return (this.orderForm?.get('deliveryDepositBank')?.value ?? '').trim();
+    }
+
+    private get deliveryDepositReferenceValue(): string {
+        return (this.orderForm?.get('deliveryDepositReferenceNo')?.value ?? '').trim();
+    }
+
+    /**
+     * Los datos bancarios del pedido ya están completos y el envío también los pide, así que se
+     * pueden copiar. Es el caso normal: una sola transferencia paga el pedido y el envío, y
+     * reescribir el mismo banco y la misma referencia dos veces invita a equivocarse.
+     *
+     * Si el pedido no se paga con Depósito ni Cheque —o todavía no tiene banco y referencia— no hay
+     * nada que copiar y el botón no aparece.
+     */
+    get canCopyOrderPaymentDetail(): boolean {
+        return this.isDepositOrder && this.isDepositDelivery && !this.hasNoBanks
+            && !!this.depositBankValue && !!this.depositReferenceValue;
+    }
+
+    /** Copia banco, referencia y fecha del pago del pedido al del envío. */
+    copyOrderPaymentDetailToDelivery() {
+        if (!this.canCopyOrderPaymentDetail) return;
+        this.orderForm?.get('deliveryDepositBank')?.setValue(this.depositBankValue);
+        this.orderForm?.get('deliveryDepositReferenceNo')?.setValue(this.depositReferenceValue);
+        this.orderForm?.get('deliveryDepositDate')?.setValue(this.orderForm?.get('depositDate')?.value);
     }
 
     private get depositCommentValue(): string {
@@ -150,17 +220,21 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     /**
-     * Los datos del depósito solo tienen sentido mientras el pago sea depósito:
+     * Los datos del pago bancario solo tienen sentido mientras el método sea Depósito o Cheque:
      * si el usuario cambia de método se descartan para no mandarlos por error.
      * El formulario de edición no tiene estos campos, de ahí los null-checks.
      */
     private clearUnusedDepositFields() {
         const now = this.dataService.getLocalDateTimeInputValue();
         if (!this.isDepositOrder) {
+            this.orderForm?.get('depositBank')?.setValue('');
+            this.orderForm?.get('depositReferenceNo')?.setValue('');
             this.orderForm?.get('depositComment')?.setValue('');
             this.orderForm?.get('depositDate')?.setValue(now);
         }
         if (!this.isDepositDelivery) {
+            this.orderForm?.get('deliveryDepositBank')?.setValue('');
+            this.orderForm?.get('deliveryDepositReferenceNo')?.setValue('');
             this.orderForm?.get('deliveryDepositComment')?.setValue('');
             this.orderForm?.get('deliveryDepositDate')?.setValue(now);
         }
@@ -443,6 +517,8 @@ export class AddEditSaleComponent implements OnInit{
                     this.filteredMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
                     this.inventory = this.dataService.findJsonValue(result[2], 'json_result') || {};
                     this.establishment = this.dataService.findJsonValue(result[3], 'json_result') || {};
+                    // Los bancos del select del pago salen del listado de la tienda
+                    this.bankOptionsList = bankOptions(this.establishment?.banks);
                     this.customerOptions = this.dataService.findJsonValue(result[4], 'json_result') || [];
                 },
                 error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
@@ -543,8 +619,8 @@ export class AddEditSaleComponent implements OnInit{
             }
             return this.dataService.updateShopHistory(updatedShopResume);
         } else {
-            const depositComment = this.isDepositOrder ? this.depositCommentValue : '';
-            const deliveryDepositComment = this.isDepositDelivery ? this.deliveryDepositCommentValue : '';
+            const isDepositOrder = this.isDepositOrder;
+            const isDepositDelivery = this.isDepositDelivery;
             let newShopResume: ShopResume = {
                 ...this.orderForm.value,
                 // Con cliente registrado la venta viaja solo con la referencia:
@@ -559,15 +635,19 @@ export class AddEditSaleComponent implements OnInit{
                 paymentType: this.selectedPaymentType,
                 deliveryPaymentType: this.selectedDeliveryPaymentType,
                 itemsList: this.itemsList,
-                // Depósito: sin comentario la base no registra ningún pago, así
-                // que la fecha tampoco se manda. El input da hora local y la BD
-                // guarda UTC.
-                depositComment: depositComment,
-                depositDate: depositComment
+                // Pago bancario (Depósito o Cheque): con banco y referencia la base siempre
+                // registra el pago, así que la fecha va junto. Si el método es otro se manda todo
+                // vacío y no se registra nada. El input da hora local y la BD guarda UTC.
+                depositBank: isDepositOrder ? this.depositBankValue : '',
+                depositReferenceNo: isDepositOrder ? this.depositReferenceValue : '',
+                depositComment: isDepositOrder ? this.depositCommentValue : '',
+                depositDate: isDepositOrder
                     ? this.dataService.getUTCTimeFromLocalDateTime(this.f['depositDate'].value)
                     : '',
-                deliveryDepositComment: deliveryDepositComment,
-                deliveryDepositDate: deliveryDepositComment
+                deliveryDepositBank: isDepositDelivery ? this.deliveryDepositBankValue : '',
+                deliveryDepositReferenceNo: isDepositDelivery ? this.deliveryDepositReferenceValue : '',
+                deliveryDepositComment: isDepositDelivery ? this.deliveryDepositCommentValue : '',
+                deliveryDepositDate: isDepositDelivery
                     ? this.dataService.getUTCTimeFromLocalDateTime(this.f['deliveryDepositDate'].value)
                     : '',
             }
@@ -879,10 +959,15 @@ export class AddEditSaleComponent implements OnInit{
             paymentType: new FormControl('', [Validators.required]),
             deliveryPaymentType: new FormControl('', [Validators.required]),
             delivery: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
-            // Depósito: solo se usan cuando el pago es con depósito. Con el
-            // comentario vacío la venta se guarda sin registrar ningún pago.
+            // Pago bancario: solo se usan cuando el método es Depósito o Cheque. Banco y
+            // referencia son obligatorios en ese caso —lo exige missingPaymentDetail, no un
+            // Validators.required, porque dependen del método elegido—; el comentario es opcional.
+            depositBank: new FormControl('', [Validators.maxLength(this.bankMaxLength)]),
+            depositReferenceNo: new FormControl('', [Validators.maxLength(this.referenceMaxLength)]),
             depositComment: new FormControl('', [Validators.maxLength(this.commentMaxLength)]),
             depositDate: new FormControl(this.dataService.getLocalDateTimeInputValue()),
+            deliveryDepositBank: new FormControl('', [Validators.maxLength(this.bankMaxLength)]),
+            deliveryDepositReferenceNo: new FormControl('', [Validators.maxLength(this.referenceMaxLength)]),
             deliveryDepositComment: new FormControl('', [Validators.maxLength(this.commentMaxLength)]),
             deliveryDepositDate: new FormControl(this.dataService.getLocalDateTimeInputValue()),
         //   applyDate: new FormControl('', [Validators.required])

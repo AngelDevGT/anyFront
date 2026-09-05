@@ -7,7 +7,9 @@
     </div>
   </div>
 
-  <div class="balance-summary" *ngIf="allCustomers">
+  <store-required *ngIf="!storeSelected" message="Selecciona una tienda para ver los saldos de sus clientes"></store-required>
+
+  <div class="balance-summary" *ngIf="storeSelected && allCustomers">
     <div class="balance-tile">
       <span class="balance-tile-label">Saldo pendiente total</span>
       <span class="balance-tile-value accent">{{ formatPrice(totalPendingBalance) }}</span>
@@ -22,7 +24,7 @@
     </div>
   </div>
 
-  <div class="content-card">
+  <div class="content-card" *ngIf="storeSelected">
     <div class="table-toolbar">
       <div class="search-box">
         <i class="material-icons search-icon">search</i>

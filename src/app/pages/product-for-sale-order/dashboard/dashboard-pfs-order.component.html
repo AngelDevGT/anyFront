@@ -12,6 +12,12 @@
                     <span *ngIf="!loadingOrders && hasStores">
                         {{ totalOrders }} pedido{{ totalOrders === 1 ? '' : 's' }} en {{ cards.length }} tienda{{ cards.length === 1 ? '' : 's' }}
                     </span>
+                    <ng-container *ngIf="!loadingOrders && hasStores && activeStatus as status">
+                        <span class="page-subtitle__sep">·</span>
+                        <span class="page-subtitle__filter" [style.--chip]="status.color">
+                            {{ visibleCards.length }} con pedidos en {{ status.label }}
+                        </span>
+                    </ng-container>
                 </p>
             </div>
 
@@ -31,21 +37,35 @@
         </header>
 
         <!-- ── Resumen de todas las tiendas ───────────────────────────────── -->
+        <!-- Cada total filtra la rejilla: un estado deja solo las tiendas que tienen pedidos ahí
+             y el total general los devuelve todas. -->
         <div class="summary-row" *ngIf="!loadingOrders && hasStores">
-            <section class="summary-card summary-card--total" aria-label="Total de pedidos">
+            <button type="button" class="summary-card summary-card--total"
+                    [class.summary-card--filtering]="activeStatusKey"
+                    [attr.aria-pressed]="!activeStatusKey"
+                    [title]="activeStatusKey ? 'Ver todas las tiendas' : 'Todos los estados'"
+                    (click)="clearStatusFilter()">
                 <span class="summary__total-value">{{ totalOrders }}</span>
                 <span class="summary__total-label">Pedidos totales</span>
-            </section>
+            </button>
 
             <section class="summary-card summary-card--states" aria-label="Pedidos por estado">
                 <div class="summary__chips">
-                    <div class="summary__chip" *ngFor="let status of statusViews; trackBy: trackByStatusKey"
-                         [class.summary__chip--empty]="!totals[status.key]"
-                         [style.--chip]="status.color">
+                    <button type="button" class="summary__chip"
+                            *ngFor="let status of statusViews; trackBy: trackByStatusKey"
+                            [class.summary__chip--empty]="!totals[status.key]"
+                            [class.summary__chip--active]="activeStatusKey === status.key"
+                            [style.--chip]="status.color"
+                            [disabled]="!totals[status.key]"
+                            [attr.aria-pressed]="activeStatusKey === status.key"
+                            [title]="activeStatusKey === status.key
+                                ? 'Ver todas las tiendas'
+                                : 'Ver solo las tiendas con pedidos en ' + status.label"
+                            (click)="toggleStatusFilter(status)">
                         <i class="material-icons summary__chip-icon">{{ status.icon }}</i>
                         <span class="summary__chip-value">{{ totals[status.key] || 0 }}</span>
                         <span class="summary__chip-label">{{ status.label }}</span>
-                    </div>
+                    </button>
                 </div>
             </section>
         </div>
@@ -110,6 +130,7 @@
                 <ul class="store-card__stats" *ngIf="card.total">
                     <li class="stat" *ngFor="let status of statusViews; trackBy: trackByStatusKey"
                         [class.stat--zero]="!getCount(card, status.key)"
+                        [class.stat--active]="activeStatusKey === status.key"
                         [style.--stat]="status.color">
                         <i class="material-icons stat__icon">{{ status.icon }}</i>
                         <span class="stat__value">{{ getCount(card, status.key) }}</span>
@@ -147,8 +168,8 @@
 
         <div class="empty-state" *ngIf="!loadingOrders && hasStores && !visibleCards.length">
             <i class="material-icons">search_off</i>
-            <p>Ninguna tienda coincide con "{{ searchTerm }}".</p>
-            <button type="button" class="empty-state__btn" (click)="clearSearch()">Limpiar búsqueda</button>
+            <p>{{ noMatchesMessage }}</p>
+            <button type="button" class="empty-state__btn" (click)="clearAllFilters()">Limpiar filtros</button>
         </div>
 
     </div>

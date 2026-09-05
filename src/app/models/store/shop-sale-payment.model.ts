@@ -6,6 +6,13 @@ export interface ShopSalePayment {
     amount?: string;
     date?: string;
     comment?: string;
+    /**
+     * Banco del pago y numero de transferencia o de cheque. Solo los llevan los pagos con Depósito
+     * y con Cheque; vienen vacios en los pagos en efectivo y en los anteriores a 2026-09-01.
+     * El banco sale del listado de la tienda (establishment.banks) y se guarda como nombre.
+     */
+    bank?: string;
+    referenceNo?: string;
     paymentTarget?: string; // 'ORDER' | 'DELIVERY'
     /** true cuando es el depósito registrado con la venta, no un abono de crédito. */
     isSalePayment?: boolean;

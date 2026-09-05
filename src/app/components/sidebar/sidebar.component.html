@@ -41,24 +41,35 @@
         [attr.aria-controls]="effectiveCollapsed ? null : subMenu.button_aria_controls"
         [attr.aria-expanded]="subMenu.button_aria_expanded"
         [matTooltip]="effectiveCollapsed ? subMenu.button_name : ''"
+        #parentTooltip="matTooltip"
         matTooltipPosition="right"
+        (mouseenter)="showTextIfTruncated(parentText, subMenu.button_name, parentTooltip)"
       >
         <i class="material-icons menu-icon">{{ subMenu.button_icon }}</i>
-        <span class="menu-text">{{ subMenu.button_name }}</span>
+        <span class="menu-text" #parentText>{{ subMenu.button_name }}</span>
         <i class="material-icons chevron-icon">arrow_drop_down</i>
       </button>
 
+      <!-- La seccion de la pantalla actual arranca abierta. El 'show' se decide una
+           sola vez, al construir el menu: a partir de ahi el collapse lo maneja
+           Bootstrap y Angular no vuelve a escribir la clase -->
       <div *ngIf="subMenu.is_tree"
            id="{{ subMenu.root_id }}"
-           class="{{ subMenu.root_class }}">
+           class="{{ subMenu.root_class }}{{ subMenu.initially_open ? ' show' : '' }}">
         <div *ngFor="let child of subMenu.childs">
+          <!-- El tooltip solo entra en juego si el nombre no cabe: lo abre
+               showTextIfTruncated() con el texto completo -->
           <button
             type="button"
             class="sidebar-child-btn"
-            (click)="navigateWithParams(child.router_link, child.query_params)"
+            [class.active]="isActiveChild(child)"
+            (click)="navigateChild(child)"
+            matTooltip=""
+            #childTooltip="matTooltip"
+            matTooltipPosition="right"
+            (mouseenter)="showTextIfTruncated(childText, child.link_name, childTooltip)"
           >
-            <i class="material-icons menu-icon child-icon">{{ child.icon_name }}</i>
-            <span class="menu-text">{{ child.link_name }}</span>
+            <span class="menu-text" #childText>{{ child.link_name }}</span>
           </button>
         </div>
       </div>
@@ -70,10 +81,12 @@
   <div class="sidebar-user" [class.collapsed]="effectiveCollapsed">
     <div class="user-info"
          [matTooltip]="effectiveCollapsed ? (currentUser?.name || '') : ''"
-         matTooltipPosition="right">
+         #userTooltip="matTooltip"
+         matTooltipPosition="right"
+         (mouseenter)="showTextIfTruncated(userNameText, currentUser?.name || '', userTooltip)">
       <i class="material-icons user-avatar-icon">account_circle</i>
       <div class="user-details">
-        <span class="user-name">{{ currentUser?.name }}</span>
+        <span class="user-name" #userNameText>{{ currentUser?.name }}</span>
         <span class="user-role">{{ currentUser?.role?.text }}</span>
       </div>
     </div>

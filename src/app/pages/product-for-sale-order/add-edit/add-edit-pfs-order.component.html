@@ -11,6 +11,12 @@
             </div>
             <form *ngIf="!loading" [formGroup]="orderForm" (ngSubmit)="onSaveForm()">
                 <div class="container">
+                    <div *ngIf="isReadyOrder" class="alert alert-warning" role="alert">
+                        <strong>Este pedido ya está LISTO.</strong> El producto salió de bodega y está en tránsito hacia
+                        la tienda. Al guardar, lo que agregues se descuenta de bodega y lo que quites se devuelve; si no
+                        alcanza el inventario, no se guarda ningún cambio. La cantidad disponible que se muestra incluye
+                        lo que este pedido tiene reservado. Si cambias los productos, el pedido queda sin verificar.
+                    </div>
                     <div class="row justify-content-center">
                         <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
                             <mat-form-field *ngIf="isPropertiesVisible" class="col-sm-12 col-md-4 custom-input align-self-start" appearance="outline">
@@ -226,7 +232,15 @@
                             </div>
                         </div>
                         <div class="col-sm-12 text-center p-2">
-                            <button id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||orderForm.invalid||!productForSaleOrderElements||productForSaleOrderElements.length<=0"
+                            <button *ngIf="!isReadyOrder" id="boton-form-crear-comunidad" type="submit" [disabled]="submitting||orderForm.invalid||!productForSaleOrderElements||productForSaleOrderElements.length<=0"
+                                class="btn btn-outline-success btn-lg">
+                                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                                Guardar Pedido
+                            </button>
+                            <!-- En Listo guardar mueve inventario, asi que pasa por el dialogo que lo detalla -->
+                            <button *ngIf="isReadyOrder" type="button" (click)="onSaveReadyOrderDialog()"
+                                data-bs-toggle="modal" data-bs-target="#confirmModal"
+                                [disabled]="submitting||orderForm.invalid||!productForSaleOrderElements||productForSaleOrderElements.length<=0"
                                 class="btn btn-outline-success btn-lg">
                                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                                 Guardar Pedido
@@ -317,6 +331,9 @@
                 <div>
                     {{confirmDialogText}}
                 </div>
+                <ul *ngIf="inventoryChanges.length" class="mt-2 mb-0">
+                    <li *ngFor="let change of inventoryChanges">{{change}}</li>
+                </ul>
                 <div *ngIf="warningDialogText">
                     <br>
                     <strong class="text-danger">{{warningDialogText}}</strong>

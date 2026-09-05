@@ -260,7 +260,7 @@ export class AddEditProductCreationComponent implements OnInit{
                 measureId: fpcElement.measure?.id,
                 quantity: fpcElement.quantity,
                 creatorUserId: this.accountService.userValue.uuid,
-                comment: "Registro de Producto Terminado en Inventario de Bodega",
+                comment: this.orderForm.get('comment')?.value,
                 actionTypeId: actionTypeValues.register_fp_by_creation.actionType.id,
             };
         });
@@ -618,6 +618,7 @@ export class AddEditProductCreationComponent implements OnInit{
         return new FormGroup({
             measure: new FormControl('', [Validators.required]),
             quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
+            comment: new FormControl('', [Validators.required, Validators.maxLength(254)]),
         });
     }
 

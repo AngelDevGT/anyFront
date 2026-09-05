@@ -1,117 +1,321 @@
-<div class="genericCard pt-3">
-    <mat-card class="mat-elevation-z8">
-        <div *ngIf="loading" class="text-center m-5">
-            <span class="spinner-border spinner-border-lg align-center"></span>
-        </div>
-        <mat-card-header *ngIf="!loading" style="justify-content: center;">
-            <mat-card-title>{{productForSaleOrder!.name}}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content *ngIf="!loading">
-            <br>
-            <div class="d-flex flex-wrap justify-content-center justify-content-md-center col-md-12 align-self-start">
-                <div class="col-12">
-                    <view-object [objectElements]="elements"></view-object>
-                </div>
-                <div class="col-xl-9 col-lg-12 col-md-12 col-sm-12">
-                    <responsive-table *ngIf="this.productForSaleOrder" [tableElements]="tableElementsValues"
-                        [pageSize]="pageSize"></responsive-table>
-                </div>
-                <div *ngIf="!isFactory" class="row justify-content-center col-lg-5 col-md-8 col-sm-12 p-3">
-                    <div class="total">
-                        <p class="total-title">Monto total</p>
-                        <p class="total-amount">Q{{ productForSaleOrder?.finalAmount | number: '1.2-2' }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="d-flex flex-wrap justify-content-center">
-                <button *ngIf="confirmReceiveOption"
-                    type="button" (click)="actionOrder(5)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
-                    class="btn btn-success m-2">
-                    <div class="d-flex flex-row p-1">
-                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                        <i class="material-icons icon">move_to_inbox</i>
-                        <span class="px-1">CONFIRMAR Y RECIBIR</span>
-                    </div>
-                </button>
-                <button *ngIf="receiveOption"
-                    type="button" (click)="actionOrder(1)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
-                    class="btn btn-success m-2">
-                    <div class="d-flex flex-row p-1">
-                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                        <i class="material-icons icon">archive</i>
-                        <span class="px-1">RECIBIR PEDIDO</span>
-                    </div>
-                </button>
-                <button *ngIf="readyOption"
-                    type="button" (click)="actionOrder(2)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
-                    class="btn btn-success m-2">
-                    <div class="d-flex flex-row p-1">
-                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                        <i class="material-icons icon">done_outline</i>
-                        <span class="px-1">LISTO</span>
-                    </div>
-                </button>
-                <button *ngIf="comingOption"
-                    type="button" (click)="actionOrder(3)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
-                    class="btn btn-warning m-2">
-                    <div class="d-flex flex-row p-1">
-                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                        <i class="material-icons icon">local_shipping</i>
-                        <span class="px-1">EN CAMINO</span>
-                    </div>
-                </button>
-                <button *ngIf="returnOption"
-                    type="button" (click)="actionOrder(4)" [disabled]="submitting" data-bs-toggle="modal" data-bs-target="#confirmModal"
-                    class="btn btn-danger m-2">
-                    <div class="d-flex flex-row p-1">
-                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                        <i class="material-icons icon">cancel</i>
-                        <span class="px-1">DEVOLVER</span>
-                    </div>
-                </button>
-                <button type="button" (click)="generatePDF()" [disabled]="submitting" class="btn btn-secondary m-2">
-                    <div class="d-flex flex-row p-1">
-                        <i class="material-icons icon">download</i>
-                        <span class="px-1">PDF</span>
-                    </div>
-                </button>
-                <button *ngIf="editOption"
-                    type="button" (click)="editOrder(productForSaleOrder?.id)" [disabled]="submitting"
-                    class="btn btn-primary m-2">
-                    <div class="d-flex flex-row p-1">
-                        <i class="material-icons icon">edit</i>
-                        <span class="px-1">EDITAR</span>
-                    </div>
-                </button>
-                <button *ngIf="deleteOption"
-                    type="button" (click)="deleteOrder()" [disabled]="submitting"
-                    class="btn btn-danger m-2">
-                    <div class="d-flex flex-row p-1">
-                        <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                        <i class="material-icons icon">delete</i>
-                        <span class="px-1">ELIMINAR</span>
-                    </div>
-                </button>
-            </div>
-        </mat-card-content>
-    </mat-card>
+<div class="order-loading" *ngIf="loading">
+    <span class="spinner-border spinner-border-lg"></span>
 </div>
 
-<div class="modal hide fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+<div class="order-view" *ngIf="!loading && productForSaleOrder">
+
+    <!-- ── Top bar ─────────────────────────────────────────────────────────── -->
+    <div class="order-topbar">
+        <div class="topbar-left">
+            <button class="back-btn" type="button" (click)="navigateWithParams()" aria-label="Volver">
+                <i class="material-icons">arrow_back</i>
+            </button>
+            <div class="topbar-titles">
+                <h1 class="order-title">
+                    Pedido <span *ngIf="productForSaleOrder.orderNumber != null">#{{ productForSaleOrder.orderNumber }}</span>
+                </h1>
+                <p class="order-name">{{ productForSaleOrder.name }}</p>
+                <p class="order-store">{{ productForSaleOrder.establishment?.name }}</p>
+            </div>
+        </div>
+        <div class="topbar-actions">
+            <button class="btn-ghost" type="button" (click)="generatePDF()" [disabled]="submitting">
+                <i class="material-icons">download</i> Descargar PDF
+            </button>
+            <button *ngIf="editOption" class="btn-ghost" type="button" (click)="editOrder()" [disabled]="submitting">
+                <i class="material-icons">edit</i> Editar
+            </button>
+            <button *ngIf="deleteOption" class="btn-ghost btn-ghost-danger" type="button"
+                    (click)="actionOrder(6)" [disabled]="submitting"
+                    data-bs-toggle="modal" data-bs-target="#confirmModal">
+                <i class="material-icons">delete</i> Eliminar
+            </button>
+        </div>
+    </div>
+
+    <div class="order-grid">
+
+        <!-- ── Columna principal ───────────────────────────────────────────── -->
+        <div class="order-main">
+
+            <!-- Estado del pedido -->
+            <div class="card-block">
+                <div class="card-block-head">
+                    <h3 class="card-block-title">
+                        <i class="material-icons title-icon">timeline</i>
+                        Estado del pedido
+                    </h3>
+                </div>
+
+                <div class="steps">
+                    <div class="step"
+                         *ngFor="let step of steps"
+                         [class.step--done]="step.done"
+                         [class.step--current]="step.current"
+                         [class.step--failed]="step.failed"
+                         [class.step--line-before]="step.lineBefore"
+                         [class.step--line-after]="step.lineAfter">
+                        <div class="step__dot">
+                            <i class="material-icons">{{ step.failed ? 'close' : 'check' }}</i>
+                        </div>
+                        <p class="step__label">{{ step.label }}</p>
+                        <p class="step__date" *ngIf="step.date">{{ formatStepDate(step.date) }}</p>
+                    </div>
+                </div>
+
+                <!-- Transiciones: pegadas al diagrama que modifican -->
+                <div class="step-actions" *ngIf="hasActions">
+                    <!-- Un solo botón: firme o no el pedido, la acción es la misma
+                         y la confirmación cuenta la diferencia en su texto -->
+                    <button *ngIf="readyOption" type="button" class="btn-accent"
+                            (click)="actionOrder(2)" [disabled]="submitting"
+                            data-bs-toggle="modal" data-bs-target="#confirmModal">
+                        <i class="material-icons">done_outline</i> Marcar listo
+                    </button>
+                    <button *ngIf="verifyOption" type="button" class="btn-ghost"
+                            (click)="actionOrder(8)" [disabled]="submitting"
+                            data-bs-toggle="modal" data-bs-target="#confirmModal">
+                        <i class="material-icons">fact_check</i> Verificar
+                    </button>
+                    <button *ngIf="confirmReceiveOption" type="button" class="btn-accent"
+                            (click)="actionOrder(5)" [disabled]="submitting"
+                            data-bs-toggle="modal" data-bs-target="#confirmModal">
+                        <i class="material-icons">move_to_inbox</i> Confirmar y recibir
+                    </button>
+                    <button *ngIf="receiveOption" type="button" class="btn-accent"
+                            (click)="actionOrder(1)" [disabled]="submitting"
+                            data-bs-toggle="modal" data-bs-target="#confirmModal">
+                        <i class="material-icons">archive</i> Recibir pedido
+                    </button>
+                    <button *ngIf="releaseOption" type="button" class="btn-ghost"
+                            (click)="releaseOrder()" [disabled]="submitting">
+                        <i class="material-icons">undo</i> Liberar
+                    </button>
+                    <!-- Volver a En curso, igual que "Marcar listo": la confirmación
+                         solo aparece cuando hay una verificación que se pierde -->
+                    <button *ngIf="unprepareOption && !isVerified" type="button" class="btn-ghost"
+                            (click)="unprepareOrder()" [disabled]="submitting">
+                        <i class="material-icons">undo</i> Volver a En curso
+                    </button>
+                    <button *ngIf="unprepareOption && isVerified" type="button" class="btn-ghost"
+                            (click)="actionOrder(7)" [disabled]="submitting"
+                            data-bs-toggle="modal" data-bs-target="#confirmModal">
+                        <i class="material-icons">undo</i> Volver a En curso
+                    </button>
+                    <button *ngIf="returnOption" type="button" class="btn-ghost btn-ghost-danger"
+                            (click)="actionOrder(4)" [disabled]="submitting"
+                            data-bs-toggle="modal" data-bs-target="#confirmModal">
+                        <i class="material-icons">cancel</i> Devolver
+                    </button>
+                </div>
+            </div>
+
+            <!-- Productos -->
+            <div class="card-block">
+                <table class="product-table">
+                    <thead>
+                        <tr>
+                            <th class="col-product">Producto</th>
+                            <th class="col-num">Cantidad</th>
+                            <th class="col-num" *ngIf="!isFactory">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of productForSaleOrder.productForSaleStoreOrderElements">
+                            <td class="col-product">
+                                <p class="product-name">{{ item.productForSale?.finishedProduct?.name }}</p>
+                                <p class="product-meta">
+                                    <ng-container *ngIf="!isFactory">
+                                        {{ price(item.price) }}
+                                        <span class="dot">·</span>
+                                    </ng-container>
+                                    {{ item.measure?.identifier }}
+                                </p>
+                            </td>
+                            <td class="col-num col-qty">{{ item.quantity }}</td>
+                            <td class="col-num product-total" *ngIf="!isFactory">{{ price(item.totalPrice) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Total: la vista de bodega no muestra montos -->
+            <div class="card-block totals-card" *ngIf="!isFactory">
+                <div class="totals-row totals-total">
+                    <span>Total</span>
+                    <span>Q{{ productForSaleOrder.finalAmount | number: '1.2-2' }}</span>
+                </div>
+            </div>
+
+            <!-- Operadores: quiénes prepararon el pedido en bodega. Se muestra
+                 siempre, incluso vacío, porque desde acá se pueden agregar -->
+            <div class="card-block" *ngIf="showOperators && (operators.length || canEditOperators)">
+                <div class="card-block-head">
+                    <h3 class="card-block-title">
+                        <i class="material-icons title-icon">groups</i>
+                        Operadores
+                    </h3>
+                    <!-- "Agregar" mientras no hay ninguno y es opcional; una vez
+                         cargados pasa a "Editar", que ya no admite dejarlo vacío -->
+                    <button *ngIf="canEditOperators" type="button" class="btn-ghost btn-ghost-sm"
+                            (click)="openOperatorsDialog()" [disabled]="submitting">
+                        <i class="material-icons">{{ operatorsRequired ? 'edit' : 'add' }}</i>
+                        {{ operatorsRequired ? 'Editar' : 'Agregar' }}
+                    </button>
+                </div>
+
+                <div class="operator-list" *ngIf="operators.length">
+                    <span class="operator-chip"
+                          *ngFor="let operator of operators"
+                          [style.background]="operatorChipColor.bg_color"
+                          [style.color]="operatorChipColor.color">
+                        {{ operator }}
+                    </span>
+                </div>
+
+                <p class="operator-empty" *ngIf="!operators.length">
+                    Este pedido no tiene operadores registrados.
+                </p>
+            </div>
+
+            <!-- Notas -->
+            <div class="card-block" *ngIf="orderComment">
+                <div class="card-block-head">
+                    <h3 class="card-block-title">
+                        <i class="material-icons title-icon">sticky_note_2</i>
+                        Notas
+                    </h3>
+                </div>
+                <p class="order-note">{{ orderComment }}</p>
+            </div>
+        </div>
+
+        <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
+        <div class="order-side">
+
+            <div class="card-block side-summary">
+                <div class="side-row">
+                    <span class="side-label">Estado del pedido</span>
+                    <span class="status-pill"
+                          [style.background]="orderStatus?.bg_color || '#eef2ff'"
+                          [style.color]="orderStatus?.color || '#4361ee'">
+                        {{ orderStatus?.identifier ?? '--' }}
+                    </span>
+                </div>
+                <!-- Verificación: es la otra marca de control del pedido, así que va
+                     pegada al estado y no entre los datos de más abajo. Solo en la
+                     vista de bodega: para la tienda es un control interno de fábrica -->
+                <div class="side-row" *ngIf="isFactory">
+                    <span class="side-label">Verificación</span>
+                    <span class="status-pill verify-pill" [class.verify-pill--on]="isVerified">
+                        <i class="material-icons">{{ isVerified ? 'check_circle' : 'radio_button_unchecked' }}</i>
+                        {{ isVerified ? 'Verificado' : 'Sin verificar' }}
+                    </span>
+                </div>
+                <div class="side-row side-total-row" *ngIf="!isFactory">
+                    <span class="side-label">Total</span>
+                    <span class="side-total">Q{{ productForSaleOrder.finalAmount | number: '1.2-2' }}</span>
+                </div>
+            </div>
+
+            <div class="card-block side-info">
+                <div class="info-block">
+                    <p class="info-label">Tienda</p>
+                    <p class="info-value">{{ productForSaleOrder.establishment?.name || '--' }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Creado</p>
+                    <p class="info-value">{{ formatDate(productForSaleOrder.creationDate) }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Creado por</p>
+                    <p class="info-value">{{ productForSaleOrder.creatorUser?.name || '--' }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Encargado</p>
+                    <p class="info-value">{{ productForSaleOrder.assignedUser?.name || '--' }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Inicio de preparación</p>
+                    <p class="info-value">{{ formatDate(productForSaleOrder.startDate) }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Finalización</p>
+                    <p class="info-value">{{ formatDate(productForSaleOrder.readyDate) }}</p>
+                </div>
+                <!-- Verificación: se muestra siempre en la vista de bodega, también
+                     vacía, porque "sin verificar" es información. En la de tienda no
+                     va: es un control interno de fábrica -->
+                <!-- Quién y cuándo. Que el pedido esté o no verificado ya lo dice la
+                     píldora de arriba, así que acá no hay fila vacía: sin firma,
+                     estos dos bloques no existen -->
+                <ng-container *ngIf="isFactory && isVerified">
+                    <div class="info-block">
+                        <p class="info-label">Verificado por</p>
+                        <p class="info-value">{{ productForSaleOrder.verifiedUser?.name }}</p>
+                    </div>
+                    <div class="info-block" *ngIf="productForSaleOrder.verifiedDate">
+                        <p class="info-label">Verificado el</p>
+                        <p class="info-value">{{ formatDate(productForSaleOrder.verifiedDate) }}</p>
+                    </div>
+                </ng-container>
+                <div class="info-block" *ngIf="productForSaleOrder.inTransitDate">
+                    <p class="info-label">En camino desde</p>
+                    <p class="info-value">{{ formatDate(productForSaleOrder.inTransitDate) }}</p>
+                </div>
+                <div class="info-block" *ngIf="productForSaleOrder.receivedDate">
+                    <p class="info-label">Recibido</p>
+                    <p class="info-value">{{ formatDate(productForSaleOrder.receivedDate) }}</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Última actualización</p>
+                    <p class="info-value">{{ formatDate(productForSaleOrder.updatedDate) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Operadores ────────────────────────────────────────────────────────── -->
+<app-operators-dialog
+    [open]="operatorsDialogOpen"
+    [orderName]="productForSaleOrder?.name"
+    [required]="operatorsRequired"
+    [operatorCustomers]="operatorCustomers"
+    [loadingCustomers]="loadingOperatorCustomers"
+    [initial]="operators"
+    [saving]="savingOperators"
+    (confirm)="onOperatorsConfirmed($event)"
+    (cancel)="onOperatorsCancelled()">
+</app-operators-dialog>
+
+<!-- ── Confirmación de transición ────────────────────────────────────────── -->
+<!-- Verificar entra por acá (caso 8): firma el usuario actual, así que no hay
+     nada que elegir, solo que confirmar -->
+
+<div class="modal hide fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">{{confirmDialogTitle}}</h1>
+                <h1 class="modal-title fs-5" id="confirmModalLabel">{{confirmDialogTitle}}</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 {{confirmDialogText}}
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">CANCELAR</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">CANCELAR</button>
                 <button type="button" [disabled]="submitting" (click)="onConfirmDialog()" data-bs-dismiss="modal" class="btn btn-primary">ACEPTAR</button>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- ── Overlay mientras se aplica una transición ─────────────────────────── -->
+<div *ngIf="submitting" class="order-loading-overlay">
+    <div class="order-loading-overlay__content">
+        <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
+        <p class="text-light mt-3 mb-0 fs-5">Actualizando pedido...</p>
     </div>
 </div>

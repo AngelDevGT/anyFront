@@ -19,8 +19,9 @@ import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-f
  * Un estado de pedido tal como se muestra en la tarjeta. Los ids salen del catalogo compartido;
  * etiqueta, icono y color viven aca porque son decisiones de presentacion.
  *
- * "En camino" y "Devuelto" llevan iconos distintos a proposito: antes compartian `local_shipping`
- * y solo cambiaba el color, con lo que eran indistinguibles para quien no distingue rojo y amarillo.
+ * "En camino" ya no figura: dejo de usarse como paso del flujo. El estado sigue existiendo y los
+ * pedidos que quedaron ahi no desaparecen del tablero —caen en `otherCount`, que es justo para
+ * eso—, pero no merece una columna propia en el resumen.
  */
 interface OrderStatusView {
     key: string;
@@ -75,7 +76,6 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
      */
     readonly statusViews: OrderStatusView[] = [
         { key: 'pendiente', id: pfsStoreOrderStatusValues.pendiente.status.id, label: 'Pendiente', icon: 'schedule',       color: '#475569' },
-        { key: 'en_camino', id: pfsStoreOrderStatusValues.en_camino.status.id, label: 'En camino', icon: 'local_shipping', color: '#a15c00' },
         { key: 'listo',     id: pfsStoreOrderStatusValues.listo.status.id,     label: 'Listo',     icon: 'inventory_2',    color: '#2563eb' },
         { key: 'recibido',  id: pfsStoreOrderStatusValues.recibido.status.id,  label: 'Recibido',  icon: 'task_alt',       color: '#067a55' },
         { key: 'devuelto',  id: pfsStoreOrderStatusValues.devuelto.status.id,  label: 'Devuelto',  icon: 'undo',           color: '#c41818' },
@@ -91,6 +91,12 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
     readonly skeletons = [1, 2, 3, 4];
 
     searchTerm = '';
+
+    /**
+     * Estado seleccionado en el resumen. Con uno activo solo quedan a la vista las tiendas que
+     * tienen al menos un pedido en ese estado; en `null` se ven todas.
+     */
+    activeStatusKey: string | null = null;
 
     maxDate = new Date();
     appliedStartDate?: Date;
@@ -139,6 +145,19 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
         return this.allStores
             ? 'No hay tiendas activas.'
             : 'No hay tiendas asignadas a tu usuario.';
+    }
+
+    get activeStatus(): OrderStatusView | undefined {
+        return this.statusViews.find(status => status.key === this.activeStatusKey);
+    }
+
+    /** Hay tiendas, pero ningun filtro las deja pasar: el texto dice cual de los dos las descarto. */
+    get noMatchesMessage(): string {
+        const status = this.activeStatus;
+        const term = this.searchTerm.trim();
+        if (status && term) return `Ninguna tienda con pedidos en "${status.label}" coincide con "${term}".`;
+        if (status) return `Ninguna tienda tiene pedidos en "${status.label}".`;
+        return `Ninguna tienda coincide con "${term}".`;
     }
 
     onRangeApply(range: { start: Date, end: Date }) {
@@ -304,6 +323,12 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
                 this.totals[status.key] = (this.totals[status.key] || 0) + (card.counts[status.key] || 0);
             });
         });
+
+        // Tras recargar, el estado filtrado puede haberse quedado sin pedidos —otro rango de fechas,
+        // por ejemplo—. Se suelta el filtro en vez de dejar el tablero vacio sin motivo visible.
+        if (this.activeStatusKey && !this.totals[this.activeStatusKey]) {
+            this.activeStatusKey = null;
+        }
     }
 
     // ── Filtros y orden ──────────────────────────────────────────────────────
@@ -317,15 +342,41 @@ export class DashboardFinishedProductOrderComponent implements OnInit {
         this.applyFilters();
     }
 
+    /** Un segundo clic sobre el mismo estado suelta el filtro y vuelven todas las tiendas. */
+    toggleStatusFilter(status: OrderStatusView) {
+        if (!this.totals[status.key]) return;
+        this.activeStatusKey = this.activeStatusKey === status.key ? null : status.key;
+        this.applyFilters();
+    }
+
+    /** Lo que hace el total del resumen: quitar el filtro por estado. */
+    clearStatusFilter() {
+        if (!this.activeStatusKey) return;
+        this.activeStatusKey = null;
+        this.applyFilters();
+    }
+
+    clearAllFilters() {
+        this.searchTerm = '';
+        this.activeStatusKey = null;
+        this.applyFilters();
+    }
+
     /**
      * Las tiendas se muestran en el orden en que las devuelve la consulta, sin reordenar, igual
      * que el listado de fábrica.
      */
     private applyFilters() {
         const term = this.searchTerm.trim().toLowerCase();
-        const filtered = term
+        let filtered = term
             ? this.cards.filter(card => card.name.toLowerCase().includes(term))
             : [...this.cards];
+
+        // Con un estado seleccionado quedan solo las tiendas que tienen algun pedido ahi
+        const statusKey = this.activeStatusKey;
+        if (statusKey) {
+            filtered = filtered.filter(card => (card.counts[statusKey] || 0) > 0);
+        }
 
         // El color va con el lugar en la rejilla, no con la tienda: así la paleta se recorre en
         // secuencia siempre, sin importar cómo hayan quedado ordenadas las tarjetas

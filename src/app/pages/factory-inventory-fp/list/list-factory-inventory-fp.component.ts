@@ -18,8 +18,9 @@ import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store
 import { ActivatedRoute, Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
 import { ActivityLog } from '@app/models/system/activity-log';
+import { BulkInventoryAction, InventoryActionItem } from '@app/components/bulk-inventory-dialog/bulk-inventory-dialog.component';
 
-@Component({ 
+@Component({
     templateUrl: 'list-factory-inventory-fp.component.html',
     styleUrls: ['list-factory-inventory-fp.component.scss']
 })
@@ -59,6 +60,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     pageTitle = 'Inventario de Productos';
     addModalTitle = 'AGREGAR producto terminado a inventario de FABRICA';
     removeModalTitle = 'ELIMINAR producto terminado de inventario de FABRICA';
+    bulkModalTitle = 'Acciones de inventario de productos';
+    savingInventoryActions = false;
 
     constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router, private route: ActivatedRoute, private excelService: ExcelService) {}
 
@@ -70,6 +73,7 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         this.pageTitle = this.productType === 2 ? 'Inventario de Abarrotes' : 'Inventario de Productos';
         this.addModalTitle = this.productType === 2 ? 'AGREGAR abarrote a inventario de BODEGA' : 'AGREGAR producto terminado a inventario de FABRICA';
         this.removeModalTitle = this.productType === 2 ? 'ELIMINAR abarrote de inventario de BODEGA' : 'ELIMINAR producto terminado de inventario de FABRICA';
+        this.bulkModalTitle = this.productType === 2 ? 'Acciones de inventario de abarrotes' : 'Acciones de inventario de productos';
 
         this.selectedMeasureTableSubject.subscribe(value => {
             this.setMeasure(String(value));
@@ -79,7 +83,27 @@ export class ListFactoryInventoryFPComponent implements OnInit {
             this.setWeightMeasure(String(value));
         });
 
+        this.loadInventory();
+        this.finishedProductForm = this.createFinishedProductFormGroup();
+    }
+
+    /**
+     * La tabla usa `inventoryElements` sin definir como senal de carga; el boton de acciones
+     * masivas cuelga de lo mismo para no quedar visible sobre cantidades viejas mientras se
+     * repite la consulta despues de un movimiento.
+     */
+    get inventoryLoaded(): boolean {
+        return !!this.inventoryElements;
+    }
+
+    private loadInventory() {
         this.inventory = undefined;
+        this.inventoryElements = undefined;
+        // Se limpia tambien lo que alimenta al dialogo masivo y a Exportar: si sobrevive a la
+        // recarga, esas acciones trabajan sobre las cantidades anteriores.
+        this.allInventoryElements = undefined;
+        this.tableElementsValues = [];
+        this.searchTerm = undefined;
         let requestArray = [];
 
         requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventoryV3'));
@@ -105,10 +129,64 @@ export class ListFactoryInventoryFPComponent implements OnInit {
                     );
                     this.allInventoryElements = this.inventoryElements;
                     this.setTableElements(this.inventoryElements);
+                } else {
+                    this.inventoryElements = [];
+                    this.allInventoryElements = [];
+                    this.tableElementsValues = [];
                 }
             }
         });
-        this.finishedProductForm = this.createFinishedProductFormGroup();
+    }
+
+    /**
+     * Filas del dialogo de acciones masivas. La cantidad de `inventory_element` esta en la unidad
+     * de su propia medida, asi que se manda tal cual junto con esa medida: lo escrito en la
+     * casilla es directamente comparable con lo que hay en inventario.
+     */
+    get inventoryActionItems(): InventoryActionItem[] {
+        return (this.allInventoryElements ?? []).map(element => ({
+            id: String(element.finishedProduct?.id),
+            title: element.finishedProduct?.name,
+            measureId: element.measure?.id,
+            unitName: element.measure?.unitBase?.name,
+            quantity: Number(element.quantity) || 0
+        }));
+    }
+
+    /** Agregar o eliminar varios productos de una sola vez, con un unico comentario. */
+    onSaveInventoryActions(event: BulkInventoryAction){
+        if(!event.items.length) return;
+
+        const movements = event.items.map(item => ({
+            inventoryType: this.inventory?.inventoryType,
+            unitName: this.inventory?.unitName,
+            elementId: item.id,
+            measureId: item.measureId,
+            quantity: item.quantity,
+            creatorUserId: this.accountService.userValue.uuid,
+            comment: event.comment,
+            actionTypeId: event.action === 'add'
+                ? actionTypeValues.add_fp_manual.actionType.id
+                : actionTypeValues.remove_fp_manual.actionType.id
+        }));
+
+        const successMessage = event.action === 'add'
+            ? 'Productos agregados al inventario correctamente'
+            : 'Productos eliminados del inventario correctamente';
+
+        this.savingInventoryActions = true;
+        this.dataService.multiAddRemoveInventoryElement(movements).pipe(first()).subscribe({
+            next: () => {
+                this.savingInventoryActions = false;
+                this.alertService.success(successMessage);
+                this.loadInventory();
+            },
+            error: error => {
+                this.savingInventoryActions = false;
+                let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error en movimiento de inventario, contacte con Administracion');
+                this.alertService.error(errorMessage);
+            }
+        });
     }
 
     /**

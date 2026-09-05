@@ -1,0 +1,108 @@
+<div class="row justify-content-center col-12 eqp">
+
+    <!-- Panel izquierdo: todo lo disponible, con cantidad en línea -->
+    <div class="p-3 col-sm-12 col-md-6 eqp__panel">
+        <h2 class="text-center text-muted eqp__title">{{ availableTitle }}</h2>
+
+        <div class="eqp__search eqp__toolbar">
+            <i class="material-icons">search</i>
+            <input type="text" [placeholder]="searchPlaceholder" [ngModel]="searchTerm"
+                (ngModelChange)="onSearchChange($event)" [disabled]="disabled" aria-label="Buscar" />
+            <button *ngIf="searchTerm" type="button" class="eqp__search-clear" (click)="onSearchChange('')"
+                title="Limpiar búsqueda" aria-label="Limpiar búsqueda">
+                <i class="material-icons">close</i>
+            </button>
+        </div>
+
+        <div class="eqp__scroll">
+            <table class="eqp__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Nombre</th>
+                        <th scope="col" class="eqp__col-measure">Medida</th>
+                        <th scope="col" class="eqp__col-qty">{{ quantityLabel }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of filtered; trackBy: trackById"
+                        [class.eqp__row--filled]="quantityOf(row) > 0" [class.eqp__row--invalid]="isInvalid(row)">
+                        <td data-label="Nombre">
+                            <span class="eqp__name">{{ row.title }}</span>
+                            <span *ngIf="row.subtitle" class="eqp__subtitle">{{ row.subtitle }}</span>
+                        </td>
+                        <td data-label="Medida" class="eqp__col-measure">
+                            <select class="eqp__select" [(ngModel)]="row.measureId" (ngModelChange)="refreshSelection()"
+                                [disabled]="disabled" [attr.aria-label]="'Medida de ' + row.title">
+                                <option value="">Medida</option>
+                                <option *ngFor="let measure of row.measures" [value]="measure.id">
+                                    {{ measure.identifier }}
+                                </option>
+                            </select>
+                        </td>
+                        <td [attr.data-label]="quantityLabel" class="eqp__col-qty">
+                            <input #quantityInput type="text" inputmode="decimal" maxlength="10" placeholder="0"
+                                [(ngModel)]="row.input" (ngModelChange)="refreshSelection()"
+                                [class.is-invalid]="isInvalid(row)" [disabled]="disabled"
+                                [attr.aria-label]="quantityLabel + ' de ' + row.title" />
+                            <span *ngIf="isInvalid(row)" class="eqp__error">{{ errorFor(row) }}</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngIf="!filtered.length">
+                        <td colspan="3" class="eqp__empty">
+                            {{ rows.length ? 'Ningún elemento coincide con la búsqueda.' : emptyAvailableText }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Panel derecho: resumen en vivo de lo que se va a guardar -->
+    <div class="p-3 col-sm-12 col-md-6 eqp__panel">
+        <h2 class="text-center text-muted eqp__title">{{ selectedTitle }}</h2>
+
+        <!-- El contador ocupa el mismo espacio que la búsqueda del otro panel: es lo
+             que deja las dos tablas arrancando a la misma altura. -->
+        <p class="eqp__counter eqp__toolbar">{{ selected.length }} elemento(s) seleccionado(s)</p>
+
+        <div class="eqp__scroll eqp__scroll--summary">
+            <table class="eqp__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Nombre</th>
+                        <th scope="col" class="eqp__col-measure">Medida</th>
+                        <th scope="col" class="eqp__col-qty">{{ quantityLabel }}</th>
+                        <th scope="col" class="eqp__col-actions">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of selected; trackBy: trackById">
+                        <td data-label="Nombre"><span class="eqp__name">{{ row.title }}</span></td>
+                        <td data-label="Medida" class="eqp__col-measure">{{ measureLabel(row) }}</td>
+                        <td [attr.data-label]="quantityLabel" class="eqp__col-qty eqp__value">
+                            {{ quantityOf(row) | number: '1.2-2' }}
+                        </td>
+                        <td data-label="Acciones" class="eqp__col-actions">
+                            <button type="button" class="eqp__action eqp__action--edit" (click)="focusRow(row)"
+                                [disabled]="disabled" [attr.title]="'Editar ' + row.title"
+                                [attr.aria-label]="'Editar ' + row.title">
+                                <i class="material-icons">edit</i>
+                            </button>
+                            <button type="button" class="eqp__action eqp__action--remove" (click)="remove(row)"
+                                [disabled]="disabled" [attr.title]="'Quitar ' + row.title"
+                                [attr.aria-label]="'Quitar ' + row.title">
+                                <i class="material-icons">cancel</i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr *ngIf="!selected.length">
+                        <td colspan="4" class="eqp__empty">{{ emptySelectedText }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>

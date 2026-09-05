@@ -8,7 +8,7 @@ import {
     UploadResponse,
 } from 'ngx-image-compress';
 
-import { AccountService, statusValues, AlertService, CAPABILITIES, DataService, paymentStatusValues } from '@app/services';
+import { AccountService, statusValues, AlertService, CAPABILITIES, DataService, paymentStatusValues, pfsFactoryOrderStatusValues } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -32,6 +32,13 @@ import { ProductForSale } from '@app/models/product/producto-for-sale.model';
 import { ProductForSaleStoreOrderElement } from '@app/models/product-for-sale/product-for-sale-store-order-element.model';
 import { Inventory } from '@app/models/inventory/inventory.model';
 // import { DynamicDialogComponent } from '@app/components/dynamic-dialog/dynamic-dialog.component';
+
+/** Lo que un producto aporta al pedido, en unidades base, con qué mostrarlo. */
+interface OrderedProduct {
+    baseQuantity: number;
+    name: string;
+    unitName: string;
+}
 
 @Component({ 
     selector: 'page-add-edit-pfs-order',
@@ -100,6 +107,21 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     isEditMode = false;
     editingIndex?: number;
 
+    /**
+     * ¿El pedido que se edita ya está en Listo? Ahí el producto YA salió de bodega y
+     * está en tránsito hacia la tienda, así que guardar ajusta inventario: descuenta lo
+     * que se agregó y devuelve a bodega lo que se quitó.
+     * Ver src/database/migrations/2026-09-01-editar-pedido-listo.sql
+     */
+    isReadyOrder = false;
+    /** Resumen del ajuste de inventario, para el diálogo de confirmación en Listo. */
+    inventoryChanges: string[] = [];
+    /**
+     * Lo que ESTE pedido ya descontó de bodega por producto, tal como estaba al abrir la
+     * pantalla. Vacío fuera de Listo: en los demás estados el pedido no tocó inventario.
+     */
+    private committedByPfsId = new Map<string, OrderedProduct>();
+
     constructor(private dataService: DataService, public _builder: FormBuilder, private route: ActivatedRoute,
         private alertService: AlertService, private router: Router, private accountService: AccountService) {
 
@@ -113,6 +135,17 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
         this.title = 'Crear Pedido de Producto para Venta (Tienda)';
         this.id = this.route.snapshot.params['id'];
+
+        // El guard de rutas solo valida la ruta, no la capacidad: sin orders.edit no se entra
+        // a editar un pedido existente ni escribiendo la URL. Crear no pide la capacidad, asi
+        // que solo se corta cuando viene un id. `loading` arranca en true, de modo que la
+        // pantalla no alcanza a dibujar el formulario antes de rebotar al detalle.
+        if (this.id && !this.accountService.can(CAPABILITIES.ordersEdit)){
+            this.router.navigate(['/productsForSale/order/view/' + this.id], {
+                queryParams: this.route.snapshot.queryParams
+            });
+            return;
+        }
 
         this.route.queryParams.subscribe(params => {
             this.viewOption = params['opt'];
@@ -164,11 +197,26 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             },
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
+                // El rebote de arriba solo mira orders.edit, que es lo unico que se puede
+                // saber sin el pedido. El escalon que corresponde a SU estado se evalua
+                // aca, ya cargado, y vuelve a cortar antes de dibujar el formulario.
+                if (this.id && !this.canEditOrder()){
+                    this.alertService.error('No tienes permiso para editar este pedido en su estado actual.',
+                        { keepAfterRouteChange: true });
+                    this.router.navigate(['/productsForSale/order/view/' + this.id], {
+                        queryParams: this.route.snapshot.queryParams
+                    });
+                    return;
+                }
+
                 this.selectedEstablishment = this.findEstablishmentById(this.storeOption);
                 this.filterByEstablishment(this.storeOption);
 
                 this.inventoryElementsSource = inventory.inventoryElements;
                 console.log("inventoryElementsSource", this.inventoryElementsSource);
+                // Antes de armar la lista de disponibles: en Listo esa lista se corrige con
+                // lo que el pedido tiene reservado.
+                this.loadCommittedQuantities();
                 this.loadProductsForSaleFromInventory();
                 if (this.productForSaleOrder){
                     this.loadRawMaterialOrder();
@@ -179,6 +227,82 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
     }
 
+    /**
+     * ¿Este usuario puede editar el pedido EN EL ESTADO EN QUE ESTÁ? Es la misma escalera
+     * que gobierna el botón "Editar" del detalle: orders.edit para cualquier estado,
+     * orders.editAfterPending para seguir editando pasado Pendiente y orders.editReady
+     * para Listo, donde editar además mueve inventario.
+     */
+    private canEditOrder(): boolean {
+        const f = pfsFactoryOrderStatusValues;
+        const statusId = this.productForSaleOrder?.factoryStatus?.id;
+        if (statusId === undefined) return false;
+
+        // Un pedido cerrado o descartado no se edita, con permiso o sin él.
+        if (statusId === f.cancelado.status.id || statusId === f.recibido.status.id
+            || statusId === f.eliminado.status.id) return false;
+
+        if (!this.accountService.can(CAPABILITIES.ordersEdit)) return false;
+        if (statusId === f.pendiente.status.id) return true;
+        if (!this.accountService.can(CAPABILITIES.ordersEditAfterPending)) return false;
+
+        return statusId !== f.listo.status.id || this.accountService.can(CAPABILITIES.ordersEditReady);
+    }
+
+    /**
+     * ¿Se pueden tocar los productos, o solo el nombre y las notas? Es la misma lista de
+     * estados que acepta update_product_for_sale_order_with_elements_v2: Pendiente(11),
+     * En curso(12), Preparado(64) y Listo(13). En los demás —En camino, Devuelto— la base
+     * guarda solo la cabecera, así que la tabla se esconde en vez de mentir.
+     */
+    get canEditProducts(): boolean {
+        if (!this.id) return true;
+        const f = pfsFactoryOrderStatusValues;
+        const statusId = this.productForSaleOrder?.factoryStatus?.id;
+        return statusId === f.pendiente.status.id
+            || statusId === f.en_curso.status.id
+            || statusId === f.preparado.status.id
+            || statusId === f.listo.status.id;
+    }
+
+    /**
+     * Lo que este pedido ya descontó de bodega, por producto y en unidades base, como
+     * estaba al abrir la pantalla. Solo aplica en Listo; en el resto de los estados el
+     * pedido todavía no movió inventario y no hay nada que acreditarle.
+     */
+    private loadCommittedQuantities(){
+        this.isReadyOrder = !!this.id
+            && this.productForSaleOrder?.factoryStatus?.id === pfsFactoryOrderStatusValues.listo.status.id;
+
+        this.committedByPfsId = this.isReadyOrder
+            ? this.summarizeElements(this.productForSaleOrder?.productForSaleStoreOrderElements)
+            : new Map<string, OrderedProduct>();
+    }
+
+    /**
+     * Suma los elementos por producto y los pasa a unidades base, que es la única forma
+     * de comparar dos listas que pueden usar medidas distintas para el mismo producto.
+     *
+     * La unidad base sale del catálogo de medidas y no del elemento: el JSON del pedido
+     * trae la medida con id e identificador, pero sin su equivalencia.
+     */
+    private summarizeElements(elements?: ProductForSaleStoreOrderElement[]): Map<string, OrderedProduct> {
+        const summary = new Map<string, OrderedProduct>();
+        elements?.forEach(element => {
+            const pfsId = element.productForSale?.id;
+            if (!pfsId) return;
+
+            const unitBaseQuantity = Number(this.selectMeasure(String(element.measure?.id))?.unitBase?.quantity) || 0;
+            const previous = summary.get(pfsId);
+            summary.set(pfsId, {
+                baseQuantity: (previous?.baseQuantity || 0) + Number(element.quantity) * unitBaseQuantity,
+                name: element.productForSale?.finishedProduct?.name || 'Producto',
+                unitName: element.productForSale?.finishedProduct?.measure?.identifier || ''
+            });
+        });
+        return summary;
+    }
+
     loadProductsForSaleFromInventory(){
         this.inventoryElements = [];
         this.productsForSale?.map((pfsItem) => {
@@ -186,19 +310,37 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             if (matchingFinishedProduct){
                 this.inventoryElements?.push({
                     ...matchingFinishedProduct,
+                    quantity: this.availableQuantity(matchingFinishedProduct, pfsItem),
                     productForSale: pfsItem
-                });             
+                });
             }
         });
         // this.filteredProductsForSale = this.productsForSale?.filter((pfsItem) => this.inventoryElements?.some((ieItem) => pfsItem.finishedProduct?.id === ieItem.finishedProduct?.id));
     }
 
+    /**
+     * Cantidad disponible para ESTE pedido, en la medida del elemento de inventario.
+     *
+     * En Listo es lo que hay en bodega MÁS lo que el pedido ya tiene reservado: bajar la
+     * cantidad de un producto lo devuelve a bodega, así que también está a su
+     * disposición. Es un número sintético a propósito —no es el saldo de bodega—, y es lo
+     * que hace que el aviso de "supera la cantidad disponible" coincida con lo que la
+     * base termina aceptando: ahí también se compara contra la diferencia, no contra el
+     * total del pedido.
+     */
+    private availableQuantity(inventoryElement: InventoryElement, productForSale: ProductForSale){
+        const committedBase = this.committedByPfsId.get(productForSale.id!)?.baseQuantity || 0;
+        if (!committedBase) return inventoryElement.quantity;
+
+        const unitBaseQuantity = Number(inventoryElement.measure?.unitBase?.quantity) || 1;
+        const available = Number(inventoryElement.quantity) + committedBase / unitBaseQuantity;
+        return String(Math.round(available * 100000) / 100000); // el inventario guarda 5 decimales
+    }
+
     loadRawMaterialOrder(){
         // this.setProvider(this.rawMaterialOrder?.provider?._id);
         this.orderForm.patchValue(this.productForSaleOrder!);
-        if(this.productForSaleOrder?.storeStatus?.id === 19){
-            this.areTablesVisible = true;
-        }
+        this.areTablesVisible = this.canEditProducts;
         if(this.accountService.can(CAPABILITIES.ordersViewProperties)){
             this.isPropertiesVisible = true;
         }
@@ -228,8 +370,30 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         this.editingIndex = undefined;
     }
 
+    /**
+     * Tienda del pedido. El selector de establecimiento del formulario está
+     * comentado, así que la única fuente es el query param `store`:
+     * `selectedEstablishment` es ese id ya resuelto contra el catálogo de
+     * tiendas activas (status 28). Si el catálogo no lo trae —tienda inactiva—
+     * alcanza con el id suelto, que es lo único que lee
+     * create_product_for_sale_order_with_elements.
+     */
+    private get orderEstablishment(): Establishment | undefined {
+        if (this.selectedEstablishment) return this.selectedEstablishment;
+        return this.storeOption ? { id: this.storeOption } : undefined;
+    }
+
     onSaveForm() {
         this.alertService.clear();
+
+        // Sin tienda el pedido se inserta con establishment_id NULL y la base lo
+        // rechaza con un error que no le dice nada al usuario. Se corta acá.
+        if (!this.id && !this.orderEstablishment?.id) {
+            this.submitting = false;
+            this.alertService.error('El pedido no tiene tienda asignada. Vuelve a abrir esta pantalla desde el listado de pedidos de la tienda.');
+            return;
+        }
+
         this.submitting = true;
         this.saveOrder()
             .pipe(first())
@@ -268,7 +432,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         } else {
             let newProductForSaleOrder: ProductForSaleStoreOrder = {
                 ...this.orderForm.value,
-                establishment: this.selectedEstablishment,
+                establishment: this.orderEstablishment,
                 productForSaleStoreOrderElements: this.productForSaleOrderElements,
                 finalAmount: this.total.toFixed(2)
             }
@@ -338,6 +502,55 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     //     }
     //     this.confirmDialogId = 1;
     // }
+
+    /**
+     * Confirmación previa a guardar un pedido que ya está en Listo. No es un trámite:
+     * guardar acá mueve inventario de verdad, así que el diálogo enumera producto por
+     * producto lo que se va a descontar y lo que se va a devolver a bodega.
+     */
+    onSaveReadyOrderDialog(){
+        this.inventoryChanges = this.buildInventoryChanges();
+        this.confirmDialogTitle = 'Guardar pedido listo';
+
+        if (this.inventoryChanges.length){
+            this.confirmDialogText = 'Este pedido ya descontó producto de bodega. Al guardar se ajusta el inventario:';
+            this.warningDialogText = 'El pedido quedará SIN VERIFICAR. Si no alcanza el inventario para lo que se agregó,'
+                + ' no se guarda ningún cambio.';
+        } else {
+            this.confirmDialogText = 'No cambiaron los productos del pedido. ¿Deseas guardar los cambios?';
+            this.warningDialogText = undefined;
+        }
+
+        this.confirmDialogId = 1;
+    }
+
+    /**
+     * Diferencia entre los productos que tiene el pedido ahora y los que tenía al abrir
+     * la pantalla, en unidades base. Es el mismo cálculo que hace el procedure para
+     * decidir qué mover: acá solo sirve para contarlo antes de guardar.
+     */
+    private buildInventoryChanges(): string[] {
+        const current = this.summarizeElements(this.productForSaleOrderElements);
+
+        const pfsIds: string[] = [];
+        this.committedByPfsId.forEach((_, pfsId) => pfsIds.push(pfsId));
+        current.forEach((_, pfsId) => { if (!this.committedByPfsId.has(pfsId)) pfsIds.push(pfsId); });
+
+        const changes: string[] = [];
+        pfsIds.forEach(pfsId => {
+            const before = this.committedByPfsId.get(pfsId);
+            const after = current.get(pfsId);
+            const delta = Math.round(((after?.baseQuantity || 0) - (before?.baseQuantity || 0)) * 100000) / 100000;
+            if (!delta) return;
+
+            const product = after || before!;
+            const unit = product.unitName ? ' ' + product.unitName : '';
+            changes.push(delta > 0
+                ? `${product.name}: se descuentan ${delta}${unit} más de bodega`
+                : `${product.name}: se devuelven ${-delta}${unit} a bodega`);
+        });
+        return changes;
+    }
 
     onConfirmDialog(){
         this.submitting = true;

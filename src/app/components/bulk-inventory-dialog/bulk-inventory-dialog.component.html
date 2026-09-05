@@ -1,0 +1,103 @@
+<!-- Botón que abre el diálogo de acciones masivas de inventario -->
+<button type="button" class="bulk-inv__trigger" [disabled]="disabled || !items.length" data-bs-toggle="modal"
+    [attr.data-bs-target]="'#' + modalId" (click)="open()" [title]="title">
+    <i class="material-icons">inventory_2</i>
+    <span>Acciones de inventario</span>
+</button>
+
+
+<!-- Modal Bootstrap con el listado de productos y la cantidad a mover -->
+<div class="modal fade" [id]="modalId" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{title}}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="bulk-inv__actions" role="group" aria-label="Tipo de acción">
+                    <button type="button" *ngFor="let action of actions" class="bulk-inv__action"
+                        [ngClass]="'bulk-inv__action--' + action.key"
+                        [class.bulk-inv__action--active]="selectedAction === action.key"
+                        [attr.aria-pressed]="selectedAction === action.key" (click)="setAction(action.key)">
+                        <i class="material-icons">{{ action.icon }}</i>
+                        <span>{{ action.label }}</span>
+                    </button>
+                </div>
+
+                <div class="bulk-inv__comment">
+                    <label [attr.for]="modalId + '-comment'">Comentario</label>
+                    <textarea [attr.id]="modalId + '-comment'" rows="2" [maxlength]="commentMaxLength"
+                        placeholder="Motivo del movimiento" [(ngModel)]="comment"
+                        [class.is-invalid]="commentInvalid"></textarea>
+                    <span *ngIf="commentInvalid" class="bulk-inv__error">
+                        El comentario es obligatorio
+                    </span>
+                </div>
+
+                <div class="bulk-inv__search">
+                    <i class="material-icons">search</i>
+                    <input type="text" placeholder="Buscar producto" [(ngModel)]="searchTerm" />
+                </div>
+
+                <div class="bulk-inv__list">
+                    <div class="bulk-inv__row bulk-inv__row--head">
+                        <span class="bulk-inv__col-name">Producto</span>
+                        <span class="bulk-inv__col-qty">Cantidad a {{ currentAction.verb }}</span>
+                    </div>
+
+                    <div class="bulk-inv__row" *ngFor="let row of filtered; trackBy: trackById"
+                        [class.bulk-inv__row--changed]="quantityOf(row) > 0">
+                        <div class="bulk-inv__info">
+                            <span class="bulk-inv__name">{{ row.title }}</span>
+                            <span class="bulk-inv__quantities">
+                                <span class="bulk-inv__quantity">
+                                    Cantidad original: <strong>{{ row.original | number: '1.2-2' }}</strong>
+                                    <ng-container *ngIf="row.unitName"> {{ row.unitName }}</ng-container>
+                                </span>
+                                <span class="bulk-inv__quantity" [ngClass]="newQuantityClass(row)">
+                                    Nueva cantidad: <strong>{{ newQuantity(row) | number: '1.2-2' }}</strong>
+                                    <ng-container *ngIf="row.unitName"> {{ row.unitName }}</ng-container>
+                                </span>
+                            </span>
+                        </div>
+                        <div class="bulk-inv__field">
+                            <input type="text" inputmode="decimal" maxlength="10" placeholder="0" [(ngModel)]="row.input"
+                                [class.is-invalid]="isInvalid(row)" />
+                            <span *ngIf="isInvalid(row)" class="bulk-inv__error">
+                                {{ errorFor(row) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <p *ngIf="!filtered.length" class="bulk-inv__empty">
+                        No hay productos que coincidan con la búsqueda.
+                    </p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <span class="bulk-inv__counter">
+                    {{ changed.length }} producto(s) con cambios
+                </span>
+                <button type="button" class="bulk-inv__btn bulk-inv__btn--cancel" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="bulk-inv__btn bulk-inv__btn--save"
+                    [ngClass]="'bulk-inv__btn--' + selectedAction" [disabled]="!canSave"
+                    [attr.data-bs-dismiss]="canSave ? 'modal' : null" (click)="onSave()">
+                    {{ currentAction.label }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay de carga: bloquea toda la pantalla con blur mientras se aplican los movimientos -->
+<div *ngIf="saving" class="bulk-inv__loading-overlay">
+    <div class="bulk-inv__loading-content">
+        <span class="spinner-border spinner-border-lg text-light" style="width: 3rem; height: 3rem;"></span>
+        <p class="text-light mt-3 mb-0 fs-5">Aplicando movimientos...</p>
+    </div>
+</div>

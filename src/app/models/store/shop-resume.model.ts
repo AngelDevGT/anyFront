@@ -36,13 +36,20 @@ export interface ShopResume {
     payments?: ShopSalePayment[];
 
     /**
-     * Solo de ida, al registrar una venta pagada con Depósito. Si el comentario
-     * va vacío no se registra ningún pago y la venta se guarda como siempre;
-     * con comentario, la base crea el shop_sale_payment del depósito. La fecha
-     * ya debe venir en UTC (getUTCTimeFromLocalDateTime).
+     * Solo de ida, al registrar una venta pagada con Depósito o con Cheque. La base crea el
+     * shop_sale_payment con estos datos si viene alguno de los tres (banco, referencia o
+     * comentario); el banco y la referencia son obligatorios en el formulario, así que en la
+     * práctica la fila siempre existe. La fecha ya debe venir en UTC
+     * (getUTCTimeFromLocalDateTime).
+     *
+     * El banco sale del listado de la tienda; el comentario es opcional y queda para la nota libre.
      */
+    depositBank?: string;
+    depositReferenceNo?: string;
     depositComment?: string;
     depositDate?: string;
+    deliveryDepositBank?: string;
+    deliveryDepositReferenceNo?: string;
     deliveryDepositComment?: string;
     deliveryDepositDate?: string;
 }

@@ -8,6 +8,7 @@ import jwt_decode from 'jwt-decode';
 import { environment } from '@environments/enviroment';
 import { User } from '@app/models/system/user.model';
 import { Role } from '@app/models';
+import { STORE_SECTIONS } from '@app/config/store-sections';
 
 const undefinedStatus = {
   status: {
@@ -73,12 +74,37 @@ export const CAPABILITIES = {
   costRead: 'cost.read',
   /** Editar el costo del producto para venta, individual y masivo. */
   costWrite: 'cost.write',
-  /** Editar un pedido que ya salio del estado Pendiente. */
+  /**
+   * Editar un pedido ya creado, incluso mientras sigue Pendiente. Sin esto la tienda crea
+   * el pedido y ya no lo corrige: el boton Editar no aparece y la pantalla de edicion
+   * rebota. No gobierna la creacion.
+   */
+  ordersEdit: 'orders.edit',
+  /**
+   * Editar un pedido que ya salio del estado Pendiente. Es una extension de orders.edit:
+   * sin esa capacidad base no habilita nada.
+   */
   ordersEditAfterPending: 'orders.editAfterPending',
+  /**
+   * Editar un pedido que ya esta en Listo. Tercer escalon de la escalera
+   * orders.edit -> orders.editAfterPending -> orders.editReady: hacen falta las tres.
+   *
+   * Es aparte porque en Listo el producto YA salio de bodega: editar mueve inventario
+   * -descuenta lo que se agrega, devuelve lo que se quita- y le quita la verificacion
+   * al pedido si cambian los productos.
+   */
+  ordersEditReady: 'orders.editReady',
   /** Campos extra del formulario de alta y edicion de pedido. */
   ordersViewProperties: 'orders.viewProperties',
   /** Mover en el tablero tarjetas que tienen a otra persona como encargada. */
   ordersBoardOverrideOwner: 'orders.board.overrideOwner',
+  /** Devolver un pedido de En curso a Pendiente. El encargado siempre puede con el suyo. */
+  ordersRelease: 'orders.release',
+  /**
+   * Verificar un pedido que esta en Preparado, adelantando la firma. NO gobierna la verificacion
+   * obligatoria al pasar a Listo: esa la puede hacer cualquiera que pueda cerrar el pedido.
+   */
+  ordersVerify: 'orders.verify',
   /** Editar y eliminar usuarios. No alcanza para asignar el rol Sistema. */
   usersManage: 'users.manage',
   /** Ver todas las tiendas sin estar asignado por correo en la descripcion. */
@@ -341,14 +367,22 @@ const menuItemsOptions: any = [
         icon_name: 'arrow_right',
         icon_class: 'material-icons icon',
       },
-      // {
-      //   root_class: 'list-group list-group-flush',
-      //   router_link: '/finishedProduct/order/board',
-      //   link_class: 'list-group-item py-2 ripple',
-      //   link_name: 'Tablero de pedidos',
-      //   icon_name: 'arrow_right',
-      //   icon_class: 'material-icons icon',
-      // },
+      {
+        root_class: 'list-group list-group-flush',
+        router_link: '/finishedProduct/order/board',
+        link_class: 'list-group-item py-2 ripple',
+        link_name: 'Tablero de pedidos',
+        icon_name: 'arrow_right',
+        icon_class: 'material-icons icon',
+      },
+      {
+        root_class: 'list-group list-group-flush',
+        router_link: '/finishedProduct/order/prepared',
+        link_class: 'list-group-item py-2 ripple',
+        link_name: 'Pedidos preparados',
+        icon_name: 'arrow_right',
+        icon_class: 'material-icons icon',
+      },
       {
         root_class: 'list-group list-group-flush',
         router_link: '/abarrotes',
@@ -393,21 +427,25 @@ const menuItemsOptions: any = [
     sub_class: 'position-sticky',
     is_tree: true,
     childs: [
-      {
+      // Una entrada por seccion: se entra directo con la tienda que ya estaba seleccionada, sin
+      // pasar por el listado de tiendas. La URL final la arma StoreContextService a partir de
+      // `store_section`; `match_route` es una ruta de muestra que solo sirve para evaluar los
+      // patrones de role.paths del usuario y decidir si la entrada se muestra.
+      ...STORE_SECTIONS.map(section => ({
         root_class: 'list-group list-group-flush',
-        router_link: '/store',
-        query_params: { opt: 'inventory' },
+        match_route: section.matchRoute,
+        store_section: section.key,
         link_class: 'list-group-item py-2 ripple',
-        link_name: 'Listado de Tiendas',
-        icon_name: 'arrow_right',
+        link_name: section.label,
+        icon_name: section.icon,
         icon_class: 'material-icons icon',
-      },
+      })),
       {
         root_class: 'list-group list-group-flush',
         router_link: '/store/sales/summary',
         link_class: 'list-group-item py-2 ripple',
         link_name: 'Resumen de ventas',
-        icon_name: 'arrow_right',
+        icon_name: 'summarize',
         icon_class: 'material-icons icon',
       },
     ],
@@ -805,7 +843,9 @@ export class AccountService {
       let newItem = item;
       let newItemChilds = [];
       for (let child of item.childs) {
-        let destinationRoute = child.router_link;
+        // Las secciones de tienda no llevan router_link: su URL depende de la tienda seleccionada,
+        // asi que los permisos se evaluan contra una ruta de muestra.
+        let destinationRoute = child.match_route ?? child.router_link;
         if (child.query_params) {
           destinationRoute += '?';
           for (let key in child.query_params) {

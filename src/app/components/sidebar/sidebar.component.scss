@@ -60,6 +60,18 @@
         margin-right: 0;
       }
 
+      // Sin texto ni riel los hijos quedarian como filas vacias, asi que el riel
+      // pasa a ser un punto centrado: la fila se sigue viendo y se puede clickear.
+      .sidebar-child-btn::before {
+        left: 50%;
+        top: 50%;
+        bottom: auto;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+      }
+
       .sidebar-user {
         padding: 8px 0;
 
@@ -218,6 +230,7 @@
 }
 
 .sidebar-child-btn {
+  position: relative;
   width: 100%;
   background: rgba(0, 0, 0, 0.15);
   border: none;
@@ -225,14 +238,50 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 7px 14px 7px 20px;
+  // El texto arranca en 42px: sin el icono repetido de antes, lo que separa a los
+  // hijos del padre es la sangria y el riel, no un simbolo por fila.
+  padding: 7px 14px 7px 42px;
   text-align: left;
   white-space: nowrap;
   transition: background-color 0.15s, color 0.15s;
 
+  // Riel del grupo: una linea continua alineada con el centro del icono del padre
+  // (14px de padding + 24px de icono / 2 = 26px). Es lo que hace ver de un vistazo
+  // donde empieza y termina la seccion, sin agregar un icono por hijo.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 26px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.13);
+    transition: background-color 0.15s, width 0.15s;
+  }
+
   &:hover {
     background-color: rgba(255, 187, 99, 0.12);
     color: #ffbb63;
+
+    &::before {
+      background: rgba(255, 187, 99, 0.45);
+    }
+  }
+
+  // Pantalla actual: el riel se engrosa y toma el mismo ambar que ya usa el padre
+  // abierto, para no sumar un color nuevo al menu.
+  &.active {
+    color: #ffbb63;
+    background-color: rgba(255, 187, 99, 0.1);
+
+    .menu-text {
+      font-weight: 600;
+    }
+
+    &::before {
+      width: 2px;
+      background: #ffbb63;
+    }
   }
 }
 
@@ -241,11 +290,6 @@
   flex-shrink: 0;
   width: 24px;
   margin-right: 10px;
-}
-
-.child-icon {
-  font-size: 16px;
-  width: 18px;
 }
 
 .menu-text {

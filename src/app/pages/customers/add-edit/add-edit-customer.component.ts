@@ -51,7 +51,8 @@ export class AddEditCustomerComponent implements OnInit {
                                 name: customer.name,
                                 phone: customer.phone,
                                 email: customer.email,
-                                nit: customer.nit
+                                nit: customer.nit,
+                                isOperator: !!customer.isOperator
                             });
                         }
                         this.loading = false;
@@ -81,7 +82,10 @@ export class AddEditCustomerComponent implements OnInit {
             ]),
             nit: new FormControl('C/F', [
                 Validators.maxLength(this.listMaxLength['nit'])
-            ])
+            ]),
+            // Lo único que hace: incluir al cliente en el catálogo del modal de
+            // operadores de los pedidos de bodega.
+            isOperator: new FormControl(false)
         });
     }
 

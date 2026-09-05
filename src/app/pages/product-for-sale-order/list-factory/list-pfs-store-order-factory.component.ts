@@ -5,6 +5,7 @@ import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 
 import { AccountService, AlertService, DataService, DateRangeState, DateRangeStateService, paymentStatusValues, statusValues, storeOrderStatus} from '@app/services';
+import { formatOperators } from '@app/helpers';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { DateRange } from '@angular/material/datepicker';
 import { Establishment } from '@app/models/establishment.model';
@@ -202,7 +203,8 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
                     // const finalAmountMatch = val.finalAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     // const pendingAmountMatch = val.pendingAmount?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const stateMatch = val.factoryStatus?.identifier?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return nameMatch || stateMatch;
+                    const numberMatch = String(val.orderNumber ?? '').includes(this.searchTerm);
+                    return nameMatch || stateMatch || numberMatch;
                 }
                 return true;
             });
@@ -229,10 +231,14 @@ export class ListFinishedProductOrderInFactoryComponent implements OnInit {
 
             if(element.factoryStatus?.id === storeOrderStatus.eliminado.id || element.storeStatus?.id === storeOrderStatus.eliminado.id) return;  
             let curr_row = [
+                    { type: "text", value: element.orderNumber != null ? '#' + element.orderNumber : '--', header_name: "No." },
                     { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha", rows_bg_color: element.storeStatus?.bg_color, rows_color: element.storeStatus?.color},
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
                     { type: "text", value: element.productForSaleStoreOrderElements![0].productForSale?.establishment?.name, header_name: "Tienda" },
+                    // Los nombres en una linea: la tabla no renderiza capsulas, y el
+                    // detalle del pedido ya las muestra.
+                    { type: "text", value: formatOperators(element.operators) || '--', header_name: "Operadores" },
                     this.viewOption === "factory" ? { type: "text", value: element.factoryStatus?.identifier, header_name: "Estado del pedido en fabrica", style: "width: 20%" } : { type: "text", value: element.storeStatus?.identifier, header_name: "Estado del pedido en tienda", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.finalAmount)), header_name: "Monto total" }
                   ]

@@ -1,0 +1,218 @@
+$accent: #c94e00;
+
+.store-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.store-switcher-loading,
+.store-switcher-single,
+.store-switcher-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+
+  .material-icons { font-size: 18px; color: $accent; }
+  .spinner-border { color: $accent; }
+}
+
+.store-switcher-empty {
+  color: #c0392b;
+  font-weight: 500;
+  .material-icons { color: #c0392b; }
+}
+
+// Pocas tiendas: cambiar es un clic
+.store-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.store-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #fff;
+  color: #555;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s, box-shadow 0.15s;
+
+  .material-icons { font-size: 17px; color: #bbb; }
+
+  &:hover {
+    border-color: $accent;
+    color: $accent;
+    .material-icons { color: $accent; }
+  }
+
+  &.active {
+    background: $accent;
+    border-color: $accent;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(201, 78, 0, 0.25);
+    .material-icons { color: #fff; }
+  }
+}
+
+// Muchas tiendas: boton con menu
+.store-dropdown { position: relative; }
+
+.store-dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 320px;
+  padding: 7px 12px;
+  background: #fff;
+  color: #333;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  .material-icons { font-size: 18px; color: $accent; }
+  .chevron { font-size: 20px; color: #999; margin-left: auto; }
+
+  &:hover, &.open { border-color: $accent; box-shadow: 0 2px 8px rgba(201, 78, 0, 0.12); }
+}
+
+.store-dropdown-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1050;
+  width: 300px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+}
+
+.store-panel-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+
+  .material-icons { font-size: 18px; color: #bbb; }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: #333;
+    background: transparent;
+  }
+}
+
+.store-panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.store-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+
+  > .material-icons { font-size: 18px; color: #ccc; }
+  .check { margin-left: auto; font-size: 18px; color: $accent; }
+
+  &:hover { background: #faf5f2; }
+  &.active { background: #fdf1ea; .material-icons { color: $accent; } }
+}
+
+.store-panel-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.store-panel-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-panel-address {
+  font-size: 11px;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-panel-none {
+  padding: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #aaa;
+}
+
+// Variante de tarjeta: la eleccion de tienda es la unica accion de la pantalla
+.card-variant {
+  width: 100%;
+  justify-content: center;
+
+  .store-chips { justify-content: center; }
+
+  .store-chip {
+    padding: 12px 24px;
+    font-size: 15px;
+    .material-icons { font-size: 20px; }
+  }
+
+  .store-inline-list {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+  }
+
+  .store-switcher-single,
+  .store-switcher-empty,
+  .store-switcher-loading { font-size: 15px; }
+}

@@ -6,6 +6,11 @@
       <p class="page-subtitle">Consulta y gestiona el inventario</p>
     </div>
     <div class="page-header-actions">
+      <app-bulk-inventory-dialog *ngIf="inventoryLoaded && canWriteInventory() && inventoryActionItems.length"
+        [items]="inventoryActionItems" [title]="bulkModalTitle"
+        [modalId]="'bulkInventoryFactoryFP'" [availableActions]="['add', 'remove']"
+        [saving]="savingInventoryActions" (save)="onSaveInventoryActions($event)">
+      </app-bulk-inventory-dialog>
       <button type="button" (click)="goToActionsHistory()" class="btn-outline-action">
         <i class="material-icons">history</i>
         Historial

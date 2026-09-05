@@ -1,0 +1,199 @@
+// Overlay del modal de bancos. Mismo lenguaje visual que el de operadores (.op-dialog) para que
+// las ventanas propias de la app se vean como la misma familia.
+
+.bk-dialog {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1060;
+    padding: 16px;
+}
+
+.bk-dialog__box {
+    background: #fff;
+    border-radius: 12px;
+    max-width: 520px;
+    width: 100%;
+    // La lista puede ser larga; la caja no crece mas que la ventana y el cuerpo scrollea.
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.bk-dialog__head {
+    padding: 20px 22px 12px;
+}
+
+.bk-dialog__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #172b4d;
+}
+
+.bk-dialog__subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #6b778c;
+}
+
+.bk-dialog__body {
+    padding: 0 22px;
+    overflow-y: auto;
+}
+
+.bk-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 0 22px;
+    font-size: 13px;
+    color: #6b778c;
+}
+
+// ── Capsulas ─────────────────────────────────────────────────────────────────
+
+.bk-chips {
+    margin-bottom: 18px;
+    padding: 10px;
+    min-height: 52px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-content: flex-start;
+    background: #f7f8f9;
+    border: 1px dashed #dfe1e6;
+    border-radius: 8px;
+}
+
+.bk-chips--empty {
+    align-items: center;
+}
+
+.bk-chips__placeholder {
+    margin: 0;
+    font-size: 13px;
+    color: #97a0af;
+}
+
+.bk-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px 4px 10px;
+    border-radius: 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: #e3f0ff;
+    color: #10457e;
+    border: 1px solid rgba(16, 69, 126, 0.18);
+}
+
+.bk-chip__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+
+    i {
+        font-size: 15px;
+    }
+
+    &:hover:not(:disabled) { opacity: 1; }
+    &:disabled { cursor: default; opacity: 0.3; }
+}
+
+// ── Alta ─────────────────────────────────────────────────────────────────────
+
+.bk-section {
+    margin-bottom: 18px;
+}
+
+.bk-section__title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #6b778c;
+}
+
+.bk-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.bk-input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid #dfe1e6;
+    border-radius: 8px;
+    font-size: 13px;
+
+    &:focus { outline: none; border-color: #c94e00; }
+}
+
+.bk-input__btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1.5px solid #c94e00;
+    background: #fff;
+    color: #c94e00;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) { background: #c94e00; color: #fff; }
+    &:disabled { opacity: 0.4; cursor: default; }
+}
+
+.bk-hint {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: #c0392b;
+}
+
+// ── Acciones ─────────────────────────────────────────────────────────────────
+
+.bk-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 22px 20px;
+    border-top: 1px solid #f0f1f3;
+}
+
+.bk-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+
+    &:disabled { opacity: 0.6; cursor: default; }
+
+    &--cancel {
+        background: #fff;
+        color: #555;
+        border-color: #ddd;
+        &:hover:not(:disabled) { border-color: #c94e00; color: #c94e00; }
+    }
+
+    &--ok {
+        background: #c94e00;
+        color: #fff;
+        &:hover:not(:disabled) { background: #a94100; }
+    }
+}

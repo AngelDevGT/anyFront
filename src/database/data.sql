@@ -3619,3 +3619,730 @@ where i.inventory_type = ''raw_material''','inventory','POST'),
 ) AS json_result
 FROM inventory i
 WHERE i.inventory_type = ''packaging_material''','inventory','POST');
+
+-- Número de pedido visible (correlativo por tienda), en product_for_sale_store_order.order_number.
+-- Clones V2 de las 4 queries de lectura de pedidos con `orderNumber` agregado. Las V1 quedan vivas
+-- e intactas. El número lo asigna un trigger BEFORE INSERT, por eso /addProductForSaleStoreOrder y
+-- create_product_for_sale_order_with_elements no cambian ni necesitan versión nueva.
+-- Ver src/database/migrations/2026-08-18-add-pfs-store-order-number.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('listProductForSaleStoreOrderV2','/listProductForSaleStoreOrderV2','SELECT json_agg(
+    json_build_object(
+        ''id'', pfsso.id,
+        ''orderNumber'', pfsso.order_number,
+        ''name'', pfsso.name,
+        ''comment'', pfsso.comment,
+        ''finalAmount'', pfsso.final_amount,
+        ''updatedDate'', coalesce(pfsso.updated_date, pfsso.creation_date),
+        ''creationDate'', pfsso.creation_date,
+        ''establishment'', json_build_object(
+        	''name'', e."name",
+            ''identifier'', e."name",
+            ''id'', e.id,
+            ''address'', e.address
+        ),
+        ''storeStatus'', json_build_object(
+            ''identifier'', s.name,
+            ''id'', s.id,
+            ''bg_color'', s.bg_color,
+            ''color'', s.color
+        ),
+        ''factoryStatus'', json_build_object(
+            ''identifier'', s2.name,
+            ''id'', s2.id,
+            ''bg_color'', s2.bg_color,
+            ''color'', s2.color
+        ),
+        ''creatorUser'', json_build_object(
+            ''name'', u.username,
+            ''email'', u.email,
+            ''id'', u.id
+        )
+    )
+    ORDER BY pfsso.creation_date DESC
+) AS json_result
+from product_for_sale_store_order pfsso
+left join establishment e on e.id = pfsso.establishment_id
+left join status s on s.id = pfsso.store_status_id
+left join status s2 on s2.id = pfsso.factory_status_id
+left join "user" u on u.id = pfsso.creator_user_id','product_for_sale_store_order','POST'),
+	 ('listProductForSaleStoreOrderBoardV2','/listProductForSaleStoreOrderBoardV2','SELECT json_agg(
+    json_build_object(
+        ''id'', pfsso.id,
+        ''orderNumber'', pfsso.order_number,
+        ''name'', pfsso.name,
+        ''comment'', pfsso.comment,
+        ''finalAmount'', pfsso.final_amount,
+        ''updatedDate'', coalesce(pfsso.updated_date, pfsso.creation_date),
+        ''creationDate'', pfsso.creation_date,
+        ''startDate'', pfsso.start_date,
+        ''readyDate'', pfsso.ready_date,
+        ''establishment'', json_build_object(
+        	''name'', e."name",
+            ''identifier'', e."name",
+            ''id'', e.id,
+            ''address'', e.address
+        ),
+        ''storeStatus'', json_build_object(
+            ''identifier'', s.name,
+            ''id'', s.id,
+            ''bg_color'', s.bg_color,
+            ''color'', s.color
+        ),
+        ''factoryStatus'', json_build_object(
+            ''identifier'', s2.name,
+            ''id'', s2.id,
+            ''bg_color'', s2.bg_color,
+            ''color'', s2.color
+        ),
+        ''creatorUser'', json_build_object(
+            ''name'', u.username,
+            ''email'', u.email,
+            ''id'', u.id
+        ),
+        ''assignedUser'', case when u2.id is null then null else json_build_object(
+            ''name'', u2.username,
+            ''email'', u2.email,
+            ''id'', u2.id
+        ) end
+    )
+    ORDER BY pfsso.creation_date DESC
+) AS json_result
+from product_for_sale_store_order pfsso
+left join establishment e on e.id = pfsso.establishment_id
+left join status s on s.id = pfsso.store_status_id
+left join status s2 on s2.id = pfsso.factory_status_id
+left join "user" u on u.id = pfsso.creator_user_id
+left join "user" u2 on u2.id = pfsso.assigned_user_id','product_for_sale_store_order','POST'),
+	 ('getProductForSaleStoreOrderV2','/getProductForSaleStoreOrderV2','SELECT json_build_object(
+    ''id'', pfsso.id,
+    ''orderNumber'', pfsso.order_number,
+    ''name'', pfsso.name,
+    ''comment'', pfsso.comment,
+    ''finalAmount'', pfsso.final_amount,
+    ''updatedDate'', coalesce(pfsso.updated_date, pfsso.creation_date),
+    ''creationDate'', pfsso.creation_date,
+    ''establishment'', json_build_object(
+        ''identifier'', e."name",
+		''name'', e."name",
+        ''id'', e.id,
+        ''address'', e.address,
+		''receivePendingOrdersEnabled'', e.receive_pending_orders_enabled
+    ),
+    ''storeStatus'', json_build_object(
+        ''identifier'', s.name,
+        ''id'', s.id
+    ),
+    ''factoryStatus'', json_build_object(
+        ''identifier'', s2.name,
+        ''id'', s2.id
+    ),
+    ''creatorUser'', json_build_object(
+        ''name'', u.username,
+        ''email'', u.email,
+        ''id'', u.id
+    ),
+    ''productForSaleStoreOrderElements'', (
+	    SELECT json_agg(
+		    json_build_object(
+		    	''id'', pfssoe.id,
+		    	''price'', pfssoe.price,
+		    	''quantity'', pfssoe.quantity,
+		    	''totalPrice'', pfssoe.total_price,
+		    	''date'', pfssoe."date",
+		    	''measure'', json_build_object(
+		    		''id'', m5.id,
+	                ''identifier'', m5.name
+	            ),
+		        ''productForSale'', json_build_object(
+		        	''id'', pfs.id,
+			        ''creationDate'', pfs.creation_date,
+				    ''updatedDate'', pfs.updated_date,
+			        ''price'', pfs.price,
+			        ''finishedProduct'', json_build_object(
+			            ''id'', fp.id,
+			            ''name'', fp.name,
+			            ''photo'', fp.photo,
+			            ''description'', fp.description,
+			            ''measure'', json_build_object(
+			                ''identifier'', ub.name,
+			                ''type'', ub."type"
+			            )
+			        ),
+			        ''status'', json_build_object(
+			            ''name'', s3.name,
+			            ''type'', s3."type"
+			        ),
+			        ''establishment'', json_build_object(
+			            ''id'', e3.id,
+			            ''name'', e3.name
+			        )
+		        )
+		    )
+		)
+		from product_for_sale_store_order_element pfssoe
+		left join product_for_sale pfs on pfs.id = pfssoe.product_for_sale_id
+		LEFT JOIN finished_product fp ON pfs.finished_product_id = fp.id
+		LEFT JOIN unit_base ub ON fp.unit_base_id = ub.id
+		LEFT JOIN establishment e3 ON e3.id = pfs.establishment_id
+		LEFT JOIN status s3 ON s3.id = pfs.status_id
+		left join measure m5 on m5.id = pfssoe.measure_id
+		WHERE pfssoe.pfsso_id = pfsso.id
+	)
+) as json_result
+from product_for_sale_store_order pfsso
+left join establishment e on e.id = pfsso.establishment_id
+left join status s on s.id = pfsso.store_status_id
+left join status s2 on s2.id = pfsso.factory_status_id
+left join "user" u on u.id = pfsso.creator_user_id','product_for_sale_store_order','POST'),
+	 ('getProductForSaleStoreOrderForPdfV2','/getProductForSaleStoreOrderForPdfV2','SELECT json_build_object(
+    ''id'', pfsso.id,
+    ''orderNumber'', pfsso.order_number,
+    ''name'', pfsso.name,
+    ''comment'', pfsso.comment,
+    ''finalAmount'', pfsso.final_amount,
+    ''creationDate'', pfsso.creation_date,
+    ''updatedDate'', coalesce(pfsso.updated_date, pfsso.creation_date),
+    ''establishment'', json_build_object(
+        ''name'', e."name"
+    ),
+    ''storeStatus'', json_build_object(
+        ''identifier'', s.name
+    ),
+    ''factoryStatus'', json_build_object(
+        ''identifier'', s2.name
+    ),
+    ''productForSaleStoreOrderElements'', (
+        SELECT json_agg(
+            json_build_object(
+                ''quantity'', pfssoe.quantity,
+                ''price'', pfssoe.price,
+                ''totalPrice'', pfssoe.total_price,
+                ''measure'', json_build_object(
+                    ''identifier'', m.name
+                ),
+                ''productForSale'', json_build_object(
+                    ''finishedProduct'', json_build_object(
+                        ''name'', fp.name
+                    )
+                )
+            )
+            --ORDER BY fp.sort_order NULLS LAST, fp.name
+        )
+        FROM product_for_sale_store_order_element pfssoe
+        LEFT JOIN product_for_sale pfs ON pfs.id = pfssoe.product_for_sale_id
+        LEFT JOIN finished_product fp ON fp.id = pfs.finished_product_id
+        LEFT JOIN measure m ON m.id = pfssoe.measure_id
+        WHERE pfssoe.pfsso_id = pfsso.id
+    )
+) as json_result
+from product_for_sale_store_order pfsso
+left join establishment e on e.id = pfsso.establishment_id
+left join status s on s.id = pfsso.store_status_id
+left join status s2 on s2.id = pfsso.factory_status_id','product_for_sale_store_order','POST');
+
+-- Modal "Ver productos" del tablero de bodega. Solo lo que el modal pinta —nombre, cantidad,
+-- medida— más el comentario del pedido. Existe para no arrastrar finished_product.photo (imagen
+-- completa en base64) en cada apertura del modal, que no cachea a proposito porque los productos
+-- se pueden editar mientras el pedido este en Pendiente o En curso.
+-- Ver src/database/migrations/2026-08-18-query-productos-pedido-tablero.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('getProductForSaleStoreOrderElementsV2','/getProductForSaleStoreOrderElementsV2','SELECT json_build_object(
+    ''id'', pfsso.id,
+    ''comment'', pfsso.comment,
+    ''productForSaleStoreOrderElements'', (
+        SELECT json_agg(
+            json_build_object(
+                ''quantity'', pfssoe.quantity,
+                ''measure'', json_build_object(
+                    ''identifier'', m.name
+                ),
+                ''productForSale'', json_build_object(
+                    ''finishedProduct'', json_build_object(
+                        ''name'', fp.name
+                    )
+                )
+            )
+        )
+        FROM product_for_sale_store_order_element pfssoe
+        LEFT JOIN product_for_sale pfs ON pfs.id = pfssoe.product_for_sale_id
+        LEFT JOIN finished_product fp ON fp.id = pfs.finished_product_id
+        LEFT JOIN measure m ON m.id = pfssoe.measure_id
+        WHERE pfssoe.pfsso_id = pfsso.id
+    )
+) as json_result
+from product_for_sale_store_order pfsso','product_for_sale_store_order','POST');
+
+-- Ciclo de vida completo del pedido: encargado y fechas de inicio, listo, en camino y recibido.
+-- Los procedures _v3 / _v2 rellenan las marcas que faltan cuando el pedido toma un atajo
+-- (Pendiente -> Listo, o Pendiente -> Recibido), para que el diagrama de estados de la vista de
+-- detalle no quede con campos vacios. getProductForSaleStoreOrderV3 agrega esas fechas, el
+-- encargado y los colores de estado, y quita finishedProduct.photo, que no lo consumia nadie.
+-- Ver src/database/migrations/2026-08-19-detalle-pedido-fechas-y-encargado.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('manageProductForSaleStoreOrderV3','/manageProductForSaleStoreOrderV3','call manage_product_for_sale_order_state_v3($1::uuid, $2, $3::uuid)','product_for_sale_store_order','PATCH'),
+	 ('confirmAndReceivePFSOrderV2','/confirmAndReceivePFSOrderV2','call confirm_and_receive_pfs_order_v2($1::uuid, $2::uuid)','product_for_sale_store_order','PATCH'),
+	 ('updateProductForSaleStoreOrderEnCaminoV2','/updateProductForSaleStoreOrderEnCaminoV2','update product_for_sale_store_order
+set factory_status_id = 1,
+    store_status_id = 20,
+    in_transit_date = timezone(''UTC''::text, CURRENT_TIMESTAMP),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id = 13','product_for_sale_store_order','PATCH'),
+	 ('getProductForSaleStoreOrderV3','/getProductForSaleStoreOrderV3','SELECT json_build_object(
+    ''id'', pfsso.id,
+    ''orderNumber'', pfsso.order_number,
+    ''name'', pfsso.name,
+    ''comment'', pfsso.comment,
+    ''finalAmount'', pfsso.final_amount,
+    ''updatedDate'', coalesce(pfsso.updated_date, pfsso.creation_date),
+    ''creationDate'', pfsso.creation_date,
+    ''startDate'', pfsso.start_date,
+    ''readyDate'', pfsso.ready_date,
+    ''inTransitDate'', pfsso.in_transit_date,
+    ''receivedDate'', pfsso.received_date,
+    ''establishment'', json_build_object(
+        ''identifier'', e."name",
+		''name'', e."name",
+        ''id'', e.id,
+        ''address'', e.address,
+		''receivePendingOrdersEnabled'', e.receive_pending_orders_enabled
+    ),
+    ''storeStatus'', json_build_object(
+        ''identifier'', s.name,
+        ''id'', s.id,
+        ''bg_color'', s.bg_color,
+        ''color'', s.color
+    ),
+    ''factoryStatus'', json_build_object(
+        ''identifier'', s2.name,
+        ''id'', s2.id,
+        ''bg_color'', s2.bg_color,
+        ''color'', s2.color
+    ),
+    ''creatorUser'', json_build_object(
+        ''name'', u.username,
+        ''email'', u.email,
+        ''id'', u.id
+    ),
+    ''assignedUser'', case when u2.id is null then null else json_build_object(
+        ''name'', u2.username,
+        ''email'', u2.email,
+        ''id'', u2.id
+    ) end,
+    ''productForSaleStoreOrderElements'', (
+	    SELECT json_agg(
+		    json_build_object(
+		    	''id'', pfssoe.id,
+		    	''price'', pfssoe.price,
+		    	''quantity'', pfssoe.quantity,
+		    	''totalPrice'', pfssoe.total_price,
+		    	''date'', pfssoe."date",
+		    	''measure'', json_build_object(
+		    		''id'', m5.id,
+	                ''identifier'', m5.name
+	            ),
+		        ''productForSale'', json_build_object(
+		        	''id'', pfs.id,
+			        ''creationDate'', pfs.creation_date,
+				    ''updatedDate'', pfs.updated_date,
+			        ''price'', pfs.price,
+			        ''finishedProduct'', json_build_object(
+			            ''id'', fp.id,
+			            ''name'', fp.name,
+			            ''description'', fp.description,
+			            ''measure'', json_build_object(
+			                ''identifier'', ub.name,
+			                ''type'', ub."type"
+			            )
+			        ),
+			        ''status'', json_build_object(
+			            ''name'', s3.name,
+			            ''type'', s3."type"
+			        ),
+			        ''establishment'', json_build_object(
+			            ''id'', e3.id,
+			            ''name'', e3.name
+			        )
+		        )
+		    )
+		)
+		from product_for_sale_store_order_element pfssoe
+		left join product_for_sale pfs on pfs.id = pfssoe.product_for_sale_id
+		LEFT JOIN finished_product fp ON pfs.finished_product_id = fp.id
+		LEFT JOIN unit_base ub ON fp.unit_base_id = ub.id
+		LEFT JOIN establishment e3 ON e3.id = pfs.establishment_id
+		LEFT JOIN status s3 ON s3.id = pfs.status_id
+		left join measure m5 on m5.id = pfssoe.measure_id
+		WHERE pfssoe.pfsso_id = pfsso.id
+	)
+) as json_result
+from product_for_sale_store_order pfsso
+left join establishment e on e.id = pfsso.establishment_id
+left join status s on s.id = pfsso.store_status_id
+left join status s2 on s2.id = pfsso.factory_status_id
+left join "user" u on u.id = pfsso.creator_user_id
+left join "user" u2 on u2.id = pfsso.assigned_user_id','product_for_sale_store_order','POST');
+
+-- Historial de pagos de un cliente en una tienda (Tienda > Tiendas > Clientes > Historial de pagos).
+-- Una fila por abono, con la venta al credito a la que pertenece anidada en `sale`. El backend arma
+-- el WHERE desde el objeto `ss` que manda el front ({"ss": {"establishment_id": ..., "customer_id": ...}}),
+-- por eso shop_sale es la tabla del FROM y no lleva WHERE propio; el unico filtro fijo va en el ON del
+-- JOIN: is_sale_payment = false deja fuera el deposito registrado junto con la venta, que no es un abono.
+-- Ver src/database/migrations/2026-08-19-historial-pagos-cliente.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('retrieveCustomerCreditPayments','/retrieveCustomerCreditPayments','SELECT json_agg(
+    json_build_object(
+        ''id'', ssp.id,
+        ''amount'', ssp.amount,
+        ''date'', ssp."date",
+        ''comment'', ssp."comment",
+        ''paymentTarget'', ssp.payment_target,
+        ''creatorUser'', CASE WHEN u.id IS NULL THEN NULL ELSE json_build_object(
+            ''id'', u.id,
+            ''name'', u.username,
+            ''email'', u.email
+        ) END,
+        ''paymentType'', json_build_object(
+            ''id'', pt.id,
+            ''identifier'', pt."name"
+        ),
+        ''sale'', json_build_object(
+            ''id'', ss.id,
+            ''saleNumber'', ss.sale_number,
+            ''creationDate'', ss.creation_date,
+            ''total'', ss.total,
+            ''delivery'', ss.delivery,
+            ''pendingAmount'', ss.pending_amount,
+            ''deliveryPendingAmount'', ss.delivery_pending_amount,
+            ''status'', json_build_object(
+                ''id'', s.id,
+                ''identifier'', s."name",
+                ''bg_color'', s.bg_color,
+                ''color'', s.color
+            ),
+            ''paymentStatus'', json_build_object(
+                ''id'', ps.id,
+                ''identifier'', ps."name",
+                ''bg_color'', ps.bg_color,
+                ''color'', ps.color
+            ),
+            ''deliveryPaymentStatus'', json_build_object(
+                ''id'', dps.id,
+                ''identifier'', dps."name",
+                ''bg_color'', dps.bg_color,
+                ''color'', dps.color
+            )
+        )
+    ) ORDER BY ssp."date" DESC
+) AS json_result
+FROM shop_sale ss
+JOIN shop_sale_payment ssp ON ssp.shop_sale_id = ss.id AND ssp.is_sale_payment = false
+LEFT JOIN payment_type pt ON pt.id = ssp.payment_type_id
+LEFT JOIN status s ON s.id = ss.status_id
+LEFT JOIN status ps ON ps.id = ss.payment_status_id
+LEFT JOIN status dps ON dps.id = ss.delivery_payment_status_id
+LEFT JOIN "user" u ON u.id = ssp.creator_user_id','shop_sale','POST');
+
+
+-- Operadores del pedido: quiénes lo prepararon en bodega. Se guardan en la columna nueva
+-- product_for_sale_store_order.operators como texto separado por pipes ('Juan|María|Carlos'),
+-- mezclando clientes marcados como Operador y nombres escritos a mano. Es texto y no FK a
+-- proposito: evita resolver los nombres en cada lectura, y un pedido viejo conserva el nombre
+-- que el cliente tenia cuando se preparo. Solo el tablero los pide, al pasar a En curso; la
+-- vista de detalle los edita aparte, sin mover estados ni inventario.
+-- Ver src/database/migrations/2026-08-26-operadores-pedidos.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('startProductForSaleStoreOrderV2','/startProductForSaleStoreOrderV2','update product_for_sale_store_order
+set factory_status_id = 12,
+    assigned_user_id = $2::uuid,
+    operators = nullif($3, ''''),
+    start_date = timezone(''UTC''::text, CURRENT_TIMESTAMP),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id = 11','product_for_sale_store_order','PATCH'),
+	 ('releaseProductForSaleStoreOrderV2','/releaseProductForSaleStoreOrderV2','update product_for_sale_store_order
+set factory_status_id = 11,
+    assigned_user_id = null,
+    operators = null,
+    start_date = null,
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id = 12
+  and (assigned_user_id = $2::uuid
+       or assigned_user_id is null
+       or exists (select 1 from "user" u where u.id = $2::uuid and u.role_id = 1))','product_for_sale_store_order','PATCH'),
+	 ('updateProductForSaleStoreOrderOperators','/updateProductForSaleStoreOrderOperators','update product_for_sale_store_order
+set operators = nullif($2, ''''),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id not in (10, 15)','product_for_sale_store_order','PATCH');
+
+-- Las cuatro lecturas del pedido se clonan agregando "'operators', pfsso.operators" justo
+-- despues de "'id', pfsso.id". El texto completo no se repite aca: la migracion las deriva con
+-- replace() de la fila viva en produccion.
+--   /listProductForSaleStoreOrderV2      -> /listProductForSaleStoreOrderV3
+--   /listProductForSaleStoreOrderBoardV2 -> /listProductForSaleStoreOrderBoardV3
+--   /getProductForSaleStoreOrderV3       -> /getProductForSaleStoreOrderV4
+--   /getProductForSaleStoreOrderForPdfV2 -> /getProductForSaleStoreOrderForPdfV3
+
+
+-- Estado "Preparado"(64): paso OPCIONAL del tablero entre En curso(12) y Listo(13). No mueve
+-- inventario y no cambia store_status_id: para la tienda el pedido sigue Pendiente, igual que
+-- mientras esta En curso. Solo aplica al tablero; la vista de detalle no lleva pedidos ahi, pero
+-- si puede cerrar uno que quedo en ese estado.
+--
+-- "En camino"(1) dejo de usarse como paso del flujo. No se elimino nada: los pedidos que quedaron
+-- ahi se reciben o devuelven con normalidad. Lo que se quito es front (el boton de la vista de
+-- detalle y la columna del tablero); /updateProductForSaleStoreOrderEnCaminoV2 sigue existiendo
+-- pero ya no lo llama nadie.
+-- Ver src/database/migrations/2026-08-26-estado-preparado.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('prepareProductForSaleStoreOrder','/prepareProductForSaleStoreOrder','update product_for_sale_store_order
+set factory_status_id = 64,
+    prepared_date = timezone(''UTC''::text, CURRENT_TIMESTAMP),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id = 12
+  and (assigned_user_id = $2::uuid
+       or assigned_user_id is null
+       or exists (select 1 from "user" u where u.id = $2::uuid and u.role_id = 1))','product_for_sale_store_order','PATCH'),
+	 ('manageProductForSaleStoreOrderV4','/manageProductForSaleStoreOrderV4','call manage_product_for_sale_order_state_v4($1::uuid, $2, $3::uuid)','product_for_sale_store_order','PATCH');
+
+-- Las dos lecturas que necesitan prepared_date se clonan agregando
+-- "'preparedDate', pfsso.prepared_date" despues de "'readyDate', pfsso.ready_date". El texto
+-- completo no se repite aca: la migracion las deriva con replace() de la fila viva.
+--   /listProductForSaleStoreOrderBoardV3 -> /listProductForSaleStoreOrderBoardV4
+--   /getProductForSaleStoreOrderV4       -> /getProductForSaleStoreOrderV5
+
+
+-- Verificacion de pedidos. NO es un estado del pedido: es una marca de control paralela
+-- (verified_by_user_id + verified_date) que convive con Pendiente(11) / En curso(12) /
+-- Preparado(64) / Listo(13).
+--
+-- OJO: estas tres filas son la PRIMERA version, la que pedia elegir al verificador de un
+-- catalogo. Las supersede 2026-09-02-verificacion-por-usuario-actual.sql, mas abajo en este
+-- archivo: desde ahi firma el usuario logueado y el front llama a /verifyProductForSaleStoreOrderV3
+-- y /manageProductForSaleStoreOrderV6. Se dejan porque los endpoints siguen vivos en la base.
+--
+-- Se marca por dos caminos:
+--   a) OBLIGATORIO al pasar a Listo(13) desde 11, 12 o 64. Lo exige el procedure v5, que sin
+--      verificador falla. Este camino NO mira capacidades, para no trabar el cierre del pedido.
+--   b) OPCIONAL desde Preparado(64) con /verifyProductForSaleStoreOrderPrepared. Ese boton si
+--      esta restringido por la capacidad orders.verify.
+--
+-- La firma no se reemplaza nunca: el UPDATE lleva "verified_by_user_id is null" y el procedure
+-- ignora el parametro cuando el pedido ya viene verificado. Eso es lo que hace que un Preparado ya
+-- verificado pase a Listo sin volver a pedir usuario.
+--
+-- /confirmAndReceivePFSOrderV2 (atajo Pendiente -> Entregado de la tienda) NO pide verificacion:
+-- no pasa por Listo y lo ejecuta la tienda al recibir, no bodega al despachar.
+--
+-- El catalogo y el guard filtran por status_id = 2 (usuario Activo). Cuidado con dos ids que
+-- parecen "activo" y no lo son: /registerUser da de alta con 6 —auto-registrado, sin habilitar— y
+-- /deleteUser marca con 8.
+-- Ver src/database/migrations/2026-08-29-verificacion-pedidos-bodega.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('retrieveVerifierUsers','/retrieveVerifierUsers','SELECT json_agg(
+    json_build_object(
+        ''id'', u.id,
+        ''name'', u.username,
+        ''email'', u.email
+    ) ORDER BY u.username ASC
+) as json_result
+FROM "user" u
+WHERE u.role_id in (1, 7, 9)
+  AND u.status_id = 2','user','POST'),
+	 ('verifyProductForSaleStoreOrderPrepared','/verifyProductForSaleStoreOrderPrepared','update product_for_sale_store_order
+set verified_by_user_id = $2::uuid,
+    verified_date = timezone(''UTC''::text, CURRENT_TIMESTAMP),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id = 64
+  and verified_by_user_id is null
+  and exists (select 1 from "user" u
+               where u.id = $2::uuid
+                 and u.role_id in (1, 7, 9)
+                 and u.status_id = 2)','product_for_sale_store_order','PATCH'),
+	 ('manageProductForSaleStoreOrderV5','/manageProductForSaleStoreOrderV5','call manage_product_for_sale_order_state_v5($1::uuid, $2, $3::uuid, nullif($4, '''')::uuid)','product_for_sale_store_order','PATCH');
+
+-- Las dos lecturas que necesitan la verificacion se clonan agregando "'verifiedDate', ..." y
+-- "'verifiedUser', (subconsulta a user)" despues de "'readyDate', pfsso.ready_date". El texto
+-- completo no se repite aca: la migracion las deriva con replace() de la fila viva. El verificador
+-- entra como subconsulta y no como join para que el replace() sea uno solo.
+--   /listProductForSaleStoreOrderBoardV4 -> /listProductForSaleStoreOrderBoardV5
+--   /getProductForSaleStoreOrderV5       -> /getProductForSaleStoreOrderV6
+
+
+-- Verificacion por el usuario que confirma. Reemplaza al modal que pedia ELEGIR al verificador de
+-- un catalogo: quien revisa el pedido es quien esta usando la pantalla, asi que elegirse a si
+-- mismo era un paso de mas y elegir a otro es justo lo que no se quiere. Ahora el boton muestra un
+-- aviso de confirmacion y firma el usuario logueado.
+--
+-- Son endpoints NUEVOS y no un UPDATE a los anteriores porque esos estan corriendo en produccion.
+--
+--   /verifyProductForSaleStoreOrderV2 -> V3
+--        Sin el exists(...) que exigia rol 1/7/9 y status 2. Ese guard existia porque el id venia
+--        elegido en pantalla; ahora sale de la sesion. Dejarlo seria peor: quien tenga la capacidad
+--        orders.verify con otro rol veria el boton y el UPDATE no tocaria ninguna fila, sin error,
+--        porque un UPDATE que no matchea devuelve OK. El gate queda uno solo, la capacidad en el
+--        front, igual que orders.release.
+--
+--   manage_..._state_v5 (4 params) -> v6 (3 params)
+--        La firma sale de $3, que ya viajaba. Y pasar a Listo deja de PODER FALLAR por falta de
+--        verificador: si el pedido llega sin firma, lo firma quien lo cierra. Es cambio de FIRMA,
+--        no solo de cuerpo, asi que no alcanzaba con CREATE OR REPLACE sobre el v5.
+--
+-- Lo que NO cambia: la firma sigue sin reemplazarse (verified_by_user_id is null en los dos), y
+-- editar productos o retroceder a En curso la siguen borrando.
+-- /retrieveVerifierUsers queda vivo pero sin nadie que lo llame.
+-- Ver src/database/migrations/2026-09-02-verificacion-por-usuario-actual.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('verifyProductForSaleStoreOrderV3','/verifyProductForSaleStoreOrderV3','update product_for_sale_store_order
+set verified_by_user_id = $2::uuid,
+    verified_date = timezone(''UTC''::text, CURRENT_TIMESTAMP),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id in (64, 13)
+  and verified_by_user_id is null','product_for_sale_store_order','PATCH'),
+	 ('manageProductForSaleStoreOrderV6','/manageProductForSaleStoreOrderV6','call manage_product_for_sale_order_state_v6($1::uuid, $2, $3::uuid)','product_for_sale_store_order','PATCH');
+
+
+-- Retroceso de Preparado(64) a En curso(12): el reverso exacto de
+-- /prepareProductForSaleStoreOrder, con el mismo guard de encargado. Sin esto un pedido marcado
+-- Preparado por error quedaba obligado a seguir a Listo, que mueve inventario, y a devolverse
+-- despues desde la tienda.
+--
+-- Conserva encargado, start_date y operadores: el pedido no cambia de manos, solo retrocede un
+-- paso. Por eso NO pide orders.release, que es la capacidad de devolverlo al pool.
+--
+-- Borra prepared_date y, sobre todo, la verificacion. Los productos se pueden EDITAR mientras el
+-- pedido esta En curso, asi que una firma que sobreviviera al retroceso certificaria productos
+-- distintos de los que se despachan, y el procedure v5 no volveria a pedir verificador. Borrarla
+-- obliga a firmar de nuevo.
+-- Ver src/database/migrations/2026-08-30-retroceder-preparado-a-en-curso.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('unprepareProductForSaleStoreOrder','/unprepareProductForSaleStoreOrder','update product_for_sale_store_order
+set factory_status_id = 12,
+    prepared_date = null,
+    verified_by_user_id = null,
+    verified_date = null,
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id = 64
+  and (assigned_user_id = $2::uuid
+       or assigned_user_id is null
+       or exists (select 1 from "user" u where u.id = $2::uuid and u.role_id = 1))','product_for_sale_store_order','PATCH');
+
+
+-- Acciones masivas de inventario de producto para venta en tienda. El boton
+-- "Acciones de inventario" reusa /multiAddRemoveInventoryElement para Agregar y Eliminar;
+-- Devolver necesita su propio endpoint porque mueve dos inventarios (tienda -> bodega).
+-- /returnPFSToWarehouse queda vivo e intacto para los modales de fila.
+-- Ver src/database/migrations/2026-08-27-acciones-masivas-inventario-tienda.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('multiReturnPFSToWarehouse','/multiReturnPFSToWarehouse','call multi_return_pfs_to_warehouse($1)','inventory_element','PATCH');
+
+
+-- Bancos por tienda: la columna nueva establishment.banks guarda los nombres de los bancos con
+-- los que trabaja cada tienda, separados por SALTO DE LINEA. Es texto y no una tabla a proposito:
+-- es una lista de etiquetas para leer, nada la referencia ni se filtra por ella, y una tabla
+-- aparte obligaria a un join en cada lectura de tienda para mostrar tres palabras. El separador
+-- es \n —y no el pipe de product_for_sale_store_order.operators— para que el detalle de la tienda
+-- lo imprima tal cual y ya se vea como listado.
+--
+-- Se cargan desde un modal propio en Sistema > Tiendas. La escritura va por un endpoint aparte
+-- porque /updateEstablishment tiene un SET explicito que NO incluye banks: el formulario normal
+-- de la tienda no puede borrarlos y no hace falta clonarlo.
+--
+-- /retrieveEstablishments no se toca: el listado no muestra los bancos, el modal los pide con
+-- /getEstablishmentV2 al abrirse.
+-- Ver src/database/migrations/2026-08-31-bancos-por-tienda.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('updateEstablishmentBanks','/updateEstablishmentBanks','update establishment
+set banks = nullif($1, ''''),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $2::uuid','establishment','PATCH');
+
+-- La lectura del detalle se clona agregando "'banks', e.banks" justo despues de "'id', e.id".
+-- El texto completo no se repite aca: la migracion la deriva con replace() de la fila viva.
+--   /getEstablishment -> /getEstablishmentV2
+
+
+-- Banco y numero de referencia del pago. Las columnas nuevas shop_sale_payment.bank y
+-- .reference_no guardan de que banco salio el pago y con que numero de transferencia o de cheque.
+-- Aplican a Deposito y a Cheque -el catalogo payment_type no tiene "Transferencia": el deposito ES
+-- la transferencia bancaria en este sistema-, tanto en el pago hecho al vender como en el abono de
+-- una venta al credito. Antes ese dato vivia suelto dentro del comentario, que es texto libre y
+-- opcional, asi que no se podia cuadrar contra el estado de cuenta del banco; el comentario queda
+-- para la nota libre y pasa a ser explicitamente opcional.
+--
+-- El banco se guarda como NOMBRE y no como FK: sale del listado establishment.banks de la tienda,
+-- y el pago es historico, tiene que conservar el banco elegido aunque la tienda edite su listado.
+--
+-- La obligatoriedad la validan los formularios, no las procedures: un RAISE dejaria a la tienda
+-- sin poder VENDER si el front se revierte, y una venta bloqueada es peor que un pago sin banco.
+--
+-- register_shop_sale_with_elements_v6 ademas cambia dos reglas de la v5: la fila del pago bancario
+-- ya no depende de que haya comentario, y ahora tambien se registra para Cheque, que antes no
+-- generaba ninguna.
+-- Ver src/database/migrations/2026-09-01-banco-y-referencia-en-pagos.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('addShopSalePaymentV6','/addShopSalePaymentV6','call add_shop_sale_payment_v5($1::uuid,$2::numeric,$3::int,$4,nullif($5::text,''''),nullif($6::text,'''')::timestamp,nullif($7::text,'''')::uuid,nullif($8::text,''''),nullif($9::text,''''))','shop_sale_payment','PATCH'),
+	 ('registerShopV6','/registerShopV6','call register_shop_sale_with_elements_v6($1,$2,$3::uuid)','shop_sale','PATCH');
+
+-- Las cinco lecturas que exponen el pago se clonan agregando "'bank', ssp.bank" y
+-- "'referenceNo', ssp.reference_no" justo despues de "'comment', ssp."comment"". El texto completo
+-- no se repite aca: la migracion las deriva con replace() de la fila viva.
+--   /getShopSalePaymentsV5          -> /getShopSalePaymentsV6
+--   /retrieveCustomerCreditPayments -> /retrieveCustomerCreditPaymentsV2
+--   /getNewStoreCashClosingV5       -> /getNewStoreCashClosingV6
+--   /retrieveStoreCashClosingV6     -> /retrieveStoreCashClosingV7
+--   /getStoreCashClosingV6          -> /getStoreCashClosingV7
+
+
+-- Edicion de un pedido de bodega que ya esta en Listo(13). El v1 guardaba solo nombre y notas
+-- fuera de Pendiente(11) y En curso(12); el v2 suma dos estados con edicion real de productos:
+--
+--   Preparado(64) -- era un bug: el estado nacio despues de esa lista y nunca se agrego, asi que
+--                    editar los productos respondia OK y no guardaba nada. No mueve inventario.
+--   Listo(13)     -- el producto YA salio de bodega (finished_product/bodega) y esta en transito
+--                    (product_for_sale/in_transit), asi que editar AJUSTA inventario.
+--
+-- El ajuste va por DIFERENCIAS producto por producto, en unidades base: solo se mueve lo que
+-- cambio. Si el pedido pide mas, se descuenta de bodega y se registra en transito (action_type 8 y
+-- 9, los mismos del paso a Listo); si pide menos, sale de transito y vuelve a bodega (10 y 15, los
+-- de la devolucion). Las devoluciones se aplican primero, para que cambiar un producto por otro no
+-- falle por stock que el mismo guardado libera. Si no alcanza el inventario, remove_inventory_element
+-- revienta y se cae TODA la edicion: un solo CALL es una sola transaccion.
+--
+-- La diferencia se expresa en la medida con unit_base_quantity = 1 para no dividir: sin division no
+-- hay redondeo que deje polvo decimal en inventory_element.quantity.
+--
+-- Si la lista de productos cambio, el pedido pierde la verificacion (misma razon que el retroceso
+-- Preparado -> En curso: una firma que sobreviva certifica productos que no son los que salen).
+-- Editar solo nombre o notas no la toca. Volver a firmar es OPCIONAL y va por
+-- /verifyProductForSaleStoreOrderV2, que es el clon del de Preparado aceptando tambien Listo;
+-- Entregado y Devuelto nunca piden firma, asi que el pedido puede cerrarse sin ella.
+--
+-- $4 de /updateProductForSaleStoreOrderV2 es el usuario que edita: queda como autor de los
+-- movimientos en el log de actividad. El v1 no recibia ninguno.
+--
+-- En camino(1) y Devuelto(18) siguen guardando solo nombre y notas: tienen el mismo inventario en
+-- transito y habria que decidirlo aparte. El front tampoco muestra la tabla de productos ahi.
+--
+-- La capacidad nueva es orders.editReady, tercer escalon de orders.edit -> orders.editAfterPending.
+-- Ver src/database/migrations/2026-09-01-editar-pedido-listo.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('updateProductForSaleStoreOrderV2','/updateProductForSaleStoreOrderV2','call update_product_for_sale_order_with_elements_v2($1::uuid, $2, $3, $4::uuid)','product_for_sale_store_order','PATCH'),
+	 ('verifyProductForSaleStoreOrderV2','/verifyProductForSaleStoreOrderV2','update product_for_sale_store_order
+set verified_by_user_id = $2::uuid,
+    verified_date = timezone(''UTC''::text, CURRENT_TIMESTAMP),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+  and factory_status_id in (64, 13)
+  and verified_by_user_id is null
+  and exists (select 1 from "user" u
+               where u.id = $2::uuid
+                 and u.role_id in (1, 7, 9)
+                 and u.status_id = 2)','product_for_sale_store_order','PATCH');

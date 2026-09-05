@@ -44,7 +44,9 @@ export class AddEditEstablishmentComponent implements OnInit{
             this.dataService.getEstablishmentById(this.id)
                 .pipe(first())
                 .subscribe((establ: any) => {
-                    let establishment = establ.getEstablishmentResponse.data[0]?.json_result || null;
+                    // findJsonValue y no la clave del wrapper: esa se deriva del path, asi que
+                    // cambia con cada version del endpoint (hoy /getEstablishmentV2)
+                    let establishment = this.dataService.findJsonValue(establ, 'json_result');
                     if (establishment){
                         this.establishmentForm.patchValue(establishment);       
                         this.loading = false;

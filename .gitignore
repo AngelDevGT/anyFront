@@ -38,6 +38,7 @@ testem.log
 /typings
 
 CLAUDE.md
+.claude/settings.local.json
 
 # System files
 .DS_Store

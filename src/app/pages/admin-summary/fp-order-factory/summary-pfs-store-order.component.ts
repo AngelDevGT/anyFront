@@ -94,7 +94,8 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
                 if(this.searchTerm){
                     const nameMatch = val.name?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
                     const commentMatch = val.comment?.toLowerCase().includes(this.searchTerm?.toLocaleLowerCase());
-                    return nameMatch || commentMatch;
+                    const numberMatch = String(val.orderNumber ?? '').includes(this.searchTerm);
+                    return nameMatch || commentMatch || numberMatch;
                 }
                 return true;
             });
@@ -106,6 +107,7 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
         this.tableElementsValues = [];
         elements?.forEach((element: ProductForSaleStoreOrder) => {
             const curr_row = [
+                    { type: "text", value: element.orderNumber != null ? '#' + element.orderNumber : '--', header_name: "No." },
                     { type: "text", value: this.dataService.getLocalDateFromUTCTime(element.updatedDate!), header_name: "Fecha" },
                     { type: "text", value: element.name, header_name: "Nombre" },
                     // { type: "text", value: element.rawMaterialOrderElements.length, header_name: "Cantidad" },
@@ -148,6 +150,7 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
     exportDataToCsv(){
         const finalProductForSaleOrders = this.productForSaleStoreOrders?.map(pfsOrd => {
             return {
+                No: pfsOrd.orderNumber ?? '',
                 Nombre: pfsOrd.name,
                 Comentario: pfsOrd.comment,
                 Establecimiento: pfsOrd.productForSaleStoreOrderElements![0].productForSale?.establishment?.name,
@@ -164,7 +167,7 @@ export class SummaryProductForSaleOrderComponent implements OnInit {
             quoteStrings: '"',
             decimalseparator: '.',
             showLabels: true,
-            headers: [ "Nombre Pedido", "Comentario", "Tienda", "Fecha Modificacion", "Fecha Creacion", "Estado del pedido", "Monto total", "Usuario Creador", "ID"]
+            headers: [ "No. Pedido", "Nombre Pedido", "Comentario", "Tienda", "Fecha Modificacion", "Fecha Creacion", "Estado del pedido", "Monto total", "Usuario Creador", "ID"]
         }
         new ngxCsv(finalProductForSaleOrders, "Resumen_pedidos_de_producto_para_venta_tienda_" + this.maxDate.getTime(), csvOptions);
     }

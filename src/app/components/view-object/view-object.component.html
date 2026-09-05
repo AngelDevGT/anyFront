@@ -12,7 +12,11 @@
                                 <p class="element-title">{{element.name}}</p>
                             </div>
                             <div class="col-md-8">
-                                <p class="element-value">{{element.value}}</p>
+                                <!-- multiline: respeta los saltos de linea del valor, para los
+                                     campos que guardan un listado en una sola columna de texto
+                                     (ej. los bancos de la tienda). Es opt-in para no cambiar el
+                                     render del resto de los detalles. -->
+                                <p class="element-value" [class.element-value--multiline]="element.multiline">{{element.value}}</p>
                             </div>
                         </div>
                     </div>

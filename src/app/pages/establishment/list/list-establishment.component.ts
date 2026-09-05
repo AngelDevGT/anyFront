@@ -4,6 +4,10 @@ import { first } from 'rxjs/operators';
 import { AccountService, AlertService, DataService} from '@app/services';
 import { Establishment } from '@app/models/establishment.model';
 import { ActivatedRoute } from '@angular/router';
+import { parseBanks, serializeBanks } from '@app/helpers';
+
+/** Accion del boton "Bancos" de la tabla. La emite data-table por (modalAction). */
+const BANKS_ACTION = 'banks';
 
 @Component({
     templateUrl: 'list-establishment.component.html',
@@ -18,6 +22,13 @@ export class ListEstablishmentComponent implements OnInit {
     viewOption = '';
     isInventory = false;
     tableElementsValues?: any;
+
+    // Modal de bancos
+    banksDialogOpen = false;
+    banksTarget?: Establishment;
+    initialBanks: string[] = [];
+    loadingBanks = false;
+    savingBanks = false;
 
     constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private accountService: AccountService) {}
 
@@ -87,11 +98,14 @@ export class ListEstablishmentComponent implements OnInit {
                 buttonsRow = {
                     type: 'button',
                     header_name: 'Acciones',
+                    // La consume el boton con 'action', que en vez de navegar emite (modalAction)
+                    data: element,
                     button: [
                         { type: 'button', routerLink: 'view/' + element.id, query_params: { opt: this.viewOption }, colorClass: 'dt-btn-view', icon: { class: 'material-icons', icon: 'visibility' }, title: 'Ver' },
                         { type: 'button', routerLink: 'edit/' + element.id, query_params: { opt: this.viewOption }, colorClass: 'dt-btn-edit', icon: { class: 'material-icons', icon: 'edit' }, title: 'Editar' },
                         { type: 'button', routerLink: '/productsForSale', query_params: { store: element.id }, is_absolute: true, colorClass: 'dt-btn-delete', icon: { class: 'material-icons', icon: 'shopping_bag' }, title: 'Productos' },
-                        { type: 'button', routerLink: 'customers/' + element.id, colorClass: 'dt-btn-info', icon: { class: 'material-icons', icon: 'group' }, title: 'Clientes' }
+                        { type: 'button', routerLink: 'customers/' + element.id, colorClass: 'dt-btn-info', icon: { class: 'material-icons', icon: 'group' }, title: 'Clientes' },
+                        { type: 'button', action: BANKS_ACTION, colorClass: 'dt-btn-secondary', icon: { class: 'material-icons', icon: 'account_balance' }, title: 'Bancos' }
                     ]
                 };
                 curr_row = [
@@ -105,5 +119,74 @@ export class ListEstablishmentComponent implements OnInit {
                 this.tableElementsValues.push(curr_row);
             }
         });
+    }
+
+    // ── Bancos ───────────────────────────────────────────────────────────────
+
+    onTableAction(event: { target: string; data: any }) {
+        if (event.target === BANKS_ACTION) {
+            this.openBanks(event.data);
+        }
+    }
+
+    /**
+     * El listado no trae los bancos —/retrieveEstablishments no se toco— asi que se piden al
+     * abrir. El modal se muestra enseguida con el spinner y recibe la lista cuando llega.
+     */
+    private openBanks(establishment: Establishment) {
+        this.banksTarget = establishment;
+        this.initialBanks = [];
+        this.savingBanks = false;
+        this.loadingBanks = true;
+        this.banksDialogOpen = true;
+
+        this.dataService.getEstablishmentById(establishment.id!)
+            .pipe(first())
+            .subscribe({
+                next: (response: any) => {
+                    // findJsonValue y no la clave del wrapper: esa se deriva del path, asi que
+                    // cambia con cada version del endpoint (hoy /getEstablishmentV2)
+                    const detail = this.dataService.findJsonValue(response, 'json_result');
+                    // Si mientras cargaba se cerro el modal o se abrio el de otra tienda, se descarta
+                    if (!this.banksDialogOpen || this.banksTarget?.id !== establishment.id) return;
+                    this.initialBanks = parseBanks(detail?.banks);
+                    this.loadingBanks = false;
+                },
+                error: () => {
+                    if (!this.banksDialogOpen || this.banksTarget?.id !== establishment.id) return;
+                    this.loadingBanks = false;
+                    this.banksDialogOpen = false;
+                    this.alertService.error('Error al cargar los bancos de la tienda');
+                }
+            });
+    }
+
+    onBanksConfirmed(names: string[]) {
+        if (!this.banksTarget?.id) return;
+
+        const target = this.banksTarget;
+        const banks = serializeBanks(names);
+        this.savingBanks = true;
+
+        this.dataService.updateEstablishmentBanks(target.id!, banks)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                    // La tienda del listado queda con lo guardado; no hace falta recargar la tabla
+                    // porque los bancos no son una columna
+                    target.banks = banks;
+                    this.savingBanks = false;
+                    this.banksDialogOpen = false;
+                    this.alertService.success('Bancos actualizados');
+                },
+                error: () => {
+                    this.savingBanks = false;
+                    this.alertService.error('Error al guardar los bancos, consulte con el administrador');
+                }
+            });
+    }
+
+    onBanksCancelled() {
+        this.banksDialogOpen = false;
     }
 }

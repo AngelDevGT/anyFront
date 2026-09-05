@@ -1,0 +1,15 @@
+<div class="store-context-bar" *ngIf="section">
+
+  <span class="store-context-section">
+    <i class="material-icons">{{ section.icon }}</i>
+    {{ section.label }}
+  </span>
+
+  <store-switcher *ngIf="canSwitch"></store-switcher>
+
+  <span *ngIf="!canSwitch" class="store-context-static">
+    <i class="material-icons">storefront</i>
+    {{ store?.name || 'Sin tienda seleccionada' }}
+  </span>
+
+</div>

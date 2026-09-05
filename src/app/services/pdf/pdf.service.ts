@@ -6,6 +6,7 @@ import pdfFonts from "pdfmake/build/vfs_fonts";
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { ProductForSaleStoreOrder } from "@app/models/product-for-sale/product-for-sale-store-order.model";
 import { ShopResume } from "@app/models/store/shop-resume.model";
+import { formatOperators } from "@app/helpers";
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Injectable({ providedIn: 'root' })
@@ -224,41 +225,53 @@ export class PdfService {
                   alignment: 'center',  
                   color: 'grey'
                 },
-                {  
+                {
                   text: productForSaleOrder?.name!,
-                  fontSize: 20,  
-                  bold: true,  
-                  alignment: 'center',  
-                  decoration: 'underline',  
-                  color: '#ec5300'  
+                  fontSize: 20,
+                  bold: true,
+                  alignment: 'center',
+                  decoration: 'underline',
+                  color: '#ec5300'
                 },
-                {  
-                    text: 'Tienda',  
-                    style: 'sectionHeader'  
+                // Correlativo del pedido dentro de su tienda. Es el dato con el que
+                // bodega y tienda se refieren al pedido, así que va en el encabezado.
+                {
+                    text: productForSaleOrder?.orderNumber != null ? `No. ${productForSaleOrder.orderNumber}` : 'No. --',
+                    fontSize: 14,
+                    bold: true,
+                    alignment: 'center',
+                    marginTop: 4
                 },
-                {  
-                    columns: [  
-                        [  
-                            {  
+                {
+                    text: 'Tienda',
+                    style: 'sectionHeader'
+                },
+                {
+                    columns: [
+                        [
+                            {
                                 text: "Nombre: " + storeName,
                                 bold: true
-                            } 
-                        ],  
-                        [  
-                            {  
-                                text: `Fecha: ${new Date().toLocaleString()}`,  
-                                alignment: 'right'  
-                            },
-                            // {  
-                            //     text: `Pedido: ${this.rawMaterialOrder?.id}`,  
-                            //     alignment: 'right'  
-                            // }  
+                            }
+                        ],
+                        [
+                            {
+                                text: `Fecha: ${new Date().toLocaleString()}`,
+                                alignment: 'right'
+                            }
                         ]
-                    ]  
+                    ]
                 },
-                {  
-                    text: 'Productos',  
-                    style: 'sectionHeader'  
+                // Operadores: quienes prepararon el pedido en bodega. Solo en el PDF de fabrica;
+                // es un dato interno y la tienda no tiene por que saber quien le prepara el
+                // pedido, igual que en el listado y en el detalle. Se omite la linea entera
+                // cuando el pedido no los tiene, en vez de imprimir un guion.
+                ...(option === "factory" && formatOperators(productForSaleOrder?.operators)
+                    ? [{ text: 'Operadores: ' + formatOperators(productForSaleOrder?.operators), marginTop: 4 }]
+                    : []),
+                {
+                    text: 'Productos',
+                    style: 'sectionHeader'
                 },
                 {  
                     table: {
@@ -402,8 +415,8 @@ export class PdfService {
 
         const logo = await this.getBrandLogo();
 
-        const infoLabel = (text: string) => ({ text, fontSize: 8, bold: true, color: muted, margin: [0, 0, 0, 3] });
-        const infoValue = (text: string) => ({ text, fontSize: 10, margin: [0, 0, 0, 2] });
+        const infoLabel = (text: string) => ({ text, fontSize: 10, bold: true, color: muted, margin: [0, 0, 0, 4] });
+        const infoValue = (text: string) => ({ text, fontSize: 13, margin: [0, 0, 0, 3] });
 
         // El pago del envío sólo se detalla cuando efectivamente se cobró envío.
         const paymentText = deliveryCost > 0 && storeSale?.deliveryPaymentType
@@ -420,10 +433,10 @@ export class PdfService {
                     {
                         width: '*',
                         stack: [
-                            { text: 'COMPROBANTE DE VENTA', fontSize: 13, bold: true, color: brand, alignment: 'right' },
-                            { text: storeSale?.saleNumber != null ? `No. ${storeSale.saleNumber}` : 'No. --', fontSize: 11, bold: true, alignment: 'right', margin: [0, 2, 0, 0] },
-                            { text: dateText(storeSale?.creationDate), fontSize: 9, color: muted, alignment: 'right' },
-                            { text: statusText || '--', fontSize: 9, color: isCancelled ? '#c0392b' : muted, alignment: 'right' }
+                            { text: 'COMPROBANTE DE VENTA', fontSize: 16, bold: true, color: brand, alignment: 'right' },
+                            { text: storeSale?.saleNumber != null ? `No. ${storeSale.saleNumber}` : 'No. --', fontSize: 14, bold: true, alignment: 'right', margin: [0, 3, 0, 0] },
+                            { text: dateText(storeSale?.creationDate), fontSize: 11, color: muted, alignment: 'right' },
+                            { text: statusText || '--', fontSize: 11, color: isCancelled ? '#c0392b' : muted, alignment: 'right' }
                         ]
                     }
                 ],
@@ -441,7 +454,7 @@ export class PdfService {
                             stack: [
                                 infoLabel('CLIENTE'),
                                 infoValue(storeSale?.nameClient || 'Público en General'),
-                                { text: `NIT: ${storeSale?.nitClient || 'C/F'}`, fontSize: 9, color: muted }
+                                { text: `NIT: ${storeSale?.nitClient || 'C/F'}`, fontSize: 11, color: muted }
                             ]
                         },
                         {
@@ -449,7 +462,7 @@ export class PdfService {
                             stack: [
                                 infoLabel('DATOS DE LA VENTA'),
                                 infoValue(storeName || '--'),
-                                { text: `Forma de pago: ${paymentText}`, fontSize: 9, color: muted, margin: [0, 2, 0, 0] }
+                                { text: `Forma de pago: ${paymentText}`, fontSize: 11, color: muted, margin: [0, 3, 0, 0] }
                             ]
                         }
                     ]]
@@ -458,7 +471,7 @@ export class PdfService {
                 margin: [0, 0, 0, 18]
             },
 
-            { text: 'DETALLE DE PRODUCTOS', fontSize: 9, bold: true, color: muted, margin: [0, 0, 0, 6] },
+            { text: 'DETALLE DE PRODUCTOS', fontSize: 11, bold: true, color: muted, margin: [0, 0, 0, 8] },
 
             // Productos
             {
@@ -474,11 +487,11 @@ export class PdfService {
                             { text: 'Total', style: 'v2TableHeader', alignment: 'right' }
                         ],
                         ...(storeSale?.itemsList ?? []).map(p => ([
-                            { text: p.productForSale?.finishedProduct?.name ?? '--', fontSize: 10 },
-                            { text: `${p.quantity ?? '0'} ${p.measure?.identifier ?? ''}`.trim(), fontSize: 10, alignment: 'right' },
-                            { text: money(Number(p.price || 0)), fontSize: 10, alignment: 'right' },
-                            { text: Number(p.totalDiscount || 0) > 0 ? '-' + money(Number(p.totalDiscount)) : '--', fontSize: 10, alignment: 'right', color: Number(p.totalDiscount || 0) > 0 ? '#1e7e34' : muted },
-                            { text: money(Number(p.total || 0)), fontSize: 10, alignment: 'right', bold: true }
+                            { text: p.productForSale?.finishedProduct?.name ?? '--', fontSize: 12 },
+                            { text: `${p.quantity ?? '0'} ${p.measure?.identifier ?? ''}`.trim(), fontSize: 12, alignment: 'right' },
+                            { text: money(Number(p.price || 0)), fontSize: 12, alignment: 'right' },
+                            { text: Number(p.totalDiscount || 0) > 0 ? '-' + money(Number(p.totalDiscount)) : '--', fontSize: 12, alignment: 'right', color: Number(p.totalDiscount || 0) > 0 ? '#1e7e34' : muted },
+                            { text: money(Number(p.total || 0)), fontSize: 12, alignment: 'right', bold: true }
                         ]))
                     ]
                 },
@@ -487,10 +500,10 @@ export class PdfService {
                     vLineWidth: () => 0,
                     hLineColor: (i: number) => i === 1 ? brand : lineColor,
                     fillColor: (rowIndex: number) => (rowIndex > 0 && rowIndex % 2 === 0) ? '#fbfbfb' : null,
-                    paddingTop: () => 6,
-                    paddingBottom: () => 6
+                    paddingTop: () => 8,
+                    paddingBottom: () => 8
                 },
-                margin: [0, 0, 0, 14]
+                margin: [0, 0, 0, 16]
             },
 
             // Totales
@@ -498,33 +511,33 @@ export class PdfService {
                 columns: [
                     { width: '*', text: '' },
                     {
-                        width: 240,
+                        width: 290,
                         table: {
                             widths: ['*', 'auto'],
                             body: [
-                                [{ text: 'Subtotal sin descuentos', fontSize: 10, color: muted, border: [false, false, false, false] },
-                                 { text: money(subtotalWithoutDiscount), fontSize: 10, alignment: 'right', border: [false, false, false, false] }],
+                                [{ text: 'Subtotal sin descuentos', fontSize: 12, color: muted, border: [false, false, false, false] },
+                                 { text: money(subtotalWithoutDiscount), fontSize: 12, alignment: 'right', border: [false, false, false, false] }],
                                 ...(totalDiscount > 0 ? [[
-                                    { text: 'Descuento total', fontSize: 10, color: '#1e7e34', border: [false, false, false, false] },
-                                    { text: '-' + money(totalDiscount), fontSize: 10, alignment: 'right', color: '#1e7e34', border: [false, false, false, false] }
+                                    { text: 'Descuento total', fontSize: 12, color: '#1e7e34', border: [false, false, false, false] },
+                                    { text: '-' + money(totalDiscount), fontSize: 12, alignment: 'right', color: '#1e7e34', border: [false, false, false, false] }
                                 ]] : []),
                                 ...(deliveryCost > 0 ? [[
-                                    { text: 'Costo de envío', fontSize: 10, color: muted, border: [false, false, false, false] },
-                                    { text: money(deliveryCost), fontSize: 10, alignment: 'right', border: [false, false, false, false] }
+                                    { text: 'Costo de envío', fontSize: 12, color: muted, border: [false, false, false, false] },
+                                    { text: money(deliveryCost), fontSize: 12, alignment: 'right', border: [false, false, false, false] }
                                 ]] : []),
-                                [{ text: 'TOTAL', fontSize: 13, bold: true, color: brand, margin: [0, 4, 0, 0], border: [false, true, false, false], borderColor: [lineColor, lineColor, lineColor, lineColor] },
-                                 { text: money(total), fontSize: 13, bold: true, color: brand, alignment: 'right', margin: [0, 4, 0, 0], border: [false, true, false, false], borderColor: [lineColor, lineColor, lineColor, lineColor] }]
+                                [{ text: 'TOTAL', fontSize: 16, bold: true, color: brand, margin: [0, 5, 0, 0], border: [false, true, false, false], borderColor: [lineColor, lineColor, lineColor, lineColor] },
+                                 { text: money(total), fontSize: 16, bold: true, color: brand, alignment: 'right', margin: [0, 5, 0, 0], border: [false, true, false, false], borderColor: [lineColor, lineColor, lineColor, lineColor] }]
                             ]
                         },
                         layout: {
-                            paddingTop: () => 3,
-                            paddingBottom: () => 3,
+                            paddingTop: () => 4,
+                            paddingBottom: () => 4,
                             paddingLeft: () => 0,
                             paddingRight: () => 0
                         }
                     }
                 ],
-                margin: [0, 0, 0, 16]
+                margin: [0, 0, 0, 18]
             },
 
             // Estado de pago: saldo en rojo o sello de pagado
@@ -533,38 +546,38 @@ export class PdfService {
                     table: {
                         widths: ['*'],
                         body: [[{
-                            fillColor: '#fdecea', margin: [12, 10, 12, 10], border: [false, false, false, false],
+                            fillColor: '#fdecea', margin: [14, 12, 14, 12], border: [false, false, false, false],
                             stack: [
-                                { text: 'SALDO PENDIENTE', fontSize: 8, bold: true, color: '#c0392b' },
+                                { text: 'SALDO PENDIENTE', fontSize: 10, bold: true, color: '#c0392b' },
                                 {
                                     columns: [
-                                        { text: 'Monto pendiente total', fontSize: 11, bold: true, color: '#c0392b', margin: [0, 4, 0, 0] },
-                                        { text: money(totalPending), fontSize: 13, bold: true, color: '#c0392b', alignment: 'right', margin: [0, 2, 0, 0] }
+                                        { text: 'Monto pendiente total', fontSize: 13, bold: true, color: '#c0392b', margin: [0, 5, 0, 0] },
+                                        { text: money(totalPending), fontSize: 16, bold: true, color: '#c0392b', alignment: 'right', margin: [0, 3, 0, 0] }
                                     ]
                                 },
-                                ...(totalPaid > 0 ? [{ text: `Abonado a la fecha: ${money(totalPaid)}`, fontSize: 9, color: muted, margin: [0, 4, 0, 0] }] : [])
+                                ...(totalPaid > 0 ? [{ text: `Abonado a la fecha: ${money(totalPaid)}`, fontSize: 11, color: muted, margin: [0, 5, 0, 0] }] : [])
                             ]
                         }]]
                     },
                     layout: 'noBorders',
-                    margin: [0, 0, 0, 16]
+                    margin: [0, 0, 0, 18]
                 }
                 : {
                     table: {
                         widths: ['auto'],
                         body: [[{
-                            text: 'PAGADO', fontSize: 12, bold: true, color: '#1e7e34',
-                            fillColor: '#e8f5e9', margin: [16, 8, 16, 8], border: [false, false, false, false]
+                            text: 'PAGADO', fontSize: 15, bold: true, color: '#1e7e34',
+                            fillColor: '#e8f5e9', margin: [18, 10, 18, 10], border: [false, false, false, false]
                         }]]
                     },
                     layout: 'noBorders',
-                    margin: [0, 0, 0, 16]
+                    margin: [0, 0, 0, 18]
                 },
 
             // Notas — sólo si la venta trae una
             ...(storeSale?.nota ? [
-                { text: 'NOTAS', fontSize: 9, bold: true, color: muted, margin: [0, 0, 0, 4] },
-                { text: storeSale.nota, fontSize: 10, margin: [0, 0, 0, 10] }
+                { text: 'NOTAS', fontSize: 11, bold: true, color: muted, margin: [0, 0, 0, 5] },
+                { text: storeSale.nota, fontSize: 12, margin: [0, 0, 0, 12] }
             ] : [])
         ];
 
@@ -572,7 +585,7 @@ export class PdfService {
             // A4 vertical, igual que el resto de documentos (es el default de pdfmake).
             // El ancho útil resultante es 515pt, que es el que usan las líneas del canvas.
             pageSize: 'A4',
-            pageMargins: [40, 40, 40, 70],
+            pageMargins: [40, 40, 40, 80],
             content: content,
             ...(isCancelled ? { watermark: { text: 'CANCELADA', color: '#c0392b', opacity: 0.15, bold: true } } : {}),
             footer: ((currentPage: number, pageCount: number) => ({
@@ -581,18 +594,18 @@ export class PdfService {
                     { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: lineColor }] },
                     {
                         columns: [
-                            { text: `Documento creado: ${documentDate}`, fontSize: 7, color: muted },
-                            { text: `Página ${currentPage} de ${pageCount}`, fontSize: 7, color: muted, alignment: 'right' }
+                            { text: `Documento creado: ${documentDate}`, fontSize: 9, color: muted },
+                            { text: `Página ${currentPage} de ${pageCount}`, fontSize: 9, color: muted, alignment: 'right' }
                         ],
-                        margin: [0, 5, 0, 0]
+                        margin: [0, 6, 0, 0]
                     },
-                    { text: 'Documento no fiscal', fontSize: 8, color: muted, alignment: 'center', margin: [0, 3, 0, 0] }
+                    { text: 'Documento no fiscal', fontSize: 10, color: muted, alignment: 'center', margin: [0, 4, 0, 0] }
                 ]
             })) as any,
             styles: {
                 v2TableHeader: {
                     bold: true,
-                    fontSize: 9,
+                    fontSize: 11,
                     color: '#ffffff',
                     fillColor: brand
                 }

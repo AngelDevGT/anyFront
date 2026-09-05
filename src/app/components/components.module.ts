@@ -29,9 +29,17 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DataTableComponent } from './data-table/data-table.component';
 import { StorePickerComponent } from './store-picker/store-picker.component';
+import { StoreSwitcherComponent } from './store-switcher/store-switcher.component';
+import { StoreContextBarComponent } from './store-context-bar/store-context-bar.component';
+import { StoreRequiredComponent } from './store-required/store-required.component';
 import { DateRangeFilterComponent } from './date-range-filter/date-range-filter.component';
+import { AutoRefreshComponent } from './auto-refresh/auto-refresh.component';
 import { SortOrderDialogComponent } from './sort-order-dialog/sort-order-dialog.component';
 import { BulkCostDialogComponent } from './bulk-cost-dialog/bulk-cost-dialog.component';
+import { BulkInventoryDialogComponent } from './bulk-inventory-dialog/bulk-inventory-dialog.component';
+import { OperatorsDialogComponent } from './operators-dialog/operators-dialog.component';
+import { BanksDialogComponent } from './banks-dialog/banks-dialog.component';
+import { ElementQuantityPickerComponent } from './element-quantity-picker/element-quantity-picker.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 
@@ -73,8 +81,16 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     DataTableComponent,
     SortOrderDialogComponent,
     BulkCostDialogComponent,
+    BulkInventoryDialogComponent,
+    OperatorsDialogComponent,
+    BanksDialogComponent,
+    ElementQuantityPickerComponent,
     StorePickerComponent,
+    StoreSwitcherComponent,
+    StoreContextBarComponent,
+    StoreRequiredComponent,
     DateRangeFilterComponent,
+    AutoRefreshComponent,
   ],
   exports: [
     MenuComponent,
@@ -88,8 +104,16 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     DataTableComponent,
     SortOrderDialogComponent,
     BulkCostDialogComponent,
+    BulkInventoryDialogComponent,
+    OperatorsDialogComponent,
+    BanksDialogComponent,
+    ElementQuantityPickerComponent,
     StorePickerComponent,
+    StoreSwitcherComponent,
+    StoreContextBarComponent,
+    StoreRequiredComponent,
     DateRangeFilterComponent,
+    AutoRefreshComponent,
   ]
 })
 export class ComponentsModule { }

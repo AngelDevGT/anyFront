@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { forkJoin } from 'rxjs';
-import { first } from 'rxjs/operators';
+import { first, switchMap } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
 
-import { AlertService, DataService } from '@app/services';
+import { AlertService, DataService, StoreContextService } from '@app/services';
 import { EstablishmentCustomer } from '@app/models/system/establishment-customer.model';
 import { Establishment } from '@app/models/establishment.model';
 
@@ -15,6 +14,8 @@ export class ListCustomerBalanceComponent implements OnInit {
 
     establishmentId!: string;
     establishment?: Establishment;
+    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    storeSelected = false;
     customers?: EstablishmentCustomer[];
     allCustomers?: EstablishmentCustomer[];
     searchTerm?: string;
@@ -25,19 +26,40 @@ export class ListCustomerBalanceComponent implements OnInit {
     constructor(
         private dataService: DataService,
         private alertService: AlertService,
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private storeContext: StoreContextService
     ) {}
 
     ngOnInit() {
-        this.establishmentId = this.route.snapshot.params['id'];
+        // La tienda viaja en la ruta: al cambiarla desde el selector se navega a esta misma sección
+        // con otra tienda y Angular reutiliza el componente, así que ngOnInit ya no vuelve a correr.
+        this.route.paramMap
+            .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
+            .subscribe(store => this.onStoreChange(store));
+    }
 
-        forkJoin([
-            this.dataService.getEstablishmentById(this.establishmentId),
-            this.dataService.getEstablishmentCustomers(this.establishmentId)
-        ]).subscribe({
+    private onStoreChange(store?: Establishment) {
+        this.storeSelected = !!store?.id;
+        this.establishment = store;
+        this.establishmentId = store?.id ?? '';
+
+        if (!store?.id) {
+            this.allCustomers = undefined;
+            this.customers = undefined;
+            this.tableElementsValues = [];
+            return;
+        }
+        this.loadCustomers(store.id);
+    }
+
+    private loadCustomers(establishmentId: string) {
+        this.allCustomers = undefined;
+        this.customers = undefined;
+        this.searchTerm = undefined;
+
+        this.dataService.getEstablishmentCustomers(establishmentId).subscribe({
             next: (result: any) => {
-                this.establishment = this.dataService.findJsonValue(result[0], 'json_result') || {};
-                this.allCustomers = this.dataService.findJsonValue(result[1], 'json_result') || [];
+                this.allCustomers = this.dataService.findJsonValue(result, 'json_result') || [];
             },
             error: error => {
                 this.allCustomers = [];
@@ -101,7 +123,24 @@ export class ListCustomerBalanceComponent implements OnInit {
                     color: balance > 0 ? '#721c24' : '#155724',
                     header_name: 'Estado'
                 },
-                { type: 'text', value: customer.pendingSalesCount ?? 0, header_name: 'Ventas pendientes' }
+                { type: 'text', value: customer.pendingSalesCount ?? 0, header_name: 'Ventas pendientes' },
+                {
+                    type: 'button',
+                    header_name: 'Acciones',
+                    button: [
+                        {
+                            // La tienda y el cliente viajan como query params:
+                            // /store/customers/payments?store=<tienda>&customer=<cliente>
+                            type: 'button',
+                            routerLink: '/store/customers/payments',
+                            is_absolute: true,
+                            query_params: { store: this.establishmentId, customer: customer.id },
+                            colorClass: 'dt-btn-view',
+                            icon: { class: 'material-icons', icon: 'receipt_long' },
+                            title: 'Historial de ventas'
+                        }
+                    ]
+                }
             ];
             this.tableElementsValues.push(curr_row);
         });

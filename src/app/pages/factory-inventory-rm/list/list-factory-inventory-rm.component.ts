@@ -18,8 +18,9 @@ import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store
 import { ActivatedRoute, Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
 import { ActivityLog } from '@app/models/system/activity-log';
+import { BulkInventoryAction, InventoryActionItem } from '@app/components/bulk-inventory-dialog/bulk-inventory-dialog.component';
 
-@Component({ 
+@Component({
     templateUrl: 'list-factory-inventory-rm.component.html',
     styleUrls: ['list-factory-inventory-rm.component.scss']
 })
@@ -58,6 +59,8 @@ export class ListFactoryInventoryRMComponent implements OnInit {
     materialType = 1;
     pageTitle = "Inventario de Materia Prima";
     inventoryRoute = '/inventory/factory/rawMaterial';
+    savingInventoryActions = false;
+    bulkModalTitle = "Acciones de inventario de materia prima";
 
     constructor(private accountService: AccountService, private dataService: DataService, private alertService: AlertService, private router: Router, private route: ActivatedRoute, private excelService: ExcelService) {}
 
@@ -76,9 +79,31 @@ export class ListFactoryInventoryRMComponent implements OnInit {
             this.pageTitle = "Inventario de Material de Empaque";
             this.activityLogName = "Acciones de Material de Empaque en Inventario de Bodega";
             this.inventoryRoute = '/inventory/warehouse/packagingMaterial';
+            this.bulkModalTitle = "Acciones de inventario de material de empaque";
         }
 
+        this.loadInventory();
+        this.rawMaterialForm = this.createMaterialFormGroup();
+        this.operationRawMaterialForm = this.createOperationMaterialFormGroup();
+    }
+
+    /**
+     * La tabla usa `inventoryElements` sin definir como senal de carga; el boton de acciones
+     * masivas cuelga de lo mismo para no quedar visible sobre cantidades viejas mientras se
+     * repite la consulta despues de un movimiento.
+     */
+    get inventoryLoaded(): boolean {
+        return !!this.inventoryElements;
+    }
+
+    private loadInventory() {
         this.inventory = undefined;
+        this.inventoryElements = undefined;
+        // Se limpia tambien lo que alimenta al dialogo masivo y a Exportar: si sobrevive a la
+        // recarga, esas acciones trabajan sobre las cantidades anteriores.
+        this.allInventoryElements = undefined;
+        this.tableElementsValues = [];
+        this.searchTerm = undefined;
         let requestArray = [];
 
         const inventoryQuery = this.materialType === 2 ? 'retrievePackagingMaterialInventoryV3' : 'retrieveRawMaterialInventoryV3';
@@ -103,11 +128,64 @@ export class ListFactoryInventoryRMComponent implements OnInit {
                     this.inventoryElements = this.inventory?.inventoryElements;
                     this.allInventoryElements = this.inventoryElements;
                     this.setTableElements(this.inventoryElements);
+                } else {
+                    this.inventoryElements = [];
+                    this.allInventoryElements = [];
+                    this.tableElementsValues = [];
                 }
             }
         });
-        this.rawMaterialForm = this.createMaterialFormGroup();
-        this.operationRawMaterialForm = this.createOperationMaterialFormGroup();
+    }
+
+    /**
+     * Filas del dialogo de acciones masivas. La cantidad de `inventory_element` esta en la unidad
+     * de su propia medida, asi que se manda tal cual junto con esa medida: lo escrito en la
+     * casilla es directamente comparable con lo que hay en inventario.
+     */
+    get inventoryActionItems(): InventoryActionItem[] {
+        return (this.allInventoryElements ?? []).map(element => ({
+            id: String(element.rawMaterialBase?.id),
+            title: element.rawMaterialBase?.name,
+            measureId: element.measure?.id,
+            unitName: element.measure?.unitBase?.name,
+            quantity: Number(element.quantity) || 0
+        }));
+    }
+
+    /** Agregar o eliminar varios materiales de una sola vez, con un unico comentario. */
+    onSaveInventoryActions(event: BulkInventoryAction){
+        if(!event.items.length) return;
+
+        const movements = event.items.map(item => ({
+            inventoryType: this.inventory?.inventoryType,
+            unitName: this.inventory?.unitName,
+            elementId: item.id,
+            measureId: item.measureId,
+            quantity: item.quantity,
+            creatorUserId: this.accountService.userValue.uuid,
+            comment: event.comment,
+            actionTypeId: event.action === 'add'
+                ? actionTypeValues.add_rm_manual.actionType.id
+                : actionTypeValues.remove_rm_manual.actionType.id
+        }));
+
+        const successMessage = event.action === 'add'
+            ? 'Materiales agregados al inventario correctamente'
+            : 'Materiales eliminados del inventario correctamente';
+
+        this.savingInventoryActions = true;
+        this.dataService.multiAddRemoveInventoryElement(movements).pipe(first()).subscribe({
+            next: () => {
+                this.savingInventoryActions = false;
+                this.alertService.success(successMessage);
+                this.loadInventory();
+            },
+            error: error => {
+                this.savingInventoryActions = false;
+                let errorMessage = this.dataService.getErrorMessageResponse(error, 'Error en movimiento de inventario, contacte con Administracion');
+                this.alertService.error(errorMessage);
+            }
+        });
     }
 
     search(value: any): void {

@@ -98,7 +98,13 @@ export const pfsFactoryOrderStatusValues = {
     cancelado: { status: {id: 15}},
     entregado: { status: {id: 16}},
     verificado: { status: {id: 17}},
-    devuelto: { status: {id: 18}}
+    devuelto: { status: {id: 18}},
+    /**
+     * Paso OPCIONAL entre En curso(12) y Listo(13), exclusivo del tablero. No
+     * mueve inventario ni cambia el estado que ve la tienda.
+     * Ver src/database/migrations/2026-08-26-estado-preparado.sql
+     */
+    preparado: { status: {id: 64}}
 }
 
 export const actionTypeValues = {
@@ -662,9 +668,14 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/retrieveEstablishments`, parameters);
     }
 
+    /**
+     * V2 agrega 'banks' al objeto de la tienda. Es un superset estricto de la V1, asi que las
+     * pantallas que solo leen nombre y direccion no cambian.
+     * Ver src/database/migrations/2026-08-31-bancos-por-tienda.sql
+     */
     getEstablishmentById(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getEstablishment`, params);
+        return this.http.post(`${environment.apiUrlV3}/getEstablishmentV2`, params);
     }
 
     getShortEstablishmentInfo(establishment: Establishment){
@@ -694,6 +705,22 @@ export class DataService {
             id: id
         });
         return this.http.patch(`${environment.apiUrlV3}/updateEstablishment`, params);
+    }
+
+    /**
+     * Escribe SOLO los bancos de la tienda. Es un endpoint aparte de updateEstablishment, que
+     * tiene un SET explicito sin banks: asi el formulario normal de la tienda no puede borrarlos
+     * y este modal no puede pisar el resto de los campos.
+     *
+     * El texto viene serializado con saltos de linea (serializeBanks). Cadena vacia deja la
+     * columna en NULL, que es valido: es quitarle todos los bancos a la tienda.
+     */
+    updateEstablishmentBanks(id: string, banks: string) {
+        let params = JSON.stringify({
+            "$1": banks,
+            "$2": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateEstablishmentBanks`, params);
     }
 
     deleteEstablishment(params: any) {
@@ -762,12 +789,24 @@ export class DataService {
             c: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/retrieveCustomers`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/retrieveCustomersV2`, parameters);
     }
 
     getCustomerById(id: string) {
         let parameters = JSON.stringify({c: { "id": id }});
-        return this.http.post(`${environment.apiUrlV3}/getCustomer`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/getCustomerV2`, parameters);
+    }
+
+    /**
+     * Clientes marcados como Operador, activos. Devuelve solo id y nombre: lo
+     * consume el modal de operadores del pedido, que no necesita nada más.
+     *
+     * El wrapper va vacío a propósito: el filtro está dentro de la query y el
+     * backend solo concatena su WHERE cuando el body trae llaves.
+     */
+    getOperatorCustomers() {
+        let parameters = JSON.stringify({ c: {} });
+        return this.http.post(`${environment.apiUrlV3}/retrieveOperatorCustomers`, parameters);
     }
 
     addCustomer(customer: Customer) {
@@ -776,9 +815,10 @@ export class DataService {
             "$2": customer.phone,
             "$3": customer.email,
             "$4": customer.nit || 'C/F',
-            "$5": this.accountService.userValue.uuid
+            "$5": !!customer.isOperator,
+            "$6": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/addCustomer`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/addCustomerV2`, parameters);
     }
 
     updateCustomer(customer: Customer) {
@@ -787,9 +827,10 @@ export class DataService {
             "$2": customer.phone,
             "$3": customer.email,
             "$4": customer.nit || 'C/F',
-            "$5": customer.id
+            "$5": !!customer.isOperator,
+            "$6": customer.id
         });
-        return this.http.patch(`${environment.apiUrlV3}/updateCustomer`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/updateCustomerV2`, parameters);
     }
 
     deleteCustomer(id: string) {
@@ -1445,6 +1486,14 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/multiAddRemoveInventoryElement`, parameters);
     }
 
+    /** Devolucion masiva de producto de tienda a bodega, en una sola transaccion. */
+    multiReturnPFSToWarehouse(params: any) {
+        let parameters = JSON.stringify({
+            "$1": JSON.stringify(params)
+        });
+        return this.http.patch(`${environment.apiUrlV3}/multiReturnPFSToWarehouse`, parameters);
+    }
+
     updateInventoryElement(params: any) {
         let parameters = JSON.stringify({
             updateInventoryElement: {
@@ -1585,7 +1634,7 @@ export class DataService {
 
     getAllProducForSaleOrder() {
         let params = JSON.stringify({pfsso: {}});
-        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrder`, params);
+        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrderV2`, params);
     }
 
 
@@ -1594,63 +1643,228 @@ export class DataService {
             pfsso: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrder`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrderV3`, parameters);
     }
 
     getProductForSaleOrderById(id: string) {
         let params = JSON.stringify({pfsso: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrder`, params);
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderV6`, params);
+    }
+
+    /**
+     * Solo lo que pinta el modal "Ver productos" del tablero: nombre, cantidad y
+     * medida de cada producto, más el comentario del pedido.
+     *
+     * Aparte de getProductForSaleOrderById porque ese trae el detalle completo,
+     * con finished_product.photo (la imagen en base64) por cada producto. El
+     * modal no cachea a proposito —los productos se pueden editar mientras el
+     * pedido esté en Pendiente o En curso— así que ese payload se volvía a bajar
+     * en cada apertura.
+     */
+    getProductForSaleOrderElementsById(id: string) {
+        let params = JSON.stringify({pfsso: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderElementsV3`, params);
+    }
+
+    /**
+     * Guarda de una sola vez los productos que bodega marcó como alistados en el
+     * panel del tablero. Los clicks se acumulan en el front y viajan juntos: un
+     * pedido de 20 productos son 20 clicks y una llamada.
+     *
+     * La base solo aplica el cambio si el pedido está En curso(12) o Preparado(64)
+     * y si los elementos le pertenecen. Fuera de eso el UPDATE afecta 0 filas y NO
+     * devuelve error: la acción no se aplica y ya.
+     *
+     * @param elements tanda con la forma [{ id, is_check }]. Conviene mandar solo
+     *                 los que cambiaron; los demás no aportan nada.
+     */
+    updateProductForSaleOrderElementsCheck(pfsOrderId: string, elements: { id: number, is_check: boolean }[]) {
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": JSON.stringify(elements)
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrderElementsCheck`, params);
     }
 
     /**
      * Listado para el tablero de bodega. Igual al listado normal más
      * assignedUser, startDate y readyDate; sin los elementos del pedido, que se
      * piden aparte con getProductForSaleOrderById al abrir "Ver productos".
+     *
+     * La V6 excluye del lado de la base los pedidos ya entregados —factory 16 /
+     * store 22—, que el tablero bajaba solo para que distribute() los tirara. El
+     * resto de estados que el tablero tampoco pinta (En camino, Cancelado,
+     * Devuelto, Eliminado) sí siguen viniendo: son casos raros.
+     * Ver src/database/migrations/2026-08-30-tablero-filtrar-pedidos-entregados.sql
      */
     getAllProductForSaleOrderForBoard(params: any) {
         let parameters = JSON.stringify({
             pfsso: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrderBoard`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrderBoardV6`, parameters);
     }
 
     /**
-     * Pendiente -> En curso. Asigna al usuario actual como encargado y marca la
-     * hora de inicio. No mueve inventario.
+     * Listado de la vista "Pedidos preparados": TODOS los pedidos en Preparado(64)
+     * CON su lista de productos, en una sola llamada.
+     *
+     * Aparte del listado del tablero porque esa query no trae los elementos —el
+     * tablero los pide de a uno al abrir una tarjeta— y esta pantalla los muestra
+     * todos: por ese camino cada recarga serían 1 + N llamadas. De paso el
+     * resultado es un snapshot consistente, sin cabeceras de antes de un
+     * movimiento y productos de después.
+     *
+     * El wrapper va vacío a propósito: el filtro por estado está dentro de la
+     * query y el backend solo concatena su WHERE cuando el body trae llaves. Sin
+     * filtro de fechas tampoco: Preparado es un estado de paso, así que el
+     * conjunto es chico por definición y acotarlo escondería justo los pedidos
+     * viejos que la pantalla existe para destapar.
+     * Ver src/database/migrations/2026-08-31-vista-pedidos-preparados.sql
      */
-    startProductForSaleOrder(pfsOrderId: string){
+    getPreparedProductForSaleOrders() {
+        let parameters = JSON.stringify({ pfsso: {} });
+        return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrderPreparedV2`, parameters);
+    }
+
+    /**
+     * Guarda la segunda pasada de control: los productos que quien revisa marcó en
+     * la vista "Pedidos preparados". Gemela de
+     * updateProductForSaleOrderElementsCheck, sobre la columna prepared_check.
+     *
+     * La base solo la aplica con el pedido en Preparado(64) y sobre elementos de
+     * ese pedido. Fuera de eso el UPDATE afecta 0 filas y NO devuelve error.
+     *
+     * @param elements tanda con la forma [{ id, prepared_check }]. Conviene mandar
+     *                 solo los que cambiaron.
+     */
+    updateProductForSaleOrderElementsPreparedCheck(pfsOrderId: string, elements: { id: number, prepared_check: boolean }[]) {
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": JSON.stringify(elements)
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrderElementsPreparedCheck`, params);
+    }
+
+    /**
+     * Firma la verificación de un pedido sin moverlo de estado. Es el camino OPCIONAL,
+     * el del botón "Verificar": adelantarla desde Preparado(64) deja constancia de que
+     * alguien revisó el pedido ANTES de cerrarlo.
+     *
+     * Acepta además Listo(13), que es donde queda un pedido que perdió la firma al
+     * editarse: editar los productos de un pedido Listo la borra, y volver a firmarlo
+     * es opcional —Entregado y Devuelto no la piden—.
+     * Ver src/database/migrations/2026-09-01-editar-pedido-listo.sql
+     *
+     * Firma el usuario logueado. La V3 ya no valida su rol: el gate es la capacidad
+     * orders.verify, que muestra u oculta el botón. La base solo comprueba que el
+     * pedido esté en Preparado o Listo y sin firma previa, porque no se reemplaza.
+     * Ver src/database/migrations/2026-09-02-verificacion-por-usuario-actual.sql
+     */
+    verifyPreparedProductForSaleOrder(pfsOrderId: string){
         let params = JSON.stringify({
             "$1": pfsOrderId,
             "$2": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/startProductForSaleStoreOrder`, params);
+        return this.http.patch(`${environment.apiUrlV3}/verifyProductForSaleStoreOrderV3`, params);
     }
 
     /**
-     * En curso -> Pendiente. Libera el pedido y limpia encargado y hora de
-     * inicio. Solo lo permite la base si quien llama es el encargado o un admin.
+     * Pendiente -> En curso. Asigna al usuario actual como encargado, marca la
+     * hora de inicio y guarda los operadores. No mueve inventario.
+     *
+     * @param operators nombres separados por pipes, ya pasados por
+     *                  serializeOperators. Cadena vacía deja la columna en NULL:
+     *                  tomar un pedido sin operadores es un caso permitido.
+     */
+    startProductForSaleOrder(pfsOrderId: string, operators = ''){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": this.accountService.userValue.uuid,
+            "$3": operators
+        });
+        return this.http.patch(`${environment.apiUrlV3}/startProductForSaleStoreOrderV2`, params);
+    }
+
+    /**
+     * En curso -> Pendiente. Libera el pedido y limpia encargado, hora de inicio,
+     * operadores y los productos marcados. Solo lo permite la base si quien llama
+     * es el encargado o un admin; en el front la capacidad orders.release
+     * gobierna el botón.
+     *
+     * La V3 agrega el borrado de los checks: el avance del alistado es de quien
+     * tenía el pedido, no del pedido, así que se va con el resto cuando vuelve al
+     * pool. Va en la misma sentencia (un CTE) y acoplado al RETURNING del
+     * release, para que un intento rechazado por los guards no borre nada.
+     * Ver src/database/migrations/2026-08-30-liberar-pedido-limpia-checks.sql
      */
     releaseProductForSaleOrder(pfsOrderId: string){
         let params = JSON.stringify({
             "$1": pfsOrderId,
             "$2": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/releaseProductForSaleStoreOrder`, params);
+        return this.http.patch(`${environment.apiUrlV3}/releaseProductForSaleStoreOrderV3`, params);
     }
 
     /**
-     * En curso -> Listo usando el procedure v2, que valida que solo el
-     * encargado (o un admin) pueda hacerlo y registra la hora de finalización.
-     * Mueve inventario: bodega -> in_transit.
+     * En curso -> Preparado. Paso opcional del tablero: no mueve inventario y no
+     * cambia el estado que ve la tienda. Solo lo permite la base si quien llama
+     * es el encargado del pedido o un admin.
      */
-    manageProductForSaleOrderStateReadyV2(pfsOrderId: string){
+    prepareProductForSaleOrder(pfsOrderId: string){
         let params = JSON.stringify({
             "$1": pfsOrderId,
-            "$2": pfsFactoryOrderStatusValues.listo.status.id,
-            "$3": this.accountService.userValue.uuid
+            "$2": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrderV2`, params);
+        return this.http.patch(`${environment.apiUrlV3}/prepareProductForSaleStoreOrder`, params);
+    }
+
+    /**
+     * Preparado -> En curso. El reverso exacto de prepareProductForSaleOrder, con el
+     * mismo guard: lo retrocede su encargado, o un admin.
+     *
+     * CONSERVA encargado, hora de inicio y operadores —el pedido no cambia de manos,
+     * solo retrocede un paso para corregirlo—, a diferencia de
+     * releaseProductForSaleOrder, que lo devuelve al pool y los borra.
+     *
+     * BORRA la fecha de preparación, la verificación y —desde la V2— los productos
+     * marcados en la revisión (prepared_check). Lo de la firma es lo importante:
+     * los productos se pueden editar mientras el pedido está En curso, así que una
+     * firma que sobreviviera al retroceso certificaría productos distintos de los que
+     * se despachan, y la base no volvería a pedir verificador al cerrarlo. La
+     * revisión de preparado se borra por el mismo motivo.
+     *
+     * CONSERVA además los checks de alistado (is_check): eso lo puso bodega y sigue
+     * valiendo, el pedido no cambia de manos.
+     * Ver src/database/migrations/2026-09-03-check-preparado-productos.sql
+     */
+    unprepareProductForSaleOrder(pfsOrderId: string){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/unprepareProductForSaleStoreOrderV2`, params);
+    }
+
+    /**
+     * Cambia solo los operadores del pedido: no toca estados ni inventario.
+     *
+     * La V2 solo los deja editar mientras el pedido siga en bodega —Pendiente(11),
+     * En curso(12) o Preparado(64)—. Desde Listo(13) el pedido ya salió y sus
+     * operadores son un registro histórico. Fuera de esos estados el UPDATE afecta
+     * 0 filas y NO devuelve error.
+     *
+     * Eso quita el caso que la V1 habilitaba: ponerle operadores a un pedido ya
+     * cerrado desde la vista de detalle, que va de Pendiente a Listo directo y
+     * nunca los pide. Ahora hay que cargarlos antes de marcarlo como Listo.
+     * Ver src/database/migrations/2026-08-30-operadores-solo-antes-de-listo.sql
+     */
+    updateProductForSaleOrderOperators(pfsOrderId: string, operators: string){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": operators
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrderOperatorsV2`, params);
     }
 
     /**
@@ -1658,7 +1872,7 @@ export class DataService {
      */
     getProductForSaleOrderByIdForPdf(id: string) {
         let params = JSON.stringify({pfsso: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderForPdf`, params);
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderForPdfV3`, params);
     }
 
     addProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
@@ -1672,22 +1886,50 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/addProductForSaleStoreOrder`, params);
     }
 
+    /**
+     * Guarda un pedido editado. La V2 suma dos estados con edición real de productos:
+     *
+     *   Preparado(64) -> era un bug: el estado nació después de la lista del procedure
+     *                    v1 y nunca se agregó, así que editar los productos respondía
+     *                    OK y no guardaba nada. No mueve inventario.
+     *   Listo(13)     -> el producto ya salió de bodega, así que la base AJUSTA
+     *                    inventario por diferencias: descuenta lo que se agrega y
+     *                    devuelve a bodega lo que se quita. Si no alcanza el stock,
+     *                    revienta y no se aplica NADA de la edición.
+     *
+     * Si cambia la lista de productos, el pedido pierde la verificación. Editar solo
+     * nombre o notas no la toca.
+     *
+     * $4 es el usuario que edita: queda como autor de los movimientos de inventario en
+     * el log de actividad. El v1 no recibía ninguno.
+     * Ver src/database/migrations/2026-09-01-editar-pedido-listo.sql
+     */
     updateProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
         let params = JSON.stringify({
             "$1": pfsOrder.id,
             "$2": JSON.stringify({
                 ...pfsOrder
             }),
-            "$3": JSON.stringify(pfsOrder.productForSaleStoreOrderElements)
+            "$3": JSON.stringify(pfsOrder.productForSaleStoreOrderElements),
+            "$4": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrder`, params);
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrderV2`, params);
     }
 
+    /**
+     * Listo -> En camino. La v2 registra in_transit_date y solo aplica si el
+     * pedido sigue en Listo, así que un doble clic no reescribe la fecha.
+     *
+     * SIN USO desde que "En camino" dejó de ser un paso del flujo: ni el tablero
+     * ni la vista de detalle lo ofrecen. Se conserva porque el estado no se
+     * eliminó —los pedidos que quedaron ahí siguen siendo válidos y se reciben o
+     * devuelven con normalidad— y volver a habilitarlo es reponer un botón.
+     */
     updateProductForSaleOrderEnCamino(pfsOrderId: string){
         let params = JSON.stringify({
             "$1": pfsOrderId
         });
-        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrderEnCamino`, params);
+        return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrderEnCaminoV2`, params);
     }
 
     updateProductForSaleOrderStatus(pfsOrder: ProductForSaleStoreOrder){
@@ -1697,39 +1939,62 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/updateProductForSaleStoreOrder`, params);
     }
 
+    /**
+     * Transiciones de estado del pedido: Listo(13), Entregado(16) y Devuelto(18).
+     *
+     * El procedure v3 agregó el relleno de los campos que quedaban vacíos cuando
+     * el pedido toma un atajo: al ir de Pendiente directo a Listo asigna
+     * encargado y hora de inicio, y al entregarlo registra la hora de recepción.
+     *
+     * El v4 solo suma Preparado(64) como origen válido hacia Listo, con la misma
+     * validación de encargado que ya se aplicaba desde En curso.
+     *
+     * El v5 sumó el verificador como CUARTO parámetro: había que elegirlo de una
+     * lista y sin él la transición fallaba.
+     *
+     * El v6 lo saca. Un pedido que llega a Listo sin firma lo firma quien lo cierra,
+     * que es $3 y ya viajaba; si ya venía verificado desde Preparado, esa firma se
+     * conserva. La transición no puede fallar por falta de verificador.
+     * Ver src/database/migrations/2026-09-02-verificacion-por-usuario-actual.sql
+     */
+    private manageProductForSaleOrderState(pfsOrderId: string, factoryStatusId: number){
+        let params = JSON.stringify({
+            "$1": pfsOrderId,
+            "$2": factoryStatusId,
+            "$3": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrderV6`, params);
+    }
+
+    /**
+     * Pendiente, En curso o Preparado -> Listo. Mueve inventario: bodega -> in_transit.
+     * Si el pedido no venía verificado, queda firmado por el usuario actual.
+     */
     manageProductForSaleOrderStateReady(pfsOrderId: string){
-        let params = JSON.stringify({
-            "$1": pfsOrderId,
-            "$2": pfsFactoryOrderStatusValues.listo.status.id,
-            "$3": this.accountService.userValue.uuid
-        });
-        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrder`, params);
+        return this.manageProductForSaleOrderState(pfsOrderId, pfsFactoryOrderStatusValues.listo.status.id);
     }
 
+    /** Listo o En camino -> Entregado. Mueve inventario: in_transit -> tienda. */
     manageProductForSaleOrderStateReceived(pfsOrderId: string){
-        let params = JSON.stringify({
-            "$1": pfsOrderId,
-            "$2": pfsFactoryOrderStatusValues.entregado.status.id,
-            "$3": this.accountService.userValue.uuid
-        });
-        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrder`, params);
+        return this.manageProductForSaleOrderState(pfsOrderId, pfsFactoryOrderStatusValues.entregado.status.id);
     }
 
+    /** Listo o En camino -> Devuelto. Mueve inventario: in_transit -> bodega. */
+    manageProductForSaleOrderStateReturned(pfsOrderId: string){
+        return this.manageProductForSaleOrderState(pfsOrderId, pfsFactoryOrderStatusValues.devuelto.status.id);
+    }
+
+    /**
+     * Atajo de la tienda: Pendiente -> Entregado en un solo paso, sin pasar por
+     * Listo ni En camino. La v2 rellena encargado, inicio, listo y recepción con
+     * el momento de la acción.
+     */
     confirmAndReceivePFSOrder(pfsOrderId: string){
         let params = JSON.stringify({
             "$1": pfsOrderId,
             "$2": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/confirmAndReceivePFSOrder`, params);
-    }
-
-    manageProductForSaleOrderStateReturned(pfsOrderId: string){
-        let params = JSON.stringify({
-            "$1": pfsOrderId,
-            "$2": pfsFactoryOrderStatusValues.devuelto.status.id,
-            "$3": this.accountService.userValue.uuid
-        });
-        return this.http.patch(`${environment.apiUrlV3}/manageProductForSaleStoreOrder`, params);
+        return this.http.patch(`${environment.apiUrlV3}/confirmAndReceivePFSOrderV2`, params);
     }
 
     verifyProductForSaleOrder(orderId: string){
@@ -1769,9 +2034,10 @@ export class DataService {
     }
 
     /**
-     * `depositComment` / `depositDate` (y sus equivalentes de envío) viajan
-     * dentro de params: si el comentario viene vacío la procedure no registra
-     * ningún pago y la venta se guarda igual que siempre.
+     * `depositBank` / `depositReferenceNo` / `depositComment` / `depositDate` (y sus equivalentes
+     * de envío) viajan dentro de params: la procedure registra el pago bancario si viene alguno de
+     * los tres primeros. Solo aplica a las ventas con Depósito o con Cheque.
+     * Ver src/database/migrations/2026-09-01-banco-y-referencia-en-pagos.sql
      */
     registerShop(params: ShopResume) {
         let parameters = JSON.stringify({
@@ -1781,7 +2047,7 @@ export class DataService {
             "$2": JSON.stringify(params.itemsList),
             "$3": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/registerShopV5`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/registerShopV6`, parameters);
     }
 
     /**
@@ -1789,9 +2055,11 @@ export class DataService {
      * sus defaults (comentario NULL y fecha = now() en UTC).
      * `date` debe venir ya convertida a UTC con getUTCTimeFromLocalDateTime().
      * `$7` es el usuario que cobra, que no siempre es el que hizo la venta.
+     * `$8` y `$9` son el banco y el número de transferencia o cheque: obligatorios en el
+     * formulario cuando el tipo de pago es Depósito o Cheque, vacíos en el resto.
      */
     addShopSalePayment(shopSaleId: string, amount: string, paymentTypeId: string, paymentTarget: string = 'ORDER',
-        comment: string = '', date: string = '') {
+        comment: string = '', date: string = '', bank: string = '', referenceNo: string = '') {
         let params = JSON.stringify({
             "$1": shopSaleId,
             "$2": amount,
@@ -1799,16 +2067,46 @@ export class DataService {
             "$4": paymentTarget,
             "$5": comment,
             "$6": date,
-            "$7": this.accountService.userValue.uuid
+            "$7": this.accountService.userValue.uuid,
+            "$8": bank,
+            "$9": referenceNo
         });
-        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV5`, params);
+        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV6`, params);
     }
 
     getShopSalePayments(shopSaleId: string) {
         let params = JSON.stringify({
             ssp: { shop_sale_id: shopSaleId }
         });
-        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV5`, params);
+        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV6`, params);
+    }
+
+    /**
+     * Abonos de crédito de un cliente en una tienda, del más reciente al más
+     * antiguo y con la venta anidada en `sale`. El filtro va sobre shop_sale
+     * (alias `ss`), por eso no sirve /getShopSalePaymentsV5, que filtra por
+     * una sola venta. El depósito registrado con la venta queda fuera desde la
+     * query: no es un abono de crédito.
+     */
+    getCustomerCreditPayments(establishmentId: string, customerId: string) {
+        let params = JSON.stringify({
+            ss: { establishment_id: establishmentId, customer_id: customerId }
+        });
+        return this.http.post(`${environment.apiUrlV3}/retrieveCustomerCreditPaymentsV2`, params);
+    }
+
+    /**
+     * Historial de ventas de un cliente en una tienda: una fila por venta, de
+     * la más reciente a la más antigua, con el tipo de pago, los estados y el
+     * acumulado de abonos de cada una. Incluye las ventas que no son al crédito
+     * y las de crédito sin abonos todavía, que es donde se queda corto
+     * /retrieveCustomerCreditPayments (parte de shop_sale_payment).
+     */
+    getCustomerSalesHistory(establishmentId: string, customerId: string) {
+        let params = JSON.stringify({
+            ss: { establishment_id: establishmentId, customer_id: customerId }
+        });
+        return this.http.post(`${environment.apiUrlV3}/retrieveCustomerSalesHistory`, params);
     }
 
     /**
@@ -1951,21 +2249,27 @@ export class DataService {
      * registrados junto con la venta (depósito): ese dinero ya viene contado
      * como venta con depósito y contarlo otra vez inflaría el cierre y el saldo
      * de crédito. Cada abono trae además el usuario que lo cobró (`creatorUser`,
-     * vacío en los abonos anteriores a 2026-08-11).
+     * vacío en los abonos anteriores a 2026-08-11) y el banco y número de
+     * referencia del pago (`bank` / `referenceNo`, vacíos en los pagos en
+     * efectivo y en los anteriores a 2026-09-01).
+     *
+     * OJO: los cierres YA GUARDADOS congelaron `creditPayments` como jsonb, así
+     * que los anteriores a 2026-09-01 no traen banco ni referencia por más que
+     * la query los pida. Las vistas muestran '--', igual que con el comentario.
      */
     getNewCashClosing(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV5`, params);
+        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV6`, params);
     }
 
     getCashClosingById(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV6`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV7`, params);
     }
 
     getCashClosingByIdV2(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV6`, params);
+        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV7`, params);
     }
 
     addCashClosingV2(notes: string, establishment_id: string){

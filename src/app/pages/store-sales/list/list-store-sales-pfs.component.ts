@@ -1,12 +1,12 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
-import { AlertService, DataService, DateRangeState, DateRangeStateService} from '@app/services';
+import { AlertService, DataService, DateRangeState, DateRangeStateService, StoreContextService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { DateRange } from '@angular/material/datepicker';
 import { Measure } from '@app/models';
 import { UnitBase } from '@app/models/auxiliary/unit-base.model';
-import { forkJoin } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ShopResume } from '@app/models/store/shop-resume.model';
 import { Establishment } from '@app/models/establishment.model';
@@ -65,12 +65,11 @@ export class ListStoreSalesPFSComponent implements OnInit {
     orderPaymentExpanded = true;
     deliveryPaymentExpanded = true;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService, private storeContext: StoreContextService) {}
 
     ngOnInit() {
         this.readOnly = !!this.route.snapshot.data['readOnly'];
         this.storePicker = !!this.route.snapshot.data['storePicker'];
-        this.establishmentId = this.route.snapshot.params['id'];
 
         // Rango guardado en la pestaña o, si no hay, los últimos 15 días desde la fecha actual
         this.dateRange = this.dateRangeState.createRange(14);
@@ -80,31 +79,20 @@ export class ListStoreSalesPFSComponent implements OnInit {
 
         this.rawMaterialForm = this.createMaterialFormGroup();
 
-        // Con selector de tienda se espera a que store-picker emita antes de pedir las ventas
-        if (!this.storePicker) {
-            this.storeSelected = true;
-            this.loadStore();
-        }
-    }
-
-    private loadStore() {
-        const requestArray = [
-            this.dataService.getAllShopHistory(this.buildSalesParams()),
-            this.dataService.getAnyComponent({}, 'getMeasure'),
-            this.dataService.getEstablishmentById(this.establishmentId)
-        ];
-
-        forkJoin(requestArray).subscribe({
-            next: (result: any) => {
-                this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
-                this.establishment = this.dataService.findJsonValue(result[2], 'json_result') || {};
-                this.applyShopResumes(this.dataService.findJsonValue(result[0], 'json_result') || []);
-            },
-            error: (e) => console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
-            complete: () => {
-                this.storeName = this.establishment?.name;
-            }
+        // Las medidas no dependen de la tienda, se piden una sola vez
+        this.dataService.getAnyComponent({}, 'getMeasure').subscribe({
+            next: (result: any) => this.measureOptions = this.dataService.findJsonValue(result, 'json_result') || [],
+            error: (e) => console.error('Se ha producido un error al obtener las medidas', e)
         });
+
+        // En consultas la tienda se elige en la propia pantalla con store-picker. En la sección de
+        // Tienda viaja en la ruta: el selector global navega a esta misma ruta con otra tienda y
+        // Angular reutiliza el componente, así que la recarga cuelga del parámetro.
+        if (!this.storePicker) {
+            this.route.paramMap
+                .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
+                .subscribe(store => this.onStoreChange(store));
+        }
     }
 
     /** Cambio de tienda desde el selector: sin tienda no se consulta nada y la tabla queda vacía. */

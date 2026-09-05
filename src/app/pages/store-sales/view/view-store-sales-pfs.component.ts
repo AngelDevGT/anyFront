@@ -9,13 +9,22 @@ import { ShopResume } from '@app/models/store/shop-resume.model';
 import { ShopSalePayment } from '@app/models/store/shop-sale-payment.model';
 import { PaymentType } from '@app/models';
 import { ActivityLog } from '@app/models/system/activity-log';
+import {
+    bankOptions, formatPaymentDetail, requiresPaymentDetailById,
+    BANK_NAME_MAX_LENGTH, REFERENCE_NO_MAX_LENGTH
+} from '@app/helpers';
 
-/** Abono listo para mandarse: monto, tipo de pago, comentario y fecha ya en UTC. */
+/**
+ * Abono listo para mandarse: monto, tipo de pago, comentario, fecha ya en UTC y —cuando el pago es
+ * con Depósito o Cheque— el banco y el número de transferencia o de cheque.
+ */
 interface PaymentEntry {
     amount: string;
     paymentType: string;
     comment: string;
     date: string;
+    bank: string;
+    referenceNo: string;
 }
 
 @Component({
@@ -47,6 +56,15 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     paymentError?: string;
     /** Tope del comentario del abono — igual al varchar(200) de shop_sale_payment.comment */
     readonly commentMaxLength = 200;
+    /** Topes de shop_sale_payment.bank y .reference_no */
+    readonly bankMaxLength = BANK_NAME_MAX_LENGTH;
+    readonly referenceMaxLength = REFERENCE_NO_MAX_LENGTH;
+    /**
+     * Bancos de la tienda, para el select del abono. Salen de establishment.banks; la venta no los
+     * trae, así que la pantalla pide la tienda aparte. Sin bancos cargados no se puede cobrar con
+     * Depósito ni con Cheque.
+     */
+    bankOptionsList: string[] = [];
 
     // Payment history
     shopSalePayments?: ShopSalePayment[];
@@ -123,10 +141,33 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                     this.activityLogName = this.activityLogName + "|||" + this.shopResume?.establecimiento?.id;
                     this.orderPendingAmount = Number(this.shopResume?.pendingAmount);
                     this.deliveryPendingAmount = Number(this.shopResume?.deliveryPendingAmount);
+                    this.loadBanks();
                     this.loading = false;
                 }
             });
         }
+    }
+
+    /**
+     * Los bancos de la tienda para el select del abono. Va aparte del forkJoin del ngOnInit porque
+     * el id de la tienda recién se conoce cuando llega la venta. No bloquea la pantalla: el modal
+     * de cobro se abre por acción del usuario, mucho después de que esto resuelva.
+     */
+    private loadBanks() {
+        const establishmentId = this.shopResume?.establecimiento?.id ?? this.shopResume?.establishment?.id;
+        if (!establishmentId || this.readOnly) return;
+
+        this.dataService.getEstablishmentById(establishmentId)
+            .pipe(first())
+            .subscribe({
+                next: (response: any) => {
+                    const establishment = this.dataService.findJsonValue(response, 'json_result');
+                    this.bankOptionsList = bankOptions(establishment?.banks);
+                },
+                // Sin bancos el formulario ya avisa que no se puede cobrar con Depósito ni Cheque;
+                // no hace falta un error aparte que tape la venta que sí se está viendo
+                error: () => { this.bankOptionsList = []; }
+            });
     }
 
     goBack() {
@@ -159,6 +200,10 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                 subtitle: p.creatorUser?.name ?? '',
                 tag: this.getPaymentTargetLabel(p.paymentTarget),
                 date: p.date,
+                // Banco y referencia van en su propia línea, encima del comentario: son el dato
+                // duro con el que se cuadra contra el banco. Vacío en los pagos en efectivo y en
+                // los anteriores a 2026-09-01.
+                detail: formatPaymentDetail(p),
                 comment: p.comment
             });
         });
@@ -228,12 +273,60 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         return new FormGroup({
             orderAmount: new FormControl('', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             orderPaymentType: new FormControl(''),
+            // Banco y referencia: obligatorios cuando el tipo elegido es Depósito o Cheque. La
+            // regla vive en canSubmitPayment y no en un Validators.required, porque depende del
+            // tipo de pago que el usuario elija en el mismo formulario.
+            orderBank: new FormControl('', [Validators.maxLength(this.bankMaxLength)]),
+            orderReferenceNo: new FormControl('', [Validators.maxLength(this.referenceMaxLength)]),
             orderComment: new FormControl('', [Validators.maxLength(this.commentMaxLength)]),
             orderDate: new FormControl(this.dataService.getLocalDateTimeInputValue()),
             deliveryAmount: new FormControl('', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             deliveryPaymentType: new FormControl(''),
+            deliveryBank: new FormControl('', [Validators.maxLength(this.bankMaxLength)]),
+            deliveryReferenceNo: new FormControl('', [Validators.maxLength(this.referenceMaxLength)]),
             deliveryComment: new FormControl('', [Validators.maxLength(this.commentMaxLength)]),
             deliveryDate: new FormControl(this.dataService.getLocalDateTimeInputValue())
+        });
+    }
+
+    /** La tienda no tiene bancos cargados: no se puede cobrar con Depósito ni con Cheque. */
+    get hasNoBanks(): boolean {
+        return !this.bankOptionsList.length;
+    }
+
+    /** El tipo de pago elegido para el pedido exige banco y referencia. */
+    get orderNeedsDetail(): boolean {
+        return requiresPaymentDetailById(this.paymentForm?.get('orderPaymentType')?.value, this.paymentTypeOptions);
+    }
+
+    get deliveryNeedsDetail(): boolean {
+        return requiresPaymentDetailById(this.paymentForm?.get('deliveryPaymentType')?.value, this.paymentTypeOptions);
+    }
+
+    /**
+     * Los datos bancarios del pedido ya están completos y el envío también los pide, así que se
+     * pueden copiar: es normal cobrar las dos cosas con una sola transferencia.
+     *
+     * Exige canPayOrder porque si la venta solo debe el envío el bloque del pedido ni se muestra y
+     * no hay nada de dónde copiar; y exige deliveryNeedsDetail porque con el envío en efectivo no
+     * hay campos donde pegar.
+     */
+    get canCopyOrderPaymentDetail(): boolean {
+        if (!this.canPayOrder || !this.canPayDelivery) return false;
+        if (!this.orderNeedsDetail || !this.deliveryNeedsDetail) return false;
+        if (this.hasNoBanks) return false;
+        const value = this.paymentForm?.value;
+        return !!(value?.orderBank && value?.orderReferenceNo);
+    }
+
+    /** Copia banco, referencia y fecha del pago del pedido al del envío. */
+    copyOrderPaymentDetailToDelivery() {
+        if (!this.canCopyOrderPaymentDetail) return;
+        const value = this.paymentForm.value;
+        this.paymentForm.patchValue({
+            deliveryBank: value.orderBank,
+            deliveryReferenceNo: value.orderReferenceNo,
+            deliveryDate: value.orderDate
         });
     }
 
@@ -255,25 +348,44 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         }
     }
 
-    private buildPaymentEntry(amount: any, paymentType: any, comment: any, date: any): PaymentEntry | null {
+    private buildPaymentEntry(amount: any, paymentType: any, comment: any, date: any,
+        bank: any, referenceNo: any): PaymentEntry | null {
         const amt = Number(amount);
         if (!amount || Number.isNaN(amt) || amt <= 0 || !paymentType) return null;
+
+        // Solo se mandan cuando el tipo los pide: si el usuario cambió de método después de
+        // escribirlos, quedarían pegados a un pago en efectivo
+        const needsDetail = requiresPaymentDetailById(paymentType, this.paymentTypeOptions);
         return {
             amount: String(amount),
             paymentType: String(paymentType),
             comment: (comment ?? '').toString().trim(),
             // El input entrega hora local; la BD guarda UTC. Si viene vacío se
             // manda cadena vacía y la procedure aplica su now().
-            date: this.dataService.getUTCTimeFromLocalDateTime(date)
+            date: this.dataService.getUTCTimeFromLocalDateTime(date),
+            bank: needsDetail ? (bank ?? '').toString().trim() : '',
+            referenceNo: needsDetail ? (referenceNo ?? '').toString().trim() : ''
         };
+    }
+
+    /** El abono está completo: si su tipo pide banco y referencia, los dos tienen que estar. */
+    private isPaymentEntryComplete(entry: PaymentEntry | null): boolean {
+        if (!entry) return false;
+        if (!requiresPaymentDetailById(entry.paymentType, this.paymentTypeOptions)) return true;
+        return !!entry.bank && !!entry.referenceNo;
     }
 
     get canSubmitPayment(): boolean {
         if (this.paymentForm.invalid) return false;
         const v = this.paymentForm.value;
-        const order = this.canPayOrder ? this.buildPaymentEntry(v.orderAmount, v.orderPaymentType, v.orderComment, v.orderDate) : null;
-        const delivery = this.canPayDelivery ? this.buildPaymentEntry(v.deliveryAmount, v.deliveryPaymentType, v.deliveryComment, v.deliveryDate) : null;
-        return !!(order || delivery);
+        const order = this.canPayOrder ? this.buildPaymentEntry(v.orderAmount, v.orderPaymentType, v.orderComment, v.orderDate, v.orderBank, v.orderReferenceNo) : null;
+        const delivery = this.canPayDelivery ? this.buildPaymentEntry(v.deliveryAmount, v.deliveryPaymentType, v.deliveryComment, v.deliveryDate, v.deliveryBank, v.deliveryReferenceNo) : null;
+        if (!order && !delivery) return false;
+        // Un abono a medias bloquea el envío completo: mandar el otro y perder este sería peor,
+        // porque el usuario ya no vería lo que le faltó
+        if (order && !this.isPaymentEntryComplete(order)) return false;
+        if (delivery && !this.isPaymentEntryComplete(delivery)) return false;
+        return true;
     }
 
     submitPayment() {
@@ -284,14 +396,14 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         const v = this.paymentForm.value;
         const calls = [];
         if (this.canPayOrder) {
-            const order = this.buildPaymentEntry(v.orderAmount, v.orderPaymentType, v.orderComment, v.orderDate);
+            const order = this.buildPaymentEntry(v.orderAmount, v.orderPaymentType, v.orderComment, v.orderDate, v.orderBank, v.orderReferenceNo);
             if (order) calls.push(this.dataService.addShopSalePayment(this.shopResume.id, order.amount, order.paymentType, 'ORDER',
-                order.comment, order.date));
+                order.comment, order.date, order.bank, order.referenceNo));
         }
         if (this.canPayDelivery) {
-            const delivery = this.buildPaymentEntry(v.deliveryAmount, v.deliveryPaymentType, v.deliveryComment, v.deliveryDate);
+            const delivery = this.buildPaymentEntry(v.deliveryAmount, v.deliveryPaymentType, v.deliveryComment, v.deliveryDate, v.deliveryBank, v.deliveryReferenceNo);
             if (delivery) calls.push(this.dataService.addShopSalePayment(this.shopResume.id, delivery.amount, delivery.paymentType, 'DELIVERY',
-                delivery.comment, delivery.date));
+                delivery.comment, delivery.date, delivery.bank, delivery.referenceNo));
         }
         if (calls.length === 0) {
             this.paymentError = 'Ingrese al menos un monto a pagar';
@@ -319,9 +431,13 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         // reset() a secas dejaría las fechas vacías; se re-siembran con "ahora"
         // para que al reabrir el modal el input ya venga con la hora actual.
         const now = this.dataService.getLocalDateTimeInputValue();
+        // Banco y referencia se siembran con '' y no se dejan en el null de reset(): con null el
+        // select no marca su opción vacía y queda en blanco sin placeholder.
         this.paymentForm.reset({
             orderAmount: '', orderPaymentType: '', orderComment: '', orderDate: now,
-            deliveryAmount: '', deliveryPaymentType: '', deliveryComment: '', deliveryDate: now
+            orderBank: '', orderReferenceNo: '',
+            deliveryAmount: '', deliveryPaymentType: '', deliveryComment: '', deliveryDate: now,
+            deliveryBank: '', deliveryReferenceNo: ''
         });
         this.paymentError = undefined;
     }

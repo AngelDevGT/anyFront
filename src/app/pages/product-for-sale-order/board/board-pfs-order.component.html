@@ -7,36 +7,60 @@
             <p class="page-subtitle">Pedidos de producto terminado en bodega</p>
         </div>
 
-        <div class="date-wrapper" (click)="$event.stopPropagation()">
-            <button class="filter-main-btn" [class.open]="datePanelOpen" type="button" (click)="toggleDatePanel($event)">
-                <i class="material-icons" style="font-size:17px">event</i>
-                Fecha
-                <span *ngIf="dateRangeLabel" class="date-range-label">{{ dateRangeLabel }}</span>
-                <i class="material-icons chevron-icon">keyboard_arrow_down</i>
-            </button>
+        <div class="page-header-actions">
 
-            <div class="date-panel" *ngIf="datePanelOpen">
-                <div class="date-panel-header">
-                    <span class="date-panel-title">
-                        <i class="material-icons" style="font-size:16px">event</i>
-                        Rango de fechas
-                    </span>
-                    <button class="date-close-btn" type="button" (click)="closeDatePanel()">
-                        <i class="material-icons" style="font-size:18px">close</i>
-                    </button>
-                </div>
+            <!-- Buscador local: filtra los pedidos ya cargados, no vuelve a consultar -->
+            <div class="board-search">
+                <i class="material-icons board-search__icon">search</i>
+                <input type="text"
+                       class="board-search__input"
+                       placeholder="Buscar pedido o tienda"
+                       [(ngModel)]="searchTerm"
+                       (ngModelChange)="onSearchChange()">
+                <button *ngIf="searchTerm" type="button" class="board-search__clear"
+                        aria-label="Limpiar búsqueda" (click)="clearSearch()">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
 
-                <div class="date-panel-body">
-                    <mat-calendar
-                        [selected]="selectedDateRange"
-                        [maxDate]="maxDate"
-                        (selectedChange)="onDateRangeChange($event)">
-                    </mat-calendar>
-                </div>
+            <!-- Recarga automática. El componente solo avisa cuando vence el
+                 intervalo; si el tablero recarga o se saltea el turno lo decide
+                 autoRefreshTick() -->
+            <app-auto-refresh [storageKey]="autoRefreshStorageKey"
+                              (refresh)="autoRefreshTick()">
+            </app-auto-refresh>
 
-                <div class="date-panel-footer">
-                    <button class="btn-reset" type="button" (click)="resetDateRange()">Últimos 15 días</button>
-                    <button class="btn-date-apply" type="button" (click)="applyDateRange()">Buscar</button>
+            <div class="date-wrapper" (click)="$event.stopPropagation()">
+                <button class="filter-main-btn" [class.open]="datePanelOpen" type="button" (click)="toggleDatePanel($event)">
+                    <i class="material-icons" style="font-size:17px">event</i>
+                    Fecha
+                    <span *ngIf="dateRangeLabel" class="date-range-label">{{ dateRangeLabel }}</span>
+                    <i class="material-icons chevron-icon">keyboard_arrow_down</i>
+                </button>
+
+                <div class="date-panel" *ngIf="datePanelOpen">
+                    <div class="date-panel-header">
+                        <span class="date-panel-title">
+                            <i class="material-icons" style="font-size:16px">event</i>
+                            Rango de fechas
+                        </span>
+                        <button class="date-close-btn" type="button" (click)="closeDatePanel()">
+                            <i class="material-icons" style="font-size:18px">close</i>
+                        </button>
+                    </div>
+
+                    <div class="date-panel-body">
+                        <mat-calendar
+                            [selected]="selectedDateRange"
+                            [maxDate]="maxDate"
+                            (selectedChange)="onDateRangeChange($event)">
+                        </mat-calendar>
+                    </div>
+
+                    <div class="date-panel-footer">
+                        <button class="btn-reset" type="button" (click)="resetDateRange()">Últimos 15 días</button>
+                        <button class="btn-date-apply" type="button" (click)="applyDateRange()">Buscar</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -46,91 +70,336 @@
         <span class="spinner-border spinner-border-lg"></span>
     </div>
 
-    <!-- Tablero -->
-    <div class="board" *ngIf="!loadingOrders">
-        <div class="board-column" *ngFor="let column of columns">
+    <!-- Con las 4 columnas vacías por el buscador, "Sin pedidos" x4 no explica nada -->
+    <p *ngIf="!loadingOrders && noSearchResults" class="board-search__no-results">
+        Ningún pedido coincide con "{{ searchTerm }}".
+    </p>
 
-            <div class="board-column__header" [style.borderTopColor]="column.color">
-                <span class="board-column__title">{{ column.title }}</span>
-                <span class="board-column__count" [style.background]="column.color">{{ column.orders.length }}</span>
-            </div>
+    <!-- Tablero (3/5) + productos (2/5) -->
+    <div class="board-layout" *ngIf="!loadingOrders">
 
-            <div class="board-column__list"
-                 cdkDropList
-                 [id]="'board-col-' + column.statusId"
-                 [cdkDropListData]="column"
-                 [cdkDropListConnectedTo]="dropListIds"
-                 [cdkDropListEnterPredicate]="canDrop"
-                 (cdkDropListDropped)="drop($event)">
+        <div class="board">
+            <div class="board-column" *ngFor="let column of columns">
 
-                <div class="board-card"
-                     *ngFor="let order of column.orders; trackBy: trackByOrderId"
-                     cdkDrag
-                     [cdkDragData]="order"
-                     [cdkDragDisabled]="!isDraggable(order)"
-                     [class.board-card--locked]="!isDraggable(order)">
-
-                    <div class="board-card__title">{{ order.name }}</div>
-
-                    <!-- Horas: aparecen solo cuando el pedido ya pasó por esa etapa -->
-                    <div class="board-card__times" *ngIf="order.startDate || order.readyDate">
-                        <span *ngIf="order.startDate" class="board-card__time">
-                            <i class="material-icons">play_arrow</i>
-                            {{ formatShortDateTime(order.startDate) }}
-                        </span>
-                        <span *ngIf="order.readyDate" class="board-card__time">
-                            <i class="material-icons">check</i>
-                            {{ formatShortDateTime(order.readyDate) }}
-                        </span>
-                    </div>
-
-                    <!-- Encargado -->
-                    <div class="board-card__owner" *ngIf="order.assignedUser?.name as ownerName">
-                        <div class="board-card__avatar" [style.background]="getAvatarColor(ownerName)">
-                            {{ getInitials(ownerName) }}
-                        </div>
-                        <span class="board-card__owner-name">{{ ownerName }}</span>
-                    </div>
-
-                    <!-- Tienda: cápsula al ancho del nombre, alineada a la izquierda -->
-                    <div class="board-card__store-row">
-                        <span class="board-card__store" [style.background]="getStoreColor(order.establishment?.id)">
-                            {{ order.establishment?.name }}
-                        </span>
-                    </div>
-
-                    <button type="button" class="board-card__products-btn"
-                            data-bs-toggle="modal" data-bs-target="#boardProductsModal"
-                            (click)="openProducts(order)">
-                        <i class="material-icons">inventory_2</i>
-                        Ver productos
-                    </button>
-
-                    <!--
-                        Vista previa propia. Sin esto el CDK clona la tarjeta
-                        entera y la monta en <body>, donde pierde el layout.
-                        Mientras se arrastra alcanza con saber qué pedido es y
-                        para qué tienda; al soltarla vuelve la tarjeta completa.
-                    -->
-                    <div class="board-card__preview" *cdkDragPreview>
-                        <span class="board-card__preview-title">{{ order.name }}</span>
-                        <span class="board-card__store" [style.background]="getStoreColor(order.establishment?.id)">
-                            {{ order.establishment?.name }}
-                        </span>
-                    </div>
-
-                    <div class="board-card__placeholder" *cdkDragPlaceholder></div>
+                <div class="board-column__header" [style.borderTopColor]="column.color">
+                    <span class="board-column__title">{{ column.title }}</span>
+                    <span class="board-column__count" [style.background]="column.color">{{ column.orders.length }}</span>
                 </div>
 
-                <p *ngIf="!column.orders.length" class="board-column__empty">Sin pedidos</p>
+                <div class="board-column__list"
+                     cdkDropList
+                     [id]="'board-col-' + column.statusId"
+                     [cdkDropListData]="column"
+                     [cdkDropListConnectedTo]="dropListIds"
+                     [cdkDropListEnterPredicate]="canDrop"
+                     (cdkDropListDropped)="drop($event)">
+
+                    <!-- La tarjeta entera abre sus productos a la derecha. El click se
+                         descarta si venía de un arrastre; ver onCardClick() -->
+                    <div class="board-card"
+                         *ngFor="let order of column.orders; trackBy: trackByOrderId"
+                         cdkDrag
+                         [cdkDragData]="order"
+                         [cdkDragDisabled]="!isDraggable(order)"
+                         [class.board-card--locked]="!isDraggable(order)"
+                         [class.board-card--open]="isPanelOpen(order)"
+                         [title]="isPanelOpen(order) ? 'Actualizar sus productos' : 'Ver sus productos'"
+                         (cdkDragStarted)="onDragStarted()"
+                         (cdkDragEnded)="onDragEnded()"
+                         (click)="onCardClick(order)">
+
+                        <div class="board-card__head">
+                            <div class="board-card__title">
+                                <span class="board-card__number" *ngIf="order.orderNumber != null">#{{ order.orderNumber }}</span>
+                                {{ order.name }}
+                            </div>
+
+                            <!-- Verificado: un check al costado del nombre. Es una
+                                 marca del pedido entero, así que va arriba y no
+                                 entre los datos; el nombre de quien firmó queda en
+                                 el tooltip, que en la tarjeta no hace falta leer -->
+                            <i class="material-icons board-card__verified" *ngIf="isVerified(order)"
+                               [title]="'Verificado por ' + order.verifiedUser?.name + ' · ' + formatShortDateTime(order.verifiedDate)">
+                                check_circle
+                            </i>
+                        </div>
+
+                        <!-- Horas: aparecen solo cuando el pedido ya pasó por esa etapa -->
+                        <div class="board-card__times" *ngIf="order.startDate || order.preparedDate || order.readyDate">
+                            <span *ngIf="order.startDate" class="board-card__time">
+                                <i class="material-icons">play_arrow</i>
+                                {{ formatShortDateTime(order.startDate) }}
+                            </span>
+                            <span *ngIf="order.preparedDate" class="board-card__time">
+                                <i class="material-icons">inventory</i>
+                                {{ formatShortDateTime(order.preparedDate) }}
+                            </span>
+                            <span *ngIf="order.readyDate" class="board-card__time">
+                                <i class="material-icons">check</i>
+                                {{ formatShortDateTime(order.readyDate) }}
+                            </span>
+                        </div>
+
+                        <!-- Encargado -->
+                        <div class="board-card__owner" *ngIf="order.assignedUser?.name as ownerName">
+                            <div class="board-card__avatar" [style.background]="getAvatarColor(ownerName)">
+                                {{ getInitials(ownerName) }}
+                            </div>
+                            <span class="board-card__owner-name">{{ ownerName }}</span>
+                        </div>
+
+                        <!-- Operadores: quiénes preparan el pedido. Ámbar, para no
+                             confundirse con la cápsula de tienda, que es saturada -->
+                        <div class="board-card__operators" *ngIf="getOperators(order).length">
+                            <span class="board-card__operator"
+                                  *ngFor="let operator of getOperators(order)"
+                                  [style.background]="operatorChipColor.bg_color"
+                                  [style.color]="operatorChipColor.color">
+                                {{ operator }}
+                            </span>
+                        </div>
+
+                        <!-- El botón solo existe mientras falte la firma: canVerify()
+                             lo descarta en cuanto el pedido queda verificado, y ahí
+                             pasa a mandar el check del encabezado -->
+                        <div class="board-card__verify" *ngIf="canVerify(order)">
+                            <button type="button"
+                                    class="board-card__verify-btn"
+                                    title="Registrar quién verificó este pedido"
+                                    [disabled]="submitting"
+                                    (click)="openVerifyDialog(order, $event)">
+                                <i class="material-icons">fact_check</i> Verificar
+                            </button>
+                        </div>
+
+                        <!-- Tienda: cápsula al ancho del nombre, alineada a la izquierda -->
+                        <div class="board-card__store-row">
+                            <span class="board-card__store" [style.background]="getStoreColor(order.establishment?.id)">
+                                {{ order.establishment?.name }}
+                            </span>
+                        </div>
+
+                        <!--
+                            Vista previa propia. Sin esto el CDK clona la tarjeta
+                            entera y la monta en <body>, donde pierde el layout.
+                            Mientras se arrastra alcanza con saber qué pedido es y
+                            para qué tienda; al soltarla vuelve la tarjeta completa.
+                        -->
+                        <div class="board-card__preview" *cdkDragPreview>
+                            <span class="board-card__preview-title">
+                                <span class="board-card__number" *ngIf="order.orderNumber != null">#{{ order.orderNumber }}</span>
+                                {{ order.name }}
+                            </span>
+                            <span class="board-card__store" [style.background]="getStoreColor(order.establishment?.id)">
+                                {{ order.establishment?.name }}
+                            </span>
+                        </div>
+
+                        <div class="board-card__placeholder" *cdkDragPlaceholder></div>
+                    </div>
+
+                    <p *ngIf="!column.orders.length" class="board-column__empty">Sin pedidos</p>
+                </div>
             </div>
+
         </div>
+
+        <!-- Productos (2/5). NO es una columna del tablero: sin cabecera de estado y
+             sin contenedor propio, para que no se lea como un quinto estado del
+             pedido. Las tarjetas aparecen sueltas sobre el fondo y, al crecer, el
+             scroll cae acá dentro -->
+        <section class="products-pane">
+
+            <div class="products-pane__head">
+                <span class="products-pane__title">
+                    Productos
+                    <span class="products-pane__count" *ngIf="productPanels.length">{{ productPanels.length }}</span>
+                </span>
+                <button *ngIf="productPanels.length > 1" type="button"
+                        class="products-pane__clear" (click)="clearPanels()">
+                    <i class="material-icons">clear_all</i> Cerrar todos
+                </button>
+            </div>
+
+            <div class="products-pane__body">
+
+                <p *ngIf="!productPanels.length" class="products-pane__hint">
+                    <i class="material-icons">touch_app</i>
+                    Toca un pedido del tablero para ver sus productos.
+                </p>
+
+                <div class="products-grid">
+                    <article class="product-card" *ngFor="let panel of productPanels; trackBy: trackByPanel">
+
+                        <div class="product-card__head">
+                            <span class="product-card__title">
+                                <span class="board-card__number" *ngIf="panel.orderNumber != null">#{{ panel.orderNumber }}</span>
+                                {{ panel.orderName }}
+                            </span>
+
+                            <div class="product-card__head-actions">
+                                <!-- Avance: cuántos productos van alistados. Se muestra
+                                     siempre que el pedido tenga productos, aunque ya no se
+                                     pueda marcar: en Listo sirve como registro de lo que
+                                     se revisó -->
+                                <span class="product-card__progress"
+                                      *ngIf="!panel.loading && panel.elements?.length"
+                                      [class.product-card__progress--done]="checkedCount(panel) === panel.elements!.length"
+                                      [title]="checkedCount(panel) + ' de ' + panel.elements!.length + ' productos alistados'">
+                                    {{ checkedCount(panel) }}/{{ panel.elements!.length }}
+                                </span>
+
+                                <button type="button" class="product-card__close"
+                                        [attr.aria-label]="'Cerrar pedido ' + panel.orderName"
+                                        (click)="closePanel(panel.orderId)">
+                                    <i class="material-icons">close</i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- El detalle se abre con el icono, a la par de la tienda.
+                             La tarjeta es una lista para leer mientras se prepara el
+                             pedido: un botón de ancho completo al final competía con
+                             esa lista y empujaba las de abajo -->
+                        <div class="product-card__store-row">
+                            <span class="board-card__store product-card__store"
+                                  [style.background]="getStoreColor(panel.establishmentId)">
+                                {{ panel.establishmentName }}
+                            </span>
+                            <button type="button" class="product-card__detail"
+                                    title="Ver detalle del pedido"
+                                    [attr.aria-label]="'Ver detalle del pedido ' + panel.orderName"
+                                    (click)="goToOrderDetail(panel)">
+                                <i class="material-icons">open_in_new</i>
+                            </button>
+                        </div>
+
+                        <div class="product-card__loading" *ngIf="panel.loading">
+                            <span class="spinner-border spinner-border-sm"></span>
+                            Cargando productos...
+                        </div>
+
+                        <!-- Las notas son donde la tienda pide lo que no cabe en la
+                             lista de productos, así que van antes de la tabla -->
+                        <div class="product-card__note" *ngIf="!panel.loading && panel.comment">
+                            <i class="material-icons">sticky_note_2</i>
+                            <span>{{ panel.comment }}</span>
+                        </div>
+
+                        <!-- La fila entera es el área de click: en bodega se toca con la
+                             mano ocupada, así que un cuadradito de 18px no alcanza. La
+                             casilla queda como indicador, no como blanco -->
+                        <table class="product-card__table" *ngIf="!panel.loading && panel.elements?.length">
+                            <tbody>
+                                <tr *ngFor="let element of panel.elements"
+                                    class="product-card__row"
+                                    [class.product-card__row--checked]="element.isCheck"
+                                    [class.product-card__row--clickable]="isCheckable(panel, element)"
+                                    [attr.role]="isCheckable(panel, element) ? 'button' : null"
+                                    [attr.aria-pressed]="isCheckable(panel, element) ? !!element.isCheck : null"
+                                    (click)="toggleCheck(panel, element)">
+
+                                    <!-- La columna es del pedido entero, no de la fila: si
+                                         se quitara fila por fila, un pedido ya cerrado con
+                                         parte de sus productos marcados quedaría con las
+                                         columnas corridas entre unas filas y otras.
+                                         Adentro sí: fuera de En curso y Preparado no se
+                                         pinta la casilla vacía, que no responde al click -->
+                                    <td class="product-card__check" *ngIf="showCheckColumn(panel)">
+                                        <i class="material-icons" *ngIf="canCheck(panel) || element.isCheck">
+                                            {{ element.isCheck ? 'check_box' : 'check_box_outline_blank' }}
+                                        </i>
+                                    </td>
+
+                                    <td class="product-card__product">{{ element.productForSale?.finishedProduct?.name }}</td>
+                                    <td class="product-card__qty">
+                                        {{ element.quantity }} <span>{{ element.measure?.identifier }}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p *ngIf="!panel.loading && !panel.elements?.length" class="product-card__empty">
+                            {{ panel.failed ? 'No se pudo cargar el detalle.' : 'Este pedido no tiene productos.' }}
+                        </p>
+
+                        <!-- Solo aparece con cambios sin guardar. Marcar y desmarcar el
+                             mismo producto lo vuelve a esconder: hasCheckChanges compara
+                             contra lo que trajo el servidor, no contra "se tocó algo" -->
+                        <div class="product-card__save" *ngIf="hasCheckChanges(panel)">
+                            <button type="button" class="product-card__save-btn"
+                                    [disabled]="panel.savingChecks"
+                                    (click)="saveChecks(panel)">
+                                <span *ngIf="panel.savingChecks" class="spinner-border spinner-border-sm"></span>
+                                <i *ngIf="!panel.savingChecks" class="material-icons">save</i>
+                                {{ panel.savingChecks ? 'Guardando...' : 'Actualizar pedido' }}
+                            </button>
+                        </div>
+
+                    </article>
+                </div>
+            </div>
+        </section>
+
     </div>
 
 </div>
 
-<!-- Confirmación: única transición que mueve inventario -->
-<div class="board-confirm" *ngIf="pendingMove">
+<!-- Operadores: se piden al tomar el pedido, y acá son obligatorios. El tablero
+     es el único lugar que los registra —la vista de detalle va de Pendiente a
+     Listo directo—, así que si se deja pasar vacío el dato no se recupera solo -->
+<app-operators-dialog
+    [open]="operatorsDialogOpen"
+    [orderName]="pendingOrderName"
+    [required]="true"
+    [operatorCustomers]="operatorCustomers"
+    [loadingCustomers]="loadingOperatorCustomers"
+    [initial]="pendingOperators"
+    [saving]="submitting"
+    (confirm)="onOperatorsConfirmed($event)"
+    (cancel)="onOperatorsCancelled()">
+</app-operators-dialog>
+
+<!-- Verificación: firma el usuario actual, así que no hay nada que elegir. Lo
+     único que se pide es confirmar, porque la firma queda a su nombre y no se
+     puede cambiar después -->
+<div class="board-confirm" *ngIf="verifyDialogOpen && verifyingOrder">
+    <div class="board-confirm__box">
+        <h5 class="board-confirm__title">Verificar pedido</h5>
+        <p class="board-confirm__warning">
+            La verificación no se puede cambiar. Solo se borra si el pedido vuelve
+            a En curso o si se editan sus productos.
+        </p>
+        <div class="board-confirm__actions">
+            <button type="button" class="board-confirm__btn board-confirm__btn--cancel"
+                    [disabled]="submitting" (click)="cancelVerify()">Cancelar</button>
+            <button type="button" class="board-confirm__btn board-confirm__btn--ok"
+                    [disabled]="submitting" (click)="confirmVerify()">Verificar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Volver a En curso: solo se confirma cuando hay una verificación que se pierde.
+     Sin firma el movimiento se aplica directo, como cualquier otro retroceso -->
+<div class="board-confirm" *ngIf="unprepareDialogOpen && pendingMove">
+    <div class="board-confirm__box">
+        <h5 class="board-confirm__title">Devolver el pedido a En curso</h5>
+        <p class="board-confirm__warning">
+            Se quita la verificación de {{ pendingMove.order.verifiedUser?.name }}: al volver
+            a marcarlo como preparado o listo se deberá verificar de nuevo.
+        </p>
+        <div class="board-confirm__actions">
+            <button type="button" class="board-confirm__btn board-confirm__btn--cancel"
+                    [disabled]="submitting" (click)="cancelPendingMove()">Cancelar</button>
+            <button type="button" class="board-confirm__btn board-confirm__btn--ok"
+                    [disabled]="submitting" (click)="confirmPendingMove()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmación: única transición que mueve inventario. El pedido llega siempre
+     verificado, así que el modal solo muestra quién firmó -->
+<div class="board-confirm" *ngIf="readyDialogOpen && pendingMove">
     <div class="board-confirm__box">
         <h5 class="board-confirm__title">Marcar pedido como listo</h5>
         <p class="board-confirm__text">
@@ -138,6 +407,11 @@
             <strong>Listo</strong>. Esto descuenta el producto terminado de bodega y lo
             registra como producto en tránsito hacia
             <strong>{{ pendingMove.order.establishment?.name }}</strong>.
+        </p>
+        <p class="board-confirm__verified" *ngIf="pendingMove.order.verifiedUser?.name as verifierName">
+            <i class="material-icons">verified</i>
+            Verificado por <strong>{{ verifierName }}</strong>
+            el {{ formatShortDateTime(pendingMove.order.verifiedDate) }}
         </p>
         <p class="board-confirm__warning">Esta acción no se puede deshacer desde el tablero.</p>
         <div class="board-confirm__actions">
@@ -149,48 +423,23 @@
     </div>
 </div>
 
-<!-- Modal: productos del pedido -->
-<div class="modal fade" id="boardProductsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">{{ selectedOrder?.name }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-
-            <div class="modal-body">
-                <div *ngIf="loadingElements" class="board-products__loading">
-                    <span class="spinner-border spinner-border-sm"></span>
-                    Cargando productos...
-                </div>
-
-                <table class="board-products" *ngIf="!loadingElements && selectedElements?.length">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th class="text-end">Cantidad</th>
-                            <th>Medida</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let element of selectedElements">
-                            <td>{{ element.productForSale?.finishedProduct?.name }}</td>
-                            <td class="text-end">{{ element.quantity }}</td>
-                            <td>{{ element.measure?.identifier }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <p *ngIf="!loadingElements && !selectedElements?.length" class="board-products__empty">
-                    Este pedido no tiene productos.
-                </p>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="board-confirm__btn board-confirm__btn--cancel" data-bs-dismiss="modal">
-                    Cerrar
-                </button>
-            </div>
+<!-- Cerrar una tarjeta de productos con marcas sin guardar. Es la única puerta por
+     la que se pierde ese trabajo: recargar el pedido ya está bloqueado en
+     openProducts(), y el autorefresh no toca los paneles abiertos -->
+<div class="board-confirm" *ngIf="pendingDiscard">
+    <div class="board-confirm__box">
+        <h5 class="board-confirm__title">
+            {{ pendingDiscard!.orderId ? 'Cerrar el pedido' : 'Cerrar todos los pedidos' }}
+        </h5>
+        <p class="board-confirm__warning">
+            Hay productos marcados que todavía no se guardaron. Si cierras
+            {{ pendingDiscard!.orderId ? 'la tarjeta' : 'las tarjetas' }} se pierden.
+        </p>
+        <div class="board-confirm__actions">
+            <button type="button" class="board-confirm__btn board-confirm__btn--cancel"
+                    (click)="cancelDiscard()">Volver</button>
+            <button type="button" class="board-confirm__btn board-confirm__btn--ok"
+                    (click)="confirmDiscard()">Cerrar sin guardar</button>
         </div>
     </div>
 </div>

@@ -1,0 +1,156 @@
+// Buscador, cápsulas del pedido y la tarjeta de productos: son los mismos que el
+// tablero, y viven en un partial para que las dos pantallas no se separen.
+@import '/src/scss/order-product-card';
+
+// ── Encabezado de página ─────────────────────────────────────────────────────
+
+// A diferencia del tablero, acá el wrapper NO fija el alto. El tablero usa
+// `height: 100vh` para que el scroll caiga dentro de cada columna; esta pantalla
+// quiere lo contrario: que la grilla crezca todo lo que haga falta y scrollee la
+// ventana entera, por larga que quede.
+.page-wrapper {
+    padding: 24px;
+    min-height: calc(100vh - 8px);
+}
+
+@media (max-width: 991.97px) {
+    .page-wrapper { min-height: calc(100vh - 58px); }
+}
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin: 0 0 2px; }
+
+.page-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #888;
+    margin: 0;
+}
+
+// Cuántos pedidos hay esperando. Va junto al subtítulo y no en el título porque
+// es un dato que cambia solo, con cada recarga.
+.page-count {
+    min-width: 20px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: #9b59b6;   // el morado de la columna PREPARADO del tablero
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+// ── Grilla ───────────────────────────────────────────────────────────────────
+
+// El partial la deja en 270px, que es la medida para los 2/5 de ancho que tiene
+// el panel del tablero. Acá hay pantalla completa, y con tarjetas tan angostas
+// los nombres de producto se parten en tres líneas.
+.products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+
+// ── Vacío ────────────────────────────────────────────────────────────────────
+
+.prepared-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0;
+    padding: 48px 18px;
+    border: 1px dashed #dfe1e6;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #8993a4;
+
+    i { font-size: 20px; color: #b3bac5; }
+}
+
+// ── Pie de la tarjeta ────────────────────────────────────────────────────────
+
+.prepared-card__foot {
+    margin-top: 12px;
+    padding-top: 10px;
+    // Al mismo tono que las divisorias de la tabla: si quedara más claro se
+    // leería como una línea a medio pintar justo debajo de ellas.
+    border-top: 1px solid #c1c7d0;
+}
+
+// Botón al ancho completo, no la cápsula del tablero: allá verificar es una
+// acción al paso sobre una tarjeta que sobre todo se arrastra, y acá es a lo que
+// se viene. Verde, el mismo de la marca de verificado.
+.prepared-card__verify-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 9px 12px;
+    border: none;
+    border-radius: 6px;
+    background: #1e7e34;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    .material-icons { font-size: 18px; }
+
+    &:hover:not(:disabled) { background: #19692c; }
+
+    &:disabled {
+        opacity: 0.65;
+        cursor: default;
+    }
+}
+
+// Ya firmado: el pie deja de ser un botón y pasa a ser el registro de quién
+// revisó. Ocupa el mismo lugar, así que la tarjeta no salta de alto al verificar.
+.prepared-card__verified {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 0;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #eaf6ec;
+    color: #1a7f47;
+    font-size: 12px;
+    line-height: 1.4;
+
+    .material-icons { font-size: 16px; }
+    strong { font-weight: 700; }
+}
+
+// Sin la capacidad orders.verify. Se dice, en gris, para que la ausencia del
+// botón no se lea como una tarjeta a medio cargar.
+.prepared-card__no-permission {
+    margin: 0;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #f4f5f7;
+    color: #6b778c;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}

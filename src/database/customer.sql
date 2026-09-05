@@ -130,3 +130,52 @@ RETURNING id','customer','PATCH');
 --     paths::jsonb || '[{"matchPattern": "^\\/customers(\\/.*)?$"}]'::jsonb
 -- )::text
 -- WHERE id = 1;
+
+
+-- =============================================
+-- CUSTOMER - Atributo "Operador"
+-- =============================================
+-- Marca los clientes que pueden aparecer como operadores de un pedido de bodega.
+-- Ver src/database/migrations/2026-08-26-operadores-pedidos.sql
+
+ALTER TABLE public.customer
+    ADD COLUMN IF NOT EXISTS is_operator boolean NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_customer_is_operator
+    ON public.customer (is_operator) WHERE is_operator;
+
+-- Las dos lecturas se clonan agregando "'isOperator', c.is_operator" despues de "'id', c.id".
+-- La migracion las deriva con replace() de la fila viva:
+--   /retrieveCustomers -> /retrieveCustomersV2
+--   /getCustomer       -> /getCustomerV2
+
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('addCustomerV2','/addCustomerV2','INSERT INTO customer ("name", phone, email, nit, is_operator, status_id, creator_user_id)
+VALUES (
+    $1::varchar(100),
+    nullif($2, '''')::varchar(15),
+    nullif($3, '''')::varchar(100),
+    coalesce(nullif($4, ''''), ''C/F'')::varchar(15),
+    coalesce($5::boolean, false),
+    62,
+    $6::uuid
+)
+RETURNING id','customer','PATCH'),
+	 ('updateCustomerV2','/updateCustomerV2','UPDATE customer
+SET "name" = $1::varchar(100),
+    phone = nullif($2, '''')::varchar(15),
+    email = nullif($3, '''')::varchar(100),
+    nit = coalesce(nullif($4, ''''), ''C/F'')::varchar(15),
+    is_operator = coalesce($5::boolean, false),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+WHERE id = $6::uuid
+RETURNING id','customer','PATCH'),
+	 ('retrieveOperatorCustomers','/retrieveOperatorCustomers','SELECT json_agg(
+    json_build_object(
+        ''id'', c.id,
+        ''name'', c."name"
+    ) ORDER BY c."name" ASC
+) as json_result
+FROM customer c
+WHERE c.is_operator = true
+  AND c.status_id = 62','customer','POST');

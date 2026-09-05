@@ -57,6 +57,14 @@
                                 </div>
                             </mat-form-field>
 
+                            <!-- Operador: habilita al cliente para aparecer en el
+                                 modal de operadores de los pedidos de bodega -->
+                            <div class="col-sm-12 custom-input align-self-start pb-3">
+                                <mat-slide-toggle formControlName="isOperator" color="primary">
+                                    Operador
+                                </mat-slide-toggle>
+                            </div>
+
                         </div>
                         <div class="col-sm-12 text-center p-2">
                             <button type="submit" [disabled]="submitting || customerForm.invalid"

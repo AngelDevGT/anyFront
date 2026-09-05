@@ -42,7 +42,9 @@ export class ViewProductComponent implements OnInit{
                             console.log(establ)
                             let establishment_name = "No encontrado"
                             if(establ){
-                                let establishment = establ.getEstablishmentResponse.data[0]?.json_result || null;
+                                // findJsonValue y no la clave del wrapper: esa se deriva del path,
+                                // asi que cambia con cada version del endpoint
+                                let establishment = this.dataService.findJsonValue(establ, 'json_result');
                                 if (establishment){
                                     if ( establishment.length > 0){
                                         establishment_name = this.dataService.getShortEstablishmentInfo(establishment);

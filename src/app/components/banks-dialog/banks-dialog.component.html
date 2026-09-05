@@ -1,0 +1,65 @@
+<div class="bk-dialog" *ngIf="open">
+    <div class="bk-dialog__box">
+
+        <div class="bk-dialog__head">
+            <h5 class="bk-dialog__title">Bancos de la tienda</h5>
+            <p class="bk-dialog__subtitle" *ngIf="storeName">{{ storeName }}</p>
+        </div>
+
+        <div class="bk-dialog__body">
+
+            <div class="bk-loading" *ngIf="loading">
+                <span class="spinner-border spinner-border-sm"></span>
+                Cargando bancos...
+            </div>
+
+            <!-- Lista en edición: se ve crecer al ir agregando -->
+            <div class="bk-chips" *ngIf="!loading" [class.bk-chips--empty]="!chips.length">
+                <span class="bk-chip" *ngFor="let name of chips; let i = index; trackBy: trackByChip">
+                    {{ name }}
+                    <button type="button" class="bk-chip__remove"
+                            [attr.aria-label]="'Quitar ' + name"
+                            [disabled]="saving"
+                            (click)="remove(i)">
+                        <i class="material-icons">close</i>
+                    </button>
+                </span>
+                <p class="bk-chips__placeholder" *ngIf="!chips.length">
+                    Ningún banco agregado todavía.
+                </p>
+            </div>
+
+            <section class="bk-section" *ngIf="!loading">
+                <h6 class="bk-section__title">Agregar banco</h6>
+
+                <div class="bk-input-row">
+                    <input type="text" class="bk-input"
+                           placeholder="Nombre del banco"
+                           [maxlength]="maxLength"
+                           [(ngModel)]="newBank"
+                           [disabled]="saving"
+                           (keydown.enter)="$event.preventDefault(); add()">
+                    <button type="button" class="bk-input__btn"
+                            [disabled]="!canAdd || saving"
+                            (click)="add()">
+                        Agregar
+                    </button>
+                </div>
+
+                <p class="bk-hint" *ngIf="isDuplicate">
+                    "{{ newBank }}" ya está en la lista.
+                </p>
+            </section>
+        </div>
+
+        <div class="bk-dialog__actions">
+            <button type="button" class="bk-btn bk-btn--cancel"
+                    [disabled]="saving" (click)="onCancel()">Cancelar</button>
+            <button type="button" class="bk-btn bk-btn--ok"
+                    [disabled]="saving || loading" (click)="onConfirm()">
+                <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+                Guardar
+            </button>
+        </div>
+    </div>
+</div>

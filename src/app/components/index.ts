@@ -3,4 +3,12 @@ export * from './card/card.component';
 export * from './responsive-table/responsive-table.component'
 export * from './components.module';
 export * from './view-object/view-object.component';
+export * from './operators-dialog/operators-dialog.component';
+export * from './banks-dialog/banks-dialog.component';
+export * from './bulk-inventory-dialog/bulk-inventory-dialog.component';
+export * from './element-quantity-picker/element-quantity-picker.component';
 export * from './store-picker/store-picker.component';
+export * from './store-switcher/store-switcher.component';
+export * from './store-context-bar/store-context-bar.component';
+export * from './store-required/store-required.component';
+export * from './auto-refresh/auto-refresh.component';
