@@ -8,7 +8,6 @@ import jwt_decode from 'jwt-decode';
 import { environment } from '@environments/enviroment';
 import { User } from '@app/models/system/user.model';
 import { Role } from '@app/models';
-import { STORE_SECTIONS } from '@app/config/store-sections';
 
 const undefinedStatus = {
   status: {
@@ -427,19 +426,17 @@ const menuItemsOptions: any = [
     sub_class: 'position-sticky',
     is_tree: true,
     childs: [
-      // Una entrada por seccion: se entra directo con la tienda que ya estaba seleccionada, sin
-      // pasar por el listado de tiendas. La URL final la arma StoreContextService a partir de
-      // `store_section`; `match_route` es una ruta de muestra que solo sirve para evaluar los
-      // patrones de role.paths del usuario y decidir si la entrada se muestra.
-      ...STORE_SECTIONS.map(section => ({
+      // Las acciones por tienda (inventario, ventas, pedidos, gastos, clientes y caja) se eligen
+      // desde la tabla del listado, no desde el menu.
+      {
         root_class: 'list-group list-group-flush',
-        match_route: section.matchRoute,
-        store_section: section.key,
+        router_link: '/store',
+        query_params: { opt: 'inventory' },
         link_class: 'list-group-item py-2 ripple',
-        link_name: section.label,
-        icon_name: section.icon,
+        link_name: 'Listado de Tiendas',
+        icon_name: 'storefront',
         icon_class: 'material-icons icon',
-      })),
+      },
       {
         root_class: 'list-group list-group-flush',
         router_link: '/store/sales/summary',
