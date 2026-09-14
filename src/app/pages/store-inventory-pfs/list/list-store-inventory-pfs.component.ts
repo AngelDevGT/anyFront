@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { actionTypeValues } from '@app/services';
 
-import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService, measureUnitsConst, StoreContextService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService, StoreContextService, UNIT_VIEWS } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -19,18 +19,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { UpdateInventoryElement } from '@app/models/inventory/update-inventory-element.model';
 import { ActivityLog } from '@app/models/system/activity-log';
 import { BulkInventoryAction, InventoryActionItem } from '@app/components/bulk-inventory-dialog/bulk-inventory-dialog.component';
-
-/**
- * Opciones del selector de Unidad que no son una medida: dejan Medida, Cantidad y Precio por
- * unidad y agregan columnas que reparten la cantidad en cajillas (segun el producto), docenas y
- * unidades. Solo aplican a productos por Unidad; en los de Libra esas columnas quedan en '-'.
- */
-const UNIT_VIEW_DOZENS = 'dozens_units';
-const UNIT_VIEW_BOXES = 'boxes_dozens_units';
-const UNIT_VIEWS: Measure[] = [
-    { id: UNIT_VIEW_DOZENS, identifier: 'Docenas y unidades' },
-    { id: UNIT_VIEW_BOXES, identifier: 'Cajillas, docenas y unidades' },
-];
 
 @Component({ 
     templateUrl: 'list-store-inventory-pfs.component.html',
@@ -210,53 +198,18 @@ export class ListStoreInventoryPFSComponent implements OnInit {
             this.selectedUnitView = unitView?.id;
             // En las vistas, Medida/Cantidad/Precio se muestran por unidad (factor 1).
             this.selectedMeasureTable = unitView
-                ? this.measureOptions?.find(meas => meas.unitBase?.name === measureUnitsConst.unidad.unitBase.name && Number(meas.unitBase?.quantity) === 1)
+                ? this.dataService.getUnitViewMeasure(this.measureOptions)
                 : this.measureOptions?.find(meas => String(meas.id) === measureId);
             this.setTableElements(this.inventoryElements);
         }
     }
 
-    /**
-     * Columnas de las vistas de UNIT_VIEWS. Todas las filas llevan las mismas columnas porque la
-     * tabla y el Excel toman los encabezados de la primera fila: los productos por Libra van en '-'.
-     */
-    private getUnitViewCells(element: InventoryElement): any[] {
-        if(!this.selectedUnitView) return [];
-        const withBoxes = this.selectedUnitView === UNIT_VIEW_BOXES;
-        const isUnitProduct = element.measure?.unitBase?.name === measureUnitsConst.unidad.unitBase.name;
-        const split = isUnitProduct
-            ? this.dataService.splitUnits(Number(element.quantity), element.productForSale?.finishedProduct?.unitsPerBox, withBoxes)
-            : undefined;
-        const cell = (header_name: string, value?: number | null) => ({
-            type: "text",
-            value: value ?? '-',
-            header_name: header_name,
-            style: "width: 10%"
-        });
-        const cells = [];
-        if(withBoxes) cells.push(cell("Cajillas", split?.boxes));
-        cells.push(cell("Docenas", split?.dozens), cell("Unidades", split?.units));
-        return cells;
-    }
-
-    /**
-     * La medida "Cajilla" del catalogo vale 240 para todos los productos. En esta tabla se
-     * reemplaza por la cajilla configurada en cada producto terminado, para Cantidad, Precio y Costo.
-     */
-    private getTableMeasure(element: InventoryElement): Measure | undefined {
-        const unitsPerBox = element.productForSale?.finishedProduct?.unitsPerBox;
-        if(String(this.selectedMeasureTable?.id) !== String(measureUnitsConst.cajilla.id) || !unitsPerBox)
-            return this.selectedMeasureTable;
-        return {
-            ...this.selectedMeasureTable,
-            unitBase: { ...this.selectedMeasureTable?.unitBase, quantity: String(unitsPerBox) }
-        };
-    }
-
     setTableElements(elements?: InventoryElement[]){
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
-            const tableMeasure = this.getTableMeasure(element);
+            const unitsPerBox = element.productForSale?.finishedProduct?.unitsPerBox;
+            // "Cajilla" usa la cajilla de cada producto en Cantidad, Precio y Costo.
+            const tableMeasure = this.dataService.getMeasureForUnitsPerBox(this.selectedMeasureTable, unitsPerBox);
             let curr_row: any = [
                     { type: "text", value: element.productForSale?.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.productForSale?.id },
                     { type: "text", value: this.dataService.getConvertedMeasureName(tableMeasure, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 15%" },
@@ -277,7 +230,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
             }
             // Cajillas/Docenas/Unidades van despues de Precio y Costo: esos dos siguen siendo por
             // unidad y pegados a Cantidad no se confunden con el reparto.
-            curr_row.push(...this.getUnitViewCells(element));
+            curr_row.push(...this.dataService.getUnitViewCells(this.selectedUnitView, element, unitsPerBox));
             if(this.canWriteInventory()){
                 curr_row.push({
                     type: "modal_button",

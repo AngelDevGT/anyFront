@@ -4,7 +4,7 @@ import {map, startWith} from 'rxjs/operators';
 import { actionTypeValues } from '@app/services';
 import {MatTableDataSource} from '@angular/material/table';
 
-import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService, UNIT_VIEWS } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
@@ -37,6 +37,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     generalMeasureOptions?: Measure[];
     weightMeasureOptions?: Measure[];
     selectedMeasureTable?: Measure;
+    /** Id de UNIT_VIEWS elegido en el selector de Unidad; undefined cuando es una medida normal. */
+    selectedUnitView?: string;
     selectedMeasureTableSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     selectedWeightMeasure?: Measure;
     selectedWeightMeasureSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
@@ -106,7 +108,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
         this.searchTerm = undefined;
         let requestArray = [];
 
-        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventoryV3'));
+        // V4 trae ademas las unidades por cajilla de cada producto terminado.
+        requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventoryV4'));
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
 
         forkJoin(requestArray).subscribe({
@@ -117,7 +120,12 @@ export class ListFactoryInventoryFPComponent implements OnInit {
             error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
             complete: () => {
                 // console.log('complete')
-                this.generalMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad");
+                // Las vistas van al final para no mover el valor por defecto (posicion 1).
+                this.generalMeasureOptions = [
+                    ...(this.measureOptions?.filter(meas => meas.unitBase?.name === "Unidad") ?? []),
+                    ...UNIT_VIEWS
+                ];
+                this.selectedUnitView = undefined;
                 if(this.generalMeasureOptions)
                         this.selectedMeasureTable = this.generalMeasureOptions[1];
                 this.weightMeasureOptions = this.measureOptions?.filter(meas => meas.unitBase?.name === "Libra");
@@ -208,7 +216,12 @@ export class ListFactoryInventoryFPComponent implements OnInit {
 
     setMeasure(measureId: string){
         if(measureId){
-            this.selectedMeasureTable = this.measureOptions?.find(meas => String(meas.id) === measureId);
+            const unitView = UNIT_VIEWS.find(view => view.id === measureId);
+            this.selectedUnitView = unitView?.id;
+            // En las vistas, Medida y Cantidad se muestran por unidad (factor 1).
+            this.selectedMeasureTable = unitView
+                ? this.dataService.getUnitViewMeasure(this.measureOptions)
+                : this.measureOptions?.find(meas => String(meas.id) === measureId);
             this.setTableElements(this.inventoryElements);
         }
     }
@@ -231,15 +244,18 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     setTableElements(elements?: InventoryElement[]){
         this.tableElementsValues = [];
         elements?.forEach((element: InventoryElement) => {
+            const unitsPerBox = element.finishedProduct?.unitsPerBox;
+            // "Cajilla" usa la cajilla de cada producto en Cantidad.
+            const tableMeasure = this.dataService.getMeasureForUnitsPerBox(this.selectedMeasureTable, unitsPerBox);
             let curr_row: any = [
                     { type: "text", value: element.finishedProduct?.name, header_name: "Producto", style: "width: 30%", id: element.finishedProduct?.id },
-                    { type: "text", value: this.dataService.getConvertedMeasureName(this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 20%" },
-                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), this.selectedMeasureTable, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 20%" },
+                    { type: "text", value: this.dataService.getConvertedMeasureName(tableMeasure, this.selectedWeightMeasure, element.measure), header_name: "Medida", style: "width: 20%" },
+                    { type: "text", value: this.dataService.getConvertedMeasure(Number(element.quantity), tableMeasure, this.selectedWeightMeasure, element.measure), header_name: "Cantidad", style: "width: 20%" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.rawMaterialByProvider?.price)), header_name: "Precio" },
                     // { type: "text", value: element.status?.identifier, header_name: "Estado", style: "width: 15%" },
                     // { type: "text", value: element.paymentStatus.identifier, header_name: "Estado de pago" },
                     // { type: "text", value: this.dataService.getFormatedPrice(Number(element.pendingAmount)), header_name: "Monto pendiente" },
-                    
+                    ...this.dataService.getUnitViewCells(this.selectedUnitView, element, unitsPerBox)
                   ];
                   if(this.canWriteInventory()){
                     curr_row.push({
@@ -393,7 +409,8 @@ export class ListFactoryInventoryFPComponent implements OnInit {
     }
 
     exportToExcel(){
-        this.excelService.exportTableToExcel(this.tableElementsValues, this.pageTitle);
+        const unitView = UNIT_VIEWS.find(view => view.id === this.selectedUnitView);
+        this.excelService.exportTableToExcel(this.tableElementsValues, this.pageTitle + (unitView ? ' (' + unitView.identifier + ')' : ''));
     }
 
     setInventoryElementElements(){

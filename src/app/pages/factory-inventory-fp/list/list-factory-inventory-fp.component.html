@@ -30,7 +30,7 @@
       </div>
       <div class="toolbar-right">
         <select class="measure-select" aria-label="Unidades"
-                [ngModel]="selectedMeasureTable?.id"
+                [ngModel]="selectedUnitView ?? selectedMeasureTable?.id"
                 (ngModelChange)="selectedMeasureTableSubject.next($event)">
           <option *ngFor="let m of generalMeasureOptions" [ngValue]="m.id">{{m.identifier}}</option>
         </select>

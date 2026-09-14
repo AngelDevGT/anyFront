@@ -12,6 +12,7 @@ import { Provider } from '@app/models/system/provider.model';
 import { RawMaterialBase } from '@app/models/raw-material/raw-material-base.model';
 import { RawMaterialByProvider } from '@app/models/raw-material/raw-material-by-provider.model';
 import { FinishedProduct } from '@app/models/product/finished-product.model';
+import { InventoryElement } from '@app/models/inventory/inventory-element.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import { MovementWarehouseToFactory } from '@app/models/inventory/movement-store-to-factory.model';
 import { FinishedProductCreation } from '@app/models/product/finished-product-creation.model';
@@ -360,6 +361,18 @@ export const pendingFactoryStatus = {
 
 /** Unidades por cajilla cuando el producto no trae la suya. Es el default de finished_product.units_per_box. */
 export const DEFAULT_UNITS_PER_BOX = 240;
+
+/**
+ * Opciones del selector de Unidad de los inventarios que no son una medida: dejan Medida, Cantidad
+ * y Precio por unidad y agregan columnas que reparten la cantidad en cajillas (segun el producto),
+ * docenas y unidades. Solo aplican a productos por Unidad; en los de Libra esas columnas van en '-'.
+ */
+export const UNIT_VIEW_DOZENS = 'dozens_units';
+export const UNIT_VIEW_BOXES = 'boxes_dozens_units';
+export const UNIT_VIEWS: Measure[] = [
+    { id: UNIT_VIEW_DOZENS, identifier: 'Docenas y unidades' },
+    { id: UNIT_VIEW_BOXES, identifier: 'Cajillas, docenas y unidades' },
+];
 
 export const measureUnits = 
     [
@@ -1023,6 +1036,44 @@ export class DataService {
     getUnitsPerBoxLabel(product?: FinishedProduct): string | null {
         if (product?.measure?.identifier !== measureUnitsConst.unidad.unitBase.name) return null;
         return (product.unitsPerBox ?? DEFAULT_UNITS_PER_BOX) + ' unidades';
+    }
+
+    /** Medida del catalogo con factor 1 (Unidad): en las vistas de UNIT_VIEWS todo se muestra por unidad. */
+    getUnitViewMeasure(measureOptions?: Measure[]): Measure | undefined {
+        return measureOptions?.find(meas => meas.unitBase?.name === measureUnitsConst.unidad.unitBase.name && Number(meas.unitBase?.quantity) === 1);
+    }
+
+    /**
+     * La medida "Cajilla" del catalogo vale 240 para todos los productos. En las tablas de inventario
+     * se reemplaza por la cajilla configurada en cada producto terminado; cualquier otra medida pasa igual.
+     */
+    getMeasureForUnitsPerBox(measure?: Measure, unitsPerBox?: number): Measure | undefined {
+        if (String(measure?.id) !== String(measureUnitsConst.cajilla.id) || !unitsPerBox) return measure;
+        return { ...measure, unitBase: { ...measure?.unitBase, quantity: String(unitsPerBox) } };
+    }
+
+    /**
+     * Columnas Cajillas/Docenas/Unidades de la vista elegida en UNIT_VIEWS (ninguna si no hay vista).
+     * Todas las filas llevan las mismas columnas porque la tabla y el Excel toman los encabezados de
+     * la primera fila: los productos por Libra van en '-'. En el Excel van como numero.
+     */
+    getUnitViewCells(unitView: string | undefined, element: InventoryElement, unitsPerBox?: number): any[] {
+        if (!unitView) return [];
+        const withBoxes = unitView === UNIT_VIEW_BOXES;
+        const isUnitProduct = element.measure?.unitBase?.name === measureUnitsConst.unidad.unitBase.name;
+        const split = isUnitProduct ? this.splitUnits(Number(element.quantity), unitsPerBox, withBoxes) : undefined;
+        const cell = (header_name: string, value: number | null | undefined, exportFormat: string) => ({
+            type: "text",
+            value: value ?? '-',
+            header_name: header_name,
+            style: "width: 10%",
+            exportValue: value ?? undefined,
+            exportFormat: value != null ? exportFormat : undefined
+        });
+        const cells = [];
+        if (withBoxes) cells.push(cell("Cajillas", split?.boxes, '#,##0'));
+        cells.push(cell("Docenas", split?.dozens, '#,##0'), cell("Unidades", split?.units, 'General'));
+        return cells;
     }
 
     /** VALIDATION */

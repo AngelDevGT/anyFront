@@ -69,8 +69,10 @@ export class ExcelService {
             cell.s = HEADER_STYLE;
             return;
         }
-        cell.s = row % 2 === 0 ? ROW_ALT_STYLE : ROW_STYLE;
+        // Copia por celda: xlsx-js-style escribe cell.z como numFmt DENTRO del objeto de estilo, y si
+        // el objeto es compartido el formato de una celda (ej. "Q.") se filtra a todas las demas.
         const fmt = formats[row - 1]?.[col];
+        cell.s = { ...(row % 2 === 0 ? ROW_ALT_STYLE : ROW_STYLE), numFmt: fmt ?? 'General' };
         if (fmt) cell.z = fmt;
     }
 
