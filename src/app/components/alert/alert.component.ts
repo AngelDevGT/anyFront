@@ -33,9 +33,12 @@ export class AlertComponent implements OnInit, OnDestroy {
                 // add alert to array
                 this.alerts.push(alert);
 
-                // auto close alert if required
-                if (alert.autoClose) {
-                    setTimeout(() => this.removeAlert(alert), 3000);
+                // auto close alert: success y error se cierran solos según su tipo;
+                // info y warning solo si se pide con autoClose. autoClose: false
+                // deja cualquier alerta fija hasta que se cierre con la X
+                const duration = this.autoCloseDuration(alert);
+                if (duration) {
+                    setTimeout(() => this.removeAlert(alert), duration);
                 }
            });
 
@@ -68,6 +71,16 @@ export class AlertComponent implements OnInit, OnDestroy {
         } else {
             // remove alert
             this.alerts = this.alerts.filter(x => x !== alert);
+        }
+    }
+
+    private autoCloseDuration(alert: Alert): number | null {
+        if (alert.autoClose === false) return null;
+
+        switch (alert.type) {
+            case AlertType.Success: return 5000;
+            case AlertType.Error: return 60000;
+            default: return alert.autoClose ? 3000 : null;
         }
     }
 

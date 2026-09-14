@@ -309,13 +309,15 @@ export class ViewStoreSalesPFSComponent implements OnInit{
      *
      * Exige canPayOrder porque si la venta solo debe el envío el bloque del pedido ni se muestra y
      * no hay nada de dónde copiar; y exige deliveryNeedsDetail porque con el envío en efectivo no
-     * hay campos donde pegar.
+     * hay campos donde pegar. También exige que los dos abonos usen el mismo método: si uno va con
+     * Depósito y el otro con Cheque son dos pagos distintos y copiar la referencia sería un error.
      */
     get canCopyOrderPaymentDetail(): boolean {
         if (!this.canPayOrder || !this.canPayDelivery) return false;
         if (!this.orderNeedsDetail || !this.deliveryNeedsDetail) return false;
         if (this.hasNoBanks) return false;
         const value = this.paymentForm?.value;
+        if (String(value?.orderPaymentType) !== String(value?.deliveryPaymentType)) return false;
         return !!(value?.orderBank && value?.orderReferenceNo);
     }
 

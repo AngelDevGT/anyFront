@@ -15,4 +15,5 @@ export class FinishedProduct {
     updatedDate?: string;
     finishedProductTypeId?: number;
     sortOrder?: number;
+    unitsPerBox?: number;
 }

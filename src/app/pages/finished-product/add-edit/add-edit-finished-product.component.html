@@ -36,6 +36,17 @@
                                     </div>
                                 </div>
                             </mat-form-field>
+                            <mat-form-field *ngIf="isUnitProduct" class="col-sm-12 col-md-6 custom-input align-self-start" appearance="outline">
+                                <mat-label>Cajilla (unidades)</mat-label>
+                                <input id="units-per-box-form" type="number" min="1" step="1" formControlName="unitsPerBox" matInput
+                                    [placeholder]="'' + defaultUnitsPerBox" [ngClass]="{ 'is-invalid': f['unitsPerBox'].errors }" />
+                                <mat-hint>Unidades por cajilla. Vacío = {{defaultUnitsPerBox}}</mat-hint>
+                                <div class="invalid-feedback" *ngIf="f['unitsPerBox'].errors">
+                                    <div *ngIf="f['unitsPerBox'].hasError('pattern') || f['unitsPerBox'].hasError('min')">
+                                        Debe ser un número entero mayor a 0
+                                    </div>
+                                </div>
+                            </mat-form-field>
                             <mat-form-field class="col-sm-12 col-md-12 custom-input align-self-start" appearance="outline">
                                 <mat-label>Descripcion</mat-label>
                                 <textarea id="nombre-form-crear-comunidad" type="text" #description maxlength="{{listMaxLength['description']}}" formControlName="description" matInput

@@ -358,6 +358,9 @@ export const pendingFactoryStatus = {
     }
 }
 
+/** Unidades por cajilla cuando el producto no trae la suya. Es el default de finished_product.units_per_box. */
+export const DEFAULT_UNITS_PER_BOX = 240;
+
 export const measureUnits = 
     [
         {
@@ -998,6 +1001,30 @@ export class DataService {
         return prevMeasure?.identifier;
     }
 
+    /**
+     * Reparte una cantidad en unidad base (Unidad) en cajillas, docenas y unidades.
+     * Cajillas y docenas cuentan solo enteros; lo que sobra queda en unidades.
+     * Con `withBoxes` en false, o sin `unitsPerBox`, no se arman cajillas y `boxes` queda en null.
+     */
+    splitUnits(quantity: number, unitsPerBox?: number, withBoxes = false): { boxes: number | null, dozens: number, units: number } {
+        const dozenSize = measureUnitsConst.docena.unitBase.quantity;
+        let rest = Number(quantity) || 0;
+        let boxes: number | null = null;
+        if (withBoxes && Number(unitsPerBox) > 0) {
+            boxes = Math.trunc(rest / Number(unitsPerBox));
+            rest = Number((rest - boxes * Number(unitsPerBox)).toFixed(2));
+        }
+        const dozens = Math.trunc(rest / dozenSize);
+        const units = Number((rest - dozens * dozenSize).toFixed(2));
+        return { boxes, dozens, units };
+    }
+
+    /** "240 unidades" para productos por Unidad; null en los de Libra, donde la cajilla no aplica. */
+    getUnitsPerBoxLabel(product?: FinishedProduct): string | null {
+        if (product?.measure?.identifier !== measureUnitsConst.unidad.unitBase.name) return null;
+        return (product.unitsPerBox ?? DEFAULT_UNITS_PER_BOX) + ' unidades';
+    }
+
     /** VALIDATION */
 
     isAdmin(role: Role){
@@ -1305,7 +1332,9 @@ export class DataService {
             status_id: finishedProductStatusValues.activo.status.id,
             unit_base_id: product.measure?.id,
             creator_user_id: this.accountService.userValue.uuid,
-            finished_product_type_id: product.finishedProductTypeId ?? 1
+            finished_product_type_id: product.finishedProductTypeId ?? 1,
+            // Sin valor no se manda y la columna toma su default (240).
+            units_per_box: product.unitsPerBox ? Number(product.unitsPerBox) : undefined
         });
         return this.http.put(`${environment.apiUrlV3}/addFinishedProductV2`, params);
     }
@@ -1321,6 +1350,35 @@ export class DataService {
             id: id
         });
         return this.http.patch(`${environment.apiUrlV3}/updateFinishedProductV2`, params);
+    }
+
+    // ---- Unidades por cajilla (agrega unitsPerBox) — no reemplaza a los métodos anteriores ----
+    getFinishedProductByIdV3(id: string) {
+        let params = JSON.stringify({fp: { "id": id}});
+        return this.http.post(`${environment.apiUrlV3}/getFinishedProductV3`, params);
+    }
+
+    getAllFinishedProductByFilterV4(params: any) {
+        let parameters = JSON.stringify({
+            fp: {
+                ...params
+            }});
+        return this.http.post(`${environment.apiUrlV3}/retrieveFinishedProductV4`, parameters);
+    }
+
+    // El orden de las claves debe coincidir con los parámetros posicionales
+    // de updateFinishedProductV3: name=$1, description=$2, photo=$3, thumb=$4, units_per_box=$5, id=$6
+    // units_per_box vacío vuelve al default (240) dentro de la query.
+    updateFinishedProductV3(id: string, product: FinishedProduct, img?: string, thumb?: string){
+        let params = JSON.stringify({
+            name: product.name,
+            description: product.description,
+            photo: img || "",
+            thumb: thumb || "",
+            units_per_box: product.unitsPerBox ? String(product.unitsPerBox) : "",
+            id: id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateFinishedProductV3`, params);
     }
 
     deleteFinishedProduct(params: any) {

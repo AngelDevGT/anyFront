@@ -680,3 +680,19 @@ ALTER TABLE product_for_sale_store_order
 --   ALTER TABLE product_for_sale_store_order
 --       ADD CONSTRAINT pfsso_fk_verified_by_user_id
 --       FOREIGN KEY (verified_by_user_id) REFERENCES "user"(id);
+
+-- =============================================
+-- UNIDADES POR CAJILLA
+-- =============================================
+-- Cuantas unidades trae la cajilla de cada producto terminado (y abarrote). El
+-- default es 240, el factor de la medida global "Cajilla", pero cada producto
+-- puede tener el suyo. Solo tiene sentido en productos por Unidad; en los de
+-- Libra queda en 240 y el front no lo muestra.
+-- La usan las vistas "Docenas y unidades" / "Cajillas, docenas y unidades" del
+-- inventario de producto para venta de tienda.
+-- Ver src/database/migrations/2026-09-14-add-units-per-box-finished-product.sql
+ALTER TABLE finished_product ADD COLUMN IF NOT EXISTS units_per_box int4 DEFAULT 240 NOT NULL;
+
+-- El CHECK se agrega en la migracion dentro de un DO:
+--   ALTER TABLE finished_product
+--       ADD CONSTRAINT finished_product_units_per_box_check CHECK (units_per_box > 0);

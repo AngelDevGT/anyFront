@@ -51,8 +51,8 @@
 
 // ── Tablero ──────────────────────────────────────────────────────────────────
 
-// El ancho se reparte 3/5 para los listados de estado y 2/5 para los productos.
-// Es `flex: 3` contra `flex: 2` y no porcentajes para que el `gap` salga del
+// El ancho se reparte mitad para los listados de estado y mitad para los productos.
+// Es `flex: 1` contra `flex: 1` y no porcentajes para que el `gap` salga del
 // reparto solo, sin restarlo a mano.
 .board-layout {
     display: flex;
@@ -78,7 +78,7 @@
     // `min-height: 0` es lo que permite que el sobrante se recorte y el scroll
     // caiga dentro de cada listado en vez de estirar la página.
     align-items: flex-start;
-    flex: 3 1 0;
+    flex: 1 1 0;
     min-width: 0;
     min-height: 0;
     // Los listados se reparten el ancho disponible. Al llegar al min-width el
@@ -312,11 +312,11 @@
 
 // ── Panel de productos ───────────────────────────────────────────────────────
 
-// Ocupa 2/5 del ancho. A propósito NO reusa .board-column: no lleva cabecera de
+// Ocupa la mitad del ancho. A propósito NO reusa .board-column: no lleva cabecera de
 // estado, ni fondo de listado, ni contorno propio, para que no se lea como un
 // quinto estado del pedido. Es una zona donde aparecen tarjetas sueltas.
 .products-pane {
-    flex: 2 1 0;
+    flex: 1 1 0;
     min-width: 0;
     min-height: 0;
     display: flex;

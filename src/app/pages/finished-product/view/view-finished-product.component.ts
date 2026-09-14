@@ -31,7 +31,7 @@ export class ViewFinishedProductComponent implements OnInit{
         this.loading = true;
 
         if (this.id){
-            this.dataService.getFinishedProductById(this.id)
+            this.dataService.getFinishedProductByIdV3(this.id)
             .pipe(first())
             .subscribe({
                 next: (prod: any) => {
@@ -63,6 +63,9 @@ export class ViewFinishedProductComponent implements OnInit{
 
     setProductElements(product: FinishedProduct){
         this.elements.push({icon : "scale", name : "Medida", value : product.measure?.identifier});
+        const unitsPerBoxLabel = this.dataService.getUnitsPerBoxLabel(product);
+        if (unitsPerBoxLabel)
+            this.elements.push({icon : "inventory_2", name : "Cajilla", value : unitsPerBoxLabel});
         this.elements.push({icon : "feed", name : "Descripción", value : product.description});
         this.elements.push({icon : "info", name : "Estado", value : product.status?.identifier});
         this.elements.push({icon : "today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(product.creationDate!)});

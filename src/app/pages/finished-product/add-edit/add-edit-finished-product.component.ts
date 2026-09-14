@@ -8,7 +8,7 @@ import {
     UploadResponse,
 } from 'ngx-image-compress';
 
-import { AccountService, AlertService, DataService } from '@app/services';
+import { AccountService, AlertService, DataService, DEFAULT_UNITS_PER_BOX, measureUnitsConst } from '@app/services';
 import {
 AbstractControl,
 FormBuilder,
@@ -51,6 +51,7 @@ export class AddEditFinishedProductComponent implements OnInit{
     selectedImage?: string;
     selectedFileImage?: File;
     selectedFileThumb?: File;
+    readonly defaultUnitsPerBox = DEFAULT_UNITS_PER_BOX;
 
     minDate: Date = new Date();
 
@@ -77,7 +78,7 @@ export class AddEditFinishedProductComponent implements OnInit{
         requestArray.push(this.dataService.getAnyComponent({}, 'getUnitBase')); // measureRequest
         if (this.id){
             this.title = this.productType === 2 ? 'Actualizar Abarrote' : 'Actualizar Producto Terminado';
-            requestArray.push(this.dataService.getFinishedProductByIdV2(this.id));
+            requestArray.push(this.dataService.getFinishedProductByIdV3(this.id));
         }
 
         forkJoin(requestArray).subscribe({
@@ -206,16 +207,24 @@ export class AddEditFinishedProductComponent implements OnInit{
         return this.productForm.get('photo');
     }
 
+    /** La cajilla solo aplica a productos por Unidad. Al editar la medida ya no cambia, así que sale del producto. */
+    get isUnitProduct(): boolean {
+        const unitName = this.id ? this.currentProduct?.measure?.identifier : this.selectedMeasure?.identifier;
+        return unitName === measureUnitsConst.unidad.unitBase.name;
+    }
+
     saveFinishedProduct(imgName?: string, thumbName?: string){
         if(this.id){
             let newProduct = {
                 ...this.currentProduct,
                 ...this.productForm.value
             };
-            return this.dataService.updateFinishedProductV2(this.id, newProduct, imgName, thumbName);
+            return this.dataService.updateFinishedProductV3(this.id, newProduct, imgName, thumbName);
         }
         let newProduct = {
             ...this.productForm.value,
+            // Si se escribió una cajilla y luego se cambió a una medida por Libra, no se manda.
+            unitsPerBox: this.isUnitProduct ? this.productForm.value.unitsPerBox : undefined,
             measure: this.selectedMeasure,
             finishedProductTypeId: this.productType
         }
@@ -231,7 +240,9 @@ export class AddEditFinishedProductComponent implements OnInit{
           description: new FormControl('', [
             Validators.required
           ]),
-          photo: new FormControl('')
+          photo: new FormControl(''),
+          // Opcional: vacío toma el default de la columna (240).
+          unitsPerBox: new FormControl('', [Validators.pattern(/^\d+$/), Validators.min(1)])
         });
     }
 

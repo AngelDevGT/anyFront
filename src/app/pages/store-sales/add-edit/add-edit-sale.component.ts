@@ -48,7 +48,7 @@ export class AddEditSaleComponent implements OnInit{
 
     /**
      * Cliente de la venta. 'manual' y 'existing' son excluyentes: al entrar a
-     * uno se limpia el otro. Las ventas al crédito solo admiten 'existing'.
+     * uno se limpia el otro. Las ventas al crédito o con descuento solo admiten 'existing'.
      */
     clientMode: 'none' | 'manual' | 'existing' = 'none';
     customerOptions: Customer[] = [];
@@ -196,10 +196,13 @@ export class AddEditSaleComponent implements OnInit{
      * reescribir el mismo banco y la misma referencia dos veces invita a equivocarse.
      *
      * Si el pedido no se paga con Depósito ni Cheque —o todavía no tiene banco y referencia— no hay
-     * nada que copiar y el botón no aparece.
+     * nada que copiar y el botón no aparece. Tampoco aparece si el pedido y el envío se cobran con
+     * métodos distintos (uno con Depósito y el otro con Cheque): ahí son dos pagos separados y
+     * copiar la referencia de uno al otro sería un error.
      */
     get canCopyOrderPaymentDetail(): boolean {
         return this.isDepositOrder && this.isDepositDelivery && !this.hasNoBanks
+            && this.selectedPaymentType?.identifier === this.selectedDeliveryPaymentType?.identifier
             && !!this.depositBankValue && !!this.depositReferenceValue;
     }
 
@@ -250,9 +253,30 @@ export class AddEditSaleComponent implements OnInit{
         return this.isCreditOrder || this.isCreditDelivery;
     }
 
-    /** Un cliente escrito a mano no es válido para una venta al crédito. */
+    /** Algún producto del carrito lleva descuento. */
+    get hasDiscountedItems(): boolean {
+        return !!this.itemsList?.some(item => this.itemHasDiscount(item));
+    }
+
+    /**
+     * La venta tiene que quedar a nombre de un cliente registrado: al crédito, para poder
+     * cobrarle después, y con descuento, para saber a quién se le hizo.
+     */
+    get requiresRegisteredCustomer(): boolean {
+        return this.isCreditSale || this.hasDiscountedItems;
+    }
+
+    /** Por qué se exige cliente registrado; se muestra en el cobro. */
+    get registeredCustomerReason(): string {
+        return this.isCreditSale
+            ? 'Una venta al crédito debe registrarse a nombre de un cliente existente.'
+            : 'Una venta con descuento debe registrarse a nombre de un cliente existente.';
+    }
+
+    /** Un cliente escrito a mano no es válido para una venta al crédito ni con descuento. */
     get manualClientDisabled(): boolean {
-        return this.clientMode !== 'none' || (this.cobrarModalOpen && this.isCreditSale);
+        return this.clientMode !== 'none' || this.hasDiscountedItems
+            || (this.cobrarModalOpen && this.isCreditSale);
     }
 
     get filteredCustomers(): Customer[] {
@@ -266,7 +290,7 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     addClientRow() {
-        if (this.isCreditSale) return;
+        if (this.requiresRegisteredCustomer) return;
         this.clearSelectedCustomer();
         this.clientMode = 'manual';
         this.searchFocused = false;
@@ -290,7 +314,7 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     removeCustomerRow() {
-        if (this.isCreditSale) return;
+        if (this.requiresRegisteredCustomer) return;
         this.clientMode = 'none';
         this.clearSelectedCustomer();
         this.customerDropdownOpen = false;
@@ -323,19 +347,23 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     /**
-     * Mantiene coherente el cliente con el tipo de pago: en cuanto la venta
-     * pasa a crédito el cliente manual se descarta y el registrado se vuelve
-     * obligatorio.
+     * Mantiene coherente el cliente con el tipo de pago y los descuentos: en cuanto la venta
+     * pasa a crédito o lleva algún descuento, el cliente manual se descarta y el registrado se
+     * vuelve obligatorio. Con descuento, además, la fila de cliente registrado se agrega sola
+     * para que el cajero lo elija antes de cobrar.
      */
     syncCustomerRequirement() {
         const customerControl = this.orderForm?.get('customerId');
         if (!customerControl) return;
 
-        if (this.isCreditSale) {
+        if (this.requiresRegisteredCustomer) {
             if (this.clientMode === 'manual') {
                 this.f['nameClient'].setValue('');
                 this.f['nitClient'].setValue('');
                 this.clientMode = this.selectedCustomer ? 'existing' : 'none';
+            }
+            if (this.hasDiscountedItems) {
+                this.clientMode = 'existing';
             }
             customerControl.setValidators([Validators.required]);
         } else {
@@ -580,8 +608,8 @@ export class AddEditSaleComponent implements OnInit{
 
     /** Cierra el modal de cobro y guarda la venta. */
     onCobrar() {
-        if (this.isCreditSale && !this.selectedCustomer){
-            this.alertService.error('Una venta al crédito requiere seleccionar un cliente registrado');
+        if (this.requiresRegisteredCustomer && !this.selectedCustomer){
+            this.alertService.error(this.registeredCustomerReason);
             return;
         }
         this.cobrarCloseBtnRef?.nativeElement?.click();
@@ -681,6 +709,8 @@ export class AddEditSaleComponent implements OnInit{
             this.findAndMoveInventoryElementById(true, this.selectedIE?.productForSale?.id);
         }
         this.onResetMaterialForm();
+        // El producto pudo ganar o perder descuento: eso decide si hace falta cliente registrado
+        this.syncCustomerRequirement();
     }
 
     selectItemListForEdit(itemList: ItemsList, index: number){
@@ -774,10 +804,6 @@ export class AddEditSaleComponent implements OnInit{
         return this.orderForm.get('deliveryPaymentType');
     }
 
-    get deliveryPaymentTypeOptions(): PaymentType[] {
-        return this.paymentTypeOptions?.filter(pt => pt.identifier !== 'Cheque') ?? [];
-    }
-
     changeMeasure(measureId: any){
         if(measureId){
             if(this.selectedMeasure){
@@ -812,6 +838,7 @@ export class AddEditSaleComponent implements OnInit{
     unselectItemList(itemList: ItemsList, indexToRemove: number){
         this.itemsList?.splice(indexToRemove, 1);
         this.findAndMoveInventoryElementById(false, itemList?.productForSale?.id);
+        this.syncCustomerRequirement();
         // this.filteredRawMaterials?.push(orderElement.rawMaterialByProvider!);
     }
 
@@ -953,7 +980,7 @@ export class AddEditSaleComponent implements OnInit{
             Validators.maxLength(50),
             ]),
             nitClient: new FormControl('', [ Validators.maxLength(10),]),
-            // Obligatorio solo cuando la venta es al crédito (ver syncCustomerRequirement)
+            // Obligatorio solo cuando la venta es al crédito o lleva descuento (ver syncCustomerRequirement)
             customerId: new FormControl(null),
             nota: new FormControl('', [Validators.maxLength(100)]),
             paymentType: new FormControl('', [Validators.required]),

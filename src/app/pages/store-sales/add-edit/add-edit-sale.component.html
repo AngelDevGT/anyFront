@@ -196,7 +196,7 @@
                             (click)="openCustomerPicker()" aria-label="Cambiar cliente">
                             <i class="material-icons">swap_horiz</i>
                         </button>
-                        <button type="button" class="pos-row-x" *ngIf="!isCreditSale"
+                        <button type="button" class="pos-row-x" *ngIf="!requiresRegisteredCustomer"
                             (click)="removeCustomerRow()" aria-label="Quitar cliente">
                             <i class="material-icons">close</i>
                         </button>
@@ -382,7 +382,7 @@
                             <label>Método de pago (envío)</label>
                             <select class="form-select form-select-lg" formControlName="deliveryPaymentType"
                                 (change)="selectedDeliveryPaymentTypeSubject.next($any($event.target).value)">
-                                <option *ngFor="let pt of deliveryPaymentTypeOptions" value="{{ pt.id }}">{{ pt.identifier }}</option>
+                                <option *ngFor="let pt of paymentTypeOptions" value="{{ pt.id }}">{{ pt.identifier }}</option>
                             </select>
                         </div>
 
@@ -438,8 +438,8 @@
                             </ng-container>
                         </div>
 
-                        <!-- Cliente obligatorio para ventas al crédito -->
-                        <div class="pos-pay-field pos-credit-client" *ngIf="isCreditSale">
+                        <!-- Cliente obligatorio para ventas al crédito o con descuento -->
+                        <div class="pos-pay-field pos-credit-client" *ngIf="requiresRegisteredCustomer">
                             <label>Cliente <span class="pos-required">*</span></label>
 
                             <div class="pos-customer-selected modal-selected" *ngIf="selectedCustomer">
@@ -476,7 +476,7 @@
                                 </div>
                                 <p class="pos-customer-hint">
                                     {{ customerOptions.length
-                                        ? 'Una venta al crédito debe registrarse a nombre de un cliente existente.'
+                                        ? registeredCustomerReason
                                         : 'Asigna clientes a la tienda desde Sistema > Tiendas > Clientes.' }}
                                 </p>
                             </ng-container>

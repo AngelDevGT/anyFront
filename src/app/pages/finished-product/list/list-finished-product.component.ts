@@ -56,7 +56,7 @@ export class ListFinishedProductComponent implements OnInit {
 
     retriveProducts(){
         this.products = undefined;
-        this.dataService.getAllFinishedProductByFilterV3({"status_id": 36, "finished_product_type_id": this.productType})
+        this.dataService.getAllFinishedProductByFilterV4({"status_id": 36, "finished_product_type_id": this.productType})
             .pipe(first())
             .subscribe({
                 next: (products: any) => {
@@ -74,6 +74,7 @@ export class ListFinishedProductComponent implements OnInit {
                 let currProduct = this.products[i];
                 let descriptions = [
                     {name:'Descripción', value: currProduct.description},
+                    {name:'Cajilla', value: this.dataService.getUnitsPerBoxLabel(currProduct)},
                     {name:'Creado', value: currProduct.creationDate ? this.dataService.getLocalDateTimeFromUTCTime(currProduct.creationDate) : null},
                     {name:'Última actualización', value: currProduct.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(currProduct.updatedDate) : null}
                 ].filter(d => d.value != null && ('' + d.value).trim() !== '');

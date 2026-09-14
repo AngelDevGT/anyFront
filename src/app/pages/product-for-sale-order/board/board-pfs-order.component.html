@@ -75,7 +75,7 @@
         Ningún pedido coincide con "{{ searchTerm }}".
     </p>
 
-    <!-- Tablero (3/5) + productos (2/5) -->
+    <!-- Tablero (1/2) + productos (1/2) -->
     <div class="board-layout" *ngIf="!loadingOrders">
 
         <div class="board">
@@ -204,7 +204,7 @@
 
         </div>
 
-        <!-- Productos (2/5). NO es una columna del tablero: sin cabecera de estado y
+        <!-- Productos (1/2). NO es una columna del tablero: sin cabecera de estado y
              sin contenedor propio, para que no se lea como un quinto estado del
              pedido. Las tarjetas aparecen sueltas sobre el fondo y, al crecer, el
              scroll cae acá dentro -->
