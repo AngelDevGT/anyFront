@@ -16,7 +16,7 @@ import { AccountService } from './account.service';
 import { DataService } from './data/data.service';
 
 /** Estado 28: establecimiento activo. Mismo filtro que usaba el listado de tiendas. */
-const ACTIVE_ESTABLISHMENT_STATUS = 27;
+const ACTIVE_ESTABLISHMENT_STATUS = 28;
 
 /**
  * La tienda sobre la que se esta trabajando, compartida por todas las secciones de Tienda
