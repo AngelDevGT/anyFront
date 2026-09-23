@@ -205,6 +205,17 @@ $accent: #c94e00;
 .timeline-date { font-size: 13px; color: #98a2b3; white-space: nowrap; }
 .timeline-sub { font-size: 13px; color: #98a2b3; margin: 2px 0 0; }
 
+// Fecha de REGISTRO del pago. Mismo tratamiento que en el historial de la venta: en negrita, a la
+// par de la capsula de Pedido/Envio, y solo cuando difiere de la fecha del pago.
+.timeline-registered {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475467;
+  white-space: nowrap;
+}
+
 // Banco y numero de referencia del pago. Mismo tratamiento que en el historial de la venta:
 // encima del comentario y con mas peso, porque es el dato con el que se cuadra contra el banco.
 .timeline-detail {

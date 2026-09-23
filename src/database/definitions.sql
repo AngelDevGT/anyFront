@@ -505,6 +505,56 @@ ALTER TABLE shop_sale_payment
     ADD COLUMN IF NOT EXISTS reference_no varchar(50) NULL;
 
 
+-- =============================================
+-- shop_sale_payment.payment_date — la fecha del pago, separada de la de registro
+-- cash_closing.credit_payments / .store_expenses — el cierre congela su período
+-- Ver src/database/migrations/2026-09-22-fecha-de-pago-y-cierre-congelado.sql
+-- =============================================
+
+-- shop_sale_payment."date" era DOS cosas a la vez: la fecha que tecleaba el
+-- usuario y la que decide a qué cierre de caja pertenece el pago. Como se podía
+-- mover, un pago retrofechado se salía del cierre nuevo (que arranca en la fecha
+-- del cierre anterior) y aparecía dentro de uno ya firmado. Esa plata no se
+-- cuadraba en ningún cierre, y además nunca se restaba del credit_balance.
+--
+-- Desde 2026-09-22:
+--   "date"        -> la pone SIEMPRE el sistema. Inmutable. Define el período.
+--   payment_date  -> la teclea el usuario. Informativa: se muestra, no cuadra caja.
+--
+-- Las ventanas de los cierres ya filtraban por "date", así que volverla inmutable
+-- las deja correctas sin tocar su SQL.
+--
+-- Esto revierte la decisión de 2026-08-02-add-shop-sale-payment-comment.sql, que
+-- a propósito NO creó una columna aparte para que el cierre contara el abono por
+-- la fecha tecleada. El período de un cierre lo define cuándo ENTRÓ el dato, que
+-- es lo único que no se puede mover hacia atrás.
+--
+-- Nullable y sin DEFAULT: las procedures anteriores quedan vivas para rollback y
+-- no la llenan, así que las lecturas usan COALESCE(payment_date, "date"). El
+-- backfill la iguala a "date", que en las filas históricas ES la fecha que el
+-- usuario había tecleado.
+--
+-- Las escriben add_shop_sale_payment_v6 (abono) y
+-- register_shop_sale_with_elements_v7 (pago hecho al vender).
+ALTER TABLE shop_sale_payment
+    ADD COLUMN IF NOT EXISTS payment_date timestamp NULL;
+
+-- cash_closing guardaba como jsonb las ventas, los pedidos y los inventarios,
+-- pero NO los abonos ni los gastos: esos se recalculaban EN VIVO cada vez que se
+-- abría un cierre guardado. Editar o eliminar un gasto, o cancelar una venta,
+-- cambiaba un cierre firmado hacía un mes.
+--
+-- Las llena register_cash_closing_v6 al cerrar, con la misma forma de json que
+-- devuelven las lecturas. Nullables a propósito: NULL significa "cierre anterior
+-- a 2026-09-22, léelo en vivo", y las lecturas hacen COALESCE(columna, subquery).
+-- Un DEFAULT '[]' haría que los cierres viejos se vieran VACÍOS. No se rellenan
+-- hacia atrás: sería reconstruir el pasado con los datos de hoy, que es justo lo
+-- que este cambio busca impedir.
+ALTER TABLE cash_closing
+    ADD COLUMN IF NOT EXISTS credit_payments jsonb NULL,
+    ADD COLUMN IF NOT EXISTS store_expenses  jsonb NULL;
+
+
 -- ============================================================
 -- MIGRATION: número de pedido visible (correlativo POR TIENDA)
 -- Ver src/database/migrations/2026-08-18-add-pfs-store-order-number.sql

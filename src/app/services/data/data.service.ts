@@ -2146,7 +2146,10 @@ export class DataService {
      * `depositBank` / `depositReferenceNo` / `depositComment` / `depositDate` (y sus equivalentes
      * de envío) viajan dentro de params: la procedure registra el pago bancario si viene alguno de
      * los tres primeros. Solo aplica a las ventas con Depósito o con Cheque.
-     * Ver src/database/migrations/2026-09-01-banco-y-referencia-en-pagos.sql
+     *
+     * `depositDate` es la fecha del PAGO, la que teclea el usuario. La fecha de registro la pone la
+     * base y no se puede mandar desde acá.
+     * Ver src/database/migrations/2026-09-22-fecha-de-pago-y-cierre-congelado.sql
      */
     registerShop(params: ShopResume) {
         let parameters = JSON.stringify({
@@ -2156,38 +2159,44 @@ export class DataService {
             "$2": JSON.stringify(params.itemsList),
             "$3": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/registerShopV6`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/registerShopV7`, parameters);
     }
 
     /**
-     * `comment` y `date` son opcionales: si se mandan vacíos la procedure aplica
-     * sus defaults (comentario NULL y fecha = now() en UTC).
-     * `date` debe venir ya convertida a UTC con getUTCTimeFromLocalDateTime().
+     * `comment` y `paymentDate` son opcionales: si se mandan vacíos la procedure
+     * aplica sus defaults (comentario NULL y fecha del pago = fecha de registro).
+     *
+     * `$6` es la fecha del PAGO —la que teclea el usuario— y debe venir ya
+     * convertida a UTC con getUTCTimeFromLocalDateTime(). La fecha de REGISTRO
+     * la pone la base con now() y no se puede mandar desde acá: es la que
+     * decide a qué cierre de caja pertenece el pago, así que dejarla editable
+     * permitía mover plata a un período ya cerrado.
+     *
      * `$7` es el usuario que cobra, que no siempre es el que hizo la venta.
      * `$8` y `$9` son el banco y el número de transferencia o cheque: obligatorios en el
      * formulario cuando el tipo de pago es Depósito o Cheque, vacíos en el resto.
      */
     addShopSalePayment(shopSaleId: string, amount: string, paymentTypeId: string, paymentTarget: string = 'ORDER',
-        comment: string = '', date: string = '', bank: string = '', referenceNo: string = '') {
+        comment: string = '', paymentDate: string = '', bank: string = '', referenceNo: string = '') {
         let params = JSON.stringify({
             "$1": shopSaleId,
             "$2": amount,
             "$3": paymentTypeId,
             "$4": paymentTarget,
             "$5": comment,
-            "$6": date,
+            "$6": paymentDate,
             "$7": this.accountService.userValue.uuid,
             "$8": bank,
             "$9": referenceNo
         });
-        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV6`, params);
+        return this.http.patch(`${environment.apiUrlV3}/addShopSalePaymentV7`, params);
     }
 
     getShopSalePayments(shopSaleId: string) {
         let params = JSON.stringify({
             ssp: { shop_sale_id: shopSaleId }
         });
-        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV6`, params);
+        return this.http.post(`${environment.apiUrlV3}/getShopSalePaymentsV7`, params);
     }
 
     /**
@@ -2201,7 +2210,7 @@ export class DataService {
         let params = JSON.stringify({
             ss: { establishment_id: establishmentId, customer_id: customerId }
         });
-        return this.http.post(`${environment.apiUrlV3}/retrieveCustomerCreditPaymentsV2`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveCustomerCreditPaymentsV3`, params);
     }
 
     /**
@@ -2210,12 +2219,15 @@ export class DataService {
      * acumulado de abonos de cada una. Incluye las ventas que no son al crédito
      * y las de crédito sin abonos todavía, que es donde se queda corto
      * /retrieveCustomerCreditPayments (parte de shop_sale_payment).
+     *
+     * `lastCreditPaymentDate` es la fecha del PAGO del último abono, no la de
+     * registro: es la que el cliente reconoce cuando reclama un saldo.
      */
     getCustomerSalesHistory(establishmentId: string, customerId: string) {
         let params = JSON.stringify({
             ss: { establishment_id: establishmentId, customer_id: customerId }
         });
-        return this.http.post(`${environment.apiUrlV3}/retrieveCustomerSalesHistory`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveCustomerSalesHistoryV2`, params);
     }
 
     /**
@@ -2362,23 +2374,31 @@ export class DataService {
      * referencia del pago (`bank` / `referenceNo`, vacíos en los pagos en
      * efectivo y en los anteriores a 2026-09-01).
      *
-     * OJO: los cierres YA GUARDADOS congelaron `creditPayments` como jsonb, así
-     * que los anteriores a 2026-09-01 no traen banco ni referencia por más que
-     * la query los pida. Las vistas muestran '--', igual que con el comentario.
+     * DE DÓNDE SALEN LOS PAGOS Y LOS GASTOS DE UN CIERRE GUARDADO
+     * Desde 2026-09-22 el cierre los congela en cash_closing.credit_payments y
+     * .store_expenses al momento de cerrar, y las lecturas devuelven ese
+     * snapshot. Los cierres ANTERIORES a esa fecha tienen las dos columnas en
+     * NULL y se siguen calculando en vivo contra shop_sale_payment y
+     * store_expense, como se hacía antes: por eso editar o eliminar un gasto
+     * todavía puede cambiar lo que muestra un cierre viejo.
+     *
+     * (El comentario que antes vivía acá decía que `creditPayments` siempre
+     * estuvo congelado como jsonb. Nunca fue cierto; ahora lo es solo para los
+     * cierres nuevos.)
      */
     getNewCashClosing(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV6`, params);
+        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV7`, params);
     }
 
     getCashClosingById(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV7`, params);
+        return this.http.post(`${environment.apiUrlV3}/retrieveStoreCashClosingV8`, params);
     }
 
     getCashClosingByIdV2(id: string) {
         let params = JSON.stringify({cc: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV7`, params);
+        return this.http.post(`${environment.apiUrlV3}/getStoreCashClosingV8`, params);
     }
 
     addCashClosingV2(notes: string, establishment_id: string){
@@ -2418,6 +2438,23 @@ export class DataService {
             "$4": sobrante
         });
         return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV5`, params);
+    }
+
+    /**
+     * Igual que la V5, pero además congela los abonos y los gastos del período
+     * en cash_closing.credit_payments y .store_expenses. Sin eso el cierre se
+     * recalculaba en vivo cada vez que se abría, así que editar o eliminar un
+     * gasto cambiaba un cierre firmado hace un mes.
+     * Ver src/database/migrations/2026-09-22-fecha-de-pago-y-cierre-congelado.sql
+     */
+    addCashClosingV6(notes: string, establishment_id: string, sobrante: number = 0){
+        let params = JSON.stringify({
+            "$1": notes,
+            "$2": establishment_id,
+            "$3": this.accountService.userValue.uuid,
+            "$4": sobrante
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV6`, params);
     }
 
     updateCashClosing(id: string, note: string){

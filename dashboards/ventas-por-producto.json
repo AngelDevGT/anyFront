@@ -1,0 +1,591 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_EMBUTIDOS_ANY",
+      "label": "Embutidos Any (PostgreSQL)",
+      "description": "Base de datos PostgreSQL de Embutidos Any",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.0"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Productos vendidos en tienda agrupados por producto, con precios, totales, margen y la evolución de venta y costo.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Productos vendidos en la tienda, agrupados por producto. Montos en quetzales.\n\n- **Rango de fechas** (arriba a la derecha): filtra por la fecha de la venta.\n- **Tienda**: una sola tienda, entre las activas.\n- **Venta desde / hasta**: rango de números de venta. Las listas solo traen ventas que existen, y por defecto vienen en el rango completo.\n\nLa venta usa el precio **congelado** en cada venta, así que Venta total es exacta y Precio venta es un promedio ponderado. El costo usa el **costo actual** del producto: no existe histórico de costo.\n\nVenta total es el monto bruto, **antes de descuento y sin envío**. No incluye ventas canceladas.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Medida"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Libra": {
+                        "color": "#3987e5",
+                        "index": 0
+                      },
+                      "Unidad": {
+                        "color": "#d95926",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "center"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(Q\\)$"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Margen (Q)"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#d03b3b",
+                      "value": null
+                    },
+                    {
+                      "color": "#fab219",
+                      "value": 0
+                    },
+                    {
+                      "color": "#0ca30c",
+                      "value": 0.01
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ventas"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Producto"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Producto terminado vendido en la tienda."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Medida"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Unidad base del producto: Unidad o Libra. La cantidad está expresada en esta medida."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ventas"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Número de ventas distintas en las que aparece el producto. Una venta con dos productos cuenta una vez en cada uno."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cantidad"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Total vendido del producto, normalizado a su unidad base."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Precio venta (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Promedio ponderado de lo que realmente se cobró por unidad base: Venta total ÷ Cantidad. Es un promedio porque el mismo producto pudo venderse a distinto precio en cada venta."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Precio costo (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Costo ACTUAL del producto por unidad base. No existe histórico de costo. Si el producto no tiene costo capturado se usa su precio de venta."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Venta total (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma exacta de lo cobrado, con el precio de cada venta. Es el monto BRUTO: antes de descuento y sin incluir el envío."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Costo total (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Cantidad × costo actual. Cambia si se actualiza el costo del producto, incluso para ventas viejas."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Margen (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Venta total − Costo total. Rojo si es negativo, amarillo si es exactamente 0 y verde si es positivo. Resta una venta histórica menos un costo actual."
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": [
+            "Venta total (Q)",
+            "Costo total (Q)",
+            "Margen (Q)"
+          ],
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Producto"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Ventas por producto.\n-- Filtros: rango de fechas del dashboard (fecha de la venta), Tienda y rango de\n-- No. de venta.\n--\n-- FECHAS\n--   creation_date es timestamp SIN zona horaria y guarda hora UTC, por eso el\n--   filtro va como $__timeFilter(ss.creation_date AT TIME ZONE 'UTC').\n--\n-- RANGO DE No. DE VENTA (variables venta_desde / venta_hasta)\n--   Listas de los numeros de venta que existen para la tienda y el rango de\n--   fechas actuales, asi que por defecto cubren todo. NULLIF(..., '') evita\n--   romper la query cuando la tienda no tiene ventas: BETWEEN NULL no devuelve\n--   filas. sale_number es correlativo POR TIENDA; por eso la variable tienda es\n--   de seleccion unica.\n--\n-- VENTA: precio CONGELADO (lo que se cobro ese dia)\n--   shop_sale_element guarda price (ya por medida) y subtotal (price *\n--   quantity, ANTES de descuento). \"Venta total\" suma subtotal: es exacta y\n--   bruta, el mismo criterio de \"Total ventas\" del resumen general.\n--   \"Precio venta\" = Venta total / Cantidad: PROMEDIO PONDERADO, porque el\n--   mismo producto pudo venderse a distinto precio en cada venta. Es la unica\n--   cifra que mantiene Cantidad * Precio = Total.\n--\n-- COSTO: precio de HOY (no hay alternativa)\n--   Ni la venta ni el pedido guardan costo; solo existe product_for_sale.cost,\n--   que es el costo actual y esta POR UNIDAD BASE. Si el producto no tiene\n--   costo capturado se usa su precio de venta.\n--\n-- CANTIDAD\n--   quantity viene en la medida de la fila (unidad, docena, libra...) y se\n--   normaliza a unidad base con measure.unit_base_quantity, que es el mismo\n--   factor que usan los procedures. La columna Medida dice en que unidad base\n--   quedo: Unidad o Libra.\nWITH base AS (\n    SELECT\n        fp.id                                                    AS producto_id,\n        fp.\"name\"                                                AS producto,\n        ub.\"name\"                                                AS medida,\n        ss.id                                                    AS venta_id,\n        sse.quantity * m.unit_base_quantity                      AS cantidad_base,\n        sse.subtotal                                             AS venta,\n        sse.quantity * m.unit_base_quantity * COALESCE(pfs.cost, pfs.price) AS costo\n    FROM shop_sale_element sse\n    JOIN shop_sale        ss  ON ss.id  = sse.shop_sale_id\n    JOIN product_for_sale pfs ON pfs.id = sse.product_for_sale_id\n    JOIN finished_product fp  ON fp.id  = pfs.finished_product_id\n    JOIN unit_base        ub  ON ub.id  = fp.unit_base_id\n    JOIN measure          m   ON m.id   = sse.measure_id\n    WHERE ss.status_id = 52                                   -- solo ventas activas (54 = cancelada)\n      AND ss.establishment_id::text = ${tienda:sqlstring}\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n      AND ss.sale_number BETWEEN LEAST(NULLIF('${venta_desde}', '')::bigint,\n                                       NULLIF('${venta_hasta}', '')::bigint)\n                             AND GREATEST(NULLIF('${venta_desde}', '')::bigint,\n                                          NULLIF('${venta_hasta}', '')::bigint)\n)\nSELECT\n    producto                                                  AS \"Producto\",\n    medida                                                    AS \"Medida\",\n    count(DISTINCT venta_id)                                  AS \"Ventas\",\n    round(sum(cantidad_base), 2)                              AS \"Cantidad\",\n    round(sum(venta) / NULLIF(sum(cantidad_base), 0), 2)      AS \"Precio venta (Q)\",\n    round(sum(costo) / NULLIF(sum(cantidad_base), 0), 2)      AS \"Precio costo (Q)\",\n    round(sum(venta), 2)                                      AS \"Venta total (Q)\",\n    round(sum(costo), 2)                                      AS \"Costo total (Q)\",\n    round(sum(venta) - sum(costo), 2)                         AS \"Margen (Q)\"\nFROM base\nGROUP BY producto_id, producto, medida\nORDER BY producto;",
+          "refId": "A"
+        }
+      ],
+      "title": "Ventas por producto",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Venta y costo **totales de la tienda** por periodo, sin agrupar por producto. Usa los mismos filtros que la tabla. El tamaño del periodo se cambia en **Agrupar por**; los periodos sin ventas se muestran en 0.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 8,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Venta total"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#3987e5",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Costo total"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#d95926",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "-- Venta y costo de la tienda por periodo (dia / semana / mes segun el filtro\n-- \"Agrupar por\"). NO se agrupa por producto: es el total de la tienda.\n--\n--   * Los periodos se cortan en hora de Guatemala: una venta de las 8pm cae en\n--     su dia y no en el siguiente (creation_date guarda UTC).\n--   * Se generan todos los periodos del rango (hasta hoy) y se cruzan con LEFT\n--     JOIN, asi que un periodo sin ventas vale 0 y la linea no salta el hueco\n--     ni dibuja ceros hacia el futuro.\n--   * Mismos filtros que la tabla: tienda, fechas y rango de No. de venta.\nWITH periodos AS (\n    SELECT generate_series(\n        date_trunc('${agrupacion}', $__timeFrom()::timestamptz AT TIME ZONE 'America/Guatemala'),\n        LEAST($__timeTo()::timestamptz, now()) AT TIME ZONE 'America/Guatemala',\n        '1 ${agrupacion}'::interval\n    ) AS periodo\n),\ndatos AS (\n    SELECT\n        date_trunc('${agrupacion}', ss.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala') AS periodo,\n        sum(sse.subtotal)                                                       AS ventas,\n        sum(sse.quantity * m.unit_base_quantity * COALESCE(pfs.cost, pfs.price)) AS costos\n    FROM shop_sale_element sse\n    JOIN shop_sale        ss  ON ss.id  = sse.shop_sale_id\n    JOIN product_for_sale pfs ON pfs.id = sse.product_for_sale_id\n    JOIN measure          m   ON m.id   = sse.measure_id\n    WHERE ss.status_id = 52                                   -- solo ventas activas (54 = cancelada)\n      AND ss.establishment_id::text = ${tienda:sqlstring}\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n      AND ss.sale_number BETWEEN LEAST(NULLIF('${venta_desde}', '')::bigint,\n                                       NULLIF('${venta_hasta}', '')::bigint)\n                             AND GREATEST(NULLIF('${venta_desde}', '')::bigint,\n                                          NULLIF('${venta_hasta}', '')::bigint)\n    GROUP BY 1\n)\nSELECT\n    p.periodo AT TIME ZONE 'America/Guatemala'    AS \"time\",\n    round(COALESCE(d.ventas, 0), 2)   AS \"Venta total\",\n    round(COALESCE(d.costos, 0), 2)   AS \"Costo total\"\nFROM periodos p\nLEFT JOIN datos d ON d.periodo = p.periodo\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Venta y costo de la tienda en el tiempo",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "embutidos-any",
+    "ventas",
+    "productos"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id = 28           -- solo tiendas activas\nORDER BY e.\"name\";",
+        "description": "Tiendas activas. Solo una a la vez: el No. de venta es correlativo por tienda.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Tienda",
+        "multi": false,
+        "name": "tienda",
+        "options": [],
+        "query": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id = 28           -- solo tiendas activas\nORDER BY e.\"name\";",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT o.sale_number::text AS __text, o.sale_number::text AS __value\nFROM (\n    SELECT DISTINCT ss.sale_number\n    FROM shop_sale ss\n    WHERE ss.establishment_id::text = ${tienda:sqlstring}\n      AND ss.status_id = 52                             -- solo ventas activas\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n) o\nORDER BY o.sale_number ASC;",
+        "description": "Primer número de venta del rango. Solo lista ventas existentes; por defecto, la más baja.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Venta desde",
+        "multi": false,
+        "name": "venta_desde",
+        "options": [],
+        "query": "SELECT o.sale_number::text AS __text, o.sale_number::text AS __value\nFROM (\n    SELECT DISTINCT ss.sale_number\n    FROM shop_sale ss\n    WHERE ss.establishment_id::text = ${tienda:sqlstring}\n      AND ss.status_id = 52                             -- solo ventas activas\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n) o\nORDER BY o.sale_number ASC;",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT o.sale_number::text AS __text, o.sale_number::text AS __value\nFROM (\n    SELECT DISTINCT ss.sale_number\n    FROM shop_sale ss\n    WHERE ss.establishment_id::text = ${tienda:sqlstring}\n      AND ss.status_id = 52                             -- solo ventas activas\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n) o\nORDER BY o.sale_number DESC;",
+        "description": "Último número de venta del rango. Solo lista ventas existentes; por defecto, la más alta.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Venta hasta",
+        "multi": false,
+        "name": "venta_hasta",
+        "options": [],
+        "query": "SELECT o.sale_number::text AS __text, o.sale_number::text AS __value\nFROM (\n    SELECT DISTINCT ss.sale_number\n    FROM shop_sale ss\n    WHERE ss.establishment_id::text = ${tienda:sqlstring}\n      AND ss.status_id = 52                             -- solo ventas activas\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n) o\nORDER BY o.sale_number DESC;",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "Día",
+          "value": "day"
+        },
+        "description": "Tamaño de cada punto en la gráfica de evolución.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Agrupar por",
+        "multi": false,
+        "name": "agrupacion",
+        "options": [
+          {
+            "selected": true,
+            "text": "Día",
+            "value": "day"
+          },
+          {
+            "selected": false,
+            "text": "Semana",
+            "value": "week"
+          },
+          {
+            "selected": false,
+            "text": "Mes",
+            "value": "month"
+          }
+        ],
+        "query": "Día : day, Semana : week, Mes : month",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "America/Guatemala",
+  "title": "Ventas por producto",
+  "uid": "ventas-por-producto",
+  "version": 1,
+  "weekStart": ""
+}

@@ -384,7 +384,10 @@ export class AddEditCashClosingComponent implements OnInit{
             }
 
             const curr_row = {
-                accordion_name: this.dataService.getLocalDateTimeFromUTCTime(payment.date?.replaceAll("\"","") || payment.date),
+                // La fecha del PAGO, no la de registro: es la que el usuario reconoce al cuadrar.
+                // Los abonos anteriores a 2026-09-22 no traen paymentDate y caen a la de registro,
+                // que en esas filas era justamente la fecha que se había tecleado.
+                accordion_name: this.dataService.getLocalDateTimeFromUTCTime((payment.paymentDate ?? payment.date)?.replaceAll("\"","") || payment.date),
                 elements_top: [
                     {icon : "person", name : "Cliente", value : payment.shopSale?.nameClient},
                     {icon : "tag", name : "NIT", value : payment.shopSale?.nitClient},
@@ -514,7 +517,10 @@ export class AddEditCashClosingComponent implements OnInit{
 
             let notes = this.operationRawMaterialForm.value.note;
             let sobrante = Number(this.operationRawMaterialForm.value.sobrante || 0);
-            this.dataService.addCashClosingV5(notes, this.establishmentId, sobrante)
+            // La V6 congela los abonos y los gastos del período dentro del cierre. Antes se
+            // recalculaban en vivo en cada lectura, así que editar un gasto o cancelar una venta
+            // cambiaba un cierre ya firmado.
+            this.dataService.addCashClosingV6(notes, this.establishmentId, sobrante)
             .pipe(first())
             .subscribe({
                 next: () => {

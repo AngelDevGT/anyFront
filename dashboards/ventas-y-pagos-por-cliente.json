@@ -1,0 +1,750 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_EMBUTIDOS_ANY",
+      "label": "Embutidos Any (PostgreSQL)",
+      "description": "Base de datos PostgreSQL de Embutidos Any",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.0"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Estado de cuenta de los clientes: saldo, ventas, abonos e historial de pagos.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Estado de cuenta de cada cliente. Montos en quetzales.\n\nCada dato se filtra por **su propia fecha**: las ventas por la fecha de la venta y los pagos por la fecha del pago.\n\n**Saldo pendiente** y **Tiendas** son la foto de HOY en todas las tiendas, así que **no dependen del rango de fechas**. El resto de columnas sí.\n\nSolo se cuentan los **abonos**: el depósito o cheque que se registra junto con la venta no es un cobro de crédito. Se omiten los clientes sin movimiento en el periodo y sin saldo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(Q\\)$"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Ventas pendientes|Ventas|Pagos)$"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Saldo pendiente (Q)"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    },
+                    {
+                      "color": "#d03b3b",
+                      "value": 0.01
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tiendas donde debe"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "--": {
+                        "color": "text",
+                        "index": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": ".+",
+                      "result": {
+                        "color": "#d03b3b",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              },
+              {
+                "id": "custom.minWidth",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cliente"
+            },
+            "properties": [
+              {
+                "id": "custom.minWidth",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cliente"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Nombre y NIT del cliente registrado."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Saldo pendiente (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Lo que el cliente debe HOY, sumando todas sus ventas con saldo en todas las tiendas. En rojo si debe algo. No depende del rango de fechas."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ventas pendientes"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Ventas del periodo que todavía tienen saldo: incluye las pendientes y las abonadas."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ventas"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Total de ventas del cliente en el periodo, pagadas o no."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pagos"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Número de abonos registrados en el periodo, en efectivo, cheque o depósito. Se cuenta por la fecha del pago."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total ventas pendientes (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma del monto que queda pendiente de las ventas del periodo. Es el saldo, no el total de la venta."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ventas totales (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma del monto total de las ventas del periodo, incluyendo envío."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total pagos (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma de los abonos recibidos en el periodo."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tiendas donde debe"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Tiendas donde el cliente tiene al menos una venta con saldo pendiente hoy, en rojo. Si está al día aparece \"--\". No depende del rango de fechas."
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": [
+            "Saldo pendiente (Q)",
+            "Total ventas pendientes (Q)",
+            "Ventas totales (Q)",
+            "Total pagos (Q)"
+          ],
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Ventas y pagos por cliente.\n-- Filtros: rango de fechas del dashboard y Cliente.\n--\n-- FECHAS\n--   creation_date y \"date\" son timestamp SIN zona horaria y guardan hora UTC,\n--   por eso el filtro va con AT TIME ZONE 'UTC'.\n--   Cada bloque usa su propia fecha:\n--     ventas -> ss.creation_date      pagos -> ssp.\"date\"\n--   \"Saldo pendiente\" y \"Tiendas\" NO se filtran por fecha: son el estado de\n--   cuenta de HOY, en todas las tiendas.\n--\n-- QUE CUENTA COMO PAGO\n--   Solo los ABONOS (shop_sale_payment.is_sale_payment = false). La fila con\n--   is_sale_payment = true es el deposito o cheque que se registra junto con la\n--   venta: no es un cobro de credito y contarla inflaria el historial. Es el\n--   mismo criterio de la pantalla \"Historial de pagos\" de la app.\n--\n-- VENTAS AL CREDITO\n--   Solo las ventas con cliente registrado llegan aca (customer_id NOT NULL):\n--   una venta al credito no se puede guardar sin cliente, lo valida\n--   register_shop_sale_with_elements_v6.\n--\n-- ESTADOS: venta activa 52 (cancelada 54), cliente activo 62.\nWITH clientes AS (\n    SELECT c.id, c.\"name\", c.nit\n    FROM customer c\n    WHERE c.status_id = 62\n      AND c.id::text IN (${cliente:sqlstring})\n),\nventas AS (\n    -- ventas del periodo\n    SELECT\n        ss.customer_id                                                       AS cliente_id,\n        count(*)                                                             AS ventas,\n        count(*) FILTER (WHERE (ss.pending_amount + ss.delivery_pending_amount) > 0)\n                                                                             AS ventas_pendientes,\n        sum(ss.total)                                                        AS ventas_totales,\n        sum(ss.pending_amount + ss.delivery_pending_amount)                  AS pendiente_periodo\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.customer_id IS NOT NULL\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n    GROUP BY ss.customer_id\n),\nsaldo AS (\n    -- saldo vivo y tiendas donde debe, SIN filtro de fecha\n    SELECT\n        ss.customer_id                                        AS cliente_id,\n        sum(ss.pending_amount + ss.delivery_pending_amount)   AS saldo,\n        string_agg(DISTINCT e.\"name\", ', ' ORDER BY e.\"name\") AS tiendas\n    FROM shop_sale ss\n    JOIN establishment e ON e.id = ss.establishment_id\n    WHERE ss.status_id = 52\n      AND ss.customer_id IS NOT NULL\n      AND (ss.pending_amount + ss.delivery_pending_amount) > 0\n    GROUP BY ss.customer_id\n),\npagos AS (\n    -- abonos del periodo, por fecha del pago\n    SELECT\n        ss.customer_id      AS cliente_id,\n        count(*)            AS pagos,\n        sum(ssp.amount)     AS total_pagos\n    FROM shop_sale_payment ssp\n    JOIN shop_sale ss ON ss.id = ssp.shop_sale_id\n    WHERE ssp.is_sale_payment = false\n      AND ss.customer_id IS NOT NULL\n      AND $__timeFilter(ssp.\"date\" AT TIME ZONE 'UTC')\n    GROUP BY ss.customer_id\n)\nSELECT\n    c.\"name\" || ' (' || c.nit || ')'                     AS \"Cliente\",\n    -- el saldo y las tiendas donde debe van juntos: salen del mismo calculo\n    round(COALESCE(s.saldo, 0), 2)                       AS \"Saldo pendiente (Q)\",\n    COALESCE(s.tiendas, '--')                  AS \"Tiendas donde debe\",\n    COALESCE(v.ventas_pendientes, 0)                     AS \"Ventas pendientes\",\n    COALESCE(v.ventas, 0)                                AS \"Ventas\",\n    COALESCE(p.pagos, 0)                                 AS \"Pagos\",\n    round(COALESCE(v.pendiente_periodo, 0), 2)           AS \"Total ventas pendientes (Q)\",\n    round(COALESCE(v.ventas_totales, 0), 2)              AS \"Ventas totales (Q)\",\n    round(COALESCE(p.total_pagos, 0), 2)                 AS \"Total pagos (Q)\"\nFROM clientes c\nLEFT JOIN ventas v ON v.cliente_id = c.id\nLEFT JOIN saldo  s ON s.cliente_id = c.id\nLEFT JOIN pagos  p ON p.cliente_id = c.id\n-- fuera los clientes sin nada que mostrar en el periodo y sin saldo\nWHERE COALESCE(v.ventas, 0) > 0\n   OR COALESCE(p.pagos, 0) > 0\n   OR COALESCE(s.saldo, 0) > 0\nORDER BY COALESCE(s.saldo, 0) DESC, c.\"name\";",
+          "refId": "A"
+        }
+      ],
+      "title": "Ventas y pagos por cliente",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Un renglón por abono recibido, ordenado del más reciente al más antiguo.\n\nFiltra por la **fecha del pago**, así que la fecha de la venta puede quedar fuera del rango: es lo normal en una venta al crédito.\n\nIncluye los abonos de ventas canceladas, porque el dinero se recibió. No incluye el depósito registrado al momento de vender.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(Q\\)$"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "No. venta"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^Fecha "
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cliente"
+            },
+            "properties": [
+              {
+                "id": "custom.minWidth",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cliente"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Nombre y NIT del cliente."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Monto (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Monto del abono."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Método de pago"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Efectivo, Cheque o Depósito."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Banco"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Banco del pago. Solo aplica a Cheque y Depósito; en los demás y en los pagos anteriores a septiembre de 2026 aparece --."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "No. referencia"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Número de transferencia o de cheque. Mismas condiciones que el banco."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "No. venta"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Correlativo de la venta a la que pertenece el abono. Es por tienda."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fecha pago"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Fecha en que se recibió el abono. Es la fecha por la que filtra el rango de tiempo."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fecha venta"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Fecha en que se realizó la venta. Puede ser anterior al rango de fechas seleccionado."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tienda"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Tienda donde se realizó la venta."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Registró el pago"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Usuario que registró el abono. En los abonos anteriores a agosto de 2026 no se guardaba, y ahí se muestra el usuario que hizo la venta, igual que en la app."
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": [
+            "Monto (Q)"
+          ],
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Historial de pagos: una fila por ABONO.\n--\n--   * is_sale_payment = false deja fuera el deposito o cheque registrado junto\n--     con la venta, que no es un cobro de credito.\n--   * Se filtra por la FECHA DEL PAGO. \"Fecha venta\" es la fecha en que se\n--     realizo la venta a la que pertenece el abono, y puede quedar fuera del\n--     rango: es justo lo que se quiere ver en un credito.\n--   * Las ventas canceladas (54) NO se excluyen: el dinero se recibio y el\n--     abono es parte del historial. Mismo criterio que\n--     /retrieveCustomerCreditPayments.\n--   * Banco y No. referencia solo existen en pagos con Deposito o Cheque, y\n--     solo desde 2026-09-01; antes de eso van en '--'.\n--   * \"Registro el pago\": shop_sale_payment.creator_user_id es NULL en los\n--     abonos anteriores a 2026-08-11, cuando la columna no existia. En ese caso\n--     se cae al usuario que hizo la VENTA, que es el mismo criterio que usa el\n--     front. Si tampoco hubiera, queda '--'.\nSELECT\n    c.\"name\" || ' (' || c.nit || ')'          AS \"Cliente\",\n    round(ssp.amount, 2)                      AS \"Monto (Q)\",\n    pt.\"name\"                                 AS \"Método de pago\",\n    COALESCE(NULLIF(btrim(ssp.bank), ''), '--')         AS \"Banco\",\n    COALESCE(NULLIF(btrim(ssp.reference_no), ''), '--') AS \"No. referencia\",\n    ss.sale_number                            AS \"No. venta\",\n    ssp.\"date\" AT TIME ZONE 'UTC'             AS \"Fecha pago\",\n    ss.creation_date AT TIME ZONE 'UTC'       AS \"Fecha venta\",\n    e.\"name\"                                  AS \"Tienda\",\n    COALESCE(up.username, uv.username, '--')  AS \"Registró el pago\"\nFROM shop_sale_payment ssp\nJOIN shop_sale     ss ON ss.id = ssp.shop_sale_id\nJOIN customer      c  ON c.id  = ss.customer_id\nJOIN establishment e  ON e.id  = ss.establishment_id\nLEFT JOIN payment_type pt ON pt.id = ssp.payment_type_id\nLEFT JOIN \"user\"   up ON up.id = ssp.creator_user_id   -- quien registro el abono\nLEFT JOIN \"user\"   uv ON uv.id = ss.creator_user_id    -- respaldo: quien hizo la venta\nWHERE ssp.is_sale_payment = false\n  AND c.id::text IN (${cliente:sqlstring})\n  AND $__timeFilter(ssp.\"date\" AT TIME ZONE 'UTC')\nORDER BY ssp.\"date\" DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Historial de pagos",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Ventas del periodo por estado de pago. **Ventas totales** es el total y equivale a la suma de las otras tres barras. El estado se calcula con los montos pendientes y abonados, así que cubre por igual el pedido y el envío.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#3987e5",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "id": 3,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.6,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Ventas del periodo por estado de pago (conteo).\n--\n-- El estado sale de los montos, no del catalogo, para que cubra por igual el\n-- pedido y el envio (una venta puede tener el pedido al credito y el envio\n-- pagado, o al reves):\n--   pendiente = pending_amount + delivery_pending_amount\n--   pagado    = paid_amount    + delivery_paid_amount\n--\n--   Pendientes = debe todo y no ha abonado nada\n--   Abonadas   = debe algo y ya abono algo\n--   Pagadas    = no debe nada\n-- \"Ventas totales\" es el total y equivale a la suma de las otras tres.\nWITH v AS (\n    SELECT\n        (ss.pending_amount + ss.delivery_pending_amount) AS pendiente,\n        (ss.paid_amount + ss.delivery_paid_amount)       AS pagado\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.customer_id IS NOT NULL\n      AND ss.customer_id::text IN (${cliente:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n)\nSELECT t.\"Estado\", t.\"Ventas\"\nFROM (\n    SELECT 1 AS orden, 'Ventas totales' AS \"Estado\", count(*)                                                AS \"Ventas\" FROM v\n    UNION ALL\n    SELECT 2, 'Pendientes', count(*) FILTER (WHERE pendiente > 0 AND pagado <= 0) FROM v\n    UNION ALL\n    SELECT 3, 'Abonadas',   count(*) FILTER (WHERE pendiente > 0 AND pagado > 0)  FROM v\n    UNION ALL\n    SELECT 4, 'Pagadas',    count(*) FILTER (WHERE pendiente <= 0)                FROM v\n) t\nORDER BY t.orden;",
+          "refId": "A"
+        }
+      ],
+      "title": "Ventas del periodo por estado de pago",
+      "type": "barchart"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "embutidos-any",
+    "clientes",
+    "pagos"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT c.\"name\" || ' (' || c.nit || ')' AS __text, c.id::text AS __value\nFROM customer c\nWHERE c.status_id = 62           -- solo clientes activos\nORDER BY c.\"name\";",
+        "description": "Clientes activos. Se pueden elegir varios o todos.",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cliente",
+        "multi": true,
+        "name": "cliente",
+        "options": [],
+        "query": "SELECT c.\"name\" || ' (' || c.nit || ')' AS __text, c.id::text AS __value\nFROM customer c\nWHERE c.status_id = 62           -- solo clientes activos\nORDER BY c.\"name\";",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "America/Guatemala",
+  "title": "Ventas y pagos por cliente",
+  "uid": "ventas-pagos-cliente",
+  "version": 1,
+  "weekStart": ""
+}

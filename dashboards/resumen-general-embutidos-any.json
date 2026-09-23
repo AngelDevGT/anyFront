@@ -1,0 +1,1229 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_EMBUTIDOS_ANY",
+      "label": "Embutidos Any (PostgreSQL)",
+      "description": "Base de datos PostgreSQL de Embutidos Any",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.0"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Resumen general de ventas, envíos, sobrantes, gastos y devoluciones de las tiendas.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Suma de las ventas SIN aplicar descuento y sin incluir el envío.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Total ventas$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 48
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Resumen general: UNA fila con los indicadores de las tiendas del filtro\n-- Tienda, dentro del rango de tiempo del dashboard.\n-- Esta consulta alimenta los 10 KPI: este panel la ejecuta y los demas la\n-- leen con el datasource \"-- Dashboard --\" (una sola ida a la base).\n-- Cada CTE agrega sin GROUP BY, asi que siempre devuelve una fila (en cero si\n-- no hubo movimiento).\nWITH ventas AS (\n    SELECT\n        count(*)                                                     AS ventas,\n        count(*) FILTER (WHERE ss.delivery > 0)                      AS envios,\n        -- bruto de producto: antes de descuento y sin envio (= sum(shop_sale_element.subtotal))\n        sum(ss.total - COALESCE(ss.delivery, 0) + ss.total_discount) AS total_ventas,\n        sum(COALESCE(ss.delivery, 0))                                AS total_envios\n    FROM shop_sale ss\n    WHERE ss.status_id = 52                                   -- solo ventas activas (54 = cancelada)\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n),\nsobrantes AS (\n    SELECT\n        count(*)                   AS sobrantes,\n        sum(cc.sobrante)           AS total_sobrante\n    FROM cash_closing cc\n    WHERE cc.sobrante > 0                                     -- cierres con sobrante capturado\n      AND cc.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(cc.creation_date AT TIME ZONE 'UTC')\n),\ngastos AS (\n    SELECT\n        count(*)                   AS gastos,\n        sum(se.total_amount)       AS total_gastos\n    FROM store_expense se\n    WHERE se.status_id = 58                                   -- gasto activo (59 = eliminado)\n      AND se.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(se.creation_date AT TIME ZONE 'UTC')\n),\ndevoluciones AS (\n    SELECT\n        count(*)                       AS devoluciones,\n        -- cantidad (ya en unidad base) * precio VIGENTE por unidad base: mismo\n        -- criterio que el cierre de caja. No hay historico de precio.\n        sum(iea.quantity * pfs.price)  AS total_devoluciones\n    FROM inventory_element_action iea\n    JOIN inventory_element ie  ON ie.id  = iea.source_inventory_element_id\n    JOIN inventory         i   ON i.id   = ie.inventory_id\n    JOIN product_for_sale  pfs ON pfs.id = ie.element_fk\n    WHERE iea.action_type_id = 17                             -- remove_pfs_by_devolution\n      AND i.inventory_type = 'product_for_sale'\n      AND i.unit_name IN (${tienda:sqlstring})                -- unit_name = uuid de la tienda (texto)\n      AND $__timeFilter(iea.creation_date AT TIME ZONE 'UTC')\n)\nSELECT\n    COALESCE(v.ventas, 0)                       AS \"Ventas\",\n    COALESCE(v.envios, 0)                       AS \"Envios\",\n    COALESCE(s.sobrantes, 0)                    AS \"Sobrante\",\n    COALESCE(g.gastos, 0)                       AS \"Gastos\",\n    COALESCE(d.devoluciones, 0)                 AS \"Devoluciones\",\n    round(COALESCE(v.total_ventas, 0), 2)       AS \"Total ventas\",\n    round(COALESCE(v.total_envios, 0), 2)       AS \"Total envios\",\n    round(COALESCE(s.total_sobrante, 0), 2)     AS \"Total sobrante\",\n    round(COALESCE(g.total_gastos, 0), 2)       AS \"Total gastos\",\n    round(COALESCE(d.total_devoluciones, 0), 2) AS \"Total devoluciones\"\nFROM ventas v\nCROSS JOIN sobrantes s\nCROSS JOIN gastos g\nCROSS JOIN devoluciones d;",
+          "refId": "A"
+        }
+      ],
+      "title": "Total ventas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Suma del costo de envío de todas las ventas.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Total envios$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Total envíos",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Suma del sobrante de todos los cierres de caja.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Total sobrante$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Total sobrante",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Suma del monto de todos los gastos.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Total gastos$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Total gastos",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Suma de cantidad devuelta × precio de venta del producto. PENDIENTE DE REVISAR: el precio se lee de product_for_sale hoy, no el que tenía el producto el día de la devolución.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Total devoluciones$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Total devoluciones (por validar)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Conteo de ventas activas (no canceladas) del periodo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 0,
+        "y": 4
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Ventas$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 24
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Ventas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Conteo de ventas que llevan costo de envío (mayor a 0).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 8,
+        "y": 4
+      },
+      "id": 7,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Envios$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 24
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Envíos",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Conteo de cierres de caja a los que se les capturó sobrante (mayor a 0).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 12,
+        "y": 4
+      },
+      "id": 8,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Sobrante$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 24
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Cierres con sobrante",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Conteo de gastos de tienda activos (no eliminados).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 16,
+        "y": 4
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Gastos$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 24
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Gastos",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Número de veces que se devolvió producto de tienda a bodega (una por producto devuelto).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 20,
+        "y": 4
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Devoluciones$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 24
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Devoluciones",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Total de ventas activas por periodo, **sin descuento ni envío**. El tamaño del periodo se cambia en **Agrupar por**; los periodos sin ventas se muestran en 0.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#3987e5",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 8,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 1,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "-- Total ventas por periodo (dia / semana / mes segun el filtro \"Agrupar por\").\nWITH periodos AS (\n    SELECT generate_series(\n        date_trunc('${agrupacion}', $__timeFrom()::timestamptz AT TIME ZONE 'America/Guatemala'),\n        LEAST($__timeTo()::timestamptz, now()) AT TIME ZONE 'America/Guatemala',\n        '1 ${agrupacion}'::interval\n    ) AS periodo\n),\ndatos AS (\n    SELECT\n        date_trunc('${agrupacion}', ss.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala') AS periodo,\n        sum(ss.total - COALESCE(ss.delivery, 0) + ss.total_discount) AS total\n    FROM shop_sale ss\n    WHERE ss.status_id = 52                                  -- solo ventas activas (54 = cancelada)\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n    GROUP BY 1\n)\nSELECT\n    p.periodo AT TIME ZONE 'America/Guatemala'   AS \"time\",\n    round(COALESCE(d.total, 0), 2)   AS \"Total ventas\"\nFROM periodos p\nLEFT JOIN datos d ON d.periodo = p.periodo\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Evolución de ventas",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Total de gastos de tienda activos por periodo. El tamaño del periodo se cambia en **Agrupar por**; los periodos sin gastos se muestran en 0.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#d95926",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 8,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 1,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "-- Total gastos por periodo (dia / semana / mes segun el filtro \"Agrupar por\").\nWITH periodos AS (\n    SELECT generate_series(\n        date_trunc('${agrupacion}', $__timeFrom()::timestamptz AT TIME ZONE 'America/Guatemala'),\n        LEAST($__timeTo()::timestamptz, now()) AT TIME ZONE 'America/Guatemala',\n        '1 ${agrupacion}'::interval\n    ) AS periodo\n),\ndatos AS (\n    SELECT\n        date_trunc('${agrupacion}', se.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala') AS periodo,\n        sum(se.total_amount) AS total\n    FROM store_expense se\n    WHERE se.status_id = 58                                  -- gasto activo (59 = eliminado)\n      AND se.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(se.creation_date AT TIME ZONE 'UTC')\n    GROUP BY 1\n)\nSELECT\n    p.periodo AT TIME ZONE 'America/Guatemala'   AS \"time\",\n    round(COALESCE(d.total, 0), 2)   AS \"Total gastos\"\nFROM periodos p\nLEFT JOIN datos d ON d.periodo = p.periodo\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Evolución de gastos",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Indicadores de las tiendas seleccionadas en **Tienda**, dentro del rango de tiempo del dashboard. Una fila por tienda; la fila de totales coincide con los KPI.\n\n- **Ventas / Total ventas**: ventas activas; el total es antes de descuento y sin envío.\n- **Envios / Total envios**: ventas con costo de envío y la suma de ese costo.\n- **Sobrante / Total sobrante**: cierres de caja con sobrante capturado.\n- **Gastos / Total gastos**: gastos de tienda activos.\n- **Devoluciones / Total devoluciones**: producto devuelto de tienda a bodega. El total usa el precio vigente del producto (*pendiente de revisar*).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^Total "
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "prefix:Q. "
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ventas"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Conteo de ventas activas (no canceladas) del periodo."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Envios"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Conteo de ventas que llevan costo de envío (mayor a 0)."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sobrante"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Conteo de cierres de caja a los que se les capturó sobrante (mayor a 0)."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gastos"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Conteo de gastos de tienda activos (no eliminados)."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Devoluciones"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Número de veces que se devolvió producto de tienda a bodega (una por producto devuelto)."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total ventas"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma de las ventas SIN aplicar descuento y sin incluir el envío."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total envios"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma del costo de envío de todas las ventas."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total sobrante"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma del sobrante de todos los cierres de caja."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total gastos"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma del monto de todos los gastos."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total devoluciones"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma de cantidad devuelta × precio de venta del producto. PENDIENTE DE REVISAR: el precio se lee de product_for_sale hoy, no el que tenía el producto el día de la devolución."
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 13,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Tienda"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Mismo resumen desglosado: una fila por tienda del filtro Tienda.\n-- Las tiendas sin movimiento en el periodo aparecen en cero.\n-- La fila de totales la calcula Grafana (footer), y coincide con los KPI.\nWITH tiendas AS (\n    SELECT e.id::text AS id, e.\"name\"\n    FROM establishment e\n    WHERE e.id::text IN (${tienda:sqlstring})\n),\nventas AS (\n    SELECT\n        ss.establishment_id::text                                    AS tienda_id,\n        count(*)                                                     AS ventas,\n        count(*) FILTER (WHERE ss.delivery > 0)                      AS envios,\n        -- bruto de producto: antes de descuento y sin envio (= sum(shop_sale_element.subtotal))\n        sum(ss.total - COALESCE(ss.delivery, 0) + ss.total_discount) AS total_ventas,\n        sum(COALESCE(ss.delivery, 0))                                AS total_envios\n    FROM shop_sale ss\n    WHERE ss.status_id = 52                                   -- solo ventas activas (54 = cancelada)\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n    GROUP BY ss.establishment_id\n),\nsobrantes AS (\n    SELECT\n        cc.establishment_id::text  AS tienda_id,\n        count(*)                   AS sobrantes,\n        sum(cc.sobrante)           AS total_sobrante\n    FROM cash_closing cc\n    WHERE cc.sobrante > 0                                     -- cierres con sobrante capturado\n      AND cc.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(cc.creation_date AT TIME ZONE 'UTC')\n    GROUP BY cc.establishment_id\n),\ngastos AS (\n    SELECT\n        se.establishment_id::text  AS tienda_id,\n        count(*)                   AS gastos,\n        sum(se.total_amount)       AS total_gastos\n    FROM store_expense se\n    WHERE se.status_id = 58                                   -- gasto activo (59 = eliminado)\n      AND se.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(se.creation_date AT TIME ZONE 'UTC')\n    GROUP BY se.establishment_id\n),\ndevoluciones AS (\n    SELECT\n        i.unit_name                    AS tienda_id,\n        count(*)                       AS devoluciones,\n        -- cantidad (ya en unidad base) * precio VIGENTE por unidad base: mismo\n        -- criterio que el cierre de caja. No hay historico de precio.\n        sum(iea.quantity * pfs.price)  AS total_devoluciones\n    FROM inventory_element_action iea\n    JOIN inventory_element ie  ON ie.id  = iea.source_inventory_element_id\n    JOIN inventory         i   ON i.id   = ie.inventory_id\n    JOIN product_for_sale  pfs ON pfs.id = ie.element_fk\n    WHERE iea.action_type_id = 17                             -- remove_pfs_by_devolution\n      AND i.inventory_type = 'product_for_sale'\n      AND i.unit_name IN (${tienda:sqlstring})                -- unit_name = uuid de la tienda (texto)\n      AND $__timeFilter(iea.creation_date AT TIME ZONE 'UTC')\n    GROUP BY i.unit_name\n)\nSELECT\n    t.\"name\"                                    AS \"Tienda\",\n    COALESCE(v.ventas, 0)                       AS \"Ventas\",\n    COALESCE(v.envios, 0)                       AS \"Envios\",\n    COALESCE(s.sobrantes, 0)                    AS \"Sobrante\",\n    COALESCE(g.gastos, 0)                       AS \"Gastos\",\n    COALESCE(d.devoluciones, 0)                 AS \"Devoluciones\",\n    round(COALESCE(v.total_ventas, 0), 2)       AS \"Total ventas\",\n    round(COALESCE(v.total_envios, 0), 2)       AS \"Total envios\",\n    round(COALESCE(s.total_sobrante, 0), 2)     AS \"Total sobrante\",\n    round(COALESCE(g.total_gastos, 0), 2)       AS \"Total gastos\",\n    round(COALESCE(d.total_devoluciones, 0), 2) AS \"Total devoluciones\"\nFROM tiendas t\nLEFT JOIN ventas       v ON v.tienda_id = t.id\nLEFT JOIN sobrantes    s ON s.tienda_id = t.id\nLEFT JOIN gastos       g ON g.tienda_id = t.id\nLEFT JOIN devoluciones d ON d.tienda_id = t.id\nORDER BY t.\"name\";",
+          "refId": "A"
+        }
+      ],
+      "title": "Resumen por tienda",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "embutidos-any",
+    "resumen",
+    "tiendas"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id <> 29          -- activas (28) e inactivas (27); fuera eliminadas\nORDER BY e.\"name\";",
+        "description": "Tiendas incluidas en el resumen (activas e inactivas).",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Tienda",
+        "multi": true,
+        "name": "tienda",
+        "options": [],
+        "query": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id <> 29          -- activas (28) e inactivas (27); fuera eliminadas\nORDER BY e.\"name\";",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "Día",
+          "value": "day"
+        },
+        "description": "Tamaño de cada punto en las gráficas de evolución.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Agrupar por",
+        "multi": false,
+        "name": "agrupacion",
+        "options": [
+          {
+            "selected": true,
+            "text": "Día",
+            "value": "day"
+          },
+          {
+            "selected": false,
+            "text": "Semana",
+            "value": "week"
+          },
+          {
+            "selected": false,
+            "text": "Mes",
+            "value": "month"
+          }
+        ],
+        "query": "Día : day, Semana : week, Mes : month",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now/M",
+    "to": "now/M"
+  },
+  "timepicker": {},
+  "timezone": "America/Guatemala",
+  "title": "Resumen general Embutidos Any",
+  "uid": "resumen-general-any",
+  "version": 2,
+  "weekStart": ""
+}

@@ -233,7 +233,10 @@ export class ListCustomerPaymentsComponent implements OnInit {
                 // siempre es quien vendió.
                 subtitle: payment.creatorUser?.name ?? '',
                 tag: this.getPaymentTargetLabel(payment.paymentTarget),
-                date: payment.date,
+                // `date` del evento es la fecha del PAGO; la de registro va aparte, junto a la
+                // cápsula de Pedido/Envío. Mismo criterio que en la vista de la venta.
+                date: payment.paymentDate ?? payment.date,
+                registeredDate: payment.date,
                 // Banco y referencia del pago, encima del comentario. Vacío en los pagos en
                 // efectivo y en los anteriores a 2026-09-01.
                 detail: formatPaymentDetail(payment),
@@ -260,6 +263,18 @@ export class ListCustomerPaymentsComponent implements OnInit {
         value = value.includes('Z') ? value : value + 'Z';
         const time = new Date(value).getTime();
         return Number.isNaN(time) ? 0 : time;
+    }
+
+    /**
+     * Fecha de registro del pago, para la línea del timeline. Se omite cuando cae en el mismo
+     * minuto que la fecha del pago —el caso normal, se cobra y se registra de una— y ahí
+     * repetirla solo mete ruido. Mismo criterio que en la vista de la venta.
+     */
+    getRegisteredDateLabel(ev: any): string {
+        if (!ev?.registeredDate || !ev?.date) return '';
+        const registered = this.formatDateTime(ev.registeredDate);
+        const paid = this.formatDateTime(ev.date);
+        return registered.slice(0, 16) === paid.slice(0, 16) ? '' : registered;
     }
 
     /** El pedido y el envío se cobran por separado: cada pago dice a cuál fue. */

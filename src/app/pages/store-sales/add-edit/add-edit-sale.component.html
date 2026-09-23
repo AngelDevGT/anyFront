@@ -364,6 +364,7 @@
                                 <div class="pos-pay-field">
                                     <label>Fecha y hora del pago</label>
                                     <input type="datetime-local" class="form-control form-control-lg"
+                                        [max]="maxPaymentDate"
                                         formControlName="depositDate" />
                                 </div>
                                 <div class="pos-pay-field">
@@ -416,6 +417,7 @@
                                 <div class="pos-pay-field">
                                     <label>Fecha y hora del pago</label>
                                     <input type="datetime-local" class="form-control form-control-lg"
+                                        [max]="maxPaymentDate"
                                         formControlName="deliveryDepositDate" />
                                 </div>
                                 <div class="pos-pay-field">

@@ -1,0 +1,479 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_EMBUTIDOS_ANY",
+      "label": "Embutidos Any (PostgreSQL)",
+      "description": "Base de datos PostgreSQL de Embutidos Any",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.0"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Productos pedidos a fábrica por las tiendas, agrupados por producto, con precios y totales de venta y costo.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Productos incluidos en los pedidos de tienda, agrupados por producto. Montos en quetzales.\n\n- **Rango de fechas** (arriba a la derecha): filtra por la fecha de creación del pedido.\n- **Inventario**: Fábrica general (productos) o Tienda abarrotes (abarrotes).\n- **Tienda**: una sola tienda, entre las activas del tipo de inventario elegido.\n- **Medida**: Unidad o Docena (los productos por libra siempre en Libra).\n- **Envío desde / hasta**: rango de números de envío. Las listas solo traen envíos que existen, y por defecto vienen en el rango completo.\n\nLa venta usa el precio **congelado** en cada pedido, así que Venta total es exacta y Precio venta es un promedio ponderado. El costo usa el **costo actual** del producto: no existe histórico de costo.\n\n**Margen** = Venta total − Costo total. Rojo si es negativo, amarillo en 0 y verde si es positivo. Al mezclar venta histórica con costo actual, es la columna más sensible a que se actualice el costo de un producto.\n\nNo incluye pedidos cancelados ni eliminados.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Medida"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Libra": {
+                        "color": "#3987e5",
+                        "index": 0
+                      },
+                      "Docena": {
+                        "color": "#d95926",
+                        "index": 1
+                      },
+                      "Unidad": {
+                        "color": "#d95926",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "center"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Margen"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#d03b3b",
+                      "value": null
+                    },
+                    {
+                      "color": "#fab219",
+                      "value": 0
+                    },
+                    {
+                      "color": "#0ca30c",
+                      "value": 0.01
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pedidos"
+            },
+            "properties": [
+              {
+                "id": "custom.inspect",
+                "value": true
+              },
+              {
+                "id": "custom.minWidth",
+                "value": 260
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Producto"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Producto terminado (o abarrote, según el filtro Inventario)."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Medida"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Docena o Unidad según el filtro Medida. Los productos que se venden por libra siempre se muestran en Libra."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cantidad"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma de la cantidad pedida del producto en todos los pedidos filtrados, en la medida mostrada."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pedidos"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Números de envío de los pedidos que contienen el producto."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Precio venta"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Promedio ponderado de lo que realmente se cobró, por la medida mostrada (Q.): Venta total ÷ Cantidad. Es un promedio porque el mismo producto pudo tener precios distintos en cada pedido."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Precio costo"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Costo ACTUAL del producto por la medida mostrada (Q.). No existe histórico de costo. Si el producto no tiene costo capturado se usa su precio de venta."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Venta total"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma exacta de los totales guardados en cada pedido (Q.), con el precio que tenía el producto ese día."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Costo total"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Cantidad × costo actual (Q.). Cambia si se actualiza el costo del producto, incluso para pedidos viejos."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Margen"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Venta total − Costo total (Q.). Rojo si es negativo, amarillo si es exactamente 0 y verde si es positivo. Resta una venta histórica menos un costo actual, así que cambia si se actualiza el costo del producto."
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 20,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": [
+            "Venta total",
+            "Costo total",
+            "Margen"
+          ],
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Producto"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Pedidos por producto.\n-- Filtros: rango de fechas del dashboard (fecha de creacion del pedido),\n-- Inventario (tipo de producto), Tienda y rango de No. de envio.\n--\n-- FECHAS\n--   creation_date es timestamp SIN zona horaria y guarda hora UTC, por eso el\n--   filtro va como $__timeFilter(pfsso.creation_date AT TIME ZONE 'UTC').\n--\n-- RANGO DE No. DE ENVIO (variables envio_desde / envio_hasta)\n--   Son listas de los envios que existen para la tienda, el tipo de inventario\n--   y el rango de fechas actuales, asi que por defecto traen el mas bajo y el\n--   mas alto: al abrir el dashboard el rango ya esta completo.\n--   LEAST / GREATEST tolera que se elijan al reves.\n--   NULLIF(..., '') evita romper la query cuando la tienda no tiene ningun\n--   pedido y las listas quedan vacias: BETWEEN NULL no devuelve filas.\n--   order_number es correlativo POR TIENDA; por eso la variable tienda es de\n--   seleccion unica y el rango siempre se lee dentro de una sola tienda.\n--\n-- CANTIDADES\n--   quantity viene en la medida de la fila; se normaliza a unidad base con\n--   measure.unit_base_quantity (mismo factor que usan los procedures).\n--   La variable medida (1 o 12) solo se aplica a productos cuya unidad base es\n--   Unidad; los de Libra siguen en Libra.\n--\n-- VENTA: precio CONGELADO (el que se cobro ese dia)\n--   product_for_sale_store_order_element guarda price (ya multiplicado por la\n--   medida: pfs.price * unit_base_quantity al momento del pedido) y total_price\n--   (price * quantity, el total de la linea).\n--   \"Venta total\" = suma de total_price, asi que es exacta.\n--   \"Precio venta\" = Venta total / Cantidad: un PROMEDIO PONDERADO, porque el\n--   mismo producto pudo venderse a distinto precio en cada pedido. Es la unica\n--   cifra que mantiene Cantidad * Precio = Total.\n--\n-- COSTO: precio de HOY (no hay alternativa)\n--   Ni el pedido ni la venta guardan costo; solo existe product_for_sale.cost,\n--   que es el costo actual. Si el costo cambia, \"Costo total\" cambia tambien,\n--   incluso para pedidos viejos. cost esta POR UNIDAD BASE.\n--   Si el producto no tiene costo capturado se usa su precio de venta.\nWITH base AS (\n    SELECT\n        fp.id                                                         AS producto_id,\n        fp.\"name\"                                                     AS producto,\n        ub.\"name\"                                                     AS unidad_base,\n        pfsso.order_number,\n        '#' || pfsso.order_number                                      AS pedido,\n        pfssoe.quantity * m.unit_base_quantity                        AS cantidad_base,\n        -- VENTA CONGELADA: lo que de verdad se cobro en ese pedido.\n        -- total_price ya viene multiplicado (precio por medida * cantidad).\n        COALESCE(pfssoe.total_price, pfssoe.price * pfssoe.quantity)  AS venta,\n        -- COSTO ACTUAL: no existe historico de costo.\n        pfssoe.quantity * m.unit_base_quantity * COALESCE(pfs.cost, pfs.price) AS costo\n    FROM product_for_sale_store_order_element pfssoe\n    JOIN product_for_sale_store_order pfsso ON pfsso.id = pfssoe.pfsso_id\n    JOIN product_for_sale             pfs   ON pfs.id   = pfssoe.product_for_sale_id\n    JOIN finished_product             fp    ON fp.id    = pfs.finished_product_id\n    JOIN unit_base                    ub    ON ub.id    = fp.unit_base_id\n    JOIN measure                      m     ON m.id     = pfssoe.measure_id\n    WHERE fp.finished_product_type_id = ${inventario}          -- 1 productos, 2 abarrotes\n      AND pfsso.establishment_id::text = ${tienda:sqlstring}\n      AND pfsso.store_status_id NOT IN (23, 24)                 -- fuera cancelados y eliminados\n      AND $__timeFilter(pfsso.creation_date AT TIME ZONE 'UTC')\n      AND pfsso.order_number BETWEEN LEAST(NULLIF('${envio_desde}', '')::bigint,\n                                          NULLIF('${envio_hasta}', '')::bigint)\n                                 AND GREATEST(NULLIF('${envio_desde}', '')::bigint,\n                                              NULLIF('${envio_hasta}', '')::bigint)\n),\npedidos AS (\n    -- codigos de los pedidos de cada producto, sin repetir y en orden numerico\n    SELECT producto_id, string_agg(pedido, ', ' ORDER BY order_number, pedido) AS pedidos\n    FROM (SELECT DISTINCT producto_id, order_number, pedido FROM base) d\n    GROUP BY producto_id\n),\nagrupado AS (\n    SELECT\n        producto_id,\n        producto,\n        unidad_base,\n        CASE WHEN unidad_base = 'Unidad' THEN ${medida} ELSE 1 END AS factor,\n        sum(cantidad_base)  AS cantidad_base,\n        sum(venta)          AS venta_total,\n        sum(costo)          AS costo_total\n    FROM base\n    GROUP BY producto_id, producto, unidad_base\n)\nSELECT\n    a.producto                                                        AS \"Producto\",\n    CASE WHEN a.factor = 12 THEN 'Docena' ELSE a.unidad_base END      AS \"Medida\",\n    round(a.cantidad_base / a.factor, 2)                              AS \"Cantidad\",\n    p.pedidos                                                         AS \"Pedidos\",\n    round(a.venta_total / NULLIF(a.cantidad_base, 0) * a.factor, 2)   AS \"Precio venta\",\n    round(a.costo_total / NULLIF(a.cantidad_base, 0) * a.factor, 2)   AS \"Precio costo\",\n    round(a.venta_total, 2)                                           AS \"Venta total\",\n    round(a.costo_total, 2)                                           AS \"Costo total\",\n    round(a.venta_total - a.costo_total, 2)                           AS \"Margen\"\nFROM agrupado a\nJOIN pedidos p ON p.producto_id = a.producto_id\nORDER BY a.producto;",
+          "refId": "A"
+        }
+      ],
+      "title": "Pedidos por producto (montos en Q.)",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "embutidos-any",
+    "pedidos",
+    "productos"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "Fábrica general (productos)",
+          "value": "1"
+        },
+        "description": "Inventario del que salen los productos del pedido.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Inventario",
+        "multi": false,
+        "name": "inventario",
+        "options": [
+          {
+            "selected": true,
+            "text": "Fábrica general (productos)",
+            "value": "1"
+          },
+          {
+            "selected": false,
+            "text": "Tienda abarrotes (abarrotes)",
+            "value": "2"
+          }
+        ],
+        "query": "Fábrica general (productos) : 1, Tienda abarrotes (abarrotes) : 2",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id = 28                             -- solo tiendas activas\n  AND e.establishment_type_id = ${inventario}      -- 1 productos, 2 abarrotes\nORDER BY e.\"name\";",
+        "description": "Tiendas activas del tipo de inventario elegido. Solo una a la vez: el No. de envío es correlativo por tienda.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Tienda",
+        "multi": false,
+        "name": "tienda",
+        "options": [],
+        "query": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id = 28                             -- solo tiendas activas\n  AND e.establishment_type_id = ${inventario}      -- 1 productos, 2 abarrotes\nORDER BY e.\"name\";",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "Docena",
+          "value": "12"
+        },
+        "description": "Medida en que se muestran cantidad y precios de los productos por unidad.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Medida",
+        "multi": false,
+        "name": "medida",
+        "options": [
+          {
+            "selected": false,
+            "text": "Unidad",
+            "value": "1"
+          },
+          {
+            "selected": true,
+            "text": "Docena",
+            "value": "12"
+          }
+        ],
+        "query": "Unidad : 1, Docena : 12",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT o.order_number::text AS __text, o.order_number::text AS __value\nFROM (\n    SELECT DISTINCT pfsso.order_number\n    FROM product_for_sale_store_order pfsso\n    WHERE pfsso.establishment_id::text = ${tienda:sqlstring}\n      AND pfsso.store_status_id NOT IN (23, 24)          -- fuera cancelados y eliminados\n      AND $__timeFilter(pfsso.creation_date AT TIME ZONE 'UTC')\n) o\nORDER BY o.order_number ASC;",
+        "description": "Primer número de envío del rango. Solo lista envíos existentes; por defecto, el más bajo.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Envío desde",
+        "multi": false,
+        "name": "envio_desde",
+        "options": [],
+        "query": "SELECT o.order_number::text AS __text, o.order_number::text AS __value\nFROM (\n    SELECT DISTINCT pfsso.order_number\n    FROM product_for_sale_store_order pfsso\n    WHERE pfsso.establishment_id::text = ${tienda:sqlstring}\n      AND pfsso.store_status_id NOT IN (23, 24)          -- fuera cancelados y eliminados\n      AND $__timeFilter(pfsso.creation_date AT TIME ZONE 'UTC')\n) o\nORDER BY o.order_number ASC;",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT o.order_number::text AS __text, o.order_number::text AS __value\nFROM (\n    SELECT DISTINCT pfsso.order_number\n    FROM product_for_sale_store_order pfsso\n    WHERE pfsso.establishment_id::text = ${tienda:sqlstring}\n      AND pfsso.store_status_id NOT IN (23, 24)          -- fuera cancelados y eliminados\n      AND $__timeFilter(pfsso.creation_date AT TIME ZONE 'UTC')\n) o\nORDER BY o.order_number DESC;",
+        "description": "Último número de envío del rango. Solo lista envíos existentes; por defecto, el más alto.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Envío hasta",
+        "multi": false,
+        "name": "envio_hasta",
+        "options": [],
+        "query": "SELECT o.order_number::text AS __text, o.order_number::text AS __value\nFROM (\n    SELECT DISTINCT pfsso.order_number\n    FROM product_for_sale_store_order pfsso\n    WHERE pfsso.establishment_id::text = ${tienda:sqlstring}\n      AND pfsso.store_status_id NOT IN (23, 24)          -- fuera cancelados y eliminados\n      AND $__timeFilter(pfsso.creation_date AT TIME ZONE 'UTC')\n) o\nORDER BY o.order_number DESC;",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "America/Guatemala",
+  "title": "Pedidos por producto",
+  "uid": "pedidos-por-producto",
+  "version": 6,
+  "weekStart": ""
+}

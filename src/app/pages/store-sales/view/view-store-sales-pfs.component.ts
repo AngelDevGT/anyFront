@@ -199,7 +199,11 @@ export class ViewStoreSalesPFSComponent implements OnInit{
                 // registrado con la venta) no muestran ninguno.
                 subtitle: p.creatorUser?.name ?? '',
                 tag: this.getPaymentTargetLabel(p.paymentTarget),
-                date: p.date,
+                // `date` del evento es la fecha del PAGO, la que el usuario reconoce. La de
+                // registro va aparte, junto a la cápsula de Pedido/Envío: son dos datos
+                // distintos desde 2026-09-22 y el pago se puede haber registrado días después.
+                date: p.paymentDate ?? p.date,
+                registeredDate: p.date,
                 // Banco y referencia van en su propia línea, encima del comentario: son el dato
                 // duro con el que se cuadra contra el banco. Vacío en los pagos en efectivo y en
                 // los anteriores a 2026-09-01.
@@ -218,6 +222,18 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         }
 
         this.timeline = events.sort((a, b) => this.parseDate(b.date) - this.parseDate(a.date));
+    }
+
+    /**
+     * Fecha de registro del pago, para la línea del timeline. Se omite cuando cae en el mismo
+     * minuto que la fecha del pago, que es el caso normal —se cobra y se registra de una— y ahí
+     * repetirla solo mete ruido. Se muestra cuando difieren, que es justo cuando importa.
+     */
+    getRegisteredDateLabel(ev: any): string {
+        if (!ev?.registeredDate || !ev?.date) return '';
+        const registered = this.getPaymentDate(ev.registeredDate);
+        const paid = this.getPaymentDate(ev.date);
+        return registered.slice(0, 16) === paid.slice(0, 16) ? '' : registered;
     }
 
     private parseDate(dateStr?: string): number {
@@ -442,6 +458,19 @@ export class ViewStoreSalesPFSComponent implements OnInit{
             deliveryBank: '', deliveryReferenceNo: ''
         });
         this.paymentError = undefined;
+    }
+
+    /**
+     * Tope de los selectores de fecha del pago: no se puede cobrar en el futuro.
+     * Solo lo valida el front — la procedure guarda lo que le llega, para que un front revertido o
+     * un dato mal armado nunca dejen a la tienda sin poder cobrar. Mismo criterio que el banco y la
+     * referencia en 2026-09-01.
+     *
+     * Hacia atrás no hay límite: la fecha del pago es una referencia y ya no mueve plata de
+     * período, así que retrofecharla no descuadra ningún cierre.
+     */
+    get maxPaymentDate(): string {
+        return this.dataService.getLocalDateTimeInputValue();
     }
 
     getPaymentDate(dateStr?: string): string {

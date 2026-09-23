@@ -81,6 +81,13 @@
                   <span class="timeline-title">
                     {{ ev.title }}
                     <span *ngIf="ev.tag" class="timeline-tag">{{ ev.tag }}</span>
+                    <!-- Fecha de registro: solo aparece cuando NO coincide con la del pago,
+                         es decir cuando el cobro se registró después. -->
+                    <span *ngIf="getRegisteredDateLabel(ev) as registered"
+                          class="timeline-registered"
+                          title="Fecha en que se registró el pago en el sistema">
+                      {{ registered }}
+                    </span>
                   </span>
                   <span class="timeline-date">{{ formatDateTime(ev.date) }}</span>
                 </div>

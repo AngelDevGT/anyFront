@@ -64,6 +64,15 @@ export class AddEditSaleComponent implements OnInit{
     readonly bankMaxLength = BANK_NAME_MAX_LENGTH;
     readonly referenceMaxLength = REFERENCE_NO_MAX_LENGTH;
     /**
+     * Tope del selector de fecha del pago: no se puede cobrar en el futuro. Solo lo valida el
+     * front — la procedure guarda lo que le llega, para que un front revertido nunca deje a la
+     * tienda sin poder vender. Hacia atrás no hay límite: desde 2026-09-22 la fecha del pago es
+     * una referencia y ya no decide a qué cierre de caja pertenece el dinero.
+     */
+    get maxPaymentDate(): string {
+        return this.dataService.getLocalDateTimeInputValue();
+    }
+    /**
      * Bancos de la tienda, para el select del pago. Salen de establishment.banks, que ya viene en
      * la misma petición que arma la pantalla. Si la tienda no tiene ninguno cargado no se puede
      * cobrar con Depósito ni con Cheque: el formulario lo dice y bloquea el registro.
