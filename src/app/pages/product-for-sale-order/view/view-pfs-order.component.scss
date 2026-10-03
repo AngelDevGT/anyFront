@@ -7,6 +7,10 @@ $accent: #c94e00;
 $accent-dark: #a83e00;
 $step-pending: #dfe3e8;
 $danger: #dc3545;
+$sell: #198754;
+$sell-dark: #146c43;
+$receive-sell: #0aa2c0;
+$receive-sell-dark: #0887a0;
 
 .order-loading {
     display: flex;
@@ -75,7 +79,9 @@ $danger: #dc3545;
 }
 
 .btn-ghost,
-.btn-accent {
+.btn-accent,
+.btn-sell,
+.btn-receive-sell {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -137,6 +143,22 @@ $danger: #dc3545;
     color: #fff;
     border-color: $accent;
     &:hover:not(:disabled) { background: $accent-dark; border-color: $accent-dark; }
+}
+
+// "Vender pedido": verde, para que no se confunda con las transiciones de estado (naranja)
+.btn-sell {
+    background: $sell;
+    color: #fff;
+    border-color: $sell;
+    &:hover:not(:disabled) { background: $sell-dark; border-color: $sell-dark; }
+}
+
+// "Recibir y vender": celeste, en un pedido Listo
+.btn-receive-sell {
+    background: $receive-sell;
+    color: #fff;
+    border-color: $receive-sell;
+    &:hover:not(:disabled) { background: $receive-sell-dark; border-color: $receive-sell-dark; }
 }
 
 // ── Grid layout ───────────────────────────────────────────
@@ -380,6 +402,45 @@ $danger: #dc3545;
             font-size: 16px;
             padding-left: 0;
         }
+    }
+}
+
+// ── Venta del pedido ──────────────────────────────────────
+.order-sale-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: #8a94a6;
+}
+
+// Seis columnas no caben en una tarjeta angosta: se desplaza en horizontal en lugar de cortarse
+.sale-compare-table {
+    display: block;
+    overflow-x: auto;
+
+    tfoot td {
+        padding-top: 13px;
+        border-top: 1px solid #eef0f3;
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1a2e;
+    }
+}
+
+// Menos vendido que pedido (quedó en tienda) en ámbar; más vendido en verde
+.diff--less { color: #b45309; font-weight: 600; }
+.diff--more { color: #15803d; font-weight: 600; }
+
+@media (max-width: 640px) {
+    // En móvil la tabla de productos pasa a tarjetas; esta conserva las filas y se desplaza
+    .product-table.sale-compare-table {
+        thead { display: table-header-group; }
+        tbody { display: table-row-group; }
+        tr { display: table-row; padding: 0; }
+        td { display: table-cell; padding: 10px 0 10px 16px; white-space: nowrap; }
+        .col-product { padding-left: 0; white-space: normal; min-width: 140px; }
+        .product-total { text-align: left; font-size: 14px; }
     }
 }
 

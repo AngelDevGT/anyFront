@@ -4657,3 +4657,65 @@ INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,
 ) AS json_result
 FROM inventory i
 WHERE i.inventory_type = ''finished_product''','inventory','POST');
+
+
+-- Vender pedidos por tienda: la columna nueva establishment.sell_orders_enabled habilita los
+-- botones "Vender pedido" y "Recibir y vender" en el detalle de pedido de la tienda. Se edita con
+-- un checkbox en el formulario de la tienda, igual que receive_pending_orders_enabled. Por
+-- defecto es false.
+--
+-- /addEstablishment no cambia (insert generico por llaves del JSON). /updateEstablishment tiene
+-- un SET explicito, asi que se clona a V2 con la columna nueva.
+-- Ver src/database/migrations/2026-10-02-vender-pedidos-por-tienda.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('updateEstablishmentV2','/updateEstablishmentV2','update establishment
+set name = $1,
+address = $2,
+description = $3,
+receive_pending_orders_enabled = $4,
+establishment_type_id = $5,
+sell_orders_enabled = $6,
+updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $7','establishment','PATCH');
+
+-- La lectura del detalle se clona agregando "'sellOrdersEnabled', e.sell_orders_enabled" justo
+-- despues de "'receivePendingOrdersEnabled', e.receive_pending_orders_enabled". El texto completo
+-- no se repite aca: la migracion la deriva con replace() de la fila viva.
+--   /getEstablishmentV2 -> /getEstablishmentV3
+
+
+-- Etiquetas de gastos por tienda: la columna nueva establishment.expense_tags guarda las etiquetas
+-- que se ofrecen al registrar un gasto, separadas por SALTO DE LINEA. Mismo formato y mismo modal
+-- que establishment.banks; se cargan desde el boton "Gastos" en Sistema > Tiendas.
+-- Ver src/database/migrations/2026-10-02-etiquetas-de-gastos-por-tienda.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('updateEstablishmentExpenseTags','/updateEstablishmentExpenseTags','update establishment
+set expense_tags = nullif($1, ''''),
+    updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $2::uuid','establishment','PATCH');
+
+-- La lectura del detalle se clona agregando "'expenseTags', e.expense_tags" justo despues de
+-- "'banks', e.banks". El texto completo no se repite aca: la migracion la deriva con replace().
+--   /getEstablishmentV3 -> /getEstablishmentV4
+
+
+-- Venta de pedidos (EMB-ANY-003): la columna nueva shop_sale.pfs_store_order_id liga la venta al
+-- pedido del que salio ("Vender pedido"). register_shop_sale_with_elements_v8 es la v7 mas esa
+-- columna y la validacion del pedido (de la tienda, Recibido, tienda con "Vender pedidos"
+-- habilitado y sin otra venta activa). La v8 se deriva del codigo vivo de la v7 con
+-- pg_get_functiondef + replace(), asi que no se repite aca.
+-- Ver src/database/migrations/2026-10-02-venta-de-pedidos.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('registerShopV8','/registerShopV8','call register_shop_sale_with_elements_v8($1,$2,$3::uuid)','shop_sale','PATCH');
+
+-- El detalle del pedido se clona agregando 'sellOrdersEnabled' a la tienda y 'shopSaleId' (la
+-- venta activa que salio del pedido). Tampoco se repite: la migracion lo deriva con replace().
+--   /getProductForSaleStoreOrderV6 -> /getProductForSaleStoreOrderV7
+
+
+-- Recibir y vender pedidos (EMB-ANY-004): receive_and_sell_pfs_order_v1 recibe el pedido
+-- (manage_product_for_sale_order_state_v6 con Entregado) y registra la venta ligada a el
+-- (register_shop_sale_with_elements_v8) en una sola transaccion. Misma firma que registerShopV8.
+-- Ver src/database/migrations/2026-10-02-recibir-y-vender-pedidos.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('receiveAndSellPFSOrderV1','/receiveAndSellPFSOrderV1','call receive_and_sell_pfs_order_v1($1,$2,$3::uuid)','shop_sale','PATCH');

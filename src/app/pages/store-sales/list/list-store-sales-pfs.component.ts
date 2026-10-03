@@ -1,12 +1,12 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
-import { AlertService, DataService, DateRangeState, DateRangeStateService, StoreContextService} from '@app/services';
+import { AlertService, DataService, DateRangeState, DateRangeStateService} from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { DateRange } from '@angular/material/datepicker';
 import { Measure } from '@app/models';
 import { UnitBase } from '@app/models/auxiliary/unit-base.model';
-import { switchMap } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ShopResume } from '@app/models/store/shop-resume.model';
 import { Establishment } from '@app/models/establishment.model';
@@ -65,7 +65,7 @@ export class ListStoreSalesPFSComponent implements OnInit {
     orderPaymentExpanded = true;
     deliveryPaymentExpanded = true;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService, private storeContext: StoreContextService) {}
+    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService) {}
 
     ngOnInit() {
         this.readOnly = !!this.route.snapshot.data['readOnly'];
@@ -86,13 +86,30 @@ export class ListStoreSalesPFSComponent implements OnInit {
         });
 
         // En consultas la tienda se elige en la propia pantalla con store-picker. En la sección de
-        // Tienda viaja en la ruta: el selector global navega a esta misma ruta con otra tienda y
-        // Angular reutiliza el componente, así que la recarga cuelga del parámetro.
+        // Tienda viaja en la ruta y ya viene filtrada por el listado de tiendas.
         if (!this.storePicker) {
-            this.route.paramMap
-                .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
-                .subscribe(store => this.onStoreChange(store));
+            this.route.paramMap.subscribe(params => {
+                const id = params.get('id');
+                this.onStoreChange(id ? { id } : undefined);
+                if (id) {
+                    this.loadStoreName(id);
+                }
+            });
         }
+    }
+
+    /** El nombre solo es para el encabezado: las ventas se piden sin esperarlo. */
+    private loadStoreName(id: string) {
+        this.dataService.getEstablishmentById(id).pipe(first()).subscribe({
+            next: (result: any) => {
+                const establishment: Establishment = this.dataService.findJsonValue(result, 'json_result') || {};
+                if (this.establishmentId === id) {
+                    this.establishment = establishment;
+                    this.storeName = establishment.name;
+                }
+            },
+            error: (e) => console.error('Se ha producido un error al obtener la tienda', e)
+        });
     }
 
     /** Cambio de tienda desde el selector: sin tienda no se consulta nada y la tabla queda vacía. */

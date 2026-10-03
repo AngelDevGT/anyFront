@@ -1,12 +1,11 @@
 import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
-import { concatMap, first, switchMap } from 'rxjs/operators';
+import { concatMap, first } from 'rxjs/operators';
 import {map, startWith} from 'rxjs/operators';
 import {MatTableDataSource} from '@angular/material/table';
 import { actionTypeValues } from '@app/services';
 
-import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService, StoreContextService, UNIT_VIEWS } from '@app/services';
+import { AccountService, AlertService, CAPABILITIES, DataService, ExcelService, UNIT_VIEWS } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Establishment } from '@app/models/establishment.model';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import { Inventory } from '@app/models/inventory/inventory.model';
 import { InventoryElement } from '@app/models/inventory/inventory-element.model';
@@ -29,7 +28,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     submitting = false;
     storeName?: string;
     establishmentId?: string;
-    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    /** Sin tienda en la ruta no se consulta nada. */
     storeSelected = false;
     inventory?: Inventory;
     inventoryElements?: InventoryElement[];
@@ -64,7 +63,7 @@ export class ListStoreInventoryPFSComponent implements OnInit {
     private readonly activityLogBaseName = "Acciones de Producto para Venta en tienda";
     activityLogName = this.activityLogBaseName;
 
-    constructor(private accountService: AccountService, private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private excelService: ExcelService, private storeContext: StoreContextService) {}
+    constructor(private accountService: AccountService, private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private excelService: ExcelService) {}
 
     ngOnInit() {
 
@@ -78,28 +77,25 @@ export class ListStoreInventoryPFSComponent implements OnInit {
 
         this.productForSaleForm = this.createProductForSaleFormGroup();
 
-        // La tienda viaja en la ruta. Al cambiarla desde el selector se navega a esta misma seccion
-        // con otra tienda: Angular reutiliza el componente y ngOnInit ya no vuelve a correr, asi que
-        // la recarga cuelga del parametro y no del ciclo de vida.
-        this.route.paramMap
-            .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
-            .subscribe(store => this.onStoreChange(store));
+        // La tienda viaja en la ruta y ya viene filtrada por el listado de tiendas. El nombre sale
+        // de la respuesta del inventario.
+        this.route.paramMap.subscribe(params => this.onStoreChange(params.get('id') ?? undefined));
     }
 
-    /** Cambio de tienda: sin tienda no se consulta nada y la tabla queda vacia. */
-    private onStoreChange(store?: Establishment) {
-        this.storeSelected = !!store?.id;
-        this.storeName = store?.name;
-        this.establishmentId = store?.id;
+    /** Sin tienda no se consulta nada y la tabla queda vacia. */
+    private onStoreChange(establishmentId?: string) {
+        this.storeSelected = !!establishmentId;
+        this.storeName = undefined;
+        this.establishmentId = establishmentId;
 
-        if (!store?.id) {
+        if (!establishmentId) {
             this.inventory = undefined;
             this.inventoryElements = [];
             this.allInventoryElements = [];
             this.tableElementsValues = [];
             return;
         }
-        this.loadInventory(store.id);
+        this.loadInventory(establishmentId);
     }
 
     /**

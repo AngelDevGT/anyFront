@@ -7,8 +7,6 @@
     </div>
   </div>
 
-  <store-required *ngIf="!storeSelected" message="Selecciona una tienda para ver los saldos de sus clientes"></store-required>
-
   <div class="balance-summary" *ngIf="storeSelected && allCustomers">
     <div class="balance-tile">
       <span class="balance-tile-label">Saldo pendiente total</span>

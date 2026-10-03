@@ -149,6 +149,30 @@
             <div class="pos-cart-panel">
                 <div class="pos-cart-items">
 
+                    <!-- Venta de un pedido: de cuál sale y qué productos no alcanzaron en inventario -->
+                    <div class="pos-order-banner" *ngIf="isOrderSale">
+                        <div class="pos-order-banner-head">
+                            <i class="material-icons">local_shipping</i>
+                            <span>{{ isReceiveAndSell ? 'Recibir y vender el pedido' : 'Venta del pedido' }} #{{ pfsOrder?.orderNumber }}<ng-container *ngIf="pfsOrder?.name"> · {{ pfsOrder?.name }}</ng-container></span>
+                        </div>
+                        <p class="pos-order-banner-text" *ngIf="isReceiveAndSell">
+                            El pedido se recibirá en la tienda al registrar la venta. Sus productos ya están sumados al inventario disponible: lo que no se venda queda en la tienda.
+                        </p>
+                        <ng-container *ngIf="orderShortages.length">
+                            <p class="pos-order-banner-text">
+                                No hay inventario suficiente para estos productos. Se cargó la cantidad disponible:
+                            </p>
+                            <ul class="pos-order-shortages">
+                                <li *ngFor="let shortage of orderShortages">
+                                    <strong>{{ shortage.name }}</strong>:
+                                    pedido {{ shortage.ordered | number: '1.0-2' }} {{ shortage.measure }},
+                                    <ng-container *ngIf="shortage.loaded > 0">cargado {{ shortage.loaded | number: '1.0-2' }} {{ shortage.measure }}</ng-container>
+                                    <ng-container *ngIf="shortage.loaded <= 0">sin existencia</ng-container>
+                                </li>
+                            </ul>
+                        </ng-container>
+                    </div>
+
                     <!-- Fila de cliente sin registrar -->
                     <div class="pos-client-row" *ngIf="clientMode === 'manual'">
                         <div class="pos-client-icon"><i class="material-icons">person</i></div>

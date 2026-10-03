@@ -1,11 +1,23 @@
 import { Component, EventEmitter, Input, Output, SimpleChanges, OnChanges } from '@angular/core';
 
-import { normalizeBank, BANK_MAX_LENGTH } from '@app/helpers';
+import { normalizeTag, TAG_LIST_MAX_ITEMS, TAG_MAX_LENGTH } from '@app/helpers';
 
 /**
- * Modal para armar la lista de bancos de una tienda.
+ * Modal para armar una lista de etiquetas de una tienda.
  *
- * Se usa en el listado de Sistema > Tiendas, con la accion "Bancos".
+ * Se usa en el listado de Sistema > Tiendas, con las acciones "Bancos" y "Gastos". Los textos son
+ * @Input; los valores por defecto son los de bancos. Para gastos:
+ *
+ *   <app-banks-dialog title="Etiquetas de gastos" addTitle="Agregar etiqueta"
+ *       placeholder="Nombre de la etiqueta" emptyText="Ninguna etiqueta agregada todavía."
+ *       loadingText="Cargando etiquetas..." ...>
+ *   </app-banks-dialog>
+ *
+ * Cada nombre tiene como maximo TAG_MAX_LENGTH caracteres. La lista tiene un tope de cantidad
+ * ([maxItems], por defecto TAG_LIST_MAX_ITEMS): al llegar no se puede agregar más, y si la lista
+ * lo pasa no se puede guardar.
+ *
+ * Uso con bancos:
  *
  *   <app-banks-dialog
  *       [open]="banksDialogOpen"
@@ -40,10 +52,19 @@ export class BanksDialogComponent implements OnChanges {
     @Input() loading = false;
     @Input() saving = false;
 
+    // Textos: por defecto, los del modal de bancos
+    @Input() title = 'Bancos de la tienda';
+    @Input() addTitle = 'Agregar banco';
+    @Input() placeholder = 'Nombre del banco';
+    @Input() emptyText = 'Ningún banco agregado todavía.';
+    @Input() loadingText = 'Cargando bancos...';
+    /** Cantidad maxima de nombres en la lista. */
+    @Input() maxItems = TAG_LIST_MAX_ITEMS;
+
+    readonly maxLength = TAG_MAX_LENGTH;
+
     @Output() confirm = new EventEmitter<string[]>();
     @Output() cancel = new EventEmitter<void>();
-
-    readonly maxLength = BANK_MAX_LENGTH;
 
     /** Lista en edicion. Copia de trabajo: cancelar no deja rastro en el host. */
     chips: string[] = [];
@@ -72,19 +93,32 @@ export class BanksDialogComponent implements OnChanges {
 
     /** Repetido respecto de lo que ya esta en la lista. */
     get isDuplicate(): boolean {
-        const key = normalizeBank(this.newBank);
-        return !!key && this.chips.some(name => normalizeBank(name) === key);
+        const key = normalizeTag(this.newBank);
+        return !!key && this.chips.some(name => normalizeTag(name) === key);
+    }
+
+    /** La lista ya tiene el maximo de nombres: no se puede agregar otro. */
+    get isFull(): boolean {
+        return this.chips.length >= this.maxItems;
+    }
+
+    /**
+     * La lista pasa del maximo. Solo puede pasar si la tienda ya tenia mas guardados de antes del
+     * tope: no se recorta sola, el usuario elige cuales quitar antes de guardar.
+     */
+    get isOverLimit(): boolean {
+        return this.chips.length > this.maxItems;
     }
 
     get canAdd(): boolean {
-        return !!this.newBank.trim() && !this.isDuplicate;
+        return !!this.newBank.trim() && !this.isDuplicate && !this.isFull;
     }
 
     add() {
         if (!this.canAdd) return;
         // El salto de linea es el separador de la columna: si se cuela dentro de un nombre pegado
         // desde afuera, parte el banco en dos al volver a leerlo.
-        const name = this.newBank.replace(/[\r\n]+/g, ' ').trim().slice(0, BANK_MAX_LENGTH).trim();
+        const name = this.newBank.replace(/[\r\n]+/g, ' ').trim().slice(0, this.maxLength).trim();
         this.chips.push(name);
         this.newBank = '';
     }
@@ -99,6 +133,7 @@ export class BanksDialogComponent implements OnChanges {
 
     /** Guardar sin ningun banco esta permitido: el endpoint deja la columna en NULL. */
     onConfirm() {
+        if (this.isOverLimit) return;
         this.confirm.emit([...this.chips]);
     }
 

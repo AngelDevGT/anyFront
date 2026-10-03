@@ -34,6 +34,13 @@ export interface ShopResume {
     paymentType?: PaymentType;
     deliveryPaymentType?: PaymentType;
     payments?: ShopSalePayment[];
+    /**
+     * Solo de ida: el pedido del que sale la venta ("Vender pedido"). La base valida que sea de la
+     * misma tienda, que esté Recibido y que no tenga otra venta activa, y lo guarda en
+     * shop_sale.pfs_store_order_id. Vacío en una venta normal.
+     * Ver src/database/migrations/2026-10-02-venta-de-pedidos.sql
+     */
+    pfsStoreOrderId?: string;
 
     /**
      * Solo de ida, al registrar una venta pagada con Depósito o con Cheque. La base crea el

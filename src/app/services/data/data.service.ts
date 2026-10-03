@@ -685,13 +685,16 @@ export class DataService {
     }
 
     /**
-     * V2 agrega 'banks' al objeto de la tienda. Es un superset estricto de la V1, asi que las
-     * pantallas que solo leen nombre y direccion no cambian.
+     * V2 agrega 'banks' al objeto de la tienda, V3 agrega 'sellOrdersEnabled' y V4 agrega
+     * 'expenseTags'. Cada version es un superset estricto de la anterior, asi que las pantallas
+     * que solo leen nombre y direccion no cambian.
      * Ver src/database/migrations/2026-08-31-bancos-por-tienda.sql
+     * Ver src/database/migrations/2026-10-02-vender-pedidos-por-tienda.sql
+     * Ver src/database/migrations/2026-10-02-etiquetas-de-gastos-por-tienda.sql
      */
     getEstablishmentById(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getEstablishmentV2`, params);
+        return this.http.post(`${environment.apiUrlV3}/getEstablishmentV4`, params);
     }
 
     getShortEstablishmentInfo(establishment: Establishment){
@@ -705,6 +708,7 @@ export class DataService {
                 description: establishment.description,
                 receive_pending_orders_enabled: establishment.receivePendingOrdersEnabled ?? false,
                 establishment_type_id: establishment.establishmentTypeId ?? 1,
+                sell_orders_enabled: establishment.sellOrdersEnabled ?? false,
                 status_id: establishmentStatusValues.activo.status.id,
                 creator_user_id: this.accountService.userValue.uuid
             });
@@ -718,9 +722,11 @@ export class DataService {
             description: establishment.description,
             receive_pending_orders_enabled: establishment.receivePendingOrdersEnabled ?? false,
             establishment_type_id: establishment.establishmentTypeId ?? 1,
+            sell_orders_enabled: establishment.sellOrdersEnabled ?? false,
             id: id
         });
-        return this.http.patch(`${environment.apiUrlV3}/updateEstablishment`, params);
+        // V2 agrega sell_orders_enabled ($6); el id pasa a $7, por eso el orden de las llaves importa
+        return this.http.patch(`${environment.apiUrlV3}/updateEstablishmentV2`, params);
     }
 
     /**
@@ -737,6 +743,20 @@ export class DataService {
             "$2": id
         });
         return this.http.patch(`${environment.apiUrlV3}/updateEstablishmentBanks`, params);
+    }
+
+    /**
+     * Escribe SOLO las etiquetas de gastos de la tienda. Mismo criterio que
+     * updateEstablishmentBanks: endpoint aparte para que el formulario de la tienda no las pise.
+     * El texto viene serializado con saltos de linea (serializeExpenseTags); cadena vacia deja la
+     * columna en NULL.
+     */
+    updateEstablishmentExpenseTags(id: string, expenseTags: string) {
+        let params = JSON.stringify({
+            "$1": expenseTags,
+            "$2": id
+        });
+        return this.http.patch(`${environment.apiUrlV3}/updateEstablishmentExpenseTags`, params);
     }
 
     deleteEstablishment(params: any) {
@@ -1755,9 +1775,14 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/listProductForSaleStoreOrderV3`, parameters);
     }
 
+    /**
+     * V7 agrega establishment.sellOrdersEnabled y shopSaleId (la venta activa que salió del
+     * pedido). Superset de la V6.
+     * Ver src/database/migrations/2026-10-02-venta-de-pedidos.sql
+     */
     getProductForSaleOrderById(id: string) {
         let params = JSON.stringify({pfsso: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderV6`, params);
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderV7`, params);
     }
 
     /**
@@ -2150,6 +2175,10 @@ export class DataService {
      * `depositDate` es la fecha del PAGO, la que teclea el usuario. La fecha de registro la pone la
      * base y no se puede mandar desde acá.
      * Ver src/database/migrations/2026-09-22-fecha-de-pago-y-cierre-congelado.sql
+     *
+     * V8 es la v7 más `pfsStoreOrderId`: con él la venta queda ligada al pedido del que salió
+     * ("Vender pedido"). Sin él se comporta igual que la v7.
+     * Ver src/database/migrations/2026-10-02-venta-de-pedidos.sql
      */
     registerShop(params: ShopResume) {
         let parameters = JSON.stringify({
@@ -2159,7 +2188,23 @@ export class DataService {
             "$2": JSON.stringify(params.itemsList),
             "$3": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/registerShopV7`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/registerShopV8`, parameters);
+    }
+
+    /**
+     * "Recibir y vender": recibe el pedido `params.pfsStoreOrderId` y registra la venta ligada a él
+     * en una sola transacción. Mismos parámetros que registerShop.
+     * Ver src/database/migrations/2026-10-02-recibir-y-vender-pedidos.sql
+     */
+    receiveAndSellPFSOrder(params: ShopResume) {
+        let parameters = JSON.stringify({
+            "$1": JSON.stringify({
+                ...params
+            }),
+            "$2": JSON.stringify(params.itemsList),
+            "$3": this.accountService.userValue.uuid
+        });
+        return this.http.patch(`${environment.apiUrlV3}/receiveAndSellPFSOrderV1`, parameters);
     }
 
     /**

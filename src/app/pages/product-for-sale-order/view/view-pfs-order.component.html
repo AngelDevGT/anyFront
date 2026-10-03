@@ -87,6 +87,18 @@
                             data-bs-toggle="modal" data-bs-target="#confirmModal">
                         <i class="material-icons">archive</i> Recibir pedido
                     </button>
+                    <button *ngIf="receiveAndSellOption" type="button" class="btn-receive-sell"
+                            (click)="receiveAndSellOrder()" [disabled]="submitting">
+                        <i class="material-icons">shopping_cart_checkout</i> Recibir y vender
+                    </button>
+                    <button *ngIf="sellOrderOption" type="button" class="btn-sell"
+                            (click)="sellOrder()" [disabled]="submitting">
+                        <i class="material-icons">point_of_sale</i> Vender pedido
+                    </button>
+                    <button *ngIf="viewSaleOption" type="button" class="btn-ghost"
+                            (click)="viewSale()" [disabled]="submitting">
+                        <i class="material-icons">receipt_long</i> Ver venta
+                    </button>
                     <button *ngIf="releaseOption" type="button" class="btn-ghost"
                             (click)="releaseOrder()" [disabled]="submitting">
                         <i class="material-icons">undo</i> Liberar
@@ -145,6 +157,62 @@
                     <span>Total</span>
                     <span>Q{{ productForSaleOrder.finalAmount | number: '1.2-2' }}</span>
                 </div>
+            </div>
+
+            <!-- Venta del pedido: lo vendido contra lo pedido, producto por producto -->
+            <div class="card-block" *ngIf="!isFactory && productForSaleOrder.shopSaleId">
+                <div class="card-block-head">
+                    <h3 class="card-block-title">
+                        <i class="material-icons title-icon">point_of_sale</i>
+                        Venta del pedido<ng-container *ngIf="orderSale?.saleNumber as saleNumber"> #{{ saleNumber }}</ng-container>
+                    </h3>
+                    <button type="button" class="btn-ghost btn-ghost-sm" (click)="viewSale()">
+                        <i class="material-icons">open_in_new</i> Ver venta
+                    </button>
+                </div>
+
+                <div *ngIf="loadingOrderSale" class="order-sale-loading">
+                    <span class="spinner-border spinner-border-sm"></span> Cargando venta...
+                </div>
+
+                <table class="product-table sale-compare-table" *ngIf="!loadingOrderSale && orderSaleRows.length">
+                    <thead>
+                        <tr>
+                            <th class="col-product">Producto</th>
+                            <th class="col-num">Pedido</th>
+                            <th class="col-num">Vendido</th>
+                            <th class="col-num">Diferencia</th>
+                            <th class="col-num">Total pedido</th>
+                            <th class="col-num">Total vendido</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let row of orderSaleRows">
+                            <td class="col-product">
+                                <p class="product-name">{{ row.name }}</p>
+                                <p class="product-meta">{{ row.measure }}</p>
+                            </td>
+                            <td class="col-num" data-label="Pedido">{{ row.ordered === undefined ? '—' : (row.ordered | number: '1.0-2') }}</td>
+                            <td class="col-num" data-label="Vendido">{{ row.sold | number: '1.0-2' }}</td>
+                            <td class="col-num diff" data-label="Diferencia"
+                                [class.diff--less]="row.difference < 0" [class.diff--more]="row.difference > 0">
+                                {{ row.difference > 0 ? '+' : '' }}{{ row.difference | number: '1.0-2' }}
+                            </td>
+                            <td class="col-num" data-label="Total pedido">{{ price(row.orderTotal) }}</td>
+                            <td class="col-num product-total" data-label="Total vendido">{{ price(row.saleTotal) }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="col-product">Total</td>
+                            <td class="col-num"></td>
+                            <td class="col-num"></td>
+                            <td class="col-num"></td>
+                            <td class="col-num" data-label="Total pedido">{{ price(orderSaleOrderTotal) }}</td>
+                            <td class="col-num product-total" data-label="Total vendido">{{ price(orderSaleSaleTotal) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
 
             <!-- Operadores: quiénes prepararon el pedido en bodega. Se muestra

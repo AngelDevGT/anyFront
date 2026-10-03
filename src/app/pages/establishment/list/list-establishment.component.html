@@ -28,13 +28,18 @@
   </div>
 
   <app-banks-dialog
-    [open]="banksDialogOpen"
-    [storeName]="banksTarget?.name"
-    [initial]="initialBanks"
-    [loading]="loadingBanks"
-    [saving]="savingBanks"
-    (confirm)="onBanksConfirmed($event)"
-    (cancel)="onBanksCancelled()">
+    [open]="tagDialogOpen"
+    [storeName]="tagListTarget?.name"
+    [initial]="initialTags"
+    [loading]="loadingTags"
+    [saving]="savingTags"
+    [title]="tagDialog.title"
+    [addTitle]="tagDialog.addTitle"
+    [placeholder]="tagDialog.placeholder"
+    [emptyText]="tagDialog.emptyText"
+    [loadingText]="tagDialog.loadingText"
+    (confirm)="onTagsConfirmed($event)"
+    (cancel)="onTagsCancelled()">
   </app-banks-dialog>
 
 </div>

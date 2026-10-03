@@ -4,7 +4,7 @@ import { first } from 'rxjs/operators';
 import { AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Establishment } from '@app/models/establishment.model';
-import { formatBanks } from '@app/helpers';
+import { formatBanks, formatExpenseTags } from '@app/helpers';
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";  
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -37,7 +37,7 @@ export class ViewEstablishmentComponent implements OnInit{
                 .pipe(first())
                 .subscribe((establ: any) =>{
                     // findJsonValue y no la clave del wrapper: esa se deriva del path, asi que
-                    // cambia con cada version del endpoint (hoy /getEstablishmentV2)
+                    // cambia con cada version del endpoint (hoy /getEstablishmentV4)
                     let establishment = this.dataService.findJsonValue(establ, 'json_result');
                     if (establishment){
                         this.establishment = establishment;
@@ -77,11 +77,13 @@ export class ViewEstablishmentComponent implements OnInit{
         // Se imprimen tal cual: vienen separados por salto de linea y multiline los muestra como
         // listado. formatBanks recorta los espacios y las lineas vacias.
         this.elements.push({icon : "account_balance", name : "Bancos", value : formatBanks(establishment.banks) || 'N/A', multiline : true});
+        this.elements.push({icon : "money_off", name : "Etiquetas de gastos", value : formatExpenseTags(establishment.expenseTags) || 'N/A', multiline : true});
         this.elements.push({icon : "info", name : "Estado", value : establishment.status?.identifier});
         this.elements.push({icon : "calendar_today", name : "Fecha Creación", value : this.dataService.getLocalDateTimeFromUTCTime(establishment.creationDate!.replaceAll("\"",""))});
         this.elements.push({icon : "calendar_today", name : "Fecha Actualización", value : establishment.updatedDate ? this.dataService.getLocalDateTimeFromUTCTime(establishment.updatedDate!.replaceAll("\"","")) : '--'});
         this.elements.push({icon : "badge", name : "Usuario Creador", value : establishment.creatorUser?.name ? establishment.creatorUser.name : 'N/A'});
         this.elements.push({icon : establishment.receivePendingOrdersEnabled ? "move_to_inbox" : "outbox", name : "Recibir pedidos pendientes", value : establishment.receivePendingOrdersEnabled ? "Habilitado" : "Deshabilitado"});
+        this.elements.push({icon : "point_of_sale", name : "Vender pedidos", value : establishment.sellOrdersEnabled ? "Habilitado" : "Deshabilitado"});
     }
 
     generatePDF() {  

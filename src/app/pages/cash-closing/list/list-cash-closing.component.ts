@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { first, switchMap } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
 
-import { AlertService, DataService, StoreContextService, deleteStatus} from '@app/services';
+import { AlertService, DataService, deleteStatus} from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CashClosing } from '@app/models/store/cash-closing.model';
-import { Establishment } from '@app/models/establishment.model';
 
 @Component({
     templateUrl: 'list-cash-closing.component.html',
@@ -18,30 +17,25 @@ export class ListCashClosingComponent implements OnInit {
     title = '';
     tableElementsValues?: any;
     establishmentId?: string;
-    storeName?: string;
-    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    /** Sin tienda en la ruta no se consulta nada. */
     storeSelected = false;
     availableStatuses: string[] = [];
     statusFilter: string | null = null;
 
-    constructor(private dataService: DataService, private router: Router, private route: ActivatedRoute, private alertService: AlertService, private storeContext: StoreContextService) {}
+    constructor(private dataService: DataService, private router: Router, private route: ActivatedRoute, private alertService: AlertService) {}
 
     ngOnInit() {
         this.title = 'Cierres de caja';
 
-        // La tienda viaja en la ruta: al cambiarla desde el selector se navega a esta misma sección
-        // con otra tienda y Angular reutiliza el componente, así que ngOnInit ya no vuelve a correr.
-        this.route.paramMap
-            .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
-            .subscribe(store => this.onStoreChange(store));
+        // La tienda viaja en la ruta y ya viene filtrada por el listado de tiendas
+        this.route.paramMap.subscribe(params => this.onStoreChange(params.get('id') ?? undefined));
     }
 
-    private onStoreChange(store?: Establishment) {
-        this.storeSelected = !!store?.id;
-        this.establishmentId = store?.id;
-        this.storeName = store?.name;
+    private onStoreChange(establishmentId?: string) {
+        this.storeSelected = !!establishmentId;
+        this.establishmentId = establishmentId;
 
-        if (!store?.id) {
+        if (!establishmentId) {
             this.cashClosings = undefined;
             this.allCashClosings = undefined;
             this.availableStatuses = [];

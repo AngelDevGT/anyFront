@@ -1,9 +1,9 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { first, switchMap } from 'rxjs/operators';
-import { forkJoin, of } from 'rxjs';
+import { first } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 
-import { AlertService, DataService, DateRangeState, DateRangeStateService, PdfService, StoreContextService, storeOrderStatus} from '@app/services';
+import { AlertService, DataService, DateRangeState, DateRangeStateService, PdfService, storeOrderStatus} from '@app/services';
 import { formatOperators } from '@app/helpers';
 import { DateRange } from '@angular/material/datepicker';
 import { Establishment } from '@app/models/establishment.model';
@@ -36,7 +36,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
     exportingPdf = false;
     /** Modo consulta: se listan, ven y exportan pedidos, pero no se crean ni editan. */
     readOnly = false;
-    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    /** Sin tienda en la URL no se consulta nada. */
     storeSelected = false;
 
     datePanelOpen = false;
@@ -46,7 +46,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
     selectedDateRange: DateRange<Date> | null = null;
     private dateRange!: DateRangeState;
 
-    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe, private readonly pdfService: PdfService, private readonly dateRangeState: DateRangeStateService, private readonly storeContext: StoreContextService) {}
+    constructor(private readonly dataService: DataService, private readonly alertService: AlertService, private readonly route: ActivatedRoute, private readonly router: Router, private readonly datePipe: DatePipe, private readonly pdfService: PdfService, private readonly dateRangeState: DateRangeStateService) {}
 
     ngOnInit() {
         this.readOnly = !!this.route.snapshot.data['readOnly'];
@@ -57,22 +57,13 @@ export class ListProductForSaleOrderComponent implements OnInit {
         this.appliedEndDate = this.dateRange.end;
         this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);
 
-        // La tienda llega siempre por query params. Con opt=store es la sección de Tienda y la pone
-        // el selector global; con opt=factory (bodega) o en consultas la manda el tablero, que
-        // despacha a tiendas que el usuario no tiene asignadas, así que ahí se usa tal cual viene.
-        this.route.queryParamMap.pipe(
-            switchMap(params => {
-                this.viewOption = params.get('opt') ?? '';
-                const storeId = params.get('store');
-                if (this.readOnly || this.viewOption !== 'store') {
-                    const store: Establishment | undefined = storeId
-                        ? { id: storeId, name: params.get('name') ?? '' }
-                        : undefined;
-                    return of(store);
-                }
-                return this.storeContext.resolveFromRoute(storeId);
-            })
-        ).subscribe(store => this.onStoreChange(store));
+        // La tienda llega siempre por query params y se usa tal cual viene: con opt=store la manda
+        // el listado de tiendas (ya filtrado), con opt=factory (bodega) o en consultas el tablero.
+        this.route.queryParamMap.subscribe(params => {
+            this.viewOption = params.get('opt') ?? '';
+            const storeId = params.get('store');
+            this.onStoreChange(storeId ? { id: storeId, name: params.get('name') ?? '' } : undefined);
+        });
     }
 
     /** Cambio de tienda: sin tienda no se consulta, para no listar los pedidos de todas. */

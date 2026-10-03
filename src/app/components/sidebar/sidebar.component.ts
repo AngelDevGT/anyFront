@@ -3,7 +3,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { MatTooltip } from '@angular/material/tooltip';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { AccountService, StoreContextService } from '@app/services';
+import { AccountService } from '@app/services';
 import { SidebarStateService } from '@app/services/sidebar-state.service';
 import { User } from '@app/models/system/user.model';
 
@@ -30,14 +30,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
    */
   private activeLink = '';
 
-  /** Lo mismo para las secciones de tienda, que no tienen un router_link fijo. */
-  private activeStoreSection?: string;
-
   constructor(
     private readonly router: Router,
     private readonly accountService: AccountService,
-    private readonly sidebarState: SidebarStateService,
-    private readonly storeContext: StoreContextService
+    private readonly sidebarState: SidebarStateService
   ) {}
 
   ngOnInit() {
@@ -75,17 +71,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.activeLink = this.childLinks()
       .filter(link => path === link || path.startsWith(link + '/'))
       .sort((a, b) => b.length - a.length)[0] ?? '';
-
-    // Las secciones de tienda llevan la tienda en la URL, asi que no hay link fijo
-    // con que comparar: cada seccion sabe reconocer sus propias rutas.
-    this.activeStoreSection = this.storeContext.sectionForUrl(url)?.key;
   }
 
-  /** Los router_link de todos los hijos del menu; las secciones de tienda no tienen. */
+  /** Los router_link de todos los hijos del menu. */
   private childLinks(): string[] {
     return this.menuItems
       .flatMap((subMenu: any) => subMenu.childs ?? [])
-      .filter((child: any) => !child.store_section && !!child.router_link)
+      .filter((child: any) => !!child.router_link)
       .map((child: any) => child.router_link);
   }
 
@@ -108,9 +100,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   /** ¿Este hijo es la pantalla actual? Marca la opcion en el menu. */
   isActiveChild(child: any): boolean {
-    if (child.store_section) {
-      return this.activeStoreSection === child.store_section;
-    }
     return !!this.activeLink && child.router_link === this.activeLink;
   }
 
@@ -184,16 +173,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.accountService.logout();
   }
 
-  /**
-   * Las secciones de tienda no tienen una URL fija: se arma con la tienda que este seleccionada, o
-   * con el placeholder si todavia no hay ninguna, y ahi la pantalla muestra el selector en grande.
-   */
   navigateChild(child: any) {
-    if (child.store_section) {
-      this.sidebarState.closeMobile();
-      this.storeContext.navigateToSection(child.store_section);
-      return;
-    }
     this.navigateWithParams(child.router_link, child.query_params);
   }
 

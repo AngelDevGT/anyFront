@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { first, switchMap } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
 
-import { AlertService, DataService, StoreContextService } from '@app/services';
+import { AlertService, DataService } from '@app/services';
 import { EstablishmentCustomer } from '@app/models/system/establishment-customer.model';
 import { Establishment } from '@app/models/establishment.model';
 
@@ -14,7 +14,7 @@ export class ListCustomerBalanceComponent implements OnInit {
 
     establishmentId!: string;
     establishment?: Establishment;
-    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    /** Sin tienda en la ruta no se consulta nada. */
     storeSelected = false;
     customers?: EstablishmentCustomer[];
     allCustomers?: EstablishmentCustomer[];
@@ -26,30 +26,39 @@ export class ListCustomerBalanceComponent implements OnInit {
     constructor(
         private dataService: DataService,
         private alertService: AlertService,
-        private route: ActivatedRoute,
-        private storeContext: StoreContextService
+        private route: ActivatedRoute
     ) {}
 
     ngOnInit() {
-        // La tienda viaja en la ruta: al cambiarla desde el selector se navega a esta misma sección
-        // con otra tienda y Angular reutiliza el componente, así que ngOnInit ya no vuelve a correr.
-        this.route.paramMap
-            .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
-            .subscribe(store => this.onStoreChange(store));
+        // La tienda viaja en la ruta y ya viene filtrada por el listado de tiendas
+        this.route.paramMap.subscribe(params => this.onStoreChange(params.get('id') ?? undefined));
     }
 
-    private onStoreChange(store?: Establishment) {
-        this.storeSelected = !!store?.id;
-        this.establishment = store;
-        this.establishmentId = store?.id ?? '';
+    private onStoreChange(establishmentId?: string) {
+        this.storeSelected = !!establishmentId;
+        this.establishment = undefined;
+        this.establishmentId = establishmentId ?? '';
 
-        if (!store?.id) {
+        if (!establishmentId) {
             this.allCustomers = undefined;
             this.customers = undefined;
             this.tableElementsValues = [];
             return;
         }
-        this.loadCustomers(store.id);
+        this.loadStoreName(establishmentId);
+        this.loadCustomers(establishmentId);
+    }
+
+    /** El nombre solo es para el titulo: los clientes se piden sin esperarlo. */
+    private loadStoreName(establishmentId: string) {
+        this.dataService.getEstablishmentById(establishmentId).pipe(first()).subscribe({
+            next: (result: any) => {
+                if (this.establishmentId === establishmentId) {
+                    this.establishment = this.dataService.findJsonValue(result, 'json_result') || {};
+                }
+            },
+            error: (e) => console.error('Error al cargar la tienda', e)
+        });
     }
 
     private loadCustomers(establishmentId: string) {

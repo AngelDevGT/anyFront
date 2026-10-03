@@ -73,4 +73,11 @@ export class ProductForSaleStoreOrder {
      * de @app/helpers para leerlo.
      */
     operators?: string;
+    /**
+     * Venta activa que salió del pedido con "Vender pedido", o null si no se vendió. Con venta,
+     * el detalle muestra "Ver venta" en lugar de "Vender pedido": la base no deja venderlo dos
+     * veces. Una venta cancelada no cuenta, así que el pedido se puede volver a vender.
+     * Ver src/database/migrations/2026-10-02-venta-de-pedidos.sql
+     */
+    shopSaleId?: string;
 }

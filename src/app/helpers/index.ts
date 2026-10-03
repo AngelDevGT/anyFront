@@ -4,5 +4,7 @@ export * from './jwt.interceptor';
 export * from './store-color';
 export * from './sale-type-color';
 export * from './operators';
+export * from './tag-list';
 export * from './banks';
+export * from './expense-tags';
 export * from './payment-detail';

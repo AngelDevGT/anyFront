@@ -3,7 +3,7 @@ import {BehaviorSubject, EMPTY, forkJoin, of} from 'rxjs';
 import {concatMap, first} from 'rxjs/operators';
 import { NgxImageCompressService } from 'ngx-image-compress';
 
-import { statusValues, AlertService, DataService, measureUnitsConst } from '@app/services';
+import { statusValues, AlertService, DataService, measureUnitsConst, pfsFactoryOrderStatusValues, pfsStoreOrderStatusValues } from '@app/services';
 import { Customer } from '@app/models/system/customer.model';
 import {
 FormBuilder,
@@ -25,6 +25,20 @@ import { ShopResume } from '@app/models/store/shop-resume.model';
 import { Establishment } from '@app/models/establishment.model';
 import { ActivityLog } from '@app/models/system/activity-log';
 import { bankOptions, requiresPaymentDetail, BANK_NAME_MAX_LENGTH, REFERENCE_NO_MAX_LENGTH } from '@app/helpers';
+import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
+
+/** Valor de `opt` con el que el detalle de un pedido Recibido abre esta pantalla ("Vender pedido"). */
+export const SALE_PFS_ORDER_OPTION = 'sale_pfs_order';
+/** Valor de `opt` con el que el detalle de un pedido Listo abre esta pantalla ("Recibir y vender"). */
+export const RECEIVE_AND_SELL_OPTION = 'receive_n_sale';
+
+/** Producto del pedido que no se pudo cargar completo porque no alcanzó el inventario. */
+interface OrderShortage {
+    name: string;
+    measure: string;
+    ordered: number;
+    loaded: number;
+}
 
 @Component({ 
     selector: 'page-add-edit-sale',
@@ -78,6 +92,29 @@ export class AddEditSaleComponent implements OnInit{
      * cobrar con Depósito ni con Cheque: el formulario lo dice y bloquea el registro.
      */
     bankOptionsList: string[] = [];
+
+    /**
+     * Venta de un pedido. La pantalla llega con `order=<id>` y uno de dos `opt`:
+     *  - `sale_pfs_order` ("Vender pedido"): pedido Recibido, se vende contra el inventario de la
+     *    tienda, que ya lo incluye;
+     *  - `receive_n_sale` ("Recibir y vender"): pedido Listo, se vende contra el inventario de la
+     *    tienda MÁS el pedido, y al cobrar el pedido se recibe en la misma transacción.
+     * En los dos casos se cargan los productos del pedido y la venta queda ligada a él.
+     */
+    saleOption?: string;
+    pfsOrderId?: string;
+    pfsOrder?: ProductForSaleStoreOrder;
+    /** Productos del pedido que se cargaron incompletos o no se cargaron. Se muestran en un aviso fijo. */
+    orderShortages: OrderShortage[] = [];
+
+    get isOrderSale(): boolean {
+        return (this.saleOption === SALE_PFS_ORDER_OPTION || this.saleOption === RECEIVE_AND_SELL_OPTION)
+            && !!this.pfsOrderId;
+    }
+
+    get isReceiveAndSell(): boolean {
+        return this.isOrderSale && this.saleOption === RECEIVE_AND_SELL_OPTION;
+    }
 
     get filteredInventoryElements(): InventoryElement[] | undefined {
         if (!this.saleSearchTerm) return this.inventoryElements;
@@ -502,8 +539,12 @@ export class AddEditSaleComponent implements OnInit{
         let establishmentId = '';
         this.route.queryParams.subscribe(params => {
             establishmentId = params['strId'];
+            this.saleOption = params['opt'];
+            this.pfsOrderId = this.saleOption === SALE_PFS_ORDER_OPTION || this.saleOption === RECEIVE_AND_SELL_OPTION
+                ? params['order']
+                : undefined;
         });
-        
+
         this.title = 'Registrar Venta';
 
         this.orderForm = this.createAddFormGroup();
@@ -546,6 +587,10 @@ export class AddEditSaleComponent implements OnInit{
             requestArray.push(this.dataService.getEstablishmentById(establishmentId));
             // Solo los clientes asignados a esta tienda
             requestArray.push(this.dataService.getEstablishmentCustomers(establishmentId));
+            // "Vender pedido": el pedido viaja en la misma tanda, al final
+            if (this.isOrderSale) {
+                requestArray.push(this.dataService.getProductForSaleOrderById(this.pfsOrderId!));
+            }
 
             forkJoin(requestArray).subscribe({
                 next: (result: any) => {
@@ -557,6 +602,9 @@ export class AddEditSaleComponent implements OnInit{
                     // Los bancos del select del pago salen del listado de la tienda
                     this.bankOptionsList = bankOptions(this.establishment?.banks);
                     this.customerOptions = this.dataService.findJsonValue(result[4], 'json_result') || [];
+                    if (this.isOrderSale) {
+                        this.pfsOrder = this.dataService.findJsonValue(result[5], 'json_result') || undefined;
+                    }
                 },
                 error: (e) =>  console.error('Se ha producido un error al realizar una(s) de las peticiones', e),
                 complete: () => {
@@ -575,11 +623,157 @@ export class AddEditSaleComponent implements OnInit{
                     this.loading = false;
                     this.title = 'Registrar Venta (' + this.establishment?.name + ')';
                     this.activityLogName = this.activityLogName + "|||" + this.establishment?.id;
+                    if (this.isOrderSale) {
+                        this.loadOrderIntoSale();
+                    }
                 }
             });
         }
 
 
+    }
+
+    // ── Venta de un pedido ───────────────────────────────────────────────────
+
+    /**
+     * Revisa que el pedido se pueda vender y carga sus productos. Las mismas reglas las vuelve a
+     * validar la base al cobrar (register_shop_sale_with_elements_v8, y para "Recibir y vender"
+     * también manage_product_for_sale_order_state_v6); acá solo se evita armar una venta que de
+     * todos modos va a rechazar.
+     *
+     * Si el pedido no sirve, la pantalla queda como una venta normal, sin ligarse a él.
+     */
+    private loadOrderIntoSale() {
+        const order = this.pfsOrder;
+        const f = pfsFactoryOrderStatusValues;
+        let error = '';
+        if (!order?.id) {
+            error = 'No se pudo cargar el pedido.';
+        } else if (order.establishment?.id !== this.establishment?.id) {
+            error = 'El pedido no pertenece a esta tienda.';
+        } else if (!this.isReceiveAndSell && order.storeStatus?.id != pfsStoreOrderStatusValues.recibido.status.id) {
+            error = 'Solo se puede vender un pedido Recibido.';
+        } else if (this.isReceiveAndSell
+            && !(order.factoryStatus?.id == f.listo.status.id || order.factoryStatus?.id == f.en_camino.status.id)) {
+            error = 'Solo se puede recibir y vender un pedido Listo.';
+        } else if (!this.establishment?.sellOrdersEnabled) {
+            error = 'La tienda no tiene habilitada la venta de pedidos.';
+        } else if (order.shopSaleId) {
+            error = 'El pedido ya tiene una venta registrada.';
+        }
+
+        if (error) {
+            this.alertService.error(error + ' Se registrará como una venta normal.');
+            this.pfsOrderId = undefined;
+            this.pfsOrder = undefined;
+            return;
+        }
+
+        this.title = (this.isReceiveAndSell ? 'Recibir y vender pedido #' : 'Vender pedido #')
+            + (order!.orderNumber ?? '') + ' (' + this.establishment?.name + ')';
+        if (this.isReceiveAndSell) {
+            this.mergeOrderIntoInventory(order!);
+        }
+        this.preloadOrderItems(order!);
+    }
+
+    /**
+     * "Recibir y vender": suma el pedido al inventario de la tienda que muestra la pantalla, como
+     * va a quedar después de recibirlo. Así se puede vender cualquier producto de los dos, y lo
+     * que no se venda queda en la tienda.
+     *
+     * Es solo en pantalla: el movimiento real lo hace la base al cobrar, recibiendo el pedido
+     * antes de descontar la venta. Por eso la venta nunca puede pasar de inventario + pedido.
+     *
+     * Las cantidades del inventario están en la medida de cada elemento; el pedido se pasa a
+     * unidad base y de ahí a esa medida. Un producto del pedido que la tienda nunca tuvo se agrega
+     * como elemento nuevo en su medida base, la misma en la que lo registra la recepción.
+     */
+    private mergeOrderIntoInventory(order: ProductForSaleStoreOrder) {
+        for (const element of order.productForSaleStoreOrderElements ?? []) {
+            const measure = this.measureOptions?.find(m => String(m.id) === String(element.measure?.id));
+            const orderedBase = (Number(element.quantity) || 0) * (Number(measure?.unitBase?.quantity) || 0);
+            if (orderedBase <= 0) continue;
+
+            const invElement = this.inventoryElements?.find(ie => ie.productForSale?.id === element.productForSale?.id);
+            if (invElement) {
+                const invMeasureBase = Number(invElement.measure?.unitBase?.quantity) || 1;
+                invElement.quantity = String((Number(invElement.quantity) || 0) + orderedBase / invMeasureBase);
+                continue;
+            }
+
+            const unitName = element.productForSale?.finishedProduct?.measure?.identifier;
+            const baseMeasure = this.measureOptions?.find(m =>
+                m.unitBase?.name === unitName && Number(m.unitBase?.quantity) === 1);
+            // Sin medida base no se puede vender en pantalla; preloadOrderItems lo reporta como faltante
+            if (!baseMeasure) continue;
+
+            this.inventoryElements?.push({
+                productForSale: element.productForSale,
+                measure: baseMeasure,
+                quantity: String(orderedBase),
+            });
+        }
+    }
+
+    /**
+     * Agrega al carrito cada producto del pedido, en la medida y cantidad del pedido. Si el
+     * inventario no alcanza se carga lo que hay —redondeado hacia abajo a 2 decimales, el máximo
+     * que acepta la cantidad— y el producto queda en orderShortages para el aviso.
+     *
+     * Precio y totales se arman igual que en calculateModalTotals: precio de venta actual de la
+     * tienda por la medida elegida, sin descuento. Cada fila se puede editar o quitar después
+     * como cualquier otra.
+     */
+    private preloadOrderItems(order: ProductForSaleStoreOrder) {
+        this.orderShortages = [];
+
+        for (const element of order.productForSaleStoreOrderElements ?? []) {
+            const name = element.productForSale?.finishedProduct?.name ?? 'Producto';
+            const measure = this.measureOptions?.find(m => String(m.id) === String(element.measure?.id));
+            const measureLabel = measure?.identifier ?? element.measure?.identifier ?? '';
+            const ordered = Number(element.quantity) || 0;
+            const measureBase = Number(measure?.unitBase?.quantity) || 0;
+            const invElement = this.inventoryElements?.find(ie => ie.productForSale?.id === element.productForSale?.id);
+
+            if (ordered <= 0) continue;
+            if (!invElement || measureBase <= 0) {
+                this.orderShortages.push({ name, measure: measureLabel, ordered, loaded: 0 });
+                continue;
+            }
+
+            const availableBase = Number(invElement.measure?.unitBase?.quantity) * Number(invElement.quantity) || 0;
+            const available = Math.max(0, Math.floor((availableBase / measureBase) * 100) / 100);
+            const quantity = Math.min(ordered, available);
+
+            if (quantity < ordered) {
+                this.orderShortages.push({ name, measure: measureLabel, ordered, loaded: quantity });
+            }
+            if (quantity <= 0) continue;
+
+            const price = Number(invElement.productForSale?.price) * measureBase;
+            const subtotal = quantity * price;
+            this.itemsList?.push({
+                productForSale: invElement.productForSale,
+                quantity: String(quantity),
+                discount: '0',
+                measure,
+                price: String(price),
+                subtotal: String(subtotal),
+                totalDiscount: '0',
+                total: String(subtotal),
+            });
+            this.findAndMoveInventoryElementById(true, invElement.productForSale?.id);
+        }
+
+        this.syncCustomerRequirement();
+    }
+
+    /** Vuelve al detalle del pedido, en la vista de tienda. */
+    private navigateToOrder() {
+        this.router.navigate(['/productsForSale/order/view/' + this.pfsOrderId], {
+            queryParams: { opt: 'store', store: this.establishment?.id, name: this.establishment?.name }
+        });
     }
 
     loadRawMaterialOrder(){
@@ -636,6 +830,9 @@ export class AddEditSaleComponent implements OnInit{
                         this.alertService.success('Venta guardada', { keepAfterRouteChange: true });
                         if(this.isEditOption){
                             this.router.navigateByUrl('/store/sales/history/' + this.shopResume?.establishment?.id);
+                        } else if (this.isOrderSale) {
+                            // La venta salió de un pedido: se vuelve a él, que ahora muestra "Ver venta"
+                            this.navigateToOrder();
                         } else {
                             this.router.navigateByUrl('/store/sales/history/' + this.establishment?.id);
                         }
@@ -672,6 +869,8 @@ export class AddEditSaleComponent implements OnInit{
                 paymentType: this.selectedPaymentType,
                 deliveryPaymentType: this.selectedDeliveryPaymentType,
                 itemsList: this.itemsList,
+                // "Vender pedido": la base liga la venta al pedido y valida que se pueda vender
+                pfsStoreOrderId: this.isOrderSale ? this.pfsOrderId : '',
                 // Pago bancario (Depósito o Cheque): con banco y referencia la base siempre
                 // registra el pago, así que la fecha va junto. Si el método es otro se manda todo
                 // vacío y no se registra nada. El input da hora local y la BD guarda UTC.
@@ -688,7 +887,10 @@ export class AddEditSaleComponent implements OnInit{
                     ? this.dataService.getUTCTimeFromLocalDateTime(this.f['deliveryDepositDate'].value)
                     : '',
             }
-            return this.dataService.registerShop(newShopResume);
+            // "Recibir y vender": la base recibe el pedido y registra la venta en una sola transacción
+            return this.isReceiveAndSell
+                ? this.dataService.receiveAndSellPFSOrder(newShopResume)
+                : this.dataService.registerShop(newShopResume);
         }
     }
 

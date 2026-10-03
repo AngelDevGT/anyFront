@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Inject, OnInit} from '@angular/core';
 import { first } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
 
 import { AccountService, AlertService, CAPABILITIES, DataService, PdfService, pfsFactoryOrderStatusValues, pfsStoreOrderStatusValues } from '@app/services';
 import { OPERATOR_CHIP_COLOR, parseOperators, serializeOperators } from '@app/helpers';
@@ -9,7 +9,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
-import { Status } from '@app/models';
+import { Measure, Status } from '@app/models';
+import { ShopResume } from '@app/models/store/shop-resume.model';
 import { MatButtonModule } from '@angular/material/button';
 
 /**
@@ -28,6 +29,22 @@ interface OrderStep {
     failed: boolean;
     lineBefore: boolean;
     lineAfter: boolean;
+}
+
+/**
+ * Una fila del cruce pedido contra venta. Las cantidades van en la medida del pedido —la de la
+ * venta si el producto no venía en el pedido—, después de comparar en unidad base: la venta pudo
+ * registrarse en otra medida (pedido en docenas, venta en unidades).
+ */
+interface OrderSaleRow {
+    name: string;
+    measure: string;
+    /** undefined: el producto se vendió pero no venía en el pedido. */
+    ordered?: number;
+    sold: number;
+    difference: number;
+    orderTotal: number;
+    saleTotal: number;
 }
 
 /** Definición de un paso antes de resolver si está cumplido. */
@@ -68,6 +85,17 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     confirmReceiveOption = false;
     editOption = false;
     deleteOption = false;
+    // Venta del pedido: "Vender pedido" mientras no se vendió, "Ver venta" después
+    sellOrderOption = false;
+    viewSaleOption = false;
+    receiveAndSellOption = false;
+
+    // Venta que salió del pedido, cruzada producto por producto contra lo pedido
+    orderSale?: ShopResume;
+    orderSaleRows: OrderSaleRow[] = [];
+    loadingOrderSale = false;
+    /** Catálogo de medidas, para comparar en unidad base. Se pide una sola vez. */
+    private measureOptions?: Measure[];
 
     confirmDialogTitle = '...';
     confirmDialogText = '...';
@@ -117,12 +145,112 @@ export class ViewProductForSaleOrderComponent implements OnInit{
                     this.setElementOptions(this.productForSaleOrder!);
                     this.steps = this.buildSteps(this.productForSaleOrder!);
                     this.loading = false;
+                    this.loadOrderSale();
                 },
                 error: () => {
                     this.alertService.error('No se pudo cargar el pedido. Intenta de nuevo.');
                     this.loading = false;
                 }
             });
+    }
+
+    // ── Venta del pedido ─────────────────────────────────────────────────────
+
+    /**
+     * Pide la venta activa que salió del pedido (shopSaleId) y la cruza contra lo pedido. Solo en
+     * la vista de tienda: bodega no ve montos. Va después de pintar el pedido para no demorarlo.
+     */
+    private loadOrderSale(){
+        this.orderSale = undefined;
+        this.orderSaleRows = [];
+        const saleId = this.productForSaleOrder?.shopSaleId;
+        if (this.isFactory || !saleId) return;
+
+        this.loadingOrderSale = true;
+        forkJoin([
+            this.dataService.getShopHistoryById({ id: saleId }),
+            this.measureOptions ? of(null) : this.dataService.getAnyComponent({}, 'getMeasure')
+        ]).pipe(first()).subscribe({
+            next: ([saleResponse, measureResponse]: any[]) => {
+                if (measureResponse) {
+                    this.measureOptions = this.dataService.findJsonValue(measureResponse, 'json_result') || [];
+                }
+                this.orderSale = this.dataService.findJsonValue(saleResponse, 'json_result') || undefined;
+                this.orderSaleRows = this.buildOrderSaleRows(this.productForSaleOrder!, this.orderSale);
+                this.loadingOrderSale = false;
+            },
+            error: () => {
+                this.loadingOrderSale = false;
+                this.alertService.error('No se pudo cargar la venta del pedido.');
+            }
+        });
+    }
+
+    /**
+     * Una fila por producto del pedido, más una por cada producto vendido que no venía en él.
+     * Si un producto aparece en varias líneas, se suman.
+     */
+    private buildOrderSaleRows(order: ProductForSaleStoreOrder, sale?: ShopResume): OrderSaleRow[] {
+        const baseOf = (measureId?: string) =>
+            Number(this.measureOptions?.find(m => String(m.id) === String(measureId))?.unitBase?.quantity) || 0;
+
+        const rows = new Map<string, OrderSaleRow & { measureBase: number }>();
+
+        for (const element of order.productForSaleStoreOrderElements ?? []) {
+            const id = element.productForSale?.id ?? '';
+            const measureBase = baseOf(element.measure?.id);
+            const row = rows.get(id);
+            if (row) {
+                row.ordered = (row.ordered ?? 0) + (Number(element.quantity) || 0) * measureBase / (row.measureBase || 1);
+                row.orderTotal += Number(element.totalPrice) || 0;
+                continue;
+            }
+            rows.set(id, {
+                name: element.productForSale?.finishedProduct?.name ?? 'Producto',
+                measure: element.measure?.identifier ?? '',
+                measureBase,
+                ordered: Number(element.quantity) || 0,
+                sold: 0,
+                difference: 0,
+                orderTotal: Number(element.totalPrice) || 0,
+                saleTotal: 0,
+            });
+        }
+
+        for (const item of sale?.itemsList ?? []) {
+            const id = item.productForSale?.id ?? '';
+            const soldBase = (Number(item.quantity) || 0) * baseOf(item.measure?.id);
+            let row = rows.get(id);
+            if (!row) {
+                row = {
+                    name: item.productForSale?.finishedProduct?.name ?? 'Producto',
+                    measure: item.measure?.identifier ?? '',
+                    measureBase: baseOf(item.measure?.id),
+                    ordered: undefined,
+                    sold: 0,
+                    difference: 0,
+                    orderTotal: 0,
+                    saleTotal: 0,
+                };
+                rows.set(id, row);
+            }
+            row.sold += row.measureBase ? soldBase / row.measureBase : 0;
+            row.saleTotal += Number(item.total) || 0;
+        }
+
+        return Array.from(rows.values()).map(({ measureBase, ...row }) => ({
+            ...row,
+            sold: Math.round(row.sold * 100) / 100,
+            difference: Math.round((row.sold - (row.ordered ?? 0)) * 100) / 100,
+        }));
+    }
+
+    get orderSaleOrderTotal(): number {
+        return this.orderSaleRows.reduce((sum, row) => sum + row.orderTotal, 0);
+    }
+
+    get orderSaleSaleTotal(): number {
+        return this.orderSaleRows.reduce((sum, row) => sum + row.saleTotal, 0);
     }
 
     openDialog(error_message: String): void {
@@ -248,6 +376,7 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         this.verifyOption = this.unprepareOption = false;
         this.receiveOption = this.returnOption = this.confirmReceiveOption = false;
         this.editOption = this.deleteOption = false;
+        this.sellOrderOption = this.viewSaleOption = this.receiveAndSellOption = false;
     }
 
     /**
@@ -336,6 +465,20 @@ export class ViewProductForSaleOrderComponent implements OnInit{
             }
             if (pfsOrder.establishment?.receivePendingOrdersEnabled && elemStatus.id == f.pendiente.status.id){
                 this.confirmReceiveOption = true;
+            }
+
+            // Vender un pedido Recibido, solo en tiendas con "Vender pedidos" habilitado. Ya
+            // vendido, el botón pasa a "Ver venta": la base no deja venderlo dos veces.
+            if (pfsOrder.storeStatus?.id == pfsStoreOrderStatusValues.recibido.status.id
+                && pfsOrder.establishment?.sellOrdersEnabled){
+                this.viewSaleOption = !!pfsOrder.shopSaleId;
+                this.sellOrderOption = !pfsOrder.shopSaleId;
+            }
+
+            // Recibir y vender un pedido Listo: la venta suma el inventario de la tienda y el del
+            // pedido, y al cobrar el pedido queda Recibido.
+            if (elemStatus.id == f.listo.status.id && pfsOrder.establishment?.sellOrdersEnabled){
+                this.receiveAndSellOption = true;
             }
         }
 
@@ -517,6 +660,32 @@ export class ViewProductForSaleOrderComponent implements OnInit{
         });
     }
 
+    /**
+     * Registrar venta con los productos del pedido ya cargados. `opt=sale_pfs_order` le dice a la
+     * pantalla de venta que cargue el pedido y que, al cobrar, vuelva acá.
+     */
+    sellOrder(){
+        this.goToOrderSale('sale_pfs_order');
+    }
+
+    /** Igual que sellOrder, pero con el pedido Listo: la venta lo recibe al cobrar. */
+    receiveAndSellOrder(){
+        this.goToOrderSale('receive_n_sale');
+    }
+
+    private goToOrderSale(opt: string){
+        const order = this.productForSaleOrder;
+        if (!order?.id || !order.establishment?.id) return;
+        this.router.navigate(['/store/sales/create'], {
+            queryParams: { strId: order.establishment.id, opt, order: order.id }
+        });
+    }
+
+    viewSale(){
+        if (!this.productForSaleOrder?.shopSaleId) return;
+        this.router.navigateByUrl('/store/sales/history/view/' + this.productForSaleOrder.shopSaleId);
+    }
+
     navigateWithParams(){
         if (!this.viewOption){
             this.router.navigateByUrl('/productsForSale/order');
@@ -694,7 +863,8 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     /** ¿Hay algún botón de transición que mostrar debajo del diagrama? */
     get hasActions(): boolean {
         return this.releaseOption || this.readyOption || this.verifyOption || this.unprepareOption
-            || this.receiveOption || this.returnOption || this.confirmReceiveOption;
+            || this.receiveOption || this.returnOption || this.confirmReceiveOption
+            || this.sellOrderOption || this.viewSaleOption || this.receiveAndSellOption;
     }
 }
 

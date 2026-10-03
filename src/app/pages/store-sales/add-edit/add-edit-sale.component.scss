@@ -307,6 +307,34 @@ $accent-dark: #a83e00;
     gap: 10px;
 }
 
+// ── Venta de un pedido ────────────────────────────────────
+.pos-order-banner {
+    border: 1px solid #f3d19e;
+    background: #fff8ec;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    color: #5c4813;
+}
+
+.pos-order-banner-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    .material-icons { font-size: 18px; color: $accent; }
+}
+
+.pos-order-banner-text {
+    margin: 8px 0 4px;
+}
+
+.pos-order-shortages {
+    margin: 0;
+    padding-left: 18px;
+    li { margin: 2px 0; }
+}
+
 // Fila de cliente
 .pos-client-row,
 .pos-delivery-row,

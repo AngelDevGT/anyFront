@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 
-import { AlertService, DataService, StoreContextService } from '@app/services';
-import { first, switchMap } from 'rxjs/operators';
+import { AlertService, DataService } from '@app/services';
+import { first } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StoreExpense } from '@app/models/store/store-expense.model';
-import { Establishment } from '@app/models/establishment.model';
 
 @Component({
     templateUrl: 'list-store-expenses.component.html',
@@ -13,8 +12,7 @@ import { Establishment } from '@app/models/establishment.model';
 export class ListStoreExpensesComponent implements OnInit {
 
     establishmentId?: string;
-    storeName?: string;
-    /** Sin tienda elegida no se consulta nada: la pantalla muestra el selector en grande. */
+    /** Sin tienda en la ruta no se consulta nada. */
     storeSelected = false;
     expenses?: StoreExpense[];
     allExpenses?: StoreExpense[];
@@ -26,30 +24,25 @@ export class ListStoreExpensesComponent implements OnInit {
         private readonly dataService: DataService,
         private readonly route: ActivatedRoute,
         private readonly alertService: AlertService,
-        private readonly router: Router,
-        private readonly storeContext: StoreContextService
+        private readonly router: Router
     ) {}
 
     ngOnInit() {
-        // La tienda viaja en la ruta: al cambiarla desde el selector se navega a esta misma sección
-        // con otra tienda y Angular reutiliza el componente, así que ngOnInit ya no vuelve a correr.
-        this.route.paramMap
-            .pipe(switchMap(params => this.storeContext.resolveFromRoute(params.get('id'))))
-            .subscribe(store => this.onStoreChange(store));
+        // La tienda viaja en la ruta y ya viene filtrada por el listado de tiendas
+        this.route.paramMap.subscribe(params => this.onStoreChange(params.get('id') ?? undefined));
     }
 
-    private onStoreChange(store?: Establishment) {
-        this.storeSelected = !!store?.id;
-        this.establishmentId = store?.id;
-        this.storeName = store?.name;
+    private onStoreChange(establishmentId?: string) {
+        this.storeSelected = !!establishmentId;
+        this.establishmentId = establishmentId;
 
-        if (!store?.id) {
+        if (!establishmentId) {
             this.expenses = undefined;
             this.allExpenses = undefined;
             this.tableElementsValues = [];
             return;
         }
-        this.loadExpenses(store.id);
+        this.loadExpenses(establishmentId);
     }
 
     private loadExpenses(establishmentId: string) {
