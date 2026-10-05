@@ -271,14 +271,7 @@ export class ListProductForSaleOrderComponent implements OnInit {
             const statusHeader = isFactory ? 'Estado en fábrica' : 'Estado en tienda';
 
             const curr_row: any[] = [
-                // El número es el acceso al detalle: reemplaza al botón de ver
-                {
-                    type: 'link',
-                    value: element.orderNumber != null ? '#' + element.orderNumber : '--',
-                    routerLink: 'view/' + element.id,
-                    query_params: { opt: this.viewOption },
-                    header_name: 'No.'
-                },
+                { type: 'text', value: element.orderNumber != null ? '#' + element.orderNumber : '--', header_name: 'No.' },
                 { type: 'text', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: 'Fecha' },
                 { type: 'text', value: element.name, header_name: 'Nombre' },
                 { type: 'text', value: element.establishment?.name, header_name: 'Tienda' },
@@ -307,6 +300,10 @@ export class ListProductForSaleOrderComponent implements OnInit {
 
             // Identificador usado por la columna de seleccion de la tabla
             (curr_row as any).rowKey = element.id;
+            // Toda la fila abre el detalle, igual que en ventas. El checkbox de selección no
+            // dispara la navegación: data-table le corta la propagación del click.
+            (curr_row as any).rowLink = 'view/' + element.id;
+            (curr_row as any).rowLinkQueryParams = { opt: this.viewOption };
             this.tableElementsValues.push(curr_row);
         });
     }
