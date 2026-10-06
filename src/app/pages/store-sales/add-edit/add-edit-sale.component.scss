@@ -446,7 +446,8 @@ $accent-dark: #a83e00;
 // toque de 36px para que se acierten con el dedo en la tableta del punto de venta.
 .pos-item-actions {
     display: flex;
-    gap: 8px;
+    // Separados de sobra: quitar un producto por error al querer editarlo es lo que se quiere evitar
+    gap: 16px;
     button {
         border: 1px solid transparent;
         cursor: pointer;

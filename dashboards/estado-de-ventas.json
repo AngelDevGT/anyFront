@@ -1,0 +1,809 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_EMBUTIDOS_ANY",
+      "label": "Embutidos Any (PostgreSQL)",
+      "description": "Base de datos PostgreSQL de Embutidos Any",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.0"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "volkovlabs-echarts-panel",
+      "name": "Business Charts",
+      "version": "7.2.5"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Estado de las ventas: KPI, comparación día contra día, tendencia semanal y comparación entre tiendas.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#008300",
+            "mode": "fixed"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Venta total$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 40
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- KPI del rango de fechas.\n-- Esta consulta alimenta 5 KPI: este panel la ejecuta y los demas la leen con\n-- el datasource \"-- Dashboard --\" (una sola ida a la base).\n--\n-- Venta = monto bruto, antes de descuento y sin envio.\nWITH v AS (\n    SELECT count(*)                                AS ventas,\n           COALESCE(sum(ss.total - COALESCE(ss.delivery, 0) + ss.total_discount), 0)        AS venta_total\n    FROM shop_sale ss\n    WHERE ss.status_id = 52                        -- solo ventas activas\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n),\ng AS (\n    SELECT COALESCE(sum(se.total_amount), 0)       AS gastos\n    FROM store_expense se\n    WHERE se.status_id = 58                        -- gasto activo\n      AND se.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(se.creation_date AT TIME ZONE 'UTC')\n)\nSELECT\n    round(v.venta_total, 2)                              AS \"Venta total\",\n    v.ventas                                             AS \"Ventas\",\n    round(v.venta_total / NULLIF(v.ventas, 0), 2)        AS \"Ticket promedio\",\n    round(g.gastos, 2)                                   AS \"Gastos\",\n    round(v.venta_total - g.gastos, 2)                   AS \"Ventas menos gastos\"\nFROM v CROSS JOIN g;",
+          "refId": "A"
+        }
+      ],
+      "title": "Venta total (Q)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#008300",
+            "mode": "fixed"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Ventas$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Número de ventas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#008300",
+            "mode": "fixed"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Ticket promedio$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Ticket promedio (Q)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#c98500",
+            "mode": "fixed"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Gastos$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Gastos (Q)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#d03b3b",
+                "value": null
+              },
+              {
+                "color": "#0ca30c",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Ventas menos gastos$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Ventas − gastos (Q)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#3987e5",
+            "mode": "fixed"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Por cobrar: saldo pendiente de las ventas al credito, HOY.\n-- No depende del rango de fechas: es la foto de lo que se debe ahora.\nSELECT round(COALESCE(sum(ss.pending_amount + ss.delivery_pending_amount), 0), 2) AS \"Por cobrar\"\nFROM shop_sale ss\nWHERE ss.status_id = 52\n  AND ss.establishment_id::text IN (${tienda:sqlstring});",
+          "refId": "A"
+        }
+      ],
+      "title": "Por cobrar hoy (Q)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 7,
+      "options": {
+        "baidu": {
+          "callback": "bmapReady",
+          "key": ""
+        },
+        "editor": {
+          "format": "auto"
+        },
+        "editorMode": "code",
+        "gaode": {
+          "key": "",
+          "plugin": "AMap.Scale,AMap.ToolBar"
+        },
+        "getOption": "// Colores del dashboard (validados en tema claro y oscuro)\nconst COLOR_VENTAS = '#008300';\nconst COLOR_VENTAS_SUAVE = 'rgba(0, 131, 0, 0.55)';\nconst COLOR_GASTOS = '#c98500';\nconst COLOR_CONTEXTO = '#8e8e8e';\n\nconst tema = context.grafana.theme;\nconst colorTexto = tema.colors.text.secondary;\nconst colorBorde = tema.colors.border.weak;\nconst marco = context.panel.data.series[0];\n// valores de una columna; Grafana los entrega como arreglo (o como vector\n// en versiones viejas, por eso el .buffer)\nconst columna = (nombre) => {\n    const campo = marco && marco.fields.find((f) => f.name === nombre);\n    return campo ? Array.from(campo.values.buffer || campo.values) : [];\n};\nconst moneda = new Intl.NumberFormat('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\nconst entero = new Intl.NumberFormat('es-GT', { maximumFractionDigits: 0 });\nconst sinDatos = () => ({\n    version: 2,\n    config: { notMerge: true },\n    option: {\n        backgroundColor: 'transparent',\n        title: {\n            text: 'Sin datos en el rango seleccionado',\n            left: 'center',\n            top: 'middle',\n            textStyle: { color: colorTexto, fontSize: 14, fontWeight: 'normal' },\n        },\n    },\n});\n\nconst semanas = columna('Semana');\nconst dias = columna('Día');\nconst ventas = columna('Venta');\nif (!semanas.length) return sinDatos();\n\nconst DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];\nconst orden = [];\nconst porSemana = {};\nsemanas.forEach((s, i) => {\n    if (!porSemana[s]) {\n        porSemana[s] = new Array(7).fill(null); // null = dia que no ha llegado\n        orden.push(s);\n    }\n    porSemana[s][Number(dias[i]) - 1] = Number(ventas[i]);\n});\nconst reciente = orden[orden.length - 1]; // los datos vienen de la mas vieja a la mas nueva\n\nconst series = orden.map((s) => {\n    const esReciente = s === reciente;\n    const color = esReciente ? COLOR_VENTAS : COLOR_CONTEXTO;\n    return {\n        name: s,\n        type: 'line',\n        data: porSemana[s],\n        connectNulls: false, // la linea se corta donde termina la semana en curso\n        symbol: 'circle',\n        symbolSize: esReciente ? 8 : 5,\n        z: esReciente ? 3 : 2,\n        lineStyle: { width: esReciente ? 3 : 1.5, color },\n        itemStyle: { color },\n        emphasis: { focus: 'series', lineStyle: { width: 3 } },\n        blur: { lineStyle: { opacity: 0.15 }, itemStyle: { opacity: 0.15 } },\n    };\n});\n\nreturn {\n    version: 2,\n    config: { notMerge: true },\n    option: {\n        backgroundColor: 'transparent',\n        tooltip: {\n            trigger: 'axis',\n            order: 'valueDesc', // todas las semanas de ese dia, de mayor a menor\n            valueFormatter: (v) => (v == null ? '—' : 'Q ' + moneda.format(v)),\n        },\n        legend: { type: 'scroll', bottom: 0, icon: 'roundRect', textStyle: { color: colorTexto } },\n        grid: { left: 8, right: 16, top: 16, bottom: 40, containLabel: true },\n        xAxis: {\n            type: 'category',\n            data: DIAS,\n            boundaryGap: false,\n            axisLine: { lineStyle: { color: colorBorde } },\n            axisLabel: { color: colorTexto },\n        },\n        yAxis: {\n            type: 'value',\n            min: 0,\n            splitLine: { lineStyle: { color: colorBorde } },\n            axisLabel: { color: colorTexto, formatter: (v) => entero.format(v) },\n        },\n        series,\n    },\n};\n",
+        "google": {
+          "callback": "gmapReady",
+          "key": ""
+        },
+        "map": "none",
+        "renderer": "canvas",
+        "themeEditor": {
+          "config": "{}",
+          "name": "default"
+        },
+        "visualEditor": {
+          "code": "return {\n  dataset: context.editor.dataset,\n  series: context.editor.series,\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n}\n",
+          "dataset": [],
+          "series": []
+        }
+      },
+      "pluginVersion": "7.2.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Dia contra dia: una LINEA POR SEMANA, con sus 7 dias (lunes a domingo).\n-- Leyendo en vertical sobre \"lunes\" se comparan todos los lunes, etc.\n--\n--   * Hasta 10 semanas, contadas hacia atras desde el FINAL del rango.\n--   * Semanas COMPLETAS (lunes a domingo), aunque el rango corte una a la mitad.\n--   * La semana en curso SI entra, incluido HOY con lo vendido hasta ahora.\n--     Los dias que aun no llegan quedan SIN punto (no en cero), asi que su\n--     linea simplemente se corta en hoy.\n--   * Dias pasados sin ventas valen 0. Cortes en hora de Guatemala.\n--   * Venta = monto bruto, antes de descuento y sin envio.\n--\n-- Sale en formato LARGO (Semana, Dia, Venta), ordenado por semana y dia. El\n-- codigo de la grafica (Business Charts) arma una linea por semana.\nWITH limites AS (\n    SELECT\n        date_trunc('week', $__timeFrom()::timestamptz AT TIME ZONE 'America/Guatemala')             AS primera,\n        date_trunc('week', LEAST($__timeTo()::timestamptz, now()) AT TIME ZONE 'America/Guatemala') AS ultima,\n        now() AT TIME ZONE 'America/Guatemala'                                                      AS ahora\n),\nsemanas AS (\n    -- semanas que ya empezaron, de la mas reciente hacia atras\n    SELECT s.inicio\n    FROM limites l\n    CROSS JOIN LATERAL generate_series(l.ultima, l.primera, interval '-1 week') AS s(inicio)\n    WHERE s.inicio <= l.ahora\n    ORDER BY s.inicio DESC\n    LIMIT 10\n),\ndias AS (\n    -- los 7 dias de cada semana, sin los que todavia no empiezan (hoy si entra)\n    SELECT s.inicio, d.n AS dia, s.inicio + (d.n - 1) * interval '1 day' AS fecha\n    FROM semanas s\n    CROSS JOIN generate_series(1, 7) AS d(n)\n    CROSS JOIN limites l\n    WHERE s.inicio + (d.n - 1) * interval '1 day' <= l.ahora\n),\nventas AS (\n    SELECT date_trunc('day', ss.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala') AS fecha,\n           sum(ss.total - COALESCE(ss.delivery, 0) + ss.total_discount)                             AS venta\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND ss.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala' >= (SELECT min(inicio) FROM semanas)\n      AND ss.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala' <  (SELECT max(inicio) FROM semanas) + interval '1 week'\n    GROUP BY 1\n)\nSELECT\n    'Sem ' || extract(week FROM d.inicio)::int\n        || ' · ' || extract(day FROM d.inicio)::int || ' ' || (ARRAY['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'])[extract(month FROM d.inicio)::int]\n                                            AS \"Semana\",\n    d.dia                                   AS \"Día\",\n    round(COALESCE(v.venta, 0), 2)          AS \"Venta\"\nFROM dias d\nLEFT JOIN ventas v ON v.fecha = d.fecha\nORDER BY d.inicio, d.dia;",
+          "refId": "A"
+        }
+      ],
+      "title": "Día contra día · últimas 10 semanas",
+      "type": "volkovlabs-echarts-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 8,
+      "options": {
+        "baidu": {
+          "callback": "bmapReady",
+          "key": ""
+        },
+        "editor": {
+          "format": "auto"
+        },
+        "editorMode": "code",
+        "gaode": {
+          "key": "",
+          "plugin": "AMap.Scale,AMap.ToolBar"
+        },
+        "getOption": "// Colores del dashboard (validados en tema claro y oscuro)\nconst COLOR_VENTAS = '#008300';\nconst COLOR_VENTAS_SUAVE = 'rgba(0, 131, 0, 0.55)';\nconst COLOR_GASTOS = '#c98500';\nconst COLOR_CONTEXTO = '#8e8e8e';\n\nconst tema = context.grafana.theme;\nconst colorTexto = tema.colors.text.secondary;\nconst colorBorde = tema.colors.border.weak;\nconst marco = context.panel.data.series[0];\n// valores de una columna; Grafana los entrega como arreglo (o como vector\n// en versiones viejas, por eso el .buffer)\nconst columna = (nombre) => {\n    const campo = marco && marco.fields.find((f) => f.name === nombre);\n    return campo ? Array.from(campo.values.buffer || campo.values) : [];\n};\nconst moneda = new Intl.NumberFormat('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\nconst entero = new Intl.NumberFormat('es-GT', { maximumFractionDigits: 0 });\nconst sinDatos = () => ({\n    version: 2,\n    config: { notMerge: true },\n    option: {\n        backgroundColor: 'transparent',\n        title: {\n            text: 'Sin datos en el rango seleccionado',\n            left: 'center',\n            top: 'middle',\n            textStyle: { color: colorTexto, fontSize: 14, fontWeight: 'normal' },\n        },\n    },\n});\n\nconst semanas = columna('Semana');\nconst ventas = columna('Venta total').map(Number);\nconst enCurso = columna('En curso').map(Number);\nif (!semanas.length) return sinDatos();\n\nconst cerradas = ventas.filter((v, i) => !enCurso[i]);\nconst base = cerradas.length ? cerradas : ventas;\nconst promedio = base.reduce((a, b) => a + b, 0) / base.length;\nconst pocas = semanas.length <= 16; // con muchas semanas los valores se enciman\nconst degradado = new context.echarts.graphic.LinearGradient(0, 0, 0, 1, [\n    { offset: 0, color: COLOR_VENTAS },\n    { offset: 1, color: COLOR_VENTAS_SUAVE },\n]);\n\nreturn {\n    version: 2,\n    config: { notMerge: true },\n    option: {\n        backgroundColor: 'transparent',\n        tooltip: {\n            trigger: 'axis',\n            axisPointer: { type: 'shadow' },\n            formatter: (p) => {\n                const i = p[0].dataIndex;\n                return 'Semana del ' + semanas[i] + (enCurso[i] ? ' (en curso)' : '') +\n                    '<br/><b>Q ' + moneda.format(ventas[i]) + '</b>';\n            },\n        },\n        grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },\n        xAxis: {\n            type: 'category',\n            data: semanas,\n            axisLine: { lineStyle: { color: colorBorde } },\n            axisLabel: { color: colorTexto },\n        },\n        yAxis: {\n            type: 'value',\n            min: 0,\n            splitLine: { lineStyle: { color: colorBorde } },\n            axisLabel: { color: colorTexto, formatter: (v) => entero.format(v) },\n        },\n        series: [{\n            type: 'bar',\n            barMaxWidth: 48,\n            data: ventas.map((v, i) => ({\n                value: v,\n                itemStyle: { color: degradado, borderRadius: [4, 4, 0, 0], opacity: enCurso[i] ? 0.45 : 1 },\n            })),\n            label: { show: pocas, position: 'top', color: colorTexto, formatter: (p) => entero.format(p.value) },\n            markLine: {\n                symbol: 'none',\n                silent: true,\n                lineStyle: { color: colorTexto, type: 'solid', width: 1, opacity: 0.6 },\n                label: { color: colorTexto, position: 'insideEndTop', formatter: 'Promedio: Q ' + entero.format(promedio) },\n                data: [{ yAxis: promedio }],\n            },\n        }],\n    },\n};\n",
+        "google": {
+          "callback": "gmapReady",
+          "key": ""
+        },
+        "map": "none",
+        "renderer": "canvas",
+        "themeEditor": {
+          "config": "{}",
+          "name": "default"
+        },
+        "visualEditor": {
+          "code": "return {\n  dataset: context.editor.dataset,\n  series: context.editor.series,\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n}\n",
+          "dataset": [],
+          "series": []
+        }
+      },
+      "pluginVersion": "7.2.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Ventas por semana: total vendido por semana (lunes a domingo) en todo el rango.\n--\n--   * Sin limite de semanas.\n--   * Semanas COMPLETAS: si el rango corta una semana a la mitad (al inicio o\n--     al final), se toma entera, para que una semana parcial no parezca una\n--     caida. Al ser columnas, la grafica no depende del eje de tiempo y\n--     ninguna semana queda fuera de vista.\n--   * La semana EN CURSO si entra, con lo vendido hasta ahora. La columna\n--     \"En curso\" la marca, y la grafica la pinta mas tenue y la deja fuera del\n--     promedio, para que no se lea como una caida.\n--   * Semanas sin ventas valen 0. Cortes en hora de Guatemala.\n--   * Venta = monto bruto, antes de descuento y sin envio.\n--   * NO usa $__timeFilter a proposito: al completar las semanas puede tomar\n--     dias fuera del rango, que es justo lo que pide la regla.\nWITH limites AS (\n    SELECT\n        date_trunc('week', $__timeFrom()::timestamptz AT TIME ZONE 'America/Guatemala')             AS primero,\n        date_trunc('week', LEAST($__timeTo()::timestamptz, now()) AT TIME ZONE 'America/Guatemala') AS ultimo\n),\nperiodos AS (\n    SELECT s.inicio\n    FROM limites l\n    CROSS JOIN LATERAL generate_series(l.primero, l.ultimo, interval '1 week') AS s(inicio)\n),\nventas AS (\n    SELECT\n        date_trunc('week', ss.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala') AS inicio,\n        sum(ss.total - COALESCE(ss.delivery, 0) + ss.total_discount)                              AS venta\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND ss.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala' >= (SELECT min(inicio) FROM periodos)\n      AND ss.creation_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala' <  (SELECT max(inicio) FROM periodos) + interval '1 week'\n    GROUP BY 1\n)\nSELECT\n    -- \"28 sep\" = semana que arranca el lunes 28 de septiembre\n    extract(day FROM p.inicio)::int || ' ' || (ARRAY['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'])[extract(month FROM p.inicio)::int] AS \"Semana\",\n    round(COALESCE(v.venta, 0), 2)                                                         AS \"Venta total\",\n    CASE WHEN p.inicio = date_trunc('week', now() AT TIME ZONE 'America/Guatemala') THEN 1 ELSE 0 END  AS \"En curso\"\nFROM periodos p\nLEFT JOIN ventas v ON v.inicio = p.inicio\nORDER BY p.inicio;",
+          "refId": "A"
+        }
+      ],
+      "title": "Ventas por semana",
+      "type": "volkovlabs-echarts-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 9,
+      "options": {
+        "baidu": {
+          "callback": "bmapReady",
+          "key": ""
+        },
+        "editor": {
+          "format": "auto"
+        },
+        "editorMode": "code",
+        "gaode": {
+          "key": "",
+          "plugin": "AMap.Scale,AMap.ToolBar"
+        },
+        "getOption": "// Colores del dashboard (validados en tema claro y oscuro)\nconst COLOR_VENTAS = '#008300';\nconst COLOR_VENTAS_SUAVE = 'rgba(0, 131, 0, 0.55)';\nconst COLOR_GASTOS = '#c98500';\nconst COLOR_CONTEXTO = '#8e8e8e';\n\nconst tema = context.grafana.theme;\nconst colorTexto = tema.colors.text.secondary;\nconst colorBorde = tema.colors.border.weak;\nconst marco = context.panel.data.series[0];\n// valores de una columna; Grafana los entrega como arreglo (o como vector\n// en versiones viejas, por eso el .buffer)\nconst columna = (nombre) => {\n    const campo = marco && marco.fields.find((f) => f.name === nombre);\n    return campo ? Array.from(campo.values.buffer || campo.values) : [];\n};\nconst moneda = new Intl.NumberFormat('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\nconst entero = new Intl.NumberFormat('es-GT', { maximumFractionDigits: 0 });\nconst sinDatos = () => ({\n    version: 2,\n    config: { notMerge: true },\n    option: {\n        backgroundColor: 'transparent',\n        title: {\n            text: 'Sin datos en el rango seleccionado',\n            left: 'center',\n            top: 'middle',\n            textStyle: { color: colorTexto, fontSize: 14, fontWeight: 'normal' },\n        },\n    },\n});\n\nconst tiendas = columna('Tienda');\nconst ventas = columna('Ventas').map(Number);\nconst gastos = columna('Gastos').map(Number);\nif (!tiendas.length) return sinDatos();\n\nconst etiqueta = { show: true, position: 'right', color: colorTexto, formatter: (p) => entero.format(p.value) };\n\nreturn {\n    version: 2,\n    config: { notMerge: true },\n    option: {\n        backgroundColor: 'transparent',\n        tooltip: {\n            trigger: 'axis',\n            axisPointer: { type: 'shadow' },\n            valueFormatter: (v) => 'Q ' + moneda.format(v),\n        },\n        legend: { top: 0, icon: 'roundRect', textStyle: { color: colorTexto } },\n        grid: { left: 8, right: 64, top: 32, bottom: 8, containLabel: true },\n        xAxis: {\n            type: 'value',\n            min: 0,\n            splitLine: { lineStyle: { color: colorBorde } },\n            axisLabel: { color: colorTexto, formatter: (v) => entero.format(v) },\n        },\n        yAxis: {\n            type: 'category',\n            data: tiendas,\n            inverse: true, // la tienda con mas ventas queda arriba\n            axisLine: { lineStyle: { color: colorBorde } },\n            axisLabel: { color: colorTexto },\n        },\n        series: [\n            {\n                name: 'Ventas',\n                type: 'bar',\n                data: ventas,\n                barGap: '15%',\n                barMaxWidth: 22,\n                itemStyle: { color: COLOR_VENTAS, borderRadius: [0, 4, 4, 0] },\n                label: etiqueta,\n            },\n            {\n                name: 'Gastos',\n                type: 'bar',\n                data: gastos,\n                barMaxWidth: 22,\n                itemStyle: { color: COLOR_GASTOS, borderRadius: [0, 4, 4, 0] },\n                label: etiqueta,\n            },\n        ],\n    },\n};\n",
+        "google": {
+          "callback": "gmapReady",
+          "key": ""
+        },
+        "map": "none",
+        "renderer": "canvas",
+        "themeEditor": {
+          "config": "{}",
+          "name": "default"
+        },
+        "visualEditor": {
+          "code": "return {\n  dataset: context.editor.dataset,\n  series: context.editor.series,\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n}\n",
+          "dataset": [],
+          "series": []
+        }
+      },
+      "pluginVersion": "7.2.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Ventas y gastos por tienda, sumados en TODO el rango de fechas.\n-- Ordenado de mayor a menor venta.\nWITH v AS (\n    SELECT ss.establishment_id AS tienda_id, sum(ss.total - COALESCE(ss.delivery, 0) + ss.total_discount) AS ventas\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n    GROUP BY 1\n),\ng AS (\n    SELECT se.establishment_id AS tienda_id, sum(se.total_amount) AS gastos\n    FROM store_expense se\n    WHERE se.status_id = 58\n      AND se.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(se.creation_date AT TIME ZONE 'UTC')\n    GROUP BY 1\n)\nSELECT\n    e.\"name\"                          AS \"Tienda\",\n    round(COALESCE(v.ventas, 0), 2)   AS \"Ventas\",\n    round(COALESCE(g.gastos, 0), 2)   AS \"Gastos\"\nFROM establishment e\nLEFT JOIN v ON v.tienda_id = e.id\nLEFT JOIN g ON g.tienda_id = e.id\nWHERE e.id::text IN (${tienda:sqlstring})\nORDER BY COALESCE(v.ventas, 0) DESC, e.\"name\";",
+          "refId": "A"
+        }
+      ],
+      "title": "Ventas y gastos por tienda",
+      "type": "volkovlabs-echarts-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(Q\\)$"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tienda"
+            },
+            "properties": [
+              {
+                "id": "custom.minWidth",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": "",
+          "countRows": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Estadistica de ventas por tienda, calculada sobre cada VENTA INDIVIDUAL\n-- (el monto de cada venta), no sobre totales por dia: con un mes de rango\n-- habria solo ~30 valores por dia y el percentil 99 seria practicamente el\n-- maximo. Por venta hay cientos de datos y los percentiles si dicen algo.\n--\n-- Monto = bruto, antes de descuento y sin envio.\n-- Las tiendas sin ventas en el rango no aparecen: no hay datos que medir.\n-- Mismo orden que las barras: de mayor a menor venta total.\nWITH ventas AS (\n    SELECT ss.establishment_id AS tienda_id, ss.total - COALESCE(ss.delivery, 0) + ss.total_discount AS monto\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n)\nSELECT\n    e.\"name\"                                                                     AS \"Tienda\",\n    round(min(v.monto), 2)                                                       AS \"Mínimo (Q)\",\n    round(avg(v.monto), 2)                                                       AS \"Media (Q)\",\n    round((percentile_cont(0.95) WITHIN GROUP (ORDER BY v.monto))::numeric, 2)  AS \"P95 (Q)\",\n    round((percentile_cont(0.99) WITHIN GROUP (ORDER BY v.monto))::numeric, 2)  AS \"P99 (Q)\",\n    round(max(v.monto), 2)                                                       AS \"Máximo (Q)\"\nFROM ventas v\nJOIN establishment e ON e.id = v.tienda_id\nGROUP BY e.id, e.\"name\"\nORDER BY sum(v.monto) DESC, e.\"name\";",
+          "refId": "A"
+        }
+      ],
+      "title": "Estadística de ventas por tienda",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "embutidos-any",
+    "ventas",
+    "kpi"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id = 28           -- solo tiendas activas\nORDER BY e.\"name\";",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Tienda",
+        "multi": true,
+        "name": "tienda",
+        "options": [],
+        "query": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id = 28           -- solo tiendas activas\nORDER BY e.\"name\";",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "America/Guatemala",
+  "title": "Estado de ventas",
+  "uid": "estado-de-ventas",
+  "version": 1,
+  "weekStart": "monday"
+}
