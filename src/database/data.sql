@@ -4719,3 +4719,14 @@ INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,
 -- Ver src/database/migrations/2026-10-02-recibir-y-vender-pedidos.sql
 INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
 	 ('receiveAndSellPFSOrderV1','/receiveAndSellPFSOrderV1','call receive_and_sell_pfs_order_v1($1,$2,$3::uuid)','shop_sale','PATCH');
+
+
+-- Costo en ventas (EMB-ANY-015): la columna nueva shop_sale_element.base_cost guarda el costo del
+-- producto POR UNIDAD BASE al vender (copia de product_for_sale.cost). El costo de la linea es
+-- quantity * unit_base_quantity * base_cost. register_shop_sale_with_elements_v9 es la v8 mas esa
+-- copia y se deriva del codigo vivo de la v8, asi que no se repite aca.
+-- receive_and_sell_pfs_order_v2 es la v1 llamando a la v9.
+-- Ver src/database/migrations/2026-10-08-costo-en-ventas.sql
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('registerShopV9','/registerShopV9','call register_shop_sale_with_elements_v9($1,$2,$3::uuid)','shop_sale','PATCH'),
+	 ('receiveAndSellPFSOrderV2','/receiveAndSellPFSOrderV2','call receive_and_sell_pfs_order_v2($1,$2,$3::uuid)','shop_sale','PATCH');

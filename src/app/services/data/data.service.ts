@@ -2179,6 +2179,10 @@ export class DataService {
      * V8 es la v7 más `pfsStoreOrderId`: con él la venta queda ligada al pedido del que salió
      * ("Vender pedido"). Sin él se comporta igual que la v7.
      * Ver src/database/migrations/2026-10-02-venta-de-pedidos.sql
+     *
+     * V9 es la v8 más el costo de cada producto al vender (shop_sale_element.base_cost, por unidad
+     * base), que lo copia la base del costo vigente: no viaja desde acá.
+     * Ver src/database/migrations/2026-10-08-costo-en-ventas.sql
      */
     registerShop(params: ShopResume) {
         let parameters = JSON.stringify({
@@ -2188,13 +2192,16 @@ export class DataService {
             "$2": JSON.stringify(params.itemsList),
             "$3": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/registerShopV8`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/registerShopV9`, parameters);
     }
 
     /**
      * "Recibir y vender": recibe el pedido `params.pfsStoreOrderId` y registra la venta ligada a él
      * en una sola transacción. Mismos parámetros que registerShop.
      * Ver src/database/migrations/2026-10-02-recibir-y-vender-pedidos.sql
+     *
+     * V2: la venta la registra la v9, que guarda el costo de cada producto.
+     * Ver src/database/migrations/2026-10-08-costo-en-ventas.sql
      */
     receiveAndSellPFSOrder(params: ShopResume) {
         let parameters = JSON.stringify({
@@ -2204,7 +2211,7 @@ export class DataService {
             "$2": JSON.stringify(params.itemsList),
             "$3": this.accountService.userValue.uuid
         });
-        return this.http.patch(`${environment.apiUrlV3}/receiveAndSellPFSOrderV1`, parameters);
+        return this.http.patch(`${environment.apiUrlV3}/receiveAndSellPFSOrderV2`, parameters);
     }
 
     /**

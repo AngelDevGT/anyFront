@@ -247,7 +247,7 @@ CREATE TABLE shop_sale ( id uuid DEFAULT gen_random_uuid() NOT NULL, name_client
 
 -- DROP TABLE shop_sale_element;
 
-CREATE TABLE shop_sale_element ( id int4 DEFAULT nextval('shop_sale_element_sse_id_seq'::regclass) NOT NULL, shop_sale_id uuid NOT NULL, product_for_sale_id uuid NOT NULL, price numeric(10, 2) NOT NULL, subtotal numeric(10, 2) NOT NULL, total numeric(10, 2) NOT NULL, discount numeric(10, 2) NOT NULL, total_discount numeric(10, 2) NOT NULL, quantity numeric(12, 5) NOT NULL, measure_id int4 NULL, CONSTRAINT shop_sale_element_pkey PRIMARY KEY (id), CONSTRAINT shop_sale_element_fk_measure_id FOREIGN KEY (measure_id) REFERENCES measure(id), CONSTRAINT shop_sale_element_fk_product_for_sale_id FOREIGN KEY (product_for_sale_id) REFERENCES product_for_sale(id), CONSTRAINT shop_sale_element_fk_shop_sale_id FOREIGN KEY (shop_sale_id) REFERENCES shop_sale(id));
+CREATE TABLE shop_sale_element ( id int4 DEFAULT nextval('shop_sale_element_sse_id_seq'::regclass) NOT NULL, shop_sale_id uuid NOT NULL, product_for_sale_id uuid NOT NULL, price numeric(10, 2) NOT NULL, subtotal numeric(10, 2) NOT NULL, total numeric(10, 2) NOT NULL, discount numeric(10, 2) NOT NULL, total_discount numeric(10, 2) NOT NULL, quantity numeric(12, 5) NOT NULL, measure_id int4 NULL, base_cost numeric(10, 2) NULL, CONSTRAINT shop_sale_element_pkey PRIMARY KEY (id), CONSTRAINT shop_sale_element_fk_measure_id FOREIGN KEY (measure_id) REFERENCES measure(id), CONSTRAINT shop_sale_element_fk_product_for_sale_id FOREIGN KEY (product_for_sale_id) REFERENCES product_for_sale(id), CONSTRAINT shop_sale_element_fk_shop_sale_id FOREIGN KEY (shop_sale_id) REFERENCES shop_sale(id));
 
 
 -- public.store_expense definition
