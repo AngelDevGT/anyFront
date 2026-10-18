@@ -62,6 +62,7 @@ export class ViewCashClosingComponent implements OnInit{
     totalCreditPaymentsCheque = 0;
     totalCreditPaymentsTotal = 0;
     totalStoreExpenses = 0;
+    tableStoreExpenses: { date: string, title: string, supplier: string, nit: string, comment: string, amount: number }[] = [];
     totalIngresos = 0;
     totalEgresos = 0;
     totalEfectivo = 0;
@@ -370,6 +371,20 @@ export class ViewCashClosingComponent implements OnInit{
             this.tableCreditPayments.push(curr_row);
         });
 
+        // Detalle de gastos: del snapshot congelado al cerrar (o en vivo en cierres anteriores a
+        // 2026-09-22). Del más antiguo al más reciente, como se fueron registrando.
+        this.tableStoreExpenses = [...(cashClosing.storeExpenses ?? [])]
+            .sort((a, b) => String(a.creationDate ?? '').localeCompare(String(b.creationDate ?? '')))
+            .map(expense => ({
+                date: expense.creationDate
+                    ? this.dataService.getLocalDateTimeFromUTCTime(expense.creationDate.replaceAll("\"",""))
+                    : '--',
+                title: expense.title ?? '--',
+                supplier: expense.supplier || '--',
+                nit: expense.nit || '--',
+                comment: expense.comment || '--',
+                amount: Number(expense.totalAmount || 0)
+            }));
         this.totalStoreExpenses = (cashClosing.storeExpenses ?? [])
             .reduce((sum, e) => sum + Number(e.totalAmount || 0), 0);
         this.totalAmountSale = this.totalAmountShopResumes - this.totalDiscountShopResumes + this.totalDeliveryShopResumes;
@@ -402,7 +417,8 @@ export class ViewCashClosingComponent implements OnInit{
 
     viewShopSale(shopSaleId: string){
         const url = this.router.serializeUrl(
-            this.router.createUrlTree(['/store/sales/history/view/' + shopSaleId])
+            this.router.createUrlTree(['/store/sales/history/view/' + shopSaleId],
+                { queryParams: { returnUrl: this.router.url } })
         );
         window.open(url, '_blank');
     }

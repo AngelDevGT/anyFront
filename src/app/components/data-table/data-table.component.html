@@ -28,7 +28,8 @@
       <tbody>
         <tr *ngFor="let row of pagedRows"
             [class.dt-row-clickable]="hasRowLink(row)"
-            (click)="onRowClick(row)">
+            [attr.data-row-id]="rowId(row)"
+            (click)="onRowClick(row, $event)">
           <td *ngIf="selectable" class="dt-col-check">
             <input type="checkbox"
                    class="dt-checkbox"
@@ -54,9 +55,19 @@
             <button *ngIf="cell.type === 'link'"
                     type="button"
                     class="dt-cell-link"
-                    (click)="$event.stopPropagation(); navigate(cell.routerLink, cell.query_params, cell.is_absolute)">
+                    (click)="$event.stopPropagation(); navigateFromRow(row, $event, cell.routerLink, cell.query_params, cell.is_absolute)">
               {{ cell.value }}
             </button>
+
+            <!-- Chips: varias pastillas en una celda (ej. las etiquetas de un gasto). `values` es la
+                 lista; `value` debe traer el mismo texto unido, que es el que usa el ordenamiento. -->
+            <div *ngIf="cell.type === 'chips'" class="dt-chips">
+              <span *ngFor="let chip of cell.values"
+                    class="dt-chip"
+                    [style.background]="cell.bg_color || null"
+                    [style.color]="cell.color || null">{{ chip }}</span>
+              <span *ngIf="!cell.values?.length" class="dt-cell-text">--</span>
+            </div>
 
             <!-- Badge -->
             <span *ngIf="cell.type === 'badge'"
@@ -91,7 +102,7 @@
                       type="button"
                       class="dt-action-btn"
                       [ngClass]="[btn.colorClass, btn.title ? 'dt-action-btn--labeled' : '']"
-                      (click)="$event.stopPropagation(); btn.action ? emitModalAction(btn.action, cell.data) : navigate(btn.routerLink, btn.query_params, btn.is_absolute)">
+                      (click)="$event.stopPropagation(); btn.action ? emitModalAction(btn.action, cell.data) : navigateFromRow(row, $event, btn.routerLink, btn.query_params, btn.is_absolute)">
                 <i class="material-icons">{{ btn.icon.icon }}</i>
                 <span *ngIf="btn.title" class="dt-btn-label">{{ btn.title }}</span>
               </button>

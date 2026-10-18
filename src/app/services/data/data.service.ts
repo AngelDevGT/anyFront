@@ -2006,7 +2006,7 @@ export class DataService {
      */
     getProductForSaleOrderByIdForPdf(id: string) {
         let params = JSON.stringify({pfsso: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderForPdfV3`, params);
+        return this.http.post(`${environment.apiUrlV3}/getProductForSaleStoreOrderForPdfV4`, params);
     }
 
     addProductForSaleOrder(pfsOrder: ProductForSaleStoreOrder){
@@ -2306,12 +2306,17 @@ export class DataService {
 
     /** STORE EXPENSES */
 
+    /**
+     * V2 agrega creationDate a cada gasto: el listado muestra cuando se REGISTRO el gasto, no su
+     * ultima actualizacion. Superset de la V1.
+     * Ver src/database/migrations/2026-10-16-fecha-creacion-listado-gastos.sql
+     */
     getAllStoreExpenses(params: any) {
         let parameters = JSON.stringify({
             se: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/listStoreExpense`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listStoreExpenseV2`, parameters);
     }
 
     getStoreExpenseById(params: any) {

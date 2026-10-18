@@ -80,6 +80,7 @@ import { BoardFinishedProductOrderComponent } from "@app/pages/product-for-sale-
 import { PreparedFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/prepared/prepared-pfs-order.component";
 import { DashboardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/dashboard/dashboard-pfs-order.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
+import { RegisterConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/register/register-consume-raw-material.component";
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DATE_FORMATS } from '@angular/material/core';
 import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
@@ -155,6 +156,7 @@ export const MY_DATE_FORMATS = {
       AddEditProductCreationComponent,
       RegisterProductCreationComponent,
       ConsumeRawMaterialComponent,
+      RegisterConsumeRawMaterialComponent,
       ListWarehouseInventoryRMPComponent,
       ListFactoryInventoryRMComponent,
       ListFactoryInventoryFPComponent,

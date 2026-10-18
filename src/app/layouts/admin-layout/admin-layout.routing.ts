@@ -49,6 +49,7 @@ import { BoardFinishedProductOrderComponent } from "@app/pages/product-for-sale-
 import { PreparedFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/prepared/prepared-pfs-order.component";
 import { DashboardFinishedProductOrderComponent } from "@app/pages/product-for-sale-order/dashboard/dashboard-pfs-order.component";
 import { ConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/consume-raw-material.component";
+import { RegisterConsumeRawMaterialComponent } from "@app/pages/consume-raw-material/register/register-consume-raw-material.component";
 import { RegisterProductCreationComponent } from "@app/pages/product-creation/register/register-product-creation.component";
 import { ViewInventoryLogComponent } from "@app/pages/inventory-element-action/view/view-inventory-log.component";
 import { SummaryStoreSalesComponent } from "@app/pages/store-sales/summary/summary-store-sales.component";
@@ -144,8 +145,12 @@ export const AdminLayoutRoutes: Routes = [
     // PARA REVERTIR: cambiar acá y en 'abarroteCreation' (arriba) el component de
     // vuelta a AddEditProductCreationComponent, que sigue declarado e intacto.
     { path: 'productCreation', component: RegisterProductCreationComponent, canActivate: [canActivateV2]},
-    { path: 'consumeRawMaterial', component: ConsumeRawMaterialComponent, canActivate: [canActivateV2]},
-    { path: 'consumePackagingMaterial', component: ConsumeRawMaterialComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
+    // Consumir materia prima / material de empaque: pantalla nueva con medida y cantidad en línea
+    // en la tabla (RegisterConsumeRawMaterialComponent).
+    // PARA REVERTIR: cambiar acá el component de vuelta a ConsumeRawMaterialComponent, que sigue
+    // declarado e intacto.
+    { path: 'consumeRawMaterial', component: RegisterConsumeRawMaterialComponent, canActivate: [canActivateV2]},
+    { path: 'consumePackagingMaterial', component: RegisterConsumeRawMaterialComponent, data: { materialType: 2 }, canActivate: [canActivateV2]},
     { path: 'users', loadChildren: usersModule, canActivate: [canActivateV2]},
     { path: 'summary/rawMaterialByProvider/order', component: SummaryRawMaterialOrderComponent, canActivate: [canActivateV2]},
     { path: 'summary/inventory/warehouse/rawMaterialByProvider', component: SummaryRawMaterialByProviderInventoryBodegaComponent, canActivate: [canActivateV2]},

@@ -4,6 +4,7 @@ export * from './alert.service';
 export * from './headers/headers.service';
 export * from './pdf/pdf.service';
 export * from './pagination-state.service';
+export * from './scroll-memory.service';
 export * from './date-range-state.service';
 export * from './store-selection-state.service';
 export * from './store-context.service';

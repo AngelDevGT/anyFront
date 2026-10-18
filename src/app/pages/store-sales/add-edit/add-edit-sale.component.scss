@@ -137,6 +137,15 @@ $accent-dark: #a83e00;
     }
 }
 
+// Contenedor de la tabla de productos: ocupa lo que le deja el panel y se desplaza por dentro,
+// para que las acciones de abajo (cliente, envío, comentario) siempre queden a la vista.
+.pos-picker {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px 4px 0;
+}
+
 .pos-panel-title {
     font-size: 20px;
     font-weight: 800;

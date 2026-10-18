@@ -4,6 +4,7 @@ import { first } from 'rxjs/operators';
 import { AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StoreExpense } from '@app/models/store/store-expense.model';
+import { OPERATOR_CHIP_COLOR, parseExpenseTags } from '@app/helpers';
 
 @Component({
     selector: 'page-view-expense',
@@ -15,6 +16,9 @@ export class ViewExpenseComponent implements OnInit {
     id?: string;
     expense?: StoreExpense;
     elements: any = [];
+    /** Etiquetas del gasto (store_expense.title, una por línea). Un gasto anterior trae una sola. */
+    tags: string[] = [];
+    readonly tagChipColor = OPERATOR_CHIP_COLOR;
     loading = false;
     submitting = false;
 
@@ -44,7 +48,7 @@ export class ViewExpenseComponent implements OnInit {
     }
 
     setElements(expense?: StoreExpense) {
-        this.elements.push({ icon: 'receipt_long', name: 'Título',          value: expense?.title });
+        this.tags = parseExpenseTags(expense?.title);
         this.elements.push({ icon: 'payments',     name: 'Monto Total',      value: this.dataService.getFormatedPrice(Number(expense?.totalAmount)) });
         this.elements.push({ icon: 'tag',          name: 'NIT',              value: expense?.nit || 'C/F' });
         this.elements.push({ icon: 'store',        name: 'Proveedor',        value: expense?.supplier || '--' });

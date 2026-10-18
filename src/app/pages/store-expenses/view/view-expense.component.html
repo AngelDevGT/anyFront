@@ -9,6 +9,19 @@
         <br>
         <mat-card-content *ngIf="!loading">
             <div class="d-flex flex-wrap justify-content-center col-md-12">
+                <div class="col-lg-8 col-md-10 col-sm-12 px-3 pb-2" *ngIf="tags.length">
+                    <div class="d-flex align-items-center">
+                        <i class="material-icons icon element-icon me-3" style="font-size: 30px;">receipt_long</i>
+                        <div>
+                            <p class="tags-title mb-2">Etiquetas</p>
+                            <div class="tags-list">
+                                <span class="tag-chip" *ngFor="let tag of tags"
+                                      [style.background]="tagChipColor.bg_color"
+                                      [style.color]="tagChipColor.color">{{ tag }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-12">
                     <view-object [objectElements]="elements"></view-object>
                 </div>

@@ -325,6 +325,8 @@ export class ListCustomerPaymentsComponent implements OnInit {
                     value: sale.saleNumber != null ? '#' + sale.saleNumber : (saleId ? 'Ver venta' : '--'),
                     routerLink: saleId ? '/store/sales/history/view/' + saleId : undefined,
                     is_absolute: true,
+                    // La venta regresa a este historial y, tras un pago, también
+                    query_params: { returnUrl: this.router.url, from: 'customer-history' },
                     header_name: 'Venta'
                 },
                 {

@@ -1,0 +1,1004 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_EMBUTIDOS_ANY",
+      "label": "Embutidos Any (PostgreSQL)",
+      "description": "Base de datos PostgreSQL de Embutidos Any",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.0"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Pagos de las ventas que no fueron al crédito, y ventas netas, costos, gastos y resultado por tienda.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Venta de producto después de descuento y sin envío, de las ventas que no fueron al crédito.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Ventas netas$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Detalle de ventas: UNA fila con los indicadores de las tiendas del filtro\n-- Tienda, dentro del rango de tiempo del dashboard. Este panel la ejecuta y\n-- los demas indicadores la leen con el datasource \"-- Dashboard --\".\n--\n-- QUE VENTAS ENTRAN\n--   Ventas activas (52) cuyo PEDIDO no fue al credito, filtradas por la FECHA\n--   DE LA VENTA y por el filtro Tienda. El envio no cuenta aqui: no es venta de\n--   producto y no tiene costo.\n--\n-- VENTAS NETAS\n--   Suma de shop_sale_element.total: precio por cantidad MENOS descuento, sin\n--   envio. Es igual a shop_sale.total - shop_sale.delivery. OJO: el \"Total\n--   ventas\" del Resumen general es BRUTO (antes de descuento), por eso aqui se\n--   llama distinto.\n--\n-- COSTOS\n--   cantidad * unit_base_quantity * costo por unidad base. El costo es el que\n--   tenia el producto al vender (shop_sale_element.base_cost, EMB-ANY-015); si\n--   una linea no lo tiene, cae al costo actual y luego al precio. Se suma SIN\n--   redondear por linea y se redondea al final.\n--\n-- GASTOS\n--   Gastos de tienda activos (58), por fecha de creacion del gasto.\n--\n-- MARGEN   = Ventas netas - Costos\n-- RESULTADO = Ventas netas - Costos - Gastos\n--\n-- TIENDA CON MAS VENTAS\n--   La de mayor venta neta. Si ninguna vendio, '--'.\nWITH tiendas AS (\n    SELECT e.id, e.\"name\"\n    FROM establishment e\n    WHERE e.id::text IN (${tienda:sqlstring})\n),\nventas AS (\n    -- ventas activas cuyo PEDIDO no fue al credito, por fecha de la venta\n    SELECT ss.id, ss.establishment_id\n    FROM shop_sale ss\n    JOIN payment_type pt ON pt.id = ss.payment_type_id\n    WHERE ss.status_id = 52                                   -- solo ventas activas (54 = cancelada)\n      AND pt.\"name\" <> 'Crédito'\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n),\nlineas AS (\n    -- venta neta y costo por tienda, a partir de los productos vendidos\n    SELECT\n        v.establishment_id,\n        sum(sse.total)                                                               AS venta_neta,\n        sum(sse.quantity * m.unit_base_quantity * COALESCE(sse.base_cost, pfs.cost, pfs.price)) AS costo\n    FROM ventas v\n    JOIN shop_sale_element sse ON sse.shop_sale_id = v.id\n    JOIN product_for_sale  pfs ON pfs.id = sse.product_for_sale_id\n    JOIN measure           m   ON m.id   = sse.measure_id\n    GROUP BY v.establishment_id\n),\nconteo AS (\n    SELECT v.establishment_id, count(*) AS ventas\n    FROM ventas v\n    GROUP BY v.establishment_id\n),\ngastos AS (\n    SELECT se.establishment_id, sum(se.total_amount) AS gastos\n    FROM store_expense se\n    WHERE se.status_id = 58                                   -- gasto activo (59 = eliminado)\n      AND se.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(se.creation_date AT TIME ZONE 'UTC')\n    GROUP BY se.establishment_id\n),\npor_tienda AS (\n    SELECT\n        t.\"name\"                         AS tienda,\n        COALESCE(c.ventas, 0)            AS ventas,\n        COALESCE(l.venta_neta, 0)        AS venta_neta,\n        COALESCE(l.costo, 0)             AS costo,\n        COALESCE(g.gastos, 0)            AS gastos\n    FROM tiendas t\n    LEFT JOIN conteo c ON c.establishment_id = t.id\n    LEFT JOIN lineas l ON l.establishment_id = t.id\n    LEFT JOIN gastos g ON g.establishment_id = t.id\n)\nSELECT\n    COALESCE(sum(p.ventas), 0)                                        AS \"Ventas\",\n    round(COALESCE(sum(p.venta_neta), 0), 2)                          AS \"Ventas netas\",\n    round(COALESCE(sum(p.costo), 0), 2)                               AS \"Costos\",\n    round(COALESCE(sum(p.gastos), 0), 2)                              AS \"Gastos\",\n    round(COALESCE(sum(p.venta_neta - p.costo), 0), 2)                AS \"Margen\",\n    round(COALESCE(sum(p.venta_neta - p.costo - p.gastos), 0), 2)     AS \"Resultado\",\n    COALESCE((SELECT x.tienda FROM por_tienda x\n               WHERE x.venta_neta > 0\n               ORDER BY x.venta_neta DESC, x.tienda\n               LIMIT 1), '--')                                         AS \"Tienda con más ventas\"\nFROM por_tienda p;",
+          "refId": "A"
+        }
+      ],
+      "title": "Ventas netas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Ventas activas del periodo cuyo pedido no fue al crédito.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Ventas$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Número de ventas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Suma de los gastos de tienda activos del periodo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Gastos$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Gastos",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Ventas netas menos el costo de los productos vendidos. Rojo si es negativo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Margen$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Margen (Ventas - Costos)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Margen menos los gastos de tienda. Rojo si es negativo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currency:Q. "
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Resultado$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 32
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Resultado (Ventas - Costos - Gastos)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "Tienda con la mayor venta neta del periodo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Tienda con más ventas$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 24
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 1,
+          "refId": "A",
+          "withTransforms": false
+        }
+      ],
+      "title": "Tienda con más ventas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Un renglón por **pago que no fue al crédito**, del más reciente al más antiguo.\n\nCada venta se cobra en dos partes que pueden ir por métodos distintos: la venta (el pedido) y el envío. Cada parte es un renglón, y solo aparece si no fue al crédito y su monto es mayor a 0.\n\nFiltra por la **fecha de la venta**. No incluye ventas canceladas. El total del pie es la suma del monto.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "No. venta"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^Fecha "
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Monto (Q)"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tipo"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cliente"
+            },
+            "properties": [
+              {
+                "id": "custom.minWidth",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cliente"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Cliente registrado (nombre y NIT) o el nombre escrito en la venta. Vacío si la venta no lleva cliente."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tipo"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Venta: el pago del pedido. Envío: el pago del costo de envío."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Monto (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Monto pagado de esa parte de la venta. La venta ya tiene restado el descuento."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Método de pago"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Efectivo, Depósito o Cheque."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Banco"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Banco del pago. Solo aplica a Depósito y Cheque; en los demás y en los pagos anteriores a septiembre de 2026 aparece --."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "No. referencia"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Número de transferencia o de cheque. Mismas condiciones que el banco."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "No. venta"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Correlativo de la venta. Es por tienda."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fecha pago"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Fecha del pago capturada en Depósito y Cheque. En Efectivo es la fecha de la venta."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fecha venta"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Fecha en que se realizó la venta. Es la fecha por la que filtra el rango de tiempo."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tienda"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Tienda donde se realizó la venta."
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": true,
+          "fields": [
+            "Monto (Q)"
+          ],
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Detalle de ventas: una fila por PAGO que no fue al credito.\n--\n-- UNA VENTA, HASTA DOS PAGOS\n--   Una venta se cobra en dos partes que pueden ir por metodos distintos: el\n--   pedido (Tipo = Venta, monto = total - envio) y el envio (Tipo = Envio,\n--   monto = delivery). Cada parte es una fila, y solo aparece si NO fue al\n--   credito y su monto es mayor a 0. Una venta con el pedido al credito y el\n--   envio en efectivo muestra solo la fila del envio.\n--\n-- POR QUE SE ARMA DESDE LA VENTA Y NO DESDE LOS PAGOS\n--   Las ventas en Efectivo no tienen registro en shop_sale_payment: solo\n--   Deposito y Cheque guardan el pago hecho al vender (is_sale_payment = true,\n--   una fila por parte, con payment_target ORDER o DELIVERY). De ahi salen\n--   banco, referencia y fecha del pago cuando existen; si no, '--' y la fecha\n--   de la venta.\n--\n-- FECHAS\n--   Se filtra por la FECHA DE LA VENTA (ss.creation_date). \"Fecha pago\" es la\n--   que se tecleo en el pago (payment_date) o, si no hay, la de registro del\n--   pago; en Efectivo es la fecha de la venta. Todas se guardan en UTC.\n--\n-- CLIENTE\n--   Cliente registrado: nombre y NIT. Si no, el nombre escrito a mano en la\n--   venta (y su NIT si se capturo). Vacio si la venta no lleva cliente.\n--\n-- Ventas activas (52) solamente: las canceladas (54) no aparecen.\nWITH ventas AS (\n    SELECT ss.*\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n),\npagos AS (\n    SELECT v.id AS venta_id, 1 AS orden, 'Venta' AS tipo, 'ORDER' AS destino,\n           v.payment_type_id AS tipo_pago_id, v.total - COALESCE(v.delivery, 0) AS monto\n    FROM ventas v\n    UNION ALL\n    SELECT v.id, 2, 'Envío', 'DELIVERY',\n           v.delivery_payment_type_id, COALESCE(v.delivery, 0)\n    FROM ventas v\n)\nSELECT\n    CASE\n        WHEN c.id IS NOT NULL\n            THEN c.\"name\" || COALESCE(' (' || NULLIF(btrim(c.nit), '') || ')', '')\n        ELSE COALESCE(NULLIF(btrim(v.name_client), ''), '')\n             || CASE WHEN NULLIF(btrim(v.name_client), '') IS NOT NULL\n                     THEN COALESCE(' (' || NULLIF(btrim(v.nit_client), '') || ')', '')\n                     ELSE '' END\n    END                                                         AS \"Cliente\",\n    p.tipo                                                      AS \"Tipo\",\n    round(p.monto, 2)                                           AS \"Monto (Q)\",\n    pt.\"name\"                                                   AS \"Método de pago\",\n    COALESCE(NULLIF(btrim(ssp.bank), ''), '--')                 AS \"Banco\",\n    COALESCE(NULLIF(btrim(ssp.reference_no), ''), '--')         AS \"No. referencia\",\n    v.sale_number                                               AS \"No. venta\",\n    COALESCE(ssp.payment_date, ssp.\"date\", v.creation_date) AT TIME ZONE 'UTC' AS \"Fecha pago\",\n    v.creation_date AT TIME ZONE 'UTC'                          AS \"Fecha venta\",\n    e.\"name\"                                                    AS \"Tienda\"\nFROM pagos p\nJOIN ventas            v  ON v.id  = p.venta_id\nJOIN payment_type      pt ON pt.id = p.tipo_pago_id\nJOIN establishment     e  ON e.id  = v.establishment_id\nLEFT JOIN customer     c  ON c.id  = v.customer_id\nLEFT JOIN LATERAL (\n    -- el deposito o cheque registrado al vender, de esta parte de la venta\n    SELECT x.bank, x.reference_no, x.payment_date, x.\"date\"\n    FROM shop_sale_payment x\n    WHERE x.shop_sale_id = v.id\n      AND x.is_sale_payment = true\n      AND x.payment_target = p.destino\n    ORDER BY x.\"date\"\n    LIMIT 1\n) ssp ON true\nWHERE pt.\"name\" <> 'Crédito'\n  AND p.monto > 0\nORDER BY v.creation_date DESC, v.sale_number DESC, p.orden;",
+          "refId": "A"
+        }
+      ],
+      "title": "Detalle de ventas",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_EMBUTIDOS_ANY}"
+      },
+      "description": "Una fila por tienda del filtro **Tienda**. Solo ventas cuyo pedido no fue al crédito; la fila de totales coincide con los indicadores.\n\n- **Ventas netas**: después de descuento y sin envío.\n- **Costos**: costo de los productos vendidos, con el costo que tenían al vender.\n- **Margen**: Ventas netas - Costos.\n- **Gastos**: gastos de tienda activos.\n- **Resultado**: Margen - Gastos. Rojo si es negativo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(Q\\)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "prefix:Q. "
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Margen (Q)"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Resultado (Q)"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ventas"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Ventas activas del periodo cuyo pedido no fue al crédito."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ventas netas (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Venta de producto después de descuento y sin envío."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Costos (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Cantidad vendida × costo por unidad base que tenía el producto al vender."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Margen (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Ventas netas - Costos."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gastos (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Suma de los gastos de tienda activos del periodo."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Resultado (Q)"
+            },
+            "properties": [
+              {
+                "id": "description",
+                "value": "Ventas netas - Costos - Gastos."
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_EMBUTIDOS_ANY}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Ventas por tienda: una fila por tienda del filtro Tienda. Las tiendas sin\n-- movimiento en el periodo aparecen en cero. La fila de totales la calcula\n-- Grafana (footer) y coincide con los indicadores.\n--\n-- QUE VENTAS ENTRAN\n--   Ventas activas (52) cuyo PEDIDO no fue al credito, filtradas por la FECHA\n--   DE LA VENTA y por el filtro Tienda. El envio no cuenta aqui: no es venta de\n--   producto y no tiene costo.\n--\n-- VENTAS NETAS\n--   Suma de shop_sale_element.total: precio por cantidad MENOS descuento, sin\n--   envio. Es igual a shop_sale.total - shop_sale.delivery. OJO: el \"Total\n--   ventas\" del Resumen general es BRUTO (antes de descuento), por eso aqui se\n--   llama distinto.\n--\n-- COSTOS\n--   cantidad * unit_base_quantity * costo por unidad base. El costo es el que\n--   tenia el producto al vender (shop_sale_element.base_cost, EMB-ANY-015); si\n--   una linea no lo tiene, cae al costo actual y luego al precio. Se suma SIN\n--   redondear por linea y se redondea al final.\n--\n-- GASTOS\n--   Gastos de tienda activos (58), por fecha de creacion del gasto.\n--\n-- MARGEN   = Ventas netas - Costos\n-- RESULTADO = Ventas netas - Costos - Gastos\nWITH tiendas AS (\n    SELECT e.id, e.\"name\"\n    FROM establishment e\n    WHERE e.id::text IN (${tienda:sqlstring})\n),\nventas AS (\n    -- ventas activas cuyo PEDIDO no fue al credito, por fecha de la venta\n    SELECT ss.id, ss.establishment_id\n    FROM shop_sale ss\n    JOIN payment_type pt ON pt.id = ss.payment_type_id\n    WHERE ss.status_id = 52                                   -- solo ventas activas (54 = cancelada)\n      AND pt.\"name\" <> 'Crédito'\n      AND ss.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n),\nlineas AS (\n    -- venta neta y costo por tienda, a partir de los productos vendidos\n    SELECT\n        v.establishment_id,\n        sum(sse.total)                                                               AS venta_neta,\n        sum(sse.quantity * m.unit_base_quantity * COALESCE(sse.base_cost, pfs.cost, pfs.price)) AS costo\n    FROM ventas v\n    JOIN shop_sale_element sse ON sse.shop_sale_id = v.id\n    JOIN product_for_sale  pfs ON pfs.id = sse.product_for_sale_id\n    JOIN measure           m   ON m.id   = sse.measure_id\n    GROUP BY v.establishment_id\n),\nconteo AS (\n    SELECT v.establishment_id, count(*) AS ventas\n    FROM ventas v\n    GROUP BY v.establishment_id\n),\ngastos AS (\n    SELECT se.establishment_id, sum(se.total_amount) AS gastos\n    FROM store_expense se\n    WHERE se.status_id = 58                                   -- gasto activo (59 = eliminado)\n      AND se.establishment_id::text IN (${tienda:sqlstring})\n      AND $__timeFilter(se.creation_date AT TIME ZONE 'UTC')\n    GROUP BY se.establishment_id\n),\npor_tienda AS (\n    SELECT\n        t.\"name\"                         AS tienda,\n        COALESCE(c.ventas, 0)            AS ventas,\n        COALESCE(l.venta_neta, 0)        AS venta_neta,\n        COALESCE(l.costo, 0)             AS costo,\n        COALESCE(g.gastos, 0)            AS gastos\n    FROM tiendas t\n    LEFT JOIN conteo c ON c.establishment_id = t.id\n    LEFT JOIN lineas l ON l.establishment_id = t.id\n    LEFT JOIN gastos g ON g.establishment_id = t.id\n)\nSELECT\n    p.tienda                                         AS \"Tienda\",\n    p.ventas                                         AS \"Ventas\",\n    round(p.venta_neta, 2)                           AS \"Ventas netas (Q)\",\n    round(p.costo, 2)                                AS \"Costos (Q)\",\n    round(p.venta_neta - p.costo, 2)                 AS \"Margen (Q)\",\n    round(p.gastos, 2)                               AS \"Gastos (Q)\",\n    round(p.venta_neta - p.costo - p.gastos, 2)      AS \"Resultado (Q)\"\nFROM por_tienda p\nORDER BY p.venta_neta DESC, p.tienda;",
+          "refId": "A"
+        }
+      ],
+      "title": "Ventas por tienda",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "embutidos-any",
+    "ventas",
+    "tiendas"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_EMBUTIDOS_ANY}"
+        },
+        "definition": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id <> 29          -- activas (28) e inactivas (27); fuera eliminadas\nORDER BY e.\"name\";",
+        "description": "Tiendas incluidas (activas e inactivas).",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Tienda",
+        "multi": true,
+        "name": "tienda",
+        "options": [],
+        "query": "SELECT e.\"name\" AS __text, e.id::text AS __value\nFROM establishment e\nWHERE e.status_id <> 29          -- activas (28) e inactivas (27); fuera eliminadas\nORDER BY e.\"name\";",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now/M",
+    "to": "now/M"
+  },
+  "timepicker": {},
+  "timezone": "America/Guatemala",
+  "title": "Detalle de ventas",
+  "uid": "detalle-ventas-any",
+  "version": 1,
+  "weekStart": ""
+}

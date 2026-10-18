@@ -683,7 +683,9 @@ export class ViewProductForSaleOrderComponent implements OnInit{
 
     viewSale(){
         if (!this.productForSaleOrder?.shopSaleId) return;
-        this.router.navigateByUrl('/store/sales/history/view/' + this.productForSaleOrder.shopSaleId);
+        this.router.navigate(['/store/sales/history/view/' + this.productForSaleOrder.shopSaleId], {
+            queryParams: { returnUrl: this.router.url }
+        });
     }
 
     navigateWithParams(){

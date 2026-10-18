@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { RawMaterialOrder } from "@app/models/raw-material/raw-material-order.model";
-import { DataService } from "../data/data.service";
+import { DataService, pfsFactoryOrderStatusValues, pfsStoreOrderStatusValues } from "../data/data.service";
 import pdfMake from "pdfmake/build/pdfmake";  
 import pdfFonts from "pdfmake/build/vfs_fonts";  
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -12,17 +12,17 @@ pdfMake.vfs = pdfFonts.pdfMake.vfs;
 @Injectable({ providedIn: 'root' })
 export class PdfService {
 
+    // Colores del comprobante de venta: los documentos de la empresa se ven como una familia.
+    private readonly pdfBrand = '#ec5300';
+    private readonly pdfMuted = '#6b6b6b';
+    private readonly pdfLine = '#e4e4e4';
+
     private readonly pdfStyles = {
-        sectionHeader: {
+        orderTableHeader: {
             bold: true,
-            decoration: 'underline' as const,
-            fontSize: 14,
-            margin: [0, 15, 0, 15] as [number, number, number, number]
-        },
-        tableHeader: {
-            bold: true,
-            fontSize: 12,
-            fillColor: '#ffefd2'
+            fontSize: 11,
+            color: '#ffffff',
+            fillColor: this.pdfBrand
         }
     };
 
@@ -173,13 +173,20 @@ export class PdfService {
         pdfMake.createPdf(docDefinition).open();  
     }
 
-    generateProductForSaleOrderPDF(productForSaleOrder: ProductForSaleStoreOrder, option?: string) {
-        let docDefinition:TDocumentDefinitions = {
-            content: this.buildProductForSaleOrderContent(productForSaleOrder, option),
-            styles: this.pdfStyles
-        };
+    /**
+     * Descarga el PDF de un pedido. `option` es 'factory' para el formato de bodega (sin precios,
+     * con datos de preparación); cualquier otro valor da el formato de tienda.
+     */
+    async generateProductForSaleOrderPDF(productForSaleOrder: ProductForSaleStoreOrder, option?: string) {
+        const logo = await this.getBrandLogo();
+        const content = this.buildProductForSaleOrderContent(productForSaleOrder, option, logo);
+        const docDefinition = this.buildOrderDocument(content, option, this.getOrderTerminalLabel(productForSaleOrder, option));
 
-        pdfMake.createPdf(docDefinition).open();
+        const store = productForSaleOrder?.establishment?.name
+            || productForSaleOrder?.productForSaleStoreOrderElements?.[0]?.productForSale?.establishment?.name
+            || '';
+        const number = productForSaleOrder?.orderNumber != null ? String(productForSaleOrder.orderNumber) : '';
+        pdfMake.createPdf(docDefinition).download(this.getOrdersFileName('pedido', store, number));
     }
 
     /**
@@ -187,172 +194,255 @@ export class PdfService {
      */
     async generateMultipleProductForSaleOrdersPDF(orders: ProductForSaleStoreOrder[], option?: string, storeName?: string) {
         const store = storeName || orders[0]?.establishment?.name || '';
+        const logo = await this.getBrandLogo();
 
         let content: Content[] = [];
 
         // Un pedido por hoja
         orders.forEach((order, orderIndex) => {
-            const orderContent = this.buildProductForSaleOrderContent(order, option);
+            const orderContent = this.buildProductForSaleOrderContent(order, option, logo);
             orderContent.forEach((element: any, index: number) => {
                 if (index === 0 && orderIndex > 0) element.pageBreak = 'before';
                 content.push(element);
             });
         });
 
-        let docDefinition:TDocumentDefinitions = {
-            content: content,
-            styles: this.pdfStyles
-        };
-
-        pdfMake.createPdf(docDefinition).download(this.getMultipleOrdersFileName(store));
+        // Sin marca de agua: es de todo el documento y marcaría también los pedidos vigentes.
+        // El estado de cada pedido ya va en rojo en su encabezado.
+        pdfMake.createPdf(this.buildOrderDocument(content, option)).download(this.getOrdersFileName('pedidos', store));
     }
 
-    private getMultipleOrdersFileName(storeName: string): string {
+    private getOrdersFileName(prefix: string, storeName: string, orderNumber?: string): string {
         const today = new Date();
         const date = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
         const store = storeName ? storeName.trim().toLowerCase().replace(/\s+/g, '-') : 'pedidos';
-        return `pedidos-${store}-${date}.pdf`;
+        return `${[prefix, store, orderNumber, date].filter(Boolean).join('-')}.pdf`;
     }
 
-    private buildProductForSaleOrderContent(productForSaleOrder: ProductForSaleStoreOrder, option?: string): Content[] {
-        let storeName = productForSaleOrder?.establishment?.name || productForSaleOrder?.productForSaleStoreOrderElements![0].productForSale?.establishment?.name!;
-        let docTitle = option === "factory" ? "Pedido de Producto Terminado (Fabrica)" : "Pedido de Producto para Venta (Tienda)";
-        let orderStatus = option === "factory" ? productForSaleOrder?.factoryStatus?.identifier : productForSaleOrder?.storeStatus?.identifier;
-        let content: Content[] = [
-                {
-                  text: docTitle,  
-                  fontSize: 16,  
-                  alignment: 'center',  
-                  color: 'grey'
-                },
-                {
-                  text: productForSaleOrder?.name!,
-                  fontSize: 20,
-                  bold: true,
-                  alignment: 'center',
-                  decoration: 'underline',
-                  color: '#ec5300'
-                },
-                // Correlativo del pedido dentro de su tienda. Es el dato con el que
-                // bodega y tienda se refieren al pedido, así que va en el encabezado.
-                {
-                    text: productForSaleOrder?.orderNumber != null ? `No. ${productForSaleOrder.orderNumber}` : 'No. --',
-                    fontSize: 14,
-                    bold: true,
-                    alignment: 'center',
-                    marginTop: 4
-                },
-                {
-                    text: 'Tienda',
-                    style: 'sectionHeader'
-                },
-                {
-                    columns: [
-                        [
-                            {
-                                text: "Nombre: " + storeName,
-                                bold: true
-                            }
+    /** Pedido que ya no está vigente, para marcarlo en rojo. Nada si sigue su curso normal. */
+    private getOrderTerminalLabel(order: ProductForSaleStoreOrder, option?: string): string | undefined {
+        const isFactory = option === 'factory';
+        const statusId = isFactory ? order?.factoryStatus?.id : order?.storeStatus?.id;
+        const values = isFactory ? pfsFactoryOrderStatusValues : pfsStoreOrderStatusValues;
+        if (statusId == null) return undefined;
+        if (statusId === values.cancelado.status.id) return 'CANCELADO';
+        if (statusId === values.devuelto.status.id) return 'DEVUELTO';
+        if (statusId === values.eliminado.status.id) return 'ELIMINADO';
+        return undefined;
+    }
+
+    private buildOrderDocument(content: Content[], option?: string, watermark?: string): TDocumentDefinitions {
+        const muted = this.pdfMuted;
+        const line = this.pdfLine;
+        const documentDate = this.dataService.getLocalDateTimeFromUTCTime(new Date().toISOString());
+
+        return {
+            pageSize: 'A4',
+            pageMargins: [40, 40, 40, 80],
+            content: content,
+            ...(watermark ? { watermark: { text: watermark, color: '#c0392b', opacity: 0.15, bold: true } } : {}),
+            footer: ((currentPage: number, pageCount: number) => ({
+                margin: [40, 10, 40, 0],
+                stack: [
+                    { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: line }] },
+                    {
+                        columns: [
+                            { text: `Documento creado: ${documentDate}`, fontSize: 9, color: muted },
+                            { text: `Página ${currentPage} de ${pageCount}`, fontSize: 9, color: muted, alignment: 'right' }
                         ],
-                        [
-                            {
-                                text: `Fecha: ${new Date().toLocaleString()}`,
-                                alignment: 'right'
-                            }
-                        ]
-                    ]
-                },
-                // Operadores: quienes prepararon el pedido en bodega. Solo en el PDF de fabrica;
-                // es un dato interno y la tienda no tiene por que saber quien le prepara el
-                // pedido, igual que en el listado y en el detalle. Se omite la linea entera
-                // cuando el pedido no los tiene, en vez de imprimir un guion.
-                ...(option === "factory" && formatOperators(productForSaleOrder?.operators)
-                    ? [{ text: 'Operadores: ' + formatOperators(productForSaleOrder?.operators), marginTop: 4 }]
-                    : []),
-                {
-                    text: 'Productos',
-                    style: 'sectionHeader'
-                },
-                {  
-                    table: {
-                        headerRows: 1,  
-                        widths: 
-                        option === "factory" ? 
-                        ['auto', 'auto', 'auto'] :
-                        ['auto', 'auto', 'auto', 'auto', 'auto'],  
-                        body: [
-                            option === "factory" ? 
-                            [
-                                { text: 'Nombre', style: 'tableHeader' },
-                                { text: 'Medida', style: 'tableHeader' },
-                                { text: 'Cantidad', style: 'tableHeader' }
-                            ] :
-                            [
-                                { text: 'Nombre', style: 'tableHeader' },
-                                { text: 'Medida', style: 'tableHeader' },
-                                { text: 'Precio (Q)', style: 'tableHeader' },
-                                { text: 'Cantidad', style: 'tableHeader' },
-                                { text: 'Total (Q)', style: 'tableHeader' }
-                            ],
-                            ...productForSaleOrder!.productForSaleStoreOrderElements!.map(
-                                p => {
-                                    if(option === "factory"){
-                                        return [
-                                            p.productForSale?.finishedProduct?.name!,
-                                            p.measure?.identifier!,
-                                            p.quantity!
-                                        ]
-                                    }
-                                    return [
-                                        p.productForSale?.finishedProduct?.name!,
-                                        p.measure?.identifier!,
-                                        this.dataService.getDecimalFromText(p.price!),
-                                        p.quantity!,
-                                        this.dataService.getDecimalFromText(p.totalPrice!)
-                                    ]}),
-                            // El formato de fabrica no lleva precios ni totales
-                            ...(option === "factory" ? [] : [
-                                [{ text: 'Total', colSpan: 4 }, {}, {}, {}, Number(productForSaleOrder?.finalAmount!).toFixed(2)]
-                            ])
+                        margin: [0, 6, 0, 0]
+                    },
+                    // El formato de tienda lleva montos, y conviene aclarar que no es un documento fiscal
+                    ...(option === 'factory' ? [] : [{ text: 'Documento no fiscal', fontSize: 10, color: muted, alignment: 'center', margin: [0, 4, 0, 0] }])
+                ]
+            })) as any,
+            styles: this.pdfStyles
+        };
+    }
+
+    private buildProductForSaleOrderContent(order: ProductForSaleStoreOrder, option?: string, logo?: string): Content[] {
+        const isFactory = option === 'factory';
+        const brand = this.pdfBrand;
+        const muted = this.pdfMuted;
+        const lineColor = this.pdfLine;
+
+        const elements = order?.productForSaleStoreOrderElements ?? [];
+        const storeName = order?.establishment?.name || elements[0]?.productForSale?.establishment?.name || '';
+        const address = order?.establishment?.address;
+        const statusText = (isFactory ? order?.factoryStatus?.identifier : order?.storeStatus?.identifier) || '--';
+        const terminal = this.getOrderTerminalLabel(order, option);
+
+        const dateText = (value?: string) => value ? this.dataService.getLocalDateTimeFromUTCTime(value) : '';
+        const money = (value: number) => this.dataService.getFormatedPriceWithSeparators(value);
+        // '--' es el marcador de "sin notas" que guarda la pantalla de creación
+        const comment = order?.comment?.trim();
+        const note = !comment || comment === '--' ? '' : comment;
+
+        const infoLabel = (text: string) => ({ text, fontSize: 10, bold: true, color: muted, margin: [0, 0, 0, 4] });
+        // Línea "Etiqueta: valor"; nada si no hay valor, en vez de imprimir un guion
+        const field = (label: string, value?: string) => value
+            ? [{ text: [{ text: `${label}: `, color: muted }, value], fontSize: 11, margin: [0, 0, 0, 2] }]
+            : [];
+
+        // Preparación: solo en el formato de bodega. Es información interna y la tienda no tiene por
+        // qué ver quién le prepara el pedido, igual que en el listado y en el detalle.
+        const verifiedBy = order?.verifiedUser?.name
+            ? `${order.verifiedUser.name}${order.verifiedDate ? ' · ' + dateText(order.verifiedDate) : ''}`
+            : '';
+        const prepLeft = [
+            ...field('Encargado', order?.assignedUser?.name),
+            ...field('Operadores', formatOperators(order?.operators)),
+            ...field('Verificado por', verifiedBy)
+        ];
+        const prepRight = [
+            ...field('Inicio', dateText(order?.startDate)),
+            ...field('Listo', dateText(order?.readyDate)),
+            ...field('Entregado', dateText(order?.receivedDate))
+        ];
+
+        const content: any[] = [
+            // Encabezado: logo + identificación del documento
+            {
+                columns: [
+                    logo
+                        ? { image: logo, width: 150 }
+                        : { text: storeName, fontSize: 18, bold: true, color: brand },
+                    {
+                        width: '*',
+                        stack: [
+                            { text: isFactory ? 'PEDIDO DE PRODUCTO TERMINADO' : 'PEDIDO DE PRODUCTO PARA VENTA', fontSize: 14, bold: true, color: brand, alignment: 'right' },
+                            { text: order?.orderNumber != null ? `No. ${order.orderNumber}` : 'No. --', fontSize: 14, bold: true, alignment: 'right', margin: [0, 3, 0, 0] },
+                            { text: dateText(order?.creationDate) || '--', fontSize: 11, color: muted, alignment: 'right' },
+                            { text: terminal ?? statusText, fontSize: 11, bold: !!terminal, color: terminal ? '#c0392b' : muted, alignment: 'right' }
                         ]
                     }
-                },
-                {
-                    text: "Monto Total: " + this.dataService.getFormatedPriceWithSeparators(Number(productForSaleOrder?.finalAmount)),
-                    bold: true,
-                    marginTop: 10
-                },
-                {
-                    text: 'Detalles del pedido',
-                    style: 'sectionHeader'
-                },
-                {
-                    text: "Estado del pedido: " + orderStatus!,
-                    bold: true
-                }, 
-                { text: "Creado: " + this.dataService.getLocalDateTimeFromUTCTime(productForSaleOrder?.creationDate!) }, 
-                { text: "Actualizado: " + this.dataService.getLocalDateTimeFromUTCTime(productForSaleOrder?.updatedDate!) }, 
-                {
-                    text: 'Notas del pedido',
-                    style: 'sectionHeader'
-                },
-                {
-                      text: productForSaleOrder?.comment!,
-                      margin: [0, 0 ,0, 15]
-                },
-                // {
-                //     text: 'Codigo QR del pedido',
-                //     style: 'sectionHeader'
-                // },
-                // {
-                //     columns: [
-                //         [{ qr: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?.id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, fit: 100 }],
-                //         // [{ text: `https://embutidosany.store/productsForSale/order/view/${productForSaleOrder?._id}?opt=${option}&store=${productForSaleOrder.establishmentID}`, alignment: 'right', italics: true }],
-                //     ]
-                // },
-            ];
+                ],
+                columnGap: 10
+            },
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 2, lineColor: brand }], margin: [0, 10, 0, 12] },
 
-        return content;
+            // Tienda y datos del pedido
+            {
+                table: {
+                    widths: ['50%', '50%'],
+                    body: [[
+                        {
+                            fillColor: '#f7f7f7', margin: [10, 10, 10, 10], border: [false, false, false, false],
+                            stack: [
+                                infoLabel('TIENDA'),
+                                { text: storeName || '--', fontSize: 13, margin: [0, 0, 0, 3] },
+                                ...(address ? [{ text: address, fontSize: 11, color: muted }] : [])
+                            ]
+                        },
+                        {
+                            fillColor: '#f7f7f7', margin: [10, 10, 10, 10], border: [false, false, false, false],
+                            stack: [
+                                infoLabel('DATOS DEL PEDIDO'),
+                                ...field('Pedido', order?.name),
+                                ...field('Creado por', order?.creatorUser?.name),
+                                ...field('Creado', dateText(order?.creationDate)),
+                                ...field('Actualizado', dateText(order?.updatedDate))
+                            ]
+                        }
+                    ]]
+                },
+                layout: 'noBorders',
+                margin: [0, 0, 0, isFactory && (prepLeft.length || prepRight.length) ? 10 : 18]
+            },
+
+            ...(isFactory && (prepLeft.length || prepRight.length) ? [{
+                table: {
+                    widths: ['*'],
+                    body: [[{
+                        fillColor: '#f7f7f7', margin: [10, 10, 10, 10], border: [false, false, false, false],
+                        stack: [
+                            infoLabel('PREPARACIÓN'),
+                            { columns: [{ width: '50%', stack: prepLeft }, { width: '50%', stack: prepRight }] }
+                        ]
+                    }]]
+                },
+                layout: 'noBorders',
+                margin: [0, 0, 0, 18]
+            }] : []),
+
+            { text: 'DETALLE DE PRODUCTOS', fontSize: 11, bold: true, color: muted, margin: [0, 0, 0, 8] },
+
+            // Productos: bodega no ve precios ni totales
+            {
+                table: {
+                    headerRows: 1,
+                    widths: isFactory ? ['*', 'auto', 'auto'] : ['*', 'auto', 'auto', 'auto', 'auto'],
+                    body: [
+                        isFactory
+                            ? [
+                                { text: 'Producto', style: 'orderTableHeader' },
+                                { text: 'Medida', style: 'orderTableHeader' },
+                                { text: 'Cantidad', style: 'orderTableHeader', alignment: 'right' }
+                            ]
+                            : [
+                                { text: 'Producto', style: 'orderTableHeader' },
+                                { text: 'Medida', style: 'orderTableHeader' },
+                                { text: 'Cantidad', style: 'orderTableHeader', alignment: 'right' },
+                                { text: 'Precio unitario', style: 'orderTableHeader', alignment: 'right' },
+                                { text: 'Total', style: 'orderTableHeader', alignment: 'right' }
+                            ],
+                        ...elements.map(p => {
+                            const name = { text: p.productForSale?.finishedProduct?.name ?? '--', fontSize: 12 };
+                            const measure = { text: p.measure?.identifier ?? '', fontSize: 12 };
+                            const quantity = { text: String(p.quantity ?? '0'), fontSize: 12, alignment: 'right' };
+                            return isFactory
+                                ? [name, measure, quantity]
+                                : [
+                                    name, measure, quantity,
+                                    { text: money(Number(p.price || 0)), fontSize: 12, alignment: 'right' },
+                                    { text: money(Number(p.totalPrice || 0)), fontSize: 12, alignment: 'right', bold: true }
+                                ];
+                        })
+                    ]
+                },
+                layout: {
+                    hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.8 : 0.4,
+                    vLineWidth: () => 0,
+                    hLineColor: (i: number) => i === 1 ? brand : lineColor,
+                    fillColor: (rowIndex: number) => (rowIndex > 0 && rowIndex % 2 === 0) ? '#fbfbfb' : null,
+                    paddingTop: () => 8,
+                    paddingBottom: () => 8
+                },
+                margin: [0, 0, 0, 16]
+            },
+
+            // Total: el formato de bodega no lleva montos
+            ...(isFactory ? [] : [{
+                columns: [
+                    { width: '*', text: '' },
+                    {
+                        width: 290,
+                        table: {
+                            widths: ['*', 'auto'],
+                            body: [[
+                                { text: 'TOTAL', fontSize: 16, bold: true, color: brand, margin: [0, 5, 0, 0], border: [false, true, false, false], borderColor: [lineColor, lineColor, lineColor, lineColor] },
+                                { text: money(Number(order?.finalAmount || 0)), fontSize: 16, bold: true, color: brand, alignment: 'right', margin: [0, 5, 0, 0], border: [false, true, false, false], borderColor: [lineColor, lineColor, lineColor, lineColor] }
+                            ]]
+                        },
+                        layout: {
+                            paddingTop: () => 4,
+                            paddingBottom: () => 4,
+                            paddingLeft: () => 0,
+                            paddingRight: () => 0
+                        }
+                    }
+                ],
+                margin: [0, 0, 0, 18]
+            }]),
+
+            // Notas: solo si el pedido trae una
+            ...(note ? [
+                { text: 'NOTAS', fontSize: 11, bold: true, color: muted, margin: [0, 0, 0, 5] },
+                { text: note, fontSize: 12, margin: [0, 0, 0, 12] }
+            ] : [])
+        ];
+
+        return content as Content[];
     }
 
     // ── Comprobante de venta ──────────────────────────────────────────────────

@@ -1,0 +1,54 @@
+<div class="tp">
+    <p class="tp__label">{{ label }} <span class="tp__count">({{ selected.length }}/{{ maxItems }})</span></p>
+
+    <!-- Seleccionadas -->
+    <div class="tp__chips" [class.tp__chips--empty]="!selected.length">
+        <span class="tp__chip"
+              *ngFor="let tag of selected; let i = index; trackBy: trackByTag"
+              [style.background]="chipColor?.bg_color || null"
+              [style.color]="chipColor?.color || null">
+            {{ tag }}
+            <button type="button" class="tp__chip-remove"
+                    [attr.aria-label]="'Quitar ' + tag"
+                    [disabled]="disabled"
+                    (click)="remove(i)">
+                <i class="material-icons">close</i>
+            </button>
+        </span>
+        <p class="tp__placeholder" *ngIf="!selected.length" [class.tp__placeholder--required]="required">
+            {{ required ? 'Elige o escribe al menos una etiqueta.' : emptyText }}
+        </p>
+    </div>
+
+    <!-- Del catálogo de la tienda -->
+    <div class="tp__section" *ngIf="catalog.length">
+        <p class="tp__section-title">Etiquetas existentes</p>
+        <div class="tp__catalog" *ngIf="available.length">
+            <button type="button" class="tp__catalog-item"
+                    *ngFor="let tag of available"
+                    [disabled]="disabled || isFull"
+                    (click)="addFromCatalog(tag)">
+                <i class="material-icons">add_circle_outline</i>
+                {{ tag }}
+            </button>
+        </div>
+        <p class="tp__hint tp__hint--muted" *ngIf="!available.length">Ya elegiste todas las etiquetas existentes.</p>
+    </div>
+
+    <!-- Nueva -->
+    <div class="tp__section">
+        <p class="tp__section-title">Nueva etiqueta</p>
+        <div class="tp__new">
+            <input type="text" class="tp__input"
+                   [placeholder]="placeholder"
+                   [maxlength]="maxLength"
+                   [(ngModel)]="newTag"
+                   [ngModelOptions]="{ standalone: true }"
+                   [disabled]="disabled || isFull"
+                   (keydown.enter)="$event.preventDefault(); addNew()">
+            <button type="button" class="tp__btn" [disabled]="!canAdd" (click)="addNew()">Agregar</button>
+        </div>
+        <p class="tp__hint" *ngIf="isDuplicate">"{{ newTag }}" ya está en la lista.</p>
+        <p class="tp__hint" *ngIf="isFull">Llegaste al máximo de {{ maxItems }} etiquetas. Quita una para agregar otra.</p>
+    </div>
+</div>

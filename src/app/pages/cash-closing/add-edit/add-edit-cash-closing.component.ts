@@ -68,6 +68,7 @@ export class AddEditCashClosingComponent implements OnInit{
     totalCreditPaymentsCheque = 0;
     totalCreditPaymentsTotal = 0;
     totalStoreExpenses = 0;
+    tableStoreExpenses: { date: string, title: string, supplier: string, nit: string, comment: string, amount: number }[] = [];
     totalIngresos = 0;
     totalEgresos = 0;
     totalEfectivo = 0;
@@ -414,6 +415,19 @@ export class AddEditCashClosingComponent implements OnInit{
             this.tableCreditPayments.push(curr_row);
         });
 
+        // Detalle de gastos del periodo, del más antiguo al más reciente, como se fueron registrando
+        this.tableStoreExpenses = [...(cashClosing.storeExpenses ?? [])]
+            .sort((a, b) => String(a.creationDate ?? '').localeCompare(String(b.creationDate ?? '')))
+            .map(expense => ({
+                date: expense.creationDate
+                    ? this.dataService.getLocalDateTimeFromUTCTime(expense.creationDate.replaceAll("\"",""))
+                    : '--',
+                title: expense.title ?? '--',
+                supplier: expense.supplier || '--',
+                nit: expense.nit || '--',
+                comment: expense.comment || '--',
+                amount: Number(expense.totalAmount || 0)
+            }));
         this.totalStoreExpenses = (cashClosing.storeExpenses ?? [])
             .reduce((sum, e) => sum + Number(e.totalAmount || 0), 0);
 

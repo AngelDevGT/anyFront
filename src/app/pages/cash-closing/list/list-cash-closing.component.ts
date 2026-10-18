@@ -100,22 +100,12 @@ export class ListCashClosingComponent implements OnInit {
                     bg_color: element.status?.bg_color,
                     color: element.status?.color,
                     header_name: 'Estado'
-                },
-                {
-                    type: 'button',
-                    header_name: 'Acciones',
-                    button: [
-                        {
-                            type: 'button',
-                            routerLink: '/cashClosing/view/' + element.id,
-                            query_params: { store: this.establishmentId },
-                            is_absolute: true,
-                            colorClass: 'dt-btn-view',
-                            icon: { class: 'material-icons', icon: 'visibility' }
-                        }
-                    ]
                 }
             ];
+            // Toda la fila abre el detalle del cierre, igual que en ventas
+            (curr_row as any).rowLink = '/cashClosing/view/' + element.id;
+            (curr_row as any).rowLinkQueryParams = { store: this.establishmentId };
+            (curr_row as any).rowLinkAbsolute = true;
             this.tableElementsValues.push(curr_row);
         });
     }

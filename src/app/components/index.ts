@@ -12,3 +12,4 @@ export * from './store-switcher/store-switcher.component';
 export * from './store-context-bar/store-context-bar.component';
 export * from './store-required/store-required.component';
 export * from './auto-refresh/auto-refresh.component';
+export * from './tag-picker/tag-picker.component';

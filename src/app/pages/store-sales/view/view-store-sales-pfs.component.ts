@@ -110,6 +110,10 @@ export class ViewStoreSalesPFSComponent implements OnInit{
         return this.paymentTypeOptions?.filter(pt => pt.identifier !== 'Crédito') ?? [];
     }
 
+    /** Pantalla de origen (ver readReturnTarget). Vacío si se entró directo a la venta. */
+    returnUrl?: string;
+    fromCustomerHistory = false;
+
     constructor(private dataService: DataService, private alertService: AlertService,
         private route: ActivatedRoute, private pdfService: PdfService, private router: Router) {
     }
@@ -117,6 +121,7 @@ export class ViewStoreSalesPFSComponent implements OnInit{
     ngOnInit(): void {
         this.id = this.route.snapshot.params['id'];
         this.readOnly = !!this.route.snapshot.data['readOnly'];
+        this.readReturnTarget();
         this.loading = true;
         this.paymentForm = this.createPaymentFormGroup();
 
@@ -170,7 +175,28 @@ export class ViewStoreSalesPFSComponent implements OnInit{
             });
     }
 
+    /**
+     * Pantalla de la que se llegó, para que la flecha regrese ahí. Viaja en la URL:
+     *   returnUrl -> ruta a la que regresar (la URL completa de la pantalla de origen);
+     *   from      -> 'customer-history' cuando se llegó del historial de ventas del cliente. Solo
+     *                ahí, al registrar un pago, se regresa en lugar de recargar la venta.
+     *
+     * Solo se acepta una ruta interna de la app: debe empezar con una sola '/', para que un enlace
+     * armado a mano no pueda mandar al usuario a otro sitio.
+     */
+    private readReturnTarget() {
+        const params = this.route.snapshot.queryParams;
+        const returnUrl = params['returnUrl'];
+        const isInternal = typeof returnUrl === 'string' && /^\/(?![\/\\])/.test(returnUrl);
+        this.returnUrl = isInternal ? returnUrl : undefined;
+        this.fromCustomerHistory = !!this.returnUrl && params['from'] === 'customer-history';
+    }
+
     goBack() {
+        if (this.returnUrl) {
+            this.router.navigateByUrl(this.returnUrl);
+            return;
+        }
         if (this.readOnly) {
             // El listado de consultas recuerda la tienda, así que no hace falta pasarla en la ruta
             this.router.navigateByUrl('/consultas/ventas');
@@ -436,6 +462,13 @@ export class ViewStoreSalesPFSComponent implements OnInit{
             .pipe(first())
             .subscribe({
                 next: () => {
+                    // Desde el historial de ventas del cliente se regresa a él; desde cualquier otro
+                    // lado se recarga la venta como siempre
+                    if (this.fromCustomerHistory && this.returnUrl) {
+                        this.alertService.success('Pago registrado', { keepAfterRouteChange: true });
+                        this.router.navigateByUrl(this.returnUrl);
+                        return;
+                    }
                     globalThis.location.reload();
                 },
                 error: error => {

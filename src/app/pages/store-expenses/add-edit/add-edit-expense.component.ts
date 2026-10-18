@@ -6,6 +6,7 @@ import { first } from 'rxjs/operators';
 import { AlertService, DataService } from '@app/services';
 import { StoreExpense } from '@app/models/store/store-expense.model';
 import { Establishment } from '@app/models/establishment.model';
+import { OPERATOR_CHIP_COLOR, parseExpenseTags, serializeExpenseTags } from '@app/helpers';
 
 @Component({
     selector: 'page-add-edit-expense',
@@ -23,6 +24,15 @@ export class AddEditExpenseComponent implements OnInit {
     title = 'Registrar Gasto';
     loading = true;
     submitting = false;
+
+    /**
+     * Etiquetas del gasto. Reemplazan a la descripción libre: se guardan en store_expense.title,
+     * una por línea. Las del catálogo salen de establishment.expenseTags; una nueva escrita acá
+     * queda solo en este gasto.
+     */
+    expenseTags: string[] = [];
+    expenseTagOptions: string[] = [];
+    readonly tagChipColor = OPERATOR_CHIP_COLOR;
 
     constructor(
         private dataService: DataService,
@@ -46,8 +56,11 @@ export class AddEditExpenseComponent implements OnInit {
                 .subscribe({
                     next: (res: any) => {
                         this.expense = this.dataService.findJsonValue(res, 'json_result') || {};
+                        // Un gasto anterior a las etiquetas trae su descripción como una sola línea:
+                        // se muestra como una única etiqueta
+                        this.expenseTags = parseExpenseTags(this.expense?.title);
+                        this.loadExpenseTagOptions(this.expense?.establishment?.id);
                         this.expenseForm.patchValue({
-                            title: this.expense?.title,
                             comment: this.expense?.comment,
                             totalAmount: this.expense?.totalAmount,
                             nit: this.expense?.nit,
@@ -63,6 +76,7 @@ export class AddEditExpenseComponent implements OnInit {
                 .subscribe({
                     next: (res: any) => {
                         this.establishment = this.dataService.findJsonValue(res, 'json_result') || {};
+                        this.expenseTagOptions = parseExpenseTags(this.establishment?.expenseTags);
                         this.title = 'Registrar Gasto (' + this.establishment?.name + ')';
                         this.loading = false;
                     },
@@ -74,7 +88,6 @@ export class AddEditExpenseComponent implements OnInit {
 
     createAddFormGroup(): FormGroup {
         return new FormGroup({
-            title:       new FormControl('', [Validators.required, Validators.maxLength(40)]),
             comment:     new FormControl('', [Validators.maxLength(100)]),
             totalAmount: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
             nit:         new FormControl('C/F', [Validators.maxLength(10)]),
@@ -84,7 +97,6 @@ export class AddEditExpenseComponent implements OnInit {
 
     createEditFormGroup(): FormGroup {
         return new FormGroup({
-            title:    new FormControl('', [Validators.required, Validators.maxLength(40)]),
             comment:  new FormControl('', [Validators.maxLength(100)]),
             nit:      new FormControl('C/F', [Validators.maxLength(10)]),
             supplier: new FormControl('', [Validators.maxLength(20)])
@@ -93,8 +105,28 @@ export class AddEditExpenseComponent implements OnInit {
 
     get f() { return this.expenseForm.controls; }
 
+    /** El catálogo de la tienda del gasto; al editar solo llega el id de la tienda. */
+    private loadExpenseTagOptions(establishmentId?: string) {
+        if (!establishmentId) return;
+        this.dataService.getEstablishmentById(establishmentId)
+            .pipe(first())
+            .subscribe({
+                next: (res: any) => {
+                    const establishment = this.dataService.findJsonValue(res, 'json_result');
+                    this.expenseTagOptions = parseExpenseTags(establishment?.expenseTags);
+                },
+                // Sin catálogo se pueden seguir escribiendo etiquetas a mano
+                error: () => { this.expenseTagOptions = []; }
+            });
+    }
+
+    /** Un gasto necesita al menos una etiqueta; reemplaza al Título requerido. */
+    get missingTags(): boolean {
+        return !this.expenseTags.length;
+    }
+
     onSaveForm() {
-        if (this.expenseForm.invalid) return;
+        if (this.expenseForm.invalid || this.missingTags) return;
         this.alertService.clear();
         this.submitting = true;
 
@@ -118,6 +150,7 @@ export class AddEditExpenseComponent implements OnInit {
     private saveNew() {
         const payload: StoreExpense = {
             ...this.expenseForm.value,
+            title: serializeExpenseTags(this.expenseTags),
             establishmentId: this.establishmentId
         };
         return this.dataService.addStoreExpense(payload);
@@ -126,7 +159,8 @@ export class AddEditExpenseComponent implements OnInit {
     private saveEdit() {
         const payload: StoreExpense = {
             ...this.expense,
-            ...this.expenseForm.value
+            ...this.expenseForm.value,
+            title: serializeExpenseTags(this.expenseTags)
         };
         return this.dataService.updateStoreExpense(payload);
     }

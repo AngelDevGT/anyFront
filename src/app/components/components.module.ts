@@ -38,6 +38,7 @@ import { SortOrderDialogComponent } from './sort-order-dialog/sort-order-dialog.
 import { BulkCostDialogComponent } from './bulk-cost-dialog/bulk-cost-dialog.component';
 import { BulkInventoryDialogComponent } from './bulk-inventory-dialog/bulk-inventory-dialog.component';
 import { OperatorsDialogComponent } from './operators-dialog/operators-dialog.component';
+import { TagPickerComponent } from './tag-picker/tag-picker.component';
 import { BanksDialogComponent } from './banks-dialog/banks-dialog.component';
 import { ElementQuantityPickerComponent } from './element-quantity-picker/element-quantity-picker.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -83,6 +84,7 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     BulkCostDialogComponent,
     BulkInventoryDialogComponent,
     OperatorsDialogComponent,
+    TagPickerComponent,
     BanksDialogComponent,
     ElementQuantityPickerComponent,
     StorePickerComponent,
@@ -106,6 +108,7 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     BulkCostDialogComponent,
     BulkInventoryDialogComponent,
     OperatorsDialogComponent,
+    TagPickerComponent,
     BanksDialogComponent,
     ElementQuantityPickerComponent,
     StorePickerComponent,

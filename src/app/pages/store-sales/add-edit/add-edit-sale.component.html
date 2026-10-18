@@ -88,33 +88,16 @@
 
             <!-- ── Panel izquierdo: buscador ─────────────────────── -->
             <div class="pos-search-panel">
-                <h2 class="pos-panel-title">Buscar productos</h2>
-
-                <div class="pos-search-box" [class.focused]="searchFocused">
-                    <i class="material-icons">search</i>
-                    <input type="text" placeholder="Buscar productos"
-                        [(ngModel)]="saleSearchTerm" [ngModelOptions]="{ standalone: true }"
-                        (focus)="onSearchFocus()" (blur)="onSearchBlur()" />
-                </div>
-
-                <!-- Resultados de productos (siempre visible) -->
-                <div class="pos-list">
-                    <button type="button" class="pos-product"
-                        *ngFor="let inventoryElement of filteredInventoryElements; let i = index"
-                        (click)="selectInventoryElement(inventoryElement, i)"
-                        data-bs-toggle="modal" data-bs-target="#rawMaterialModal">
-                        <div class="pos-product-avatar">
-                            <i class="material-icons">inventory_2</i>
-                        </div>
-                        <div class="pos-product-info">
-                            <span class="pos-product-name">{{ inventoryElement.productForSale?.finishedProduct?.name }}</span>
-                            <span class="pos-product-price">{{ dataPrice(inventoryElement.productForSale?.price) }}</span>
-                        </div>
-                        <span class="pos-stock" [class.pos-stock--empty]="isOutOfStock(inventoryElement)">
-                            {{ inventoryElement.quantity | number: '1.0-2' }} {{ inventoryElement.measure?.identifier }}
-                        </span>
-                    </button>
-                    <p *ngIf="!filteredInventoryElements?.length" class="pos-empty">Sin productos disponibles</p>
+                <!-- Medida, cantidad y descuento en línea, como en Registrar producto terminado.
+                     Sin panel de resumen: la selección se ve en el carrito de la derecha. -->
+                <div class="pos-picker">
+                    <app-element-quantity-picker #picker [items]="pickerItems" [initial]="pickerInitial"
+                        [availableTitle]="'Buscar productos'" [searchPlaceholder]="'Buscar productos'"
+                        [emptyAvailableText]="'Sin productos disponibles'"
+                        [showSummary]="false" [showDiscount]="true" [discountLabel]="'Desc. (Q)'"
+                        [limitMode]="'clamp'" [rowValidator]="rowValidator" [disabled]="submitting"
+                        (selectionChange)="onSelectionChange($event)">
+                    </app-element-quantity-picker>
                 </div>
 
                 <!-- Acciones inline (escritorio) -->
@@ -269,11 +252,11 @@
                             </span>
                             <span class="pos-item-total">{{ dataPrice(itemList.total) }}</span>
                             <div class="pos-item-actions">
-                                <button type="button" class="edit" (click)="selectItemListForEdit(itemList, i)"
-                                    data-bs-toggle="modal" data-bs-target="#rawMaterialModal" aria-label="Editar">
+                                <button type="button" class="edit" (click)="picker.focusById(itemList.productForSale?.id)"
+                                    aria-label="Editar">
                                     <i class="material-icons">edit</i>
                                 </button>
-                                <button type="button" class="danger" (click)="unselectItemList(itemList, i)" aria-label="Quitar">
+                                <button type="button" class="danger" (click)="picker.removeById(itemList.productForSale?.id)" aria-label="Quitar">
                                     <i class="material-icons">delete</i>
                                 </button>
                             </div>
@@ -296,7 +279,7 @@
                         <span>Envío</span>
                         <span>{{ dataPrice(delivery) }}</span>
                     </div>
-                    <button type="button" class="pos-cobrar-btn" [disabled]="!itemCount || submitting"
+                    <button type="button" class="pos-cobrar-btn" [disabled]="!itemCount || submitting || pickerInvalid"
                         data-bs-toggle="modal" data-bs-target="#cobrarModal" (click)="onOpenCobrarModal()">
                         Cobrar {{ dataPrice(grandTotal) }}
                     </button>
@@ -519,87 +502,4 @@
             </div>
         </div>
     </form>
-</div>
-
-<!-- ── Modal: agregar producto (cantidad / medida / descuento) ── -->
-<div class="modal fade" id="rawMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="rawMaterialModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div *ngIf="selectedIE" class="modal-header">
-                <h1 class="modal-title fs-5" id="rawMaterialModalLabel">{{ selectedIE.productForSale?.finishedProduct?.name }}</h1>
-                <button type="button" class="btn-close" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form [formGroup]="rawMaterialForm">
-                    <div class="d-flex flex-wrap justify-content-center">
-                        <view-object class="align-self-start" [objectElements]="elements" [imgIdentifier]="selectedIE?.productForSale?.finishedProduct?.photo"></view-object>
-                        <div class="d-flex flex-wrap justify-content-center col-12 p-3">
-                            <div class="pb-4 col-6 col-lg-3">
-                                <select class="form-select form-select-lg" (ngModelChange)="changeMeasure($event)" formControlName="measure">
-                                    <option disabled selected value="">Medida</option>
-                                    <option *ngFor="let measure of filteredMeasureOptions" value="{{measure.id}}">{{measure.identifier}}</option>
-                                </select>
-                            </div>
-                            <div class="px-2">
-                                <mat-form-field class="custom-input" appearance="outline">
-                                    <mat-label>Cantidad</mat-label>
-                                    <input id="quantity-modal-form" type="text" formControlName="quantity" matInput
-                                        [ngClass]="{ 'is-invalid': r['quantity'].errors }" (input)="setQuantityValue($event)" />
-                                    <div class="invalid-feedback" *ngIf="r['quantity'].errors">
-                                        <div *ngIf="r['quantity'].hasError('required')">Cantidad requerida</div>
-                                        <div *ngIf="r['quantity'].hasError('pattern')">Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong></div>
-                                    </div>
-                                </mat-form-field>
-                            </div>
-                            <div class="px-2">
-                                <mat-form-field class="custom-input align-self-start" appearance="outline">
-                                    <mat-label>{{discountInputName}} {{discountMeasureValue.identifier}}</mat-label>
-                                    <input id="discount-modal-form" type="text" formControlName="discount" matInput
-                                        [ngClass]="{ 'is-invalid': r['discount'].errors }" (input)="setDiscountValue($event)" />
-                                    <div class="invalid-feedback" *ngIf="r['discount'].errors">
-                                        <div *ngIf="r['discount'].hasError('required')">Descuento requerido</div>
-                                        <div *ngIf="r['discount'].hasError('pattern')">Debe contener unicamente numeros positivos con maximo dos decimales. <strong>E.g. 15.50</strong></div>
-                                    </div>
-                                </mat-form-field>
-                            </div>
-                        </div>
-                        <div class="container">
-                            <div class="row justify-content-center col-12">
-                                <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
-                                    <div class="subtotal">
-                                        <p class="subtotal-title">Cantidad Disponible ({{ selectedIE?.measure?.identifier }})</p>
-                                        <p class="subtotal-amount">{{ selectedIE?.quantity | number: '1.2-2' }}</p>
-                                    </div>
-                                    <div class="total">
-                                        <p class="total-title">Cantidad Seleccionada ({{ selectedIE?.measure?.identifier }})</p>
-                                        <p class="total-amount">{{ selectedQuantity | number: '1.2-2' }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row justify-content-center col-12">
-                                <div *ngIf="selectedMeasure" class="row justify-content-center col-lg-7 col-md-8 col-sm-12 p-3">
-                                    <div class="subtotal">
-                                        <p class="subtotal-title">Subtotal</p>
-                                        <p class="subtotal-amount">{{ modalSubtotalText }}</p>
-                                    </div>
-                                    <div class="descuento">
-                                        <p class="subtotal-title">Descuento</p>
-                                        <p class="subtotal-amount">{{ modalTotalDiscountText }}</p>
-                                    </div>
-                                    <div class="total">
-                                        <p class="total-title">Total</p>
-                                        <p class="total-amount">{{ modalTotalText }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="closeRawMaterialDialog()" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" (click)="onSaveMaterialForm()" [disabled]="!rawMaterialForm.valid" data-bs-dismiss="modal">{{ isEditMode ? 'Modificar' : 'Agregar' }}</button>
-            </div>
-        </div>
-    </div>
 </div>

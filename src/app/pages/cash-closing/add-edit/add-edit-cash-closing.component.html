@@ -328,6 +328,46 @@
                             </div>
                         </div>
 
+                        <!-- Gastos del periodo -->
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <h2 class="font-weight-bold text-primary mt-4 col-6 text-center">Gastos</h2>
+                            </div>
+                            <div class="row justify-content-center">
+                                <h2 *ngIf="tableStoreExpenses.length == 0" class="font-weight text-danger col-6 text-center">Sin Gastos</h2>
+                            </div>
+                            <div *ngIf="tableStoreExpenses.length > 0" class="d-flex flex-wrap justify-content-center">
+                                <div class="col-xl-11 col-12 p-3 table-responsive">
+                                    <table class="table table-striped text-center align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Descripción</th>
+                                                <th>Proveedor</th>
+                                                <th>NIT</th>
+                                                <th>Comentario</th>
+                                                <th>Monto</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let expense of tableStoreExpenses">
+                                                <td>{{ expense.date }}</td>
+                                                <!-- pre-line: cada etiqueta de un gasto va en su propia línea -->
+                                                <td style="white-space: pre-line;">{{ expense.title }}</td>
+                                                <td>{{ expense.supplier }}</td>
+                                                <td>{{ expense.nit }}</td>
+                                                <td>{{ expense.comment }}</td>
+                                                <td>Q {{ expense.amount | number: '1.2-2' }}</td>
+                                            </tr>
+                                            <tr class="fw-bold">
+                                                <td colspan="5">Total gastos</td>
+                                                <td>Q {{ totalStoreExpenses | number: '1.2-2' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Cierre de Caja -->
                         <div class="container">
                             <div class="row justify-content-center">

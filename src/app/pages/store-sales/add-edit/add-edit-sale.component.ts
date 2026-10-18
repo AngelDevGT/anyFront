@@ -26,6 +26,7 @@ import { Establishment } from '@app/models/establishment.model';
 import { ActivityLog } from '@app/models/system/activity-log';
 import { bankOptions, requiresPaymentDetail, BANK_NAME_MAX_LENGTH, REFERENCE_NO_MAX_LENGTH } from '@app/helpers';
 import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-for-sale-store-order.model';
+import { ElementQuantityPickerComponent, QuantityPickerItem, QuantityPickerSelection } from '@app/components/element-quantity-picker/element-quantity-picker.component';
 
 /** Valor de `opt` con el que el detalle de un pedido Recibido abre esta pantalla ("Vender pedido"). */
 export const SALE_PFS_ORDER_OPTION = 'sale_pfs_order';
@@ -52,10 +53,18 @@ export class AddEditSaleComponent implements OnInit{
     inventory?: Inventory;
     inventoryElements?: InventoryElement[];
     allInventoryElements?: InventoryElement[];
-    saleSearchTerm?: string;
+
+    /**
+     * Tabla de productos con medida, cantidad y descuento en línea (en lugar de un modal por
+     * producto). `pickerItems` son los productos de la tienda con su existencia; `pickerInitial`
+     * son las filas que arrancan llenas (venta de un pedido). Lo que se escribe vuelve en
+     * `onSelectionChange` y arma el carrito (`itemsList`).
+     */
+    pickerItems: QuantityPickerItem[] = [];
+    pickerInitial: QuantityPickerSelection[] = [];
+    @ViewChild('picker') picker?: ElementQuantityPickerComponent;
 
     // POS UI state
-    searchFocused = false;
     showDelivery = false;
     showComment = false;
     actionsSheetOpen = false;
@@ -116,27 +125,8 @@ export class AddEditSaleComponent implements OnInit{
         return this.isOrderSale && this.saleOption === RECEIVE_AND_SELL_OPTION;
     }
 
-    get filteredInventoryElements(): InventoryElement[] | undefined {
-        if (!this.saleSearchTerm) return this.inventoryElements;
-        const term = this.saleSearchTerm.toLowerCase();
-        return this.inventoryElements?.filter(el =>
-            el.productForSale?.finishedProduct?.name?.toLowerCase().includes(term)
-        );
-    }
 
-    /** Productos cuando el buscador tiene foco o texto; opciones cuando no. */
-    get showProductResults(): boolean {
-        return this.searchFocused || !!this.saleSearchTerm;
-    }
 
-    /**
-     * Sin existencia: la pastilla de cantidad pasa a rojo. Se compara contra <= 0 y no contra 0
-     * exacto porque una existencia negativa tampoco es vendible, y pintarla de verde sería peor.
-     * quantity llega como texto desde el API, así que un !quantity no sirve: '0' es truthy.
-     */
-    isOutOfStock(inventoryElement?: InventoryElement): boolean {
-        return Number(inventoryElement?.quantity ?? 0) <= 0;
-    }
 
     get itemsSubtotal(): number {
         return (this.itemsList ?? []).reduce((sum, item) => sum + (Number(item.total) || 0), 0);
@@ -158,14 +148,7 @@ export class AddEditSaleComponent implements OnInit{
         this.actionsSheetOpen = false;
     }
 
-    onSearchFocus() {
-        this.searchFocused = true;
-    }
 
-    onSearchBlur() {
-        // Pequeño delay para permitir el click sobre un producto antes de ocultar la lista
-        setTimeout(() => this.searchFocused = false, 200);
-    }
 
     /** ── Cliente ──────────────────────────────────────────────── */
 
@@ -339,7 +322,6 @@ export class AddEditSaleComponent implements OnInit{
         if (this.requiresRegisteredCustomer) return;
         this.clearSelectedCustomer();
         this.clientMode = 'manual';
-        this.searchFocused = false;
     }
 
     removeClientRow() {
@@ -353,7 +335,6 @@ export class AddEditSaleComponent implements OnInit{
         this.f['nameClient'].setValue('');
         this.f['nitClient'].setValue('');
         this.clientMode = 'existing';
-        this.searchFocused = false;
         if (!this.selectedCustomer) {
             this.openCustomerPicker();
         }
@@ -432,7 +413,6 @@ export class AddEditSaleComponent implements OnInit{
 
     addDeliveryRow() {
         this.showDelivery = true;
-        this.searchFocused = false;
     }
 
     removeDeliveryRow() {
@@ -445,7 +425,6 @@ export class AddEditSaleComponent implements OnInit{
 
     addCommentRow() {
         this.showComment = true;
-        this.searchFocused = false;
     }
 
     removeCommentRow() {
@@ -464,17 +443,13 @@ export class AddEditSaleComponent implements OnInit{
         return (Number(item.total) || 0) / qty;
     }
 
-    rawMaterialForm!: FormGroup;
     rawMaterialOrder?: RawMaterialOrder;
-    selectedMeasure?: Measure;
     selectedPaymentType?: PaymentType;
     selectedPaymentTypeSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
     selectedDeliveryPaymentType?: PaymentType;
     selectedDeliveryPaymentTypeSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
-    currentMeasurePrice?: number;
     paymentTypeOptions?: PaymentType[];
     constantes?: Constant[];
-    unselectedInventoryElements?: InventoryElement[];
     itemsList?: ItemsList[];
     totalDiscount = 0;
     delivery = 0;
@@ -482,14 +457,6 @@ export class AddEditSaleComponent implements OnInit{
     total = 0;
     paidAmount = 0;
     pendingAmount = 0;
-    modalQuantity = 0;
-    modalDiscount = 0;
-    modalTotalDiscount = 0;
-    modalSubtotal = 0;
-    modalTotal = 0;
-    modalTotalDiscountText?: string;
-    modalSubtotalText?: string;
-    modalTotalText?: string;
     establishment?: Establishment;
     isEditOption?: boolean = false;
     isReceiveOption?: boolean = false;
@@ -502,20 +469,11 @@ export class AddEditSaleComponent implements OnInit{
     submitting = false;
     hasErrors = false;
     displayStyle = false;
-    selectedIE?: InventoryElement;
-    elements: any = [];
     measureOptions?: Measure[];
-    filteredMeasureOptions?: Measure[];
-    currentMeasureQuantity = 0;
-    selectedQuantity = 0;
     id?: string;
     shopResume?: ShopResume;
-    discountInputName = 'Descuento (Q) por ';
-    discountMeasureValue: any = [];
     activityLogName = "Acciones de Producto para Venta en tienda";
     activityLog?: ActivityLog;
-    isEditMode = false;
-    editingIndex?: number;
 
     @ViewChild('cobrarCloseBtn') cobrarCloseBtnRef?: ElementRef;
 
@@ -548,11 +506,9 @@ export class AddEditSaleComponent implements OnInit{
         this.title = 'Registrar Venta';
 
         this.orderForm = this.createAddFormGroup();
-        this.rawMaterialForm = this.createMaterialFormGroup();
 
         this.inventoryElements = [];
         this.allInventoryElements = this.inventoryElements;
-        this.unselectedInventoryElements = [];
         this.itemsList = [];
 
         this.inventory = undefined;
@@ -596,7 +552,6 @@ export class AddEditSaleComponent implements OnInit{
                 next: (result: any) => {
                     this.paymentTypeOptions = this.dataService.findJsonValue(result[0], 'json_result') || [];
                     this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
-                    this.filteredMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
                     this.inventory = this.dataService.findJsonValue(result[2], 'json_result') || {};
                     this.establishment = this.dataService.findJsonValue(result[3], 'json_result') || {};
                     // Los bancos del select del pago salen del listado de la tienda
@@ -626,6 +581,8 @@ export class AddEditSaleComponent implements OnInit{
                     if (this.isOrderSale) {
                         this.loadOrderIntoSale();
                     }
+                    // Después de cargar el pedido: "Recibir y vender" le suma sus productos al inventario
+                    this.buildPickerItems();
                 }
             });
         }
@@ -717,16 +674,16 @@ export class AddEditSaleComponent implements OnInit{
     }
 
     /**
-     * Agrega al carrito cada producto del pedido, en la medida y cantidad del pedido. Si el
+     * Llena la tabla con cada producto del pedido, en la medida y cantidad del pedido. Si el
      * inventario no alcanza se carga lo que hay —redondeado hacia abajo a 2 decimales, el máximo
      * que acepta la cantidad— y el producto queda en orderShortages para el aviso.
      *
-     * Precio y totales se arman igual que en calculateModalTotals: precio de venta actual de la
-     * tienda por la medida elegida, sin descuento. Cada fila se puede editar o quitar después
-     * como cualquier otra.
+     * El carrito se arma solo, cuando la tabla avisa de sus filas llenas. Cada fila se puede
+     * editar o quitar después como cualquier otra.
      */
     private preloadOrderItems(order: ProductForSaleStoreOrder) {
         this.orderShortages = [];
+        this.pickerInitial = [];
 
         for (const element of order.productForSaleStoreOrderElements ?? []) {
             const name = element.productForSale?.finishedProduct?.name ?? 'Producto';
@@ -751,22 +708,13 @@ export class AddEditSaleComponent implements OnInit{
             }
             if (quantity <= 0) continue;
 
-            const price = Number(invElement.productForSale?.price) * measureBase;
-            const subtotal = quantity * price;
-            this.itemsList?.push({
-                productForSale: invElement.productForSale,
-                quantity: String(quantity),
-                discount: '0',
-                measure,
-                price: String(price),
-                subtotal: String(subtotal),
-                totalDiscount: '0',
-                total: String(subtotal),
+            this.pickerInitial.push({
+                id: invElement.productForSale?.id,
+                measure: { id: String(measure!.id), identifier: measure!.identifier },
+                quantity,
+                discount: 0
             });
-            this.findAndMoveInventoryElementById(true, invElement.productForSale?.id);
         }
-
-        this.syncCustomerRequirement();
     }
 
     /** Vuelve al detalle del pedido, en la vista de tienda. */
@@ -776,34 +724,11 @@ export class AddEditSaleComponent implements OnInit{
         });
     }
 
-    loadRawMaterialOrder(){
-        this.orderForm.patchValue(this.rawMaterialOrder!);
-        this.paymentTypeSelect?.patchValue(String(this.rawMaterialOrder?.paymentType?.id));
-        this.selectedPaymentTypeSubject.next(String(this.rawMaterialOrder?.paymentType?.id));
-        // this.rawMaterialOrderElements = this.rawMaterialOrder?.rawMaterialOrderElements;
-        this.rawMaterialOrder?.rawMaterialOrderElements?.forEach(rawMaterialOrder => {
-            this.findAndMoveInventoryElementById(true, rawMaterialOrder.rawMaterialByProvider?.id);
-        });
-    }
 
     onResetForm() {
         this.orderForm.reset();
     }
 
-    onResetMaterialForm(){
-        this.discountMeasureValue = [];
-        this.rawMaterialForm.reset();
-        this.rawMaterialForm.get('discount')?.setValue('0');
-        this.selectedIE = undefined;
-        this.selectedMeasure = undefined;
-        this.currentMeasurePrice = 0;
-        this.currentMeasureQuantity = 0;
-        this.modalDiscount = 0;
-        this.modalQuantity = 0;
-        this.elements = [];
-        this.isEditMode = false;
-        this.editingIndex = undefined;
-    }
 
     dataPrice(value?: string | number): string {
         return this.dataService.getFormatedPrice(Number(value || 0));
@@ -894,57 +819,98 @@ export class AddEditSaleComponent implements OnInit{
         }
     }
 
-    onSaveMaterialForm(){
-        if (this.isEditMode && this.editingIndex !== undefined) {
-            let updatedItem: ItemsList = {
-                productForSale: this.selectedIE?.productForSale,
-                ...this.rawMaterialForm.value,
-                price: this.currentMeasurePrice,
-                measure: this.selectedMeasure,
-                subtotal: this.modalSubtotal,
-                totalDiscount: this.modalTotalDiscount,
-                total: this.modalTotal,
-            };
-            this.itemsList![this.editingIndex] = updatedItem;
-        } else {
-            let newItemList: ItemsList = {
-                productForSale: this.selectedIE?.productForSale,
-                ...this.rawMaterialForm.value,
-                price: this.currentMeasurePrice,
-                measure: this.selectedMeasure,
-                subtotal: this.modalSubtotal,
-                totalDiscount: this.modalTotalDiscount,
-                total: this.modalTotal,
-            };
-            this.itemsList?.push(newItemList);
-            this.findAndMoveInventoryElementById(true, this.selectedIE?.productForSale?.id);
-        }
-        this.onResetMaterialForm();
-        // El producto pudo ganar o perder descuento: eso decide si hace falta cliente registrado
+
+
+    /**
+     * Un producto del inventario de la tienda como fila de la tabla. La existencia viaja en unidad
+     * base, para que el tope valga en la medida que se elija (existencia en unidades, venta en
+     * docenas). Sin existencia, la fila no admite cantidad.
+     */
+    private buildPickerItems(){
+        this.pickerItems = (this.inventoryElements || []).map(invElement => {
+            const stock = Number(invElement.quantity) || 0;
+            const stockBase = stock * (Number(invElement.measure?.unitBase?.quantity) || 0);
+            return {
+                id: invElement.productForSale?.id,
+                title: invElement.productForSale?.finishedProduct?.name,
+                // El precio se ve en la tabla, como se veía en la lista de productos
+                subtitle: this.dataPrice(invElement.productForSale?.price),
+                // Las medidas cuya unidad base coincide con la del producto, como en el modal
+                measures: (this.measureOptions || [])
+                    .filter(measure => invElement.productForSale?.finishedProduct?.measure?.identifier?.includes(measure.unitBase?.name!))
+                    .map(measure => ({
+                        id: measure.id,
+                        identifier: measure.identifier,
+                        unitBaseQuantity: Number(measure.unitBase?.quantity)
+                    })),
+                maxBase: stockBase,
+                stockText: (Math.round(stock * 100) / 100) + ' ' + (invElement.measure?.identifier ?? ''),
+                discountUnit: this.discountMeasureOf(invElement).identifier?.toLowerCase()
+            } as QuantityPickerItem;
+        });
+    }
+
+    /**
+     * En qué se cuenta el descuento de un producto: por docena si se maneja por unidad, por libra
+     * si se maneja por libra. Es la regla de siempre; el descuento que se teclea es por esa medida
+     * y el total de la línea es ese valor por las docenas (o libras) que se llevan.
+     */
+    private discountMeasureOf(invElement: InventoryElement){
+        return invElement.measure?.unitBase?.name === measureUnitsConst.unidad.unitBase.name
+            ? measureUnitsConst.docena
+            : measureUnitsConst.libra;
+    }
+
+    /**
+     * Una fila de la tabla como línea del carrito. Las cuentas son las del modal de antes:
+     *   precio       = precio de venta por unidad base * unidades base de la medida
+     *   subtotal     = cantidad * precio
+     *   descuento    = descuento tecleado * (cantidad en unidad base / unidades base de la medida del descuento)
+     *   total        = subtotal - descuento
+     * `discount` conserva lo tecleado (por docena o por libra) y `totalDiscount` el total aplicado.
+     */
+    private buildSaleLine(selection: QuantityPickerSelection): ItemsList | undefined {
+        const invElement = this.inventoryElements?.find(ie => ie.productForSale?.id === selection.id);
+        const measure = this.selectMeasure(String(selection.measure?.id));
+        if (!invElement || !measure) return undefined;
+
+        const measureBase = Number(measure.unitBase?.quantity);
+        const discount = selection.discount ?? 0;
+        const price = Number(invElement.productForSale?.price) * measureBase;
+        const subtotal = selection.quantity * price;
+        const discountBase = Number(this.discountMeasureOf(invElement).unitBase.quantity);
+        const totalDiscount = discount * ((selection.quantity * measureBase) / discountBase) || 0;
+
+        return {
+            productForSale: invElement.productForSale,
+            quantity: String(selection.quantity),
+            discount: String(discount),
+            measure,
+            price: String(price),
+            subtotal: String(subtotal),
+            totalDiscount: String(totalDiscount),
+            total: String(subtotal - totalDiscount)
+        };
+    }
+
+    /** El descuento no puede dejar la línea en negativo. Antes el modal reiniciaba todo a 0. */
+    rowValidator = (selection: QuantityPickerSelection): string | null => {
+        const line = this.buildSaleLine(selection);
+        return line && Number(line.total) < 0 ? 'El descuento supera el total de la línea' : null;
+    };
+
+    /** Lo escrito en la tabla es el carrito. */
+    onSelectionChange(selection: QuantityPickerSelection[]){
+        this.itemsList = selection
+            .map(item => this.buildSaleLine(item))
+            .filter((line): line is ItemsList => !!line);
+        // Un producto pudo ganar o perder descuento: eso decide si hace falta cliente registrado
         this.syncCustomerRequirement();
     }
 
-    selectItemListForEdit(itemList: ItemsList, index: number){
-        const invElement = this.unselectedInventoryElements?.find(
-            el => el.productForSale?.id === itemList.productForSale?.id
-        );
-        if (!invElement) return;
-
-        this.isEditMode = true;
-        this.editingIndex = index;
-        this.selectedIE = invElement;
-        this.elements = [];
-        this.setInventoryElemElements(this.selectedIE);
-        this.filteredMeasureOptions = this.measureOptions?.filter(
-            item => this.selectedIE?.productForSale?.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!)
-        );
-        this.measureSelect?.setValue(String(itemList.measure?.id));
-        this.changeMeasure(String(itemList.measure?.id));
-        this.rawMaterialForm.get('quantity')?.setValue(itemList.quantity);
-        this.rawMaterialForm.get('discount')?.setValue(itemList.discount ?? '0');
-        this.modalQuantity = Number(itemList.quantity);
-        this.modalDiscount = Number(itemList.discount) || 0;
-        this.calculateModalTotals();
+    /** La tabla tiene alguna fila a medias (cantidad mal escrita, sin medida o con descuento de más). */
+    get pickerInvalid(): boolean {
+        return !!this.picker?.hasInvalid;
     }
 
     selectMeasure(measureId?: string){
@@ -955,49 +921,19 @@ export class AddEditSaleComponent implements OnInit{
         return this.paymentTypeOptions?.find(payment => String(payment.id) === paymentId);
     }
 
-    findAndMoveInventoryElementById(isSelect: boolean, productForSaleId?: string){
-        if (isSelect){
-            let invElementResult = this.inventoryElements?.find(invElement => invElement.productForSale?.id === productForSaleId);
-            if (invElementResult) {
-                this.inventoryElements = this.inventoryElements?.filter(invElement => invElement.productForSale?.id !== productForSaleId);
-                this.unselectedInventoryElements?.push(invElementResult);
-            }
-        } else { // unselect
-            let invElementResult = this.unselectedInventoryElements?.find(invElement => invElement.productForSale?.id === productForSaleId);
-            if (invElementResult){
-                this.unselectedInventoryElements = this.unselectedInventoryElements?.filter(invElement => invElement.productForSale?.id !== productForSaleId);
-                this.inventoryElements?.push(invElementResult);
-            }
-        }
-    }
 
     get f() {
         return this.orderForm.controls;
     }
 
-    get r() {
-        return this.rawMaterialForm.controls;
-    }
 
-    get providertSelect(){
-        return this.orderForm.get('provider');
-    }
 
     get paymentTypeSelect(){
         return this.orderForm.get('paymentType');
     }
 
-    get measureSelect(){
-        return this.rawMaterialForm.get('measure');
-    }
 
-    get discountInput(){
-        return this.rawMaterialForm.get('discount');
-    }
 
-    get modalQuantityInput(){
-        return this.rawMaterialForm.get('quantity');
-    }
 
     setPaymentType(payment: any){
         this.selectedPaymentType = this.findPaymentType(payment);
@@ -1015,43 +951,8 @@ export class AddEditSaleComponent implements OnInit{
         return this.orderForm.get('deliveryPaymentType');
     }
 
-    changeMeasure(measureId: any){
-        if(measureId){
-            if(this.selectedMeasure){
-                this.elements.pop();
-            }
-            this.selectedMeasure = this.selectMeasure(measureId);
-            this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
-            this.currentMeasurePrice = Number(this.selectedIE?.productForSale?.price) * Number(this.selectedMeasure?.unitBase?.quantity);
-            this.elements.push({icon : "payments", name : "Precio (" + this.selectedMeasure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(this.currentMeasurePrice))});
-        }
-        this.calculateModalTotals();
-    }
 
-    selectInventoryElement(invElement: InventoryElement, indexToRemove: number){
-        // this.openPopup();
-        this.selectedIE = invElement
-        this.elements = [];
-        this.setInventoryElemElements(this.selectedIE!);
-        this.filteredMeasureOptions = this.measureOptions?.filter(item => this.selectedIE?.productForSale?.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!));
-        console.log(this.filteredMeasureOptions);
-        this.measureSelect?.setValue('');
-        // this.rawMaterialIndexToRemove = indexToRemove;
-        // let newOrderElement: RawMaterialOrderElement = {
-        //     rawMaterialByProvider: rawMaterial,
-        //     price: rawMaterial.price,
-        //     discount: "0",
-        //     quantity: "1"
-        // };
-        // this.rawMaterialOrderElements?.push(newOrderElement);
-    }
 
-    unselectItemList(itemList: ItemsList, indexToRemove: number){
-        this.itemsList?.splice(indexToRemove, 1);
-        this.findAndMoveInventoryElementById(false, itemList?.productForSale?.id);
-        this.syncCustomerRequirement();
-        // this.filteredRawMaterials?.push(orderElement.rawMaterialByProvider!);
-    }
 
     calculateSubtotal() {
         let subtotal = 0;
@@ -1118,72 +1019,11 @@ export class AddEditSaleComponent implements OnInit{
         return this.pendingAmount;
     }
 
-    calculateModalSubtotal() {
-        let subtotal = 0;
-        if (this.itemsList){
-            for(const itemList of this.itemsList){
-                subtotal += Number(itemList.price)*Number(itemList.quantity) || 0;
-            }
-        }
-        this.subtotal = subtotal;
-        return subtotal;
-    }
 
-    calculateModalTotalDiscount() {
-        let totalDiscount = 0;
-        if (this.itemsList){
-            for (const itemList of this.itemsList) {
-                totalDiscount += Number(itemList.discount)*Number(itemList.quantity) || 0;
-            }
-        }
-        this.totalDiscount = totalDiscount;
-        return totalDiscount;
-    }
 
-    calculateModalTotal(){
-        this.total = this.subtotal - this.totalDiscount;
-        return this.total;
-    }
 
-    setQuantityValue(event: Event){
-        if (event.target instanceof HTMLInputElement) {
-            this.modalQuantity = Number(event.target.value) || 0;
-        }
-        this.calculateModalTotals();
-    }
 
-    setDiscountValue(event: Event){
-        if (event.target instanceof HTMLInputElement) {
-            this.modalDiscount =  Number(event.target.value) || 0;
-        }
-        this.calculateModalTotals();
-    }
 
-    calculateModalTotals() {
-        let totalQuantity = Number(this.modalQuantity)*Number(this.currentMeasureQuantity) || 0;
-        let unitBaseTotalQuantity = Number(this.selectedIE?.measure?.unitBase?.quantity) * Number(this.selectedIE?.quantity);
-        let subtotal = Number(this.modalQuantity)*Number(this.currentMeasurePrice) || 0;
-        let totalDiscount = Number(this.modalDiscount)*(Number(totalQuantity)/Number(this.discountMeasureValue?.unitBase?.quantity)) || 0;
-        // let totalDiscount = Number(this.modalDiscount)*Number(this.modalQuantity) || 0;
-        let total = subtotal - totalDiscount || 0;
-        if(total < 0 || totalQuantity > unitBaseTotalQuantity){
-            this.discountInput?.setValue('0');
-            this.modalQuantityInput?.setValue('0');
-            this.modalQuantity = 0;
-            totalQuantity = 0;
-            this.modalDiscount = 0;
-            totalDiscount = 0;
-            total = 0;
-            subtotal = 0;
-        }
-        this.selectedQuantity = parseFloat(totalQuantity.toFixed(2));
-        this.modalSubtotal = subtotal;
-        this.modalTotalDiscount = totalDiscount;
-        this.modalTotal = total;
-        this.modalSubtotalText = this.dataService.getFormatedPrice(subtotal);
-        this.modalTotalDiscountText = this.dataService.getFormatedPrice(totalDiscount);
-        this.modalTotalText = this.dataService.getFormatedPrice(total);
-    }
 
     createAddFormGroup() {
         return new FormGroup({
@@ -1222,50 +1062,8 @@ export class AddEditSaleComponent implements OnInit{
         });
     }
 
-    createMaterialFormGroup() {
-        return new FormGroup({
-            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
-            discount: new FormControl('0', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
-            measure: new FormControl('', [Validators.required])
-        });
-    }
 
-    onDiscountInput(event: any, orderElement: RawMaterialOrderElement) {
-        const input = event.target.value;
-        let finalValue = "0";
-    
-        let maxValue = Number(orderElement.rawMaterialByProvider?.price);
-        // const maxValue = 100; // Cambia este valor según tu necesidad
-        const numericValue = parseFloat(input);
-        if (!isNaN(numericValue) && numericValue > maxValue) {
-            // event.target.value = maxValue.toFixed(2);
-            finalValue = maxValue.toFixed(2);
-        } else {
-            // Limitar a dos decimales
-            const match = input.match(/^\d*\.?\d{0,2}$/);
-            if (match) {
-                finalValue = match[0];
-                // event.target.value = match[0];
-            } else {
-                finalValue = '';
-                // event.target.value = ''; // Solo reiniciar si no hay coincidencia
-            }
-        }
-        event.target.value = finalValue;
-        orderElement.discount = finalValue;
-    }
 
-    setInventoryElemElements(invElement: InventoryElement){
-        // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
-        this.elements.push({icon : "feed", name : "Descripción", value : invElement.productForSale?.finishedProduct?.name});
-        this.elements.push({icon : "monetization_on", name : "Precio (" + invElement.productForSale?.finishedProduct?.measure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(invElement.productForSale?.price))});
-        this.discountMeasureValue = invElement.measure?.unitBase?.name === measureUnitsConst.unidad.unitBase.name ? measureUnitsConst.docena : measureUnitsConst.libra;
-        console.log("Discount Measure Value: ", this.discountMeasureValue);
-        console.log("Inventory Element: ", invElement);
-    }
 
-    closeRawMaterialDialog(){
-        this.onResetMaterialForm();
-    }
 
 }

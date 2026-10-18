@@ -4085,6 +4085,12 @@ where id = $1::uuid
 --   /listProductForSaleStoreOrderBoardV2 -> /listProductForSaleStoreOrderBoardV3
 --   /getProductForSaleStoreOrderV3       -> /getProductForSaleStoreOrderV4
 --   /getProductForSaleStoreOrderForPdfV2 -> /getProductForSaleStoreOrderForPdfV3
+--
+-- PDF del pedido, V4: clon de la V3 con lo que imprime la plantilla nueva —creador, direccion de
+-- la tienda, ids de estado y, para fabrica, encargado, verificacion y fechas de inicio/listo/
+-- recibido—. Tambien se deriva con replace() de la fila viva.
+-- Ver src/database/migrations/2026-10-16-pdf-pedidos-v4.sql
+--   /getProductForSaleStoreOrderForPdfV3 -> /getProductForSaleStoreOrderForPdfV4
 
 
 -- Estado "Preparado"(64): paso OPCIONAL del tablero entre En curso(12) y Listo(13). No mueve
@@ -4730,3 +4736,11 @@ INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,
 INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
 	 ('registerShopV9','/registerShopV9','call register_shop_sale_with_elements_v9($1,$2,$3::uuid)','shop_sale','PATCH'),
 	 ('receiveAndSellPFSOrderV2','/receiveAndSellPFSOrderV2','call receive_and_sell_pfs_order_v2($1,$2,$3::uuid)','shop_sale','PATCH');
+
+
+-- Fecha de creacion en el listado de gastos: /listStoreExpenseV2 es /listStoreExpense mas
+-- 'creationDate', porque el listado muestra cuando se registro el gasto y no su ultima
+-- actualizacion. El texto completo no se repite aca: la migracion lo deriva con replace() de la
+-- fila viva.
+-- Ver src/database/migrations/2026-10-16-fecha-creacion-listado-gastos.sql
+--   /listStoreExpense -> /listStoreExpenseV2

@@ -1,6 +1,6 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { Router } from '@angular/router';
-import { PagerState, PaginationStateService } from '@app/services';
+import { PagerState, PaginationStateService, ScrollAnchor, ScrollMemoryService } from '@app/services';
 
 @Component({
   selector: 'data-table',
@@ -32,8 +32,22 @@ export class DataTableComponent implements OnInit, OnChanges {
 
   constructor(
     private readonly router: Router,
-    private readonly paginationState: PaginationStateService
+    private readonly paginationState: PaginationStateService,
+    private readonly scrollMemory: ScrollMemoryService,
+    private readonly host: ElementRef<HTMLElement>
   ) {}
+
+  private scrollRestored = false;
+
+  /**
+   * Llave del listado en sessionStorage: la misma que usa el paginador. Es un getter y no un
+   * campo que se llena en ngOnInit porque ngOnChanges corre ANTES de ngOnInit, y es ahí donde
+   * llegan las primeras filas y se intenta restaurar el scroll: con un campo, la llave estaba
+   * vacía en ese momento y nunca encontraba lo guardado.
+   */
+  private get scrollKey(): string {
+    return this.pageKey || this.router.url.split('?')[0];
+  }
 
   ngOnInit() {
     this.buildPager();
@@ -53,6 +67,7 @@ export class DataTableComponent implements OnInit, OnChanges {
       }
       this.pager.onDataChange(this.rows.length);
       if (this.selectable) this.syncSelection();
+      if (this.rows.length) this.restoreScroll();
     }
   }
 
@@ -174,20 +189,124 @@ getInitials(name: string): string {
     this.modalAction.emit({ target, data });
   }
 
+  /**
+   * Identificador de una fila, para reencontrarla al volver de un detalle aunque haya cambiado de
+   * lugar. Se usa lo primero que la fila trae que la distingue de las demás: rowKey (columna de
+   * selección), rowLink (fila clickeable) o el primer enlace o botón que navega, que lleva el id
+   * del registro ('view/<id>'). Sin ninguno, la fila no se puede reencontrar y se vuelve por
+   * píxeles.
+   */
+  rowId(row: any): string | undefined {
+    if (!row) return undefined;
+    if (row.rowKey) return 'key:' + row.rowKey;
+    if (row.rowLink) return 'link:' + row.rowLink;
+    for (const cell of row) {
+      if (cell?.type === 'link' && cell.routerLink) return 'link:' + cell.routerLink;
+      if (cell?.type === 'button') {
+        const button = cell.button?.find((b: any) => b.routerLink && !b.action);
+        if (button) return 'link:' + button.routerLink;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Devuelve al usuario a donde estaba al abrir un detalle. Solo la primera vez que llegan filas
+   * (los cambios posteriores por filtro o búsqueda no deben mover la pantalla) y solo si se
+   * regresa de ese detalle (lo decide ScrollMemoryService).
+   *
+   * Primero busca la FILA desde la que se salió y la deja a la misma altura de la pantalla que
+   * tenía: si entró un registro nuevo arriba y la fila bajó un lugar, se sigue viendo la misma
+   * fila en el mismo sitio. Si la fila pasó a otra página, cambia a esa página. Si ya no está, usa
+   * la posición en píxeles.
+   *
+   * Las filas se pintan en el ciclo de detección que sigue, y la página puede seguir creciendo un
+   * momento (otros bloques que cargan, una segunda carga del listado), así que se reintenta unos
+   * cuadros antes de darse por vencido.
+   */
+  private restoreScroll() {
+    if (this.scrollRestored) return;
+    this.scrollRestored = true;
+
+    const saved = this.scrollMemory.consume(this.scrollKey);
+    if (!saved) return;
+
+    const maxAttempts = 30;
+    let attempts = 0;
+    const step = () => {
+      attempts++;
+      const lastAttempt = attempts >= maxAttempts;
+
+      if (saved.rowId && this.scrollToRow(saved.rowId, saved.offset ?? 0, lastAttempt)) return;
+
+      // Sin fila (o ya no aparece): la posición en píxeles, cuando la página alcance esa altura
+      if (!saved.rowId || lastAttempt) {
+        const reachable = document.documentElement.scrollHeight - window.innerHeight >= saved.y;
+        if (reachable || lastAttempt) {
+          window.scrollTo({ top: saved.y, behavior: 'auto' });
+          return;
+        }
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /**
+   * Lleva la fila `rowId` a `offset` píxeles del borde superior de la ventana. Devuelve true si lo
+   * hizo; false si todavía no se puede (está en otra página y se acaba de cambiar, aún no está
+   * pintada, la página no tiene altura suficiente) o si la fila ya no existe.
+   */
+  private scrollToRow(rowId: string, offset: number, force: boolean): boolean {
+    const index = this.sortedRows.findIndex(row => this.rowId(row) === rowId);
+    if (index < 0) return false;
+
+    // La fila pudo pasar a otra página (entraron registros arriba): se cambia de página y se
+    // espera a que se pinte
+    const page = Math.floor(index / this.pager.pageSize) + 1;
+    if (this.pager.page !== page) {
+      this.pager.page = page;
+      return false;
+    }
+
+    // Comparación de texto y no un selector CSS: el id puede traer caracteres que habría que escapar
+    const element = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('tr[data-row-id]'))
+      .find(tr => tr.getAttribute('data-row-id') === rowId);
+    if (!element) return false;
+
+    const top = Math.max(0, window.scrollY + element.getBoundingClientRect().top - offset);
+    const reachable = document.documentElement.scrollHeight - window.innerHeight >= top;
+    if (!reachable && !force) return false;
+
+    window.scrollTo({ top, behavior: 'auto' });
+    return true;
+  }
+
   hasRowLink(row: any): boolean {
     return !!row?.rowLink;
   }
 
-  onRowClick(row: any) {
+  onRowClick(row: any, event?: Event) {
     if (row?.rowLink) {
-      this.navigate(row.rowLink, row.rowLinkQueryParams, row.rowLinkAbsolute);
+      this.navigateFromRow(row, event, row.rowLink, row.rowLinkQueryParams, row.rowLinkAbsolute);
     }
   }
 
-  navigate(routerLink: string, queryParams?: any, isAbsolute?: boolean) {
+  /** Navega desde una fila recordando cuál era y a qué altura de la pantalla estaba. */
+  navigateFromRow(row: any, event: Event | undefined, routerLink: string, queryParams?: any, isAbsolute?: boolean) {
+    const tr = (event?.target as HTMLElement | null)?.closest?.('tr');
+    this.navigate(routerLink, queryParams, isAbsolute, {
+      rowId: this.rowId(row),
+      offset: tr ? tr.getBoundingClientRect().top : undefined
+    });
+  }
+
+  navigate(routerLink: string, queryParams?: any, isAbsolute?: boolean, anchor?: ScrollAnchor) {
     if (!routerLink) return;
     const pathActual = this.router.url.split('?')[0];
     const newPath = isAbsolute ? routerLink : `${pathActual}/${routerLink}`;
+    // Se guarda dónde estaba el usuario para volver al mismo lugar al regresar del detalle
+    this.scrollMemory.save(this.scrollKey, newPath, anchor);
     if (queryParams) {
       this.router.navigate([newPath], { queryParams, queryParamsHandling: 'merge' });
     } else {

@@ -230,6 +230,50 @@
     }
 }
 
+// Existencia bajo el nombre. Verde con producto, gris sin él: la misma pastilla de la lista de
+// productos de Registrar venta.
+.eqp__stock {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #16a34a;
+    background: #e9f9ee;
+    white-space: nowrap;
+
+    &--empty {
+        color: #667085;
+        background: #f2f4f7;
+    }
+}
+
+// Sin existencia: la fila se apaga, no admite cantidad.
+.eqp__row--out td {
+    opacity: .75;
+}
+
+// En qué se cuenta el descuento ("por docena"), bajo su casilla.
+.eqp__unit {
+    display: block;
+    margin-top: 2px;
+    font-size: .7rem;
+    line-height: 1.2;
+    color: #667085;
+    text-align: right;
+}
+
+// Aviso no bloqueante: la cantidad se recortó a lo disponible.
+.eqp__hint {
+    display: block;
+    margin-top: 2px;
+    font-size: .7rem;
+    line-height: 1.2;
+    color: #b45309;
+    text-align: right;
+}
+
 .eqp__empty {
     padding: 18px 12px !important;
     text-align: center;

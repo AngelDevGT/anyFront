@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { AccountService } from '@app/services';
+import { AccountService, ScrollMemoryService } from '@app/services';
 import { User } from './models/system/user.model';
 
 @Component({
@@ -13,7 +13,8 @@ export class AppComponent {
 
   user?: User | null;
 
-    constructor(private accountService: AccountService) {
+    // ScrollMemoryService se inyecta acá solo para que exista desde la primera navegación
+    constructor(private accountService: AccountService, private scrollMemory: ScrollMemoryService) {
         this.accountService.user.subscribe(x => this.user = x);
     }
 

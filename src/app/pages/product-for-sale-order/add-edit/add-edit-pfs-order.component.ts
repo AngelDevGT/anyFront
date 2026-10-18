@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import {BehaviorSubject, Observable, forkJoin, of} from 'rxjs';
 import {concatMap, first, map, startWith} from 'rxjs/operators';
 import {
@@ -31,6 +31,7 @@ import { ProductForSaleStoreOrder } from '@app/models/product-for-sale/product-f
 import { ProductForSale } from '@app/models/product/producto-for-sale.model';
 import { ProductForSaleStoreOrderElement } from '@app/models/product-for-sale/product-for-sale-store-order-element.model';
 import { Inventory } from '@app/models/inventory/inventory.model';
+import { ElementQuantityPickerComponent, QuantityPickerItem, QuantityPickerSelection } from '@app/components/element-quantity-picker/element-quantity-picker.component';
 // import { DynamicDialogComponent } from '@app/components/dynamic-dialog/dynamic-dialog.component';
 
 /** Lo que un producto aporta al pedido, en unidades base, con qué mostrarlo. */
@@ -49,13 +50,9 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
 
     //Form
     orderForm!: FormGroup;
-    productForSaleForm!: FormGroup;
     productForSaleOrder?: ProductForSaleStoreOrder;
     selectedEstablishment?: Establishment;
     selectedEstablishmentSubject: BehaviorSubject<string | undefined> = new BehaviorSubject<string | undefined>(undefined);
-    selectedMeasure?: Measure;
-    currentMeasurePrice?: number;
-    currentMeasureQuantity = 0;
     establishmentOptions?: Establishment[];
     constantes?: Constant[];
     productsForSale?: ProductForSale[];
@@ -64,21 +61,17 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     productForSaleOrderElements?: ProductForSaleStoreOrderElement[];
     inventoryElementsSource?: InventoryElement[];
     inventoryElements?: InventoryElement[];
-    unselectedInventoryElements?: InventoryElement[];
-    pfsSearchTerm?: string;
 
-    get filteredInventoryElements(): InventoryElement[] | undefined {
-        if (!this.pfsSearchTerm) return this.inventoryElements;
-        const term = this.pfsSearchTerm.toLowerCase();
-        return this.inventoryElements?.filter(el =>
-            el.finishedProduct?.name?.toLowerCase().includes(term)
-        );
-    }
+    /**
+     * Tabla de productos con medida y cantidad en línea. `pickerItems` son todos los productos de
+     * la tienda con su existencia de bodega; `pickerInitial` son las filas del pedido que se edita,
+     * ya llenas. Lo que el usuario escribe vuelve en `onSelectionChange` y arma los elementos del
+     * pedido.
+     */
+    pickerItems: QuantityPickerItem[] = [];
+    pickerInitial: QuantityPickerSelection[] = [];
+    @ViewChild('picker') picker?: ElementQuantityPickerComponent;
     total = 0;
-    modalQuantity = 0;
-    modalSelectedQuantity = 0;
-    modalTotal = 0;
-    modalTotalText?: string;
     id?: string;
     editOption?: string;
     isEditOption?: Boolean = false;
@@ -92,20 +85,12 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
     submitting = false;
     hasErrors = false;
     displayStyle = false;
-    selectedPFS?: ProductForSale;
-    selectedIE?: InventoryElement;
-    elements: any = [];
     measureOptions?: Measure[];
-    filteredMeasureOptions?: Measure[];
-    productForSaleIndexToRemove?: number;
     viewOption = '';
     storeOption = '';
     storeName = '';
     areTablesVisible = false;
     isPropertiesVisible = false;
-    warningMessage = '';
-    isEditMode = false;
-    editingIndex?: number;
 
     /**
      * ¿El pedido que se edita ya está en Listo? Ahí el producto YA salió de bodega y
@@ -154,7 +139,6 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         });
 
         this.orderForm = this.createFormGroup();
-        this.productForSaleForm = this.createMaterialFormGroup();
 
         this.productsForSale = [];
         this.filteredProductsForSale = this.productsForSale;
@@ -162,7 +146,6 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         this.productForSaleOrderElements = [];
 
         let requestArray = [];
-        this.unselectedInventoryElements = [];
         this.inventoryElements = [];
 
         requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status_id": 28})); // providerRequest
@@ -184,7 +167,6 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             next: (result: any) => {
                 this.establishmentOptions = this.dataService.findJsonValue(result[0], 'json_result') || [];
                 this.measureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
-                this.filteredMeasureOptions = this.dataService.findJsonValue(result[1], 'json_result') || [];
                 inventory = this.dataService.findJsonValue(result[2], 'json_result') || {};
                 this.productsForSale = this.dataService.findJsonValue(result[3], 'json_result') || [];
                 this.productsForSale = this.productsForSale?.filter(pfs => pfs.establishment?.id === String(this.storeOption));
@@ -221,6 +203,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
                 if (this.productForSaleOrder){
                     this.loadRawMaterialOrder();
                 }
+                this.buildPickerItems();
                 this.loading = false;
             }
         });
@@ -346,29 +329,81 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         }
         // this.providertSelect?.patchValue(String(this.rawMaterialOrder?.provider?._id));
         this.selectedEstablishmentSubject.next(this.productForSaleOrder?.id);
+        // Mientras la tabla no emita, los elementos son los del pedido: si el estado no permite
+        // editar productos la tabla no se muestra y el pedido se guarda con ellos tal cual.
         this.productForSaleOrderElements = this.productForSaleOrder?.productForSaleStoreOrderElements;
-        this.productForSaleOrder?.productForSaleStoreOrderElements?.forEach(pfsOrder => {
-            this.findAndMoveProductForSaleById(true, pfsOrder.productForSale?.id);
+        this.pickerInitial = (this.productForSaleOrder?.productForSaleStoreOrderElements || [])
+            .filter(element => element.productForSale?.id && element.measure?.id)
+            .map(element => ({
+                id: element.productForSale!.id,
+                measure: { id: String(element.measure!.id), identifier: element.measure!.identifier },
+                quantity: Number(element.quantity) || 0
+            }));
+    }
+
+    /**
+     * Un producto del inventario de bodega como fila de la tabla. La existencia viaja en unidad
+     * base, para que el tope valga en la medida que se elija (existencia en unidades, pedido en
+     * docenas). En un pedido Listo ya incluye lo que el pedido tiene reservado
+     * (availableQuantity).
+     */
+    private buildPickerItems(){
+        this.pickerItems = (this.inventoryElements || []).map(invElement => {
+            const stock = Number(invElement.quantity) || 0;
+            const stockBase = stock * (Number(invElement.measure?.unitBase?.quantity) || 0);
+            return {
+                id: invElement.productForSale?.id,
+                title: invElement.finishedProduct?.name,
+                subtitle: invElement.finishedProduct?.description,
+                // Las medidas cuya unidad base coincide con la del producto, como en el modal
+                measures: (this.measureOptions || [])
+                    .filter(measure => invElement.finishedProduct?.measure?.identifier?.includes(measure.unitBase?.name!))
+                    .map(measure => ({
+                        id: measure.id,
+                        identifier: measure.identifier,
+                        unitBaseQuantity: Number(measure.unitBase?.quantity)
+                    })),
+                maxBase: stockBase,
+                stockText: (Math.round(stock * 100) / 100) + ' ' + (invElement.measure?.identifier ?? '')
+            } as QuantityPickerItem;
         });
+    }
+
+    /**
+     * Lo escrito en la tabla pasa a ser los elementos del pedido. El precio es el de venta de la
+     * tienda por la medida elegida —precio por unidad base por las unidades que trae la medida— y
+     * el total, ese precio por la cantidad: la misma cuenta que hacía el modal.
+     */
+    onSelectionChange(selection: QuantityPickerSelection[]){
+        // Un producto del pedido que ya no está en el inventario de bodega no tiene fila en la
+        // tabla: se conserva tal cual, para que editar el pedido no lo borre en silencio.
+        const kept = (this.productForSaleOrder?.productForSaleStoreOrderElements || [])
+            .filter(element => !this.pickerItems.some(item => item.id === element.productForSale?.id));
+
+        this.productForSaleOrderElements = [...kept, ...selection.map(item => {
+            const productForSale = this.inventoryElements?.find(ie => ie.productForSale?.id === item.id)?.productForSale;
+            const measure = this.selectMeasure(String(item.measure?.id));
+            const price = Number(productForSale?.price) * Number(measure?.unitBase?.quantity);
+            return {
+                productForSale,
+                price: String(price),
+                measure,
+                quantity: String(item.quantity),
+                totalPrice: String(item.quantity * price),
+                date: new Date().toISOString()
+            } as ProductForSaleStoreOrderElement;
+        })];
+    }
+
+    /** La tabla tiene alguna fila a medias (cantidad mal escrita o sin medida). */
+    get pickerInvalid(): boolean {
+        return !!this.picker?.hasInvalid;
     }
 
     onResetForm() {
         this.orderForm.reset();
     }
 
-    onResetMaterialForm(){
-        this.productForSaleForm.reset();
-        this.currentMeasureQuantity = 0;
-        this.selectedPFS = undefined;
-        this.selectedIE = undefined;
-        this.selectedMeasure = undefined;
-        this.currentMeasurePrice = 0;
-        this.currentMeasureQuantity = 0;
-        this.modalQuantity = 0;
-        this.elements = [];
-        this.isEditMode = false;
-        this.editingIndex = undefined;
-    }
 
     /**
      * Tienda del pedido. El selector de establecimiento del formulario está
@@ -425,6 +460,9 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
             let updatedProductForSaleOrder: ProductForSaleStoreOrder = {
                 ...this.productForSaleOrder,
                 ...this.orderForm.value,
+                // Explícitos: ya no son el mismo arreglo que trae el pedido cargado, que era como
+                // las ediciones llegaban antes al guardar
+                productForSaleStoreOrderElements: this.productForSaleOrderElements,
                 finalAmount: this.total.toFixed(2)
             }
             updatedProductForSaleOrder.comment = updatedProductForSaleOrder.comment && updatedProductForSaleOrder.comment.trim() ? updatedProductForSaleOrder.comment.trim() : '--';
@@ -441,55 +479,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         }
     }
 
-    onSaveMaterialForm(){
-        if (this.isEditMode && this.editingIndex !== undefined) {
-            let updatedOrderElement: ProductForSaleStoreOrderElement = {
-                productForSale: this.selectedIE?.productForSale,
-                ...this.productForSaleForm.value,
-                price: this.currentMeasurePrice,
-                measure: this.selectedMeasure,
-                quantity: String(this.modalQuantity),
-                totalPrice: this.modalTotal,
-                date: new Date().toISOString()
-            };
-            this.productForSaleOrderElements![this.editingIndex] = updatedOrderElement;
-        } else {
-            let newOrderElement: ProductForSaleStoreOrderElement = {
-                productForSale: this.selectedIE?.productForSale,
-                ...this.productForSaleForm.value,
-                price: this.currentMeasurePrice,
-                measure: this.selectedMeasure,
-                quantity: String(this.modalQuantity),
-                totalPrice: this.modalTotal,
-                date: new Date().toISOString()
-            };
-            this.productForSaleOrderElements?.push(newOrderElement);
-            this.findAndMoveProductForSaleById(true, this.selectedIE?.productForSale?.id);
-        }
-        this.onResetMaterialForm();
-    }
 
-    selectInventoryElementForEdit(orderElement: ProductForSaleStoreOrderElement, index: number){
-        const invElement = this.unselectedInventoryElements?.find(
-            el => el.productForSale?.id === orderElement.productForSale?.id
-        );
-        if (!invElement) return;
-
-        this.isEditMode = true;
-        this.editingIndex = index;
-        this.selectedIE = invElement;
-        this.elements = [];
-        this.setInventoryElementElements(invElement);
-        this.filteredMeasureOptions = this.measureOptions?.filter(
-            item => invElement.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!)
-        );
-        this.measureSelect?.setValue(String(orderElement.measure?.id));
-        this.changeMeasure(String(orderElement.measure?.id));
-        this.productForSaleForm.get('quantity')?.setValue(orderElement.quantity);
-        this.modalQuantity = Number(orderElement.quantity);
-        this.calculateModalQuantity();
-        this.calculateModalTotals();
-    }
 
     // onReceiveDialog(){
     //     this.confirmDialogTitle = 'Recibir Pedido';
@@ -559,35 +549,9 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         }
     }
 
-    selectInventoryElement(invElement: InventoryElement, indexToRemove: number){
-        // this.selectedRMP = rawMaterial;
-        this.selectedIE = invElement;
-        this.elements = [];
-        this.setInventoryElementElements(invElement);
-        this.filteredMeasureOptions = this.measureOptions?.filter(item => invElement.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!));
-        this.measureSelect?.setValue('');
-        // this.rawMaterialIndexToRemove = indexToRemove;
-        // let newOrderElement: RawMaterialOrderElement = {
-        //     rawMaterialByProvider: rawMaterial,
-        //     price: rawMaterial.price,
-        //     discount: "0",
-        //     quantity: "1"
-        // };
-        // this.rawMaterialOrderElements?.push(newOrderElement);
-    }
-
-    unselectInventoryElement(orderElement: ProductForSaleStoreOrderElement, indexToRemove: number){
-        this.productForSaleOrderElements?.splice(indexToRemove, 1);
-        this.findAndMoveProductForSaleById(false, orderElement.productForSale?.id);
-    }
 
 
-    setInventoryElementElements(invElement: InventoryElement){
-        // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
-        this.elements.push({icon : "format_size", name : "Nombre", value : invElement?.finishedProduct?.name});
-        this.elements.push({icon : "feed", name : "Descripción", value : invElement.finishedProduct?.description});
-        // this.elements.push({icon : "monetization_on", name : "Cantidad (" + invElement.measure?.identifier + ")", value : invElement.quantity});
-    }
+
 
     selectMeasure(measureId?: string){
         return this.measureOptions?.find(measure => String(measure.id) === measureId);
@@ -597,41 +561,14 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         return this.establishmentOptions?.find(establishment => String(establishment.id) === establishmentId);
     }
 
-    findAndMoveProductForSaleById(isSelect: boolean, inventoryElementId?: string){
-        if (isSelect){
-            let inventoryElementResult = this.inventoryElements?.find(invElement => invElement.productForSale?.id === inventoryElementId);
-            if (inventoryElementResult) {
-                this.inventoryElements = this.inventoryElements?.filter(invElement => invElement.productForSale?.id !== inventoryElementId);
-                this.unselectedInventoryElements?.push(inventoryElementResult);
-            }
-        } else { // unselect
-            let inventoryElementResult = this.unselectedInventoryElements?.find(invElement => invElement.productForSale?.id === inventoryElementId);
-            if (inventoryElementResult){
-                this.unselectedInventoryElements = this.unselectedInventoryElements?.filter(invElement => invElement.productForSale?.id !== inventoryElementId);
-                this.inventoryElements?.push(inventoryElementResult);
-            }
-        }
-    }
 
     get f() {
         return this.orderForm.controls;
     }
 
-    get r() {
-        return this.productForSaleForm.controls;
-    }
 
-    get providertSelect(){
-        return this.orderForm.get('provider');
-    }
 
-    get measureSelect(){
-        return this.productForSaleForm.get('measure');
-    }
 
-    get modalQuantityInput(){
-        return this.productForSaleForm.get('quantity');
-    }
 
     setEstablishment(establishment: any){
         this.productForSaleOrderElements = [];
@@ -648,42 +585,8 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         }
     }
 
-    changeMeasure(measureId: any){
-        if(measureId){
-            if(this.selectedMeasure){
-                this.elements.pop();
-            }
-            this.selectedMeasure = this.selectMeasure(measureId);
-            this.currentMeasureQuantity = Number(this.selectedMeasure?.unitBase?.quantity);
-            this.currentMeasurePrice = Number(this.selectedIE?.productForSale?.price) * Number(this.selectedMeasure?.unitBase?.quantity);
-            this.elements.push({icon : "payments", name : "Precio (" + this.selectedMeasure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(this.currentMeasurePrice))});
-        }
-        this.calculateModalQuantity();
-        this.calculateModalTotals();
-    }
 
-    selectProductForSale(productForSale: ProductForSale, indexToRemove: number){
-        // this.openPopup();
-        this.selectedPFS = productForSale;
-        this.elements = [];
-        this.setProductElements(this.selectedPFS!);
-        this.filteredMeasureOptions = this.measureOptions?.filter(item => this.selectedPFS?.finishedProduct?.measure?.identifier?.includes(item.unitBase?.name!));
-        this.measureSelect?.setValue('');
-        // this.productForSaleIndexToRemove = indexToRemove;
-        // let newOrderElement: RawMaterialOrderElement = {
-        //     rawMaterialByProvider: rawMaterial,
-        //     price: rawMaterial.price,
-        //     discount: "0",
-        //     quantity: "1"
-        // };
-        // this.productForSaleOrderElements?.push(newOrderElement);
-    }
 
-    unselectProductForSale(orderElement: ProductForSaleStoreOrderElement, indexToRemove: number){
-        this.productForSaleOrderElements?.splice(indexToRemove, 1);
-        this.findAndMoveProductForSaleById(false, orderElement.productForSale?.id);
-        // this.filteredProductsForSale?.push(orderElement.rawMaterialByProvider!);
-    }
 
     calculateTotal(){
         let total = 0;
@@ -696,46 +599,9 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         return total;
     }
 
-    calculateModalTotal(){
-        let total = 0;
-        if (this.productForSaleOrderElements){
-            for(const orderElement of this.productForSaleOrderElements){
-                total += Number(orderElement.price)*Number(orderElement.quantity) || 0;
-            }
-        }
-        this.total = total
-        return total;
-    }
 
-    setQuantityValue(event: Event){
-        if (event.target instanceof HTMLInputElement) {
-            this.modalQuantity = Number(event.target.value) || 0;
-        }
-        this.calculateModalQuantity();
-        this.calculateModalTotals();
-    }
 
-    calculateModalQuantity() {
-        let totalQuantity = Number(this.modalQuantity)*Number(this.currentMeasureQuantity) || 0;
-        let unitBaseTotalQuantity = Number(this.selectedIE?.measure?.unitBase?.quantity) * Number(this.selectedIE?.quantity);
-        let selectedMeasureQuantity = Number(this.selectedIE?.quantity)/Number(this.selectedMeasure?.unitBase?.quantity);
-        if(totalQuantity > unitBaseTotalQuantity){
-            // this.warningMessage = `La cantidad ingresada (${totalQuantity} ${this.selectedIE?.measure?.identifier}(es)) supera la cantidad disponible en inventario (${unitBaseTotalQuantity} ${this.selectedIE?.measure?.identifier}(es))`;
-            this.warningMessage = `La cantidad ingresada de ${this.modalQuantity} ${this.selectedMeasure?.identifier}(s) supera la cantidad disponible en inventario de ${selectedMeasureQuantity} ${this.selectedMeasure?.identifier}(s)`;
-            this.modalQuantityInput?.setValue('0');
-            this.modalQuantity = 0;
-            totalQuantity = 0;
-        } else {
-            this.warningMessage = '';
-        }
-        this.modalSelectedQuantity = totalQuantity;
-    }
 
-    calculateModalTotals() {
-        let total = Number(this.modalQuantity)*Number(this.currentMeasurePrice) || 0;
-        this.modalTotal = total;
-        this.modalTotalText = this.dataService.getFormatedPrice(total);
-    }
 
     createFormGroup() {
         return new FormGroup({
@@ -753,46 +619,8 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         });
     }
 
-    createMaterialFormGroup() {
-        return new FormGroup({
-            quantity: new FormControl('', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]),
-            measure: new FormControl('', [Validators.required])
-        });
-    }
 
-    onDiscountInput(event: any, orderElement: RawMaterialOrderElement) {
-        const input = event.target.value;
-        let finalValue = "0";
-    
-        let maxValue = Number(orderElement.rawMaterialByProvider?.price);
-        // const maxValue = 100; // Cambia este valor según tu necesidad
-        const numericValue = parseFloat(input);
-        if (!isNaN(numericValue) && numericValue > maxValue) {
-            // event.target.value = maxValue.toFixed(2);
-            finalValue = maxValue.toFixed(2);
-        } else {
-            // Limitar a dos decimales
-            const match = input.match(/^\d*\.?\d{0,2}$/);
-            if (match) {
-                finalValue = match[0];
-                // event.target.value = match[0];
-            } else {
-                finalValue = '';
-                // event.target.value = ''; // Solo reiniciar si no hay coincidencia
-            }
-        }
-        event.target.value = finalValue;
-        orderElement.discount = finalValue;
-    }
 
-    setProductElements(product: ProductForSale){
-        // this.elements.push({icon : "scale", name : "Medida", value : rawMaterial.rawMaterialBase?.measure});
-        this.elements.push({icon : "feed", name : "Descripción", value : product.finishedProduct?.description});
-        this.elements.push({icon : "monetization_on", name : "Precio (" + product.finishedProduct?.measure?.identifier + ")", value : this.dataService.getFormatedPrice(Number(product.price))});
-    }
 
-    closeRawMaterialDialog(){
-        this.onResetMaterialForm();
-    }
 
 }

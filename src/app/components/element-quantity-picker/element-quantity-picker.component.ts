@@ -4,6 +4,11 @@ import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, QueryLis
 export interface QuantityPickerMeasure {
     id?: string;
     identifier?: string;
+    /**
+     * Cuántas unidades base trae esta medida (una docena = 12 unidades). Solo hace falta cuando el
+     * elemento tiene `maxBase`: con él se pasa el tope de la existencia a la medida elegida.
+     */
+    unitBaseQuantity?: number;
 }
 
 /** Elemento seleccionable: un producto terminado, un abarrote, una materia prima. */
@@ -14,6 +19,15 @@ export interface QuantityPickerItem {
     subtitle?: string;
     /** Medidas compatibles con el elemento. Con una sola, queda preseleccionada. */
     measures?: QuantityPickerMeasure[];
+    /**
+     * Existencia disponible, en UNIDAD BASE. Con ella la cantidad no puede pasar de lo que hay
+     * (ver `limitMode`) y una existencia de 0 o menos deshabilita la fila. Sin ella no hay tope.
+     */
+    maxBase?: number;
+    /** Existencia para mostrar bajo el nombre ("12 Unidad"). Opcional. */
+    stockText?: string;
+    /** En qué se cuenta el descuento de esta fila ("docena", "libra"). Se muestra bajo la casilla. */
+    discountUnit?: string;
 }
 
 /** Fila con cantidad válida: es lo único que sale del componente. */
@@ -22,6 +36,8 @@ export interface QuantityPickerSelection {
     title?: string;
     measure?: QuantityPickerMeasure;
     quantity: number;
+    /** Solo con `showDiscount`. 0 si la casilla está vacía. */
+    discount?: number;
 }
 
 /** Fila de trabajo interna: el estado editable vive acá, no en el host. */
@@ -33,6 +49,13 @@ interface PickerRow {
     measureId: string;
     /** Texto de la casilla de cantidad. */
     input: string;
+    /** Texto de la casilla de descuento (solo con `showDiscount`). */
+    discountInput: string;
+    maxBase?: number;
+    stockText?: string;
+    discountUnit?: string;
+    /** La cantidad escrita pasó de la existencia y se recortó (solo con `limitMode = 'clamp'`). */
+    clamped?: boolean;
     /**
      * Turno en que el usuario empezó a llenar la fila. Ordena el panel de resumen
      * por orden de selección y no por el orden de la tabla de la izquierda.
@@ -52,7 +75,7 @@ interface PickerRow {
  * quince aperturas de modal. Además, al no mover elementos entre arreglos no hay
  * modo edición ni índices que sincronizar — se corrige escribiendo en la fila.
  *
- * Uso:
+ * Uso básico:
  *   <app-element-quantity-picker #picker
  *       [items]="pickerItems"
  *       [availableTitle]="'Abarrotes'"
@@ -62,6 +85,15 @@ interface PickerRow {
  *
  * El host guarda `selection` y deshabilita su botón con
  * `!selection.length || picker.hasInvalid`.
+ *
+ * Opciones (todas apagadas por defecto, así que las pantallas que ya lo usan no cambian):
+ *   - `showDiscount`: columna de descuento por fila.
+ *   - `maxBase` en el elemento + `limitMode`: tope de existencia. 'flag' marca la fila en rojo y
+ *     bloquea el guardado; 'clamp' recorta la cantidad a lo disponible al escribir.
+ *   - `initial`: filas ya llenas al abrir (editar un pedido, vender un pedido).
+ *   - `showSummary = false`: oculta el panel derecho cuando el host muestra la selección a su
+ *     manera (el carrito de Registrar venta). La tabla ocupa todo el ancho.
+ *   - `rowValidator`: regla propia del host por fila (ej. descuento mayor al total).
  */
 @Component({
     selector: 'app-element-quantity-picker',
@@ -78,6 +110,21 @@ export class ElementQuantityPickerComponent implements OnChanges {
     @Input() emptySelectedText = 'Escribe una cantidad para agregar elementos.';
     @Input() quantityLabel = 'Cantidad';
     @Input() disabled = false;
+
+    /** Agrega la columna de descuento. */
+    @Input() showDiscount = false;
+    @Input() discountLabel = 'Descuento';
+    /** Muestra el panel derecho con el resumen. */
+    @Input() showSummary = true;
+    /** Qué hacer cuando la cantidad pasa de la existencia (`maxBase`). */
+    @Input() limitMode: 'flag' | 'clamp' = 'flag';
+    /** Filas que arrancan llenas. Se aplican al recibir `items` o al cambiar este arreglo. */
+    @Input() initial: QuantityPickerSelection[] = [];
+    /**
+     * Regla propia del host. Recibe la fila ya con cantidad válida y devuelve el mensaje de error,
+     * o null si está bien. La fila con error bloquea el guardado igual que una mal escrita.
+     */
+    @Input() rowValidator?: (selection: QuantityPickerSelection) => string | null;
 
     @Output() selectionChange = new EventEmitter<QuantityPickerSelection[]>();
 
@@ -103,7 +150,7 @@ export class ElementQuantityPickerComponent implements OnChanges {
     searchTerm = '';
 
     ngOnChanges(changes: SimpleChanges) {
-        if (changes['items']) {
+        if (changes['items'] || changes['initial']) {
             this.reset();
         }
     }
@@ -122,15 +169,48 @@ export class ElementQuantityPickerComponent implements OnChanges {
                     measures,
                     // Con una sola medida compatible no hay nada que elegir.
                     measureId: measures.length === 1 ? String(measures[0].id) : '',
-                    input: ''
-                };
+                    input: '',
+                    discountInput: '',
+                    maxBase: item.maxBase,
+                    stockText: item.stockText,
+                    discountUnit: item.discountUnit
+                } as PickerRow;
             })
             .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+        this.applyInitial();
         this.applyFilter();
+
+        if (this.hasInitial) {
+            // Con filas precargadas el host necesita enterarse, pero no se puede emitir desde
+            // ngOnChanges: escribiría en el host a mitad de su propio ciclo de detección de
+            // cambios. Se emite en el siguiente turno.
+            this.refreshSelection(false);
+            Promise.resolve().then(() => this.refreshSelection(true));
+            return;
+        }
         // Sin emitir: la selección recién reconstruida siempre está vacía, y emitir
         // desde ngOnChanges escribiría en el host a mitad de su propio ciclo de
         // detección de cambios.
         this.refreshSelection(false);
+    }
+
+    private get hasInitial(): boolean {
+        return (this.initial || []).length > 0;
+    }
+
+    /** Llena las filas que coinciden con `initial`. Una medida que el elemento no admite se ignora. */
+    private applyInitial() {
+        for (const selection of this.initial || []) {
+            const row = this.rows.find(r => r.id === selection.id);
+            if (!row) continue;
+            const measureId = selection.measure?.id != null ? String(selection.measure.id) : '';
+            if (measureId && row.measures.some(m => String(m.id) === measureId)) {
+                row.measureId = measureId;
+            }
+            row.input = selection.quantity ? String(selection.quantity) : '';
+            row.discountInput = selection.discount ? String(selection.discount) : '';
+            this.applyLimit(row);
+        }
     }
 
     onSearchChange(term: string) {
@@ -157,6 +237,13 @@ export class ElementQuantityPickerComponent implements OnChanges {
         return Number(value);
     }
 
+    /** Descuento escrito en la fila, o 0 si está vacío o mal escrito. */
+    discountOf(row: PickerRow): number {
+        const value = (row.discountInput || '').trim();
+        if (!value || !this.quantityPattern.test(value)) return 0;
+        return Number(value);
+    }
+
     measureOf(row: PickerRow): QuantityPickerMeasure | undefined {
         return row.measures.find(measure => String(measure.id) === row.measureId);
     }
@@ -165,20 +252,65 @@ export class ElementQuantityPickerComponent implements OnChanges {
         return this.measureOf(row)?.identifier || '';
     }
 
+    // ── Existencia ───────────────────────────────────────────────────────────
+
+    /** Sin existencia: la fila no admite cantidad. Solo aplica a elementos con `maxBase`. */
+    isOutOfStock(row: PickerRow): boolean {
+        return row.maxBase !== undefined && row.maxBase !== null && row.maxBase <= 0;
+    }
+
+    /**
+     * Lo máximo que se puede escribir en la medida elegida, redondeado hacia abajo a 2 decimales
+     * (el máximo que acepta la cantidad). Infinity si el elemento no tiene tope o todavía no se
+     * eligió medida con la que convertirlo.
+     */
+    maxQuantityOf(row: PickerRow): number {
+        if (row.maxBase === undefined || row.maxBase === null) return Infinity;
+        const base = Number(this.measureOf(row)?.unitBaseQuantity);
+        if (!base || base <= 0) return Infinity;
+        return Math.max(0, Math.floor((row.maxBase / base) * 100) / 100);
+    }
+
+    private exceedsMax(row: PickerRow): boolean {
+        return this.quantityOf(row) > this.maxQuantityOf(row);
+    }
+
+    /** En modo 'clamp', baja la cantidad a lo disponible. Se llama al escribir y al cambiar la medida. */
+    private applyLimit(row: PickerRow) {
+        row.clamped = false;
+        if (this.limitMode !== 'clamp' || !this.exceedsMax(row)) return;
+        const max = this.maxQuantityOf(row);
+        row.input = max > 0 ? String(max) : '';
+        row.clamped = true;
+    }
+
+    // ── Validación ───────────────────────────────────────────────────────────
+
     isInvalid(row: PickerRow): boolean {
-        const value = (row.input || '').trim();
-        if (!value) return false;
-        if (!this.quantityPattern.test(value)) return true;
-        // Una cantidad sin medida no se puede mandar al backend.
-        return Number(value) > 0 && !row.measureId;
+        return this.errorFor(row) !== '';
     }
 
     errorFor(row: PickerRow): string {
         const value = (row.input || '').trim();
-        if (!this.quantityPattern.test(value)) {
+        const discount = (row.discountInput || '').trim();
+
+        if (value && !this.quantityPattern.test(value)) {
             return 'Solo números positivos, máximo dos decimales';
         }
-        return 'Selecciona la medida';
+        // Una cantidad sin medida no se puede mandar al backend.
+        if (value && Number(value) > 0 && !row.measureId) {
+            return 'Selecciona la medida';
+        }
+        if (this.limitMode === 'flag' && this.exceedsMax(row)) {
+            return 'Máximo disponible: ' + this.maxQuantityOf(row);
+        }
+        if (discount && !this.quantityPattern.test(discount)) {
+            return 'Descuento: solo números positivos, máximo dos decimales';
+        }
+        if (this.rowValidator && this.quantityOf(row) > 0) {
+            return this.rowValidator(this.toSelection(row)) || '';
+        }
+        return '';
     }
 
     /** Lo consulta el host para no dejar guardar con filas a medias. */
@@ -186,10 +318,41 @@ export class ElementQuantityPickerComponent implements OnChanges {
         return this.rows.some(row => this.isInvalid(row));
     }
 
+    // ── Cambios en la fila ───────────────────────────────────────────────────
+
+    onQuantityChange(row: PickerRow) {
+        this.applyLimit(row);
+        this.refreshSelection();
+    }
+
+    onMeasureChange(row: PickerRow) {
+        // El tope depende de la medida: una docena admite menos que unidades
+        this.applyLimit(row);
+        this.refreshSelection();
+    }
+
+    onDiscountChange(row: PickerRow) {
+        this.refreshSelection();
+    }
+
     /** Quita una fila del resumen dejándola en blanco. */
     remove(row: PickerRow) {
         row.input = '';
+        row.discountInput = '';
+        row.clamped = false;
         this.refreshSelection();
+    }
+
+    /** Quita una fila por el id del elemento; para el host que muestra la selección por su cuenta. */
+    removeById(id?: string) {
+        const row = this.rows.find(r => r.id === id);
+        if (row) this.remove(row);
+    }
+
+    /** Lleva al usuario a la casilla de una fila por el id del elemento. */
+    focusById(id?: string) {
+        const row = this.rows.find(r => r.id === id);
+        if (row) this.focusRow(row);
     }
 
     /**
@@ -227,6 +390,16 @@ export class ElementQuantityPickerComponent implements OnChanges {
         target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
 
+    private toSelection(row: PickerRow): QuantityPickerSelection {
+        return {
+            id: row.id,
+            title: row.title,
+            measure: this.measureOf(row),
+            quantity: this.quantityOf(row),
+            ...(this.showDiscount ? { discount: this.discountOf(row) } : {})
+        };
+    }
+
     refreshSelection(emit = true) {
         this.rows.forEach(row => {
             // El turno se toma al escribir, no al quedar válida: mientras la fila
@@ -242,12 +415,7 @@ export class ElementQuantityPickerComponent implements OnChanges {
             .filter(row => !this.isInvalid(row) && this.quantityOf(row) > 0)
             .sort((a, b) => a.order! - b.order!);
         if (!emit) return;
-        this.selectionChange.emit(this.selected.map(row => ({
-            id: row.id,
-            title: row.title,
-            measure: this.measureOf(row),
-            quantity: this.quantityOf(row)
-        })));
+        this.selectionChange.emit(this.selected.map(row => this.toSelection(row)));
     }
 
     trackById(index: number, row: PickerRow) {
