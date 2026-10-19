@@ -1,7 +1,7 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
-import { AlertService, DataService, DateRangeState, DateRangeStateService} from '@app/services';
+import { AlertService, DataService, DateRangeState, DateRangeStateService, ListFilterStateService } from '@app/services';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { DateRange } from '@angular/material/datepicker';
 import { Measure } from '@app/models';
@@ -65,7 +65,11 @@ export class ListStoreSalesPFSComponent implements OnInit {
     orderPaymentExpanded = true;
     deliveryPaymentExpanded = true;
 
-    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService) {}
+    /** Llave de los filtros guardados: la ruta del listado, que trae la tienda. */
+    private filterKey = '';
+
+    constructor(private dataService: DataService, private route: ActivatedRoute, private alertService: AlertService, private router: Router, private datePipe: DatePipe, private dateRangeState: DateRangeStateService,
+        private filterState: ListFilterStateService) {}
 
     ngOnInit() {
         this.readOnly = !!this.route.snapshot.data['readOnly'];
@@ -76,6 +80,10 @@ export class ListStoreSalesPFSComponent implements OnInit {
         this.appliedStartDate = this.dateRange.start;
         this.appliedEndDate = this.dateRange.end;
         this.selectedDateRange = new DateRange<Date>(this.dateRange.start, this.dateRange.end);
+
+        // Búsqueda y estados marcados, como se dejaron antes de abrir una venta
+        this.filterKey = this.router.url.split('?')[0];
+        this.restoreFilters();
 
         this.rawMaterialForm = this.createMaterialFormGroup();
 
@@ -280,7 +288,30 @@ export class ListStoreSalesPFSComponent implements OnInit {
         this.filterPanelOpen = false;
     }
 
+    /**
+     * Búsqueda y filtros de estado guardados para este listado. El rango de fechas lo guarda aparte
+     * DateRangeStateService, y la página, la tabla.
+     */
+    private restoreFilters() {
+        const saved = this.filterState.get<SalesListFilters>(this.filterKey);
+        if (!saved) return;
+        this.searchTerm = saved.searchTerm || undefined;
+        this.saleStatusFilters = saved.saleStatus ?? [];
+        this.orderPaymentStatusFilters = saved.orderPaymentStatus ?? [];
+        this.deliveryPaymentStatusFilters = saved.deliveryPaymentStatus ?? [];
+    }
+
+    private saveFilters() {
+        this.filterState.set<SalesListFilters>({
+            searchTerm: this.searchTerm || '',
+            saleStatus: this.saleStatusFilters,
+            orderPaymentStatus: this.orderPaymentStatusFilters,
+            deliveryPaymentStatus: this.deliveryPaymentStatusFilters
+        }, this.filterKey);
+    }
+
     search(value: any): void {
+        this.saveFilters();
         if (this.allShopResumes) {
             this.shopResumes = this.allShopResumes.filter((val) => {
                 const textMatch = !this.searchTerm ||
@@ -377,4 +408,12 @@ export class ListStoreSalesPFSComponent implements OnInit {
     saveSale() {
         this.router.navigate(['/store/sales/create'], { queryParams: { strId: this.establishment?.id } });
     }
+}
+
+/** Filtros del listado de ventas que se recuerdan al volver de una venta. */
+interface SalesListFilters {
+    searchTerm: string;
+    saleStatus: string[];
+    orderPaymentStatus: string[];
+    deliveryPaymentStatus: string[];
 }

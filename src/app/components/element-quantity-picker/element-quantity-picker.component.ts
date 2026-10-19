@@ -116,6 +116,11 @@ export class ElementQuantityPickerComponent implements OnChanges {
     @Input() discountLabel = 'Descuento';
     /** Muestra el panel derecho con el resumen. */
     @Input() showSummary = true;
+    /**
+     * Respeta el orden en que llegan los elementos en lugar de ordenarlos por nombre. Para las
+     * pantallas que reciben los productos ya ordenados como en el inventario (sort_order).
+     */
+    @Input() keepOrder = false;
     /** Qué hacer cuando la cantidad pasa de la existencia (`maxBase`). */
     @Input() limitMode: 'flag' | 'clamp' = 'flag';
     /** Filas que arrancan llenas. Se aplican al recibir `items` o al cambiar este arreglo. */
@@ -175,8 +180,10 @@ export class ElementQuantityPickerComponent implements OnChanges {
                     stockText: item.stockText,
                     discountUnit: item.discountUnit
                 } as PickerRow;
-            })
-            .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+            });
+        if (!this.keepOrder) {
+            this.rows.sort((a, b) => a.title.localeCompare(b.title, 'es'));
+        }
         this.applyInitial();
         this.applyFilter();
 

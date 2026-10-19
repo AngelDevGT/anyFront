@@ -539,7 +539,9 @@ export class AddEditSaleComponent implements OnInit{
 
             requestArray.push(this.dataService.getAnyComponent({}, 'getPaymentTypes')); // paymentTypeRequest
             requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
-            requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventoryV2'));
+            // V4: la misma lectura que el inventario de la tienda, ordenada como él (sort_order).
+            // Es la V2 más unitsPerBox; la V2 no traía ORDER BY.
+            requestArray.push(this.dataService.getInventoryByType({unit_name: establishmentId}, 'retrieveProductForSaleInventoryV4'));
             requestArray.push(this.dataService.getEstablishmentById(establishmentId));
             // Solo los clientes asignados a esta tienda
             requestArray.push(this.dataService.getEstablishmentCustomers(establishmentId));

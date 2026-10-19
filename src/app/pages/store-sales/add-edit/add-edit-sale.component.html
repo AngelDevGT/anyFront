@@ -94,7 +94,7 @@
                     <app-element-quantity-picker #picker [items]="pickerItems" [initial]="pickerInitial"
                         [availableTitle]="'Buscar productos'" [searchPlaceholder]="'Buscar productos'"
                         [emptyAvailableText]="'Sin productos disponibles'"
-                        [showSummary]="false" [showDiscount]="true" [discountLabel]="'Desc. (Q)'"
+                        [showSummary]="false" [keepOrder]="true" [showDiscount]="true" [discountLabel]="'Desc. (Q)'"
                         [limitMode]="'clamp'" [rowValidator]="rowValidator" [disabled]="submitting"
                         (selectionChange)="onSelectionChange($event)">
                     </app-element-quantity-picker>
