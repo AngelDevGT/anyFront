@@ -702,7 +702,8 @@ export class ViewProductForSaleOrderComponent implements OnInit{
     }
 
     generatePDF() {
-        this.pdfService.generateProductForSaleOrderPDF(this.productForSaleOrder!, this.viewOption);
+        this.pdfService.generateProductForSaleOrderPDF(this.productForSaleOrder!, this.viewOption)
+            .catch(() => this.alertService.error('No se pudo abrir el PDF. Revisa que el navegador permita ventanas emergentes.'));
     }
 
     // ── Presentación ─────────────────────────────────────────────────────────

@@ -12,8 +12,9 @@ pdfMake.vfs = pdfFonts.pdfMake.vfs;
 @Injectable({ providedIn: 'root' })
 export class PdfService {
 
-    // Colores del comprobante de venta: los documentos de la empresa se ven como una familia.
-    private readonly pdfBrand = '#ec5300';
+    // Acento azul para los pedidos: el naranja de marca es el del comprobante de venta y los dos
+    // documentos se confundían al tenerlos juntos.
+    private readonly pdfAccent = '#1f5fa8';
     private readonly pdfMuted = '#6b6b6b';
     private readonly pdfLine = '#e4e4e4';
 
@@ -22,7 +23,7 @@ export class PdfService {
             bold: true,
             fontSize: 11,
             color: '#ffffff',
-            fillColor: this.pdfBrand
+            fillColor: this.pdfAccent
         }
     };
 
@@ -174,19 +175,24 @@ export class PdfService {
     }
 
     /**
-     * Descarga el PDF de un pedido. `option` es 'factory' para el formato de bodega (sin precios,
-     * con datos de preparación); cualquier otro valor da el formato de tienda.
+     * Abre el PDF de un pedido en una pestaña nueva. `option` es 'factory' para el formato de
+     * bodega (sin precios, con datos de preparación); cualquier otro valor da el formato de tienda.
      */
     async generateProductForSaleOrderPDF(productForSaleOrder: ProductForSaleStoreOrder, option?: string) {
-        const logo = await this.getBrandLogo();
-        const content = this.buildProductForSaleOrderContent(productForSaleOrder, option, logo);
-        const docDefinition = this.buildOrderDocument(content, option, this.getOrderTerminalLabel(productForSaleOrder, option));
+        // La pestaña se abre ANTES de esperar el logo: pasado el await el navegador ya no la
+        // reconoce como respuesta al clic del usuario y la bloquea como ventana emergente.
+        const win = window.open('', '_blank');
+        if (win === null) throw new Error('Open PDF in new window blocked by browser');
 
-        const store = productForSaleOrder?.establishment?.name
-            || productForSaleOrder?.productForSaleStoreOrderElements?.[0]?.productForSale?.establishment?.name
-            || '';
-        const number = productForSaleOrder?.orderNumber != null ? String(productForSaleOrder.orderNumber) : '';
-        pdfMake.createPdf(docDefinition).download(this.getOrdersFileName('pedido', store, number));
+        try {
+            const logo = await this.getBrandLogo();
+            const content = this.buildProductForSaleOrderContent(productForSaleOrder, option, logo);
+            const docDefinition = this.buildOrderDocument(content, option, this.getOrderTerminalLabel(productForSaleOrder, option));
+            pdfMake.createPdf(docDefinition).open({}, win);
+        } catch (error) {
+            win.close();
+            throw error;
+        }
     }
 
     /**
@@ -209,14 +215,14 @@ export class PdfService {
 
         // Sin marca de agua: es de todo el documento y marcaría también los pedidos vigentes.
         // El estado de cada pedido ya va en rojo en su encabezado.
-        pdfMake.createPdf(this.buildOrderDocument(content, option)).download(this.getOrdersFileName('pedidos', store));
+        pdfMake.createPdf(this.buildOrderDocument(content, option)).download(this.getMultipleOrdersFileName(store));
     }
 
-    private getOrdersFileName(prefix: string, storeName: string, orderNumber?: string): string {
+    private getMultipleOrdersFileName(storeName: string): string {
         const today = new Date();
         const date = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
         const store = storeName ? storeName.trim().toLowerCase().replace(/\s+/g, '-') : 'pedidos';
-        return `${[prefix, store, orderNumber, date].filter(Boolean).join('-')}.pdf`;
+        return `pedidos-${store}-${date}.pdf`;
     }
 
     /** Pedido que ya no está vigente, para marcarlo en rojo. Nada si sigue su curso normal. */
@@ -262,7 +268,7 @@ export class PdfService {
 
     private buildProductForSaleOrderContent(order: ProductForSaleStoreOrder, option?: string, logo?: string): Content[] {
         const isFactory = option === 'factory';
-        const brand = this.pdfBrand;
+        const brand = this.pdfAccent;
         const muted = this.pdfMuted;
         const lineColor = this.pdfLine;
 
