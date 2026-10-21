@@ -18,7 +18,7 @@
                         [selectedTitle]="selectedLabel" [searchPlaceholder]="'Buscar por nombre'"
                         [emptyAvailableText]="'No hay productos activos para registrar.'"
                         [emptySelectedText]="'Escribe una cantidad para agregar productos.'" [disabled]="submitting"
-                        (selectionChange)="onSelectionChange($event)">
+                        [keepOrder]="true" (selectionChange)="onSelectionChange($event)">
                     </app-element-quantity-picker>
 
                     <form [formGroup]="orderForm" class="col-12">

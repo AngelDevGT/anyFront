@@ -63,7 +63,8 @@ export class RegisterProductCreationComponent implements OnInit {
 
         forkJoin([
             this.dataService.getAnyComponent({}, 'getMeasure'),
-            this.dataService.getAllFinishedProductByFilter({ status_id: 36 })
+            // V4: ordenada por sort_order, igual que el listado de productos terminados.
+            this.dataService.getAllFinishedProductByFilterV4({ status_id: 36 })
         ]).subscribe({
             next: (result: any) => {
                 const measures: Measure[] = this.dataService.findJsonValue(result[0], 'json_result') || [];

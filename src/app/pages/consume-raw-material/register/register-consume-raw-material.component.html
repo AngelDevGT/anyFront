@@ -18,7 +18,7 @@
                         [selectedTitle]="selectedLabel" [searchPlaceholder]="'Buscar por nombre'"
                         [emptyAvailableText]="'No hay inventario para consumir.'"
                         [emptySelectedText]="'Escribe una cantidad para agregar elementos.'"
-                        [disabled]="submitting" [limitMode]="'flag'"
+                        [disabled]="submitting" [limitMode]="'flag'" [keepOrder]="true"
                         (selectionChange)="onSelectionChange($event)">
                     </app-element-quantity-picker>
 
