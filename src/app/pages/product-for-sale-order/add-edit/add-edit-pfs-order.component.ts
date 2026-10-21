@@ -151,7 +151,7 @@ export class AddEditProductForSaleOrderComponent implements OnInit{
         requestArray.push(this.dataService.getAllEstablishmentsByFilter({"status_id": 28})); // providerRequest
         requestArray.push(this.dataService.getAnyComponent({}, 'getMeasure')); // measureRequest
         requestArray.push(this.dataService.getInventoryByType({}, 'retrieveFinishedProductInventoryV3'));
-        requestArray.push(this.dataService.getAllProductForSaleByFilter({"status_id": 50})); //rawMaterialByProviderRequest
+        requestArray.push(this.dataService.getAllProductForSaleByFilterV4({"status_id": 50})); //rawMaterialByProviderRequest
 
         if (this.id){
             this.title = 'Actualizar Pedido de Producto para Venta'

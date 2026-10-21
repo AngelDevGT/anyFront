@@ -1,0 +1,934 @@
+{
+  "apiVersion": "dashboard.grafana.app/v2",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "ventas-pagos-cliente",
+    "namespace": "stacks-1357405",
+    "uid": "f3b2a145-e8d8-418c-88a9-68957229194c",
+    "resourceVersion": "2111688004446478336",
+    "generation": 20,
+    "creationTimestamp": "2026-09-16T03:23:23Z",
+    "labels": {
+      "grafana.app/deprecatedInternalID": "1385542200283136"
+    },
+    "annotations": {
+      "grafana.app/createdBy": "user:cew35od6ld3i8c",
+      "grafana.app/saved-from-ui": "Grafana Cloud",
+      "grafana.app/updatedBy": "user:cew35od6ld3i8c",
+      "grafana.app/updatedTimestamp": "2026-10-18T05:17:08Z"
+    }
+  },
+  "spec": {
+    "annotations": [
+      {
+        "kind": "AnnotationQuery",
+        "spec": {
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana",
+            "version": "v0",
+            "datasource": {
+              "name": "-- Grafana --"
+            },
+            "spec": {}
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "builtIn": true
+        }
+      }
+    ],
+    "cursorSync": "Off",
+    "description": "Estado de cuenta de los clientes: saldo, ventas, abonos e historial de pagos.",
+    "editable": true,
+    "elements": {
+      "panel-1": {
+        "kind": "Panel",
+        "spec": {
+          "id": 1,
+          "title": "Ventas y pagos por cliente",
+          "description": "Estado de cuenta de cada cliente. Montos en quetzales.\n\nCada dato se filtra por **su propia fecha**: las ventas por la fecha de la venta y los pagos por la fecha del pago.\n\n**Saldo pendiente** y **Tiendas** son la foto de HOY en todas las tiendas, así que **no dependen del rango de fechas**. El resto de columnas sí.\n\nSolo se cuentan los **abonos**: el depósito o cheque que se registra junto con la venta no es un cobro de crédito. Se omiten los clientes sin movimiento en el periodo y sin saldo.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "bf9e7lr5pdvy8b"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "-- Ventas y pagos por cliente.\n-- Filtros: rango de fechas del dashboard y Cliente.\n--\n-- FECHAS\n--   creation_date y \"date\" son timestamp SIN zona horaria y guardan hora UTC,\n--   por eso el filtro va con AT TIME ZONE 'UTC'.\n--   Cada bloque usa su propia fecha:\n--     ventas -> ss.creation_date\n--     pagos  -> ssp.\"date\" en abonos, ss.creation_date en pagos en venta\n--   \"Saldo pendiente\" y \"Tiendas\" NO se filtran por fecha: son el estado de\n--   cuenta de HOY, en todas las tiendas.\n--\n-- QUE CUENTA COMO PAGO\n--   Todo el dinero recibido del cliente, con el mismo criterio del panel\n--   \"Historial de pagos\" (Pagos y Total pagos = conteo y suma de sus filas):\n--   * Abonos a credito: shop_sale_payment con is_sale_payment = false. Las\n--     ventas canceladas (54) NO se excluyen: el abono se recibio.\n--   * Pagos en venta: ventas NO al credito (efectivo, deposito, cheque, etc.).\n--     Ese pago vive en shop_sale, no en shop_sale_payment (la fila\n--     is_sale_payment = true solo existe para Deposito/Cheque con banco,\n--     referencia o comentario; el efectivo nunca la tiene), por eso se toma de\n--     shop_sale. Pedido y envio cuentan como pagos separados. Aca SI se\n--     excluyen las canceladas: la venta se anulo.\n--\n-- VENTAS AL CREDITO\n--   Solo las ventas con cliente registrado llegan aca (customer_id NOT NULL):\n--   una venta al credito no se puede guardar sin cliente, lo valida\n--   register_shop_sale_with_elements_v6.\n--\n-- ESTADOS: venta activa 52 (cancelada 54), cliente activo 62.\nWITH clientes AS (\n    SELECT c.id, c.\"name\", c.nit\n    FROM customer c\n    WHERE c.status_id = 62\n      AND c.id::text IN (${cliente:sqlstring})\n),\nventas AS (\n    -- ventas del periodo\n    SELECT\n        ss.customer_id                                                       AS cliente_id,\n        count(*)                                                             AS ventas,\n        count(*) FILTER (WHERE (ss.pending_amount + ss.delivery_pending_amount) > 0)\n                                                                             AS ventas_pendientes,\n        sum(ss.total)                                                        AS ventas_totales,\n        sum(ss.pending_amount + ss.delivery_pending_amount)                  AS pendiente_periodo\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.customer_id IS NOT NULL\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n    GROUP BY ss.customer_id\n),\nsaldo AS (\n    -- saldo vivo y tiendas donde debe, SIN filtro de fecha\n    SELECT\n        ss.customer_id                                        AS cliente_id,\n        sum(ss.pending_amount + ss.delivery_pending_amount)   AS saldo,\n        string_agg(DISTINCT e.\"name\", ', ' ORDER BY e.\"name\") AS tiendas\n    FROM shop_sale ss\n    JOIN establishment e ON e.id = ss.establishment_id\n    WHERE ss.status_id = 52\n      AND ss.customer_id IS NOT NULL\n      AND (ss.pending_amount + ss.delivery_pending_amount) > 0\n    GROUP BY ss.customer_id\n),\npagos_detalle AS (\n    -- abonos a credito del periodo, por fecha del pago\n    SELECT ss.customer_id AS cliente_id, ssp.amount AS monto\n    FROM shop_sale_payment ssp\n    JOIN shop_sale ss ON ss.id = ssp.shop_sale_id\n    WHERE ssp.is_sale_payment = false\n      AND ss.customer_id IS NOT NULL\n      AND $__timeFilter(ssp.\"date\" AT TIME ZONE 'UTC')\n\n    UNION ALL\n\n    -- pago en venta: pedido (total - envio)\n    SELECT ss.customer_id, ss.total - COALESCE(ss.delivery, 0)\n    FROM shop_sale ss\n    JOIN payment_type pt ON pt.id = ss.payment_type_id\n    WHERE ss.status_id = 52\n      AND ss.customer_id IS NOT NULL\n      AND pt.\"name\" <> 'Crédito'\n      AND ss.total - COALESCE(ss.delivery, 0) > 0\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n\n    UNION ALL\n\n    -- pago en venta: envio\n    -- delivery_payment_type_id NULL cuenta como pagado, igual que la procedure\n    SELECT ss.customer_id, ss.delivery\n    FROM shop_sale ss\n    LEFT JOIN payment_type dpt ON dpt.id = ss.delivery_payment_type_id\n    WHERE ss.status_id = 52\n      AND ss.customer_id IS NOT NULL\n      AND dpt.\"name\" IS DISTINCT FROM 'Crédito'\n      AND COALESCE(ss.delivery, 0) > 0\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n),\npagos AS (\n    SELECT\n        cliente_id,\n        count(*)   AS pagos,\n        sum(monto) AS total_pagos\n    FROM pagos_detalle\n    GROUP BY cliente_id\n)\nSELECT\n    c.\"name\" || ' (' || c.nit || ')'                     AS \"Cliente\",\n    -- el saldo y las tiendas donde debe van juntos: salen del mismo calculo\n    round(COALESCE(s.saldo, 0), 2)                       AS \"Saldo pendiente (Q)\",\n    COALESCE(s.tiendas, '--')                  AS \"Tiendas donde debe\",\n    COALESCE(v.ventas_pendientes, 0)                     AS \"Ventas pendientes\",\n    COALESCE(v.ventas, 0)                                AS \"Ventas\",\n    COALESCE(p.pagos, 0)                                 AS \"Pagos\",\n    round(COALESCE(v.pendiente_periodo, 0), 2)           AS \"Total ventas pendientes (Q)\",\n    round(COALESCE(v.ventas_totales, 0), 2)              AS \"Ventas totales (Q)\",\n    round(COALESCE(p.total_pagos, 0), 2)                 AS \"Total pagos (Q)\"\nFROM clientes c\nLEFT JOIN ventas v ON v.cliente_id = c.id\nLEFT JOIN saldo  s ON s.cliente_id = c.id\nLEFT JOIN pagos  p ON p.cliente_id = c.id\n-- fuera los clientes sin nada que mostrar en el periodo y sin saldo\nWHERE COALESCE(v.ventas, 0) > 0\n   OR COALESCE(p.pagos, 0) > 0\n   OR COALESCE(s.saldo, 0) > 0\nORDER BY COALESCE(s.saldo, 0) DESC, c.\"name\";\n",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "table",
+            "version": "13.3.0-38529393499",
+            "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": true,
+                    "displayName": "Saldo pendiente (Q)"
+                  }
+                ],
+                "zebraStriping": false
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "locale",
+                  "decimals": 2,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "text"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "filterable": true,
+                    "footer": {
+                      "reducers": []
+                    },
+                    "inspect": false,
+                    "wrapHeaderText": true
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": ".*\\(Q\\)$"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 160
+                      },
+                      {
+                        "id": "unit",
+                        "value": "none"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": "^(Ventas pendientes|Ventas|Pagos)$"
+                    },
+                    "properties": [
+                      {
+                        "id": "decimals",
+                        "value": 0
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Saldo pendiente (Q)"
+                    },
+                    "properties": [
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "color": "text",
+                              "value": 0
+                            },
+                            {
+                              "color": "#d03b3b",
+                              "value": 0.01
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "color-text"
+                        }
+                      },
+                      {
+                        "id": "custom.width",
+                        "value": 170
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Tiendas donde debe"
+                    },
+                    "properties": [
+                      {
+                        "id": "mappings",
+                        "value": [
+                          {
+                            "options": {
+                              "--": {
+                                "color": "text",
+                                "index": 0
+                              }
+                            },
+                            "type": "value"
+                          },
+                          {
+                            "options": {
+                              "pattern": ".+",
+                              "result": {
+                                "color": "#d03b3b",
+                                "index": 1
+                              }
+                            },
+                            "type": "regex"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "color-text"
+                        }
+                      },
+                      {
+                        "id": "custom.inspect",
+                        "value": true
+                      },
+                      {
+                        "id": "custom.minWidth",
+                        "value": 220
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cliente"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.minWidth",
+                        "value": 220
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cliente"
+                    },
+                    "properties": []
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Saldo pendiente (Q)"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 140
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Ventas pendientes"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 110
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Ventas"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 100
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Pagos"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Total ventas pendientes (Q)"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 135
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Ventas totales (Q)"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 110
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Total pagos (Q)"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 110
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Tiendas donde debe"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.wrapText",
+                        "value": true
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byNames",
+                      "options": {
+                        "mode": "include",
+                        "names": [
+                          "Saldo pendiente (Q)",
+                          "Total ventas pendientes (Q)",
+                          "Ventas totales (Q)",
+                          "Total pagos (Q)",
+                          "Ventas pendientes",
+                          "Ventas",
+                          "Pagos"
+                        ]
+                      }
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.footer.reducers",
+                        "value": [
+                          "sum"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-2": {
+        "kind": "Panel",
+        "spec": {
+          "id": 2,
+          "title": "Historial de pagos",
+          "description": "Un renglón por abono recibido en ventas al crédito, ordenado del más reciente al más antiguo.\n\nFiltra por la **fecha del pago**, así que la fecha de la venta puede quedar fuera del rango: es lo normal en una venta al crédito.\n\nIncluye los abonos de ventas canceladas, porque el dinero se recibió. No incluye los pagos de ventas que no son al crédito ni el depósito registrado al momento de vender.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "bf9e7lr5pdvy8b"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "-- Historial de pagos: una fila por ABONO a una venta al credito.\n--\n-- Solo se listan los abonos: filas de shop_sale_payment con\n-- is_sale_payment = false. No se incluyen los pagos de ventas que no son al\n-- credito (efectivo, deposito, cheque, etc.) ni el deposito/cheque registrado\n-- junto con la venta (is_sale_payment = true).\n--   * Se filtran por la FECHA DEL PAGO. \"Fecha venta\" puede quedar fuera del\n--     rango: es justo lo que se quiere ver en un credito.\n--   * Las ventas canceladas (54) NO se excluyen: el dinero se recibio y el abono\n--     es parte del historial. Mismo criterio que /retrieveCustomerCreditPayments.\n--   * Banco y No. referencia solo existen en pagos con Deposito o Cheque, y\n--     solo desde 2026-09-01; antes de eso van en '--'.\n--   * \"Registro el pago\": shop_sale_payment.creator_user_id (NULL antes de\n--     2026-08-11, se cae al usuario de la venta).\nWITH pagos AS (\n    SELECT\n        ss.id                               AS shop_sale_id,\n        ssp.amount                          AS monto,\n        ssp.payment_type_id,\n        ssp.bank,\n        ssp.reference_no,\n        ssp.\"date\"                          AS fecha_pago,\n        COALESCE(ssp.creator_user_id, ss.creator_user_id) AS usuario_id\n    FROM shop_sale_payment ssp\n    JOIN shop_sale ss ON ss.id = ssp.shop_sale_id\n    WHERE ssp.is_sale_payment = false\n      AND ss.customer_id::text IN (${cliente:sqlstring})\n      AND $__timeFilter(ssp.\"date\" AT TIME ZONE 'UTC')\n)\nSELECT\n    c.\"name\" || ' (' || c.nit || ')'                   AS \"Cliente\",\n    round(p.monto, 2)                                  AS \"Monto (Q)\",\n    COALESCE(pt.\"name\", '--')                          AS \"Método de pago\",\n    COALESCE(NULLIF(btrim(p.bank), ''), '--')          AS \"Banco\",\n    COALESCE(NULLIF(btrim(p.reference_no), ''), '--') AS \"No. referencia\",\n    ss.sale_number                                     AS \"No. venta\",\n    p.fecha_pago AT TIME ZONE 'UTC'                    AS \"Fecha pago\",\n    ss.creation_date AT TIME ZONE 'UTC'                AS \"Fecha venta\",\n    e.\"name\"                                           AS \"Tienda\",\n    COALESCE(u.username, '--')                         AS \"Registró el pago\"\nFROM pagos p\nJOIN shop_sale     ss ON ss.id = p.shop_sale_id\nJOIN customer      c  ON c.id  = ss.customer_id\nJOIN establishment e  ON e.id  = ss.establishment_id\nLEFT JOIN payment_type pt ON pt.id = p.payment_type_id\nLEFT JOIN \"user\"       u  ON u.id  = p.usuario_id\nORDER BY p.fecha_pago DESC;\n",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "table",
+            "version": "13.3.0-38529393499",
+            "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "showHeader": true,
+                "zebraStriping": false
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "locale",
+                  "decimals": 2,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "text"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "filterable": true,
+                    "footer": {
+                      "reducers": []
+                    },
+                    "inspect": false
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": ".*\\(Q\\)$"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 120
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "No. venta"
+                    },
+                    "properties": [
+                      {
+                        "id": "decimals",
+                        "value": 0
+                      },
+                      {
+                        "id": "unit",
+                        "value": "none"
+                      },
+                      {
+                        "id": "custom.width",
+                        "value": 100
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "^Fecha"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 160
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cliente"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.minWidth",
+                        "value": 220
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cliente"
+                    },
+                    "properties": []
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Monto (Q)"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "none"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Método de pago"
+                    },
+                    "properties": [
+                      {
+                        "id": "mappings",
+                        "value": [
+                          {
+                            "options": {
+                              "Cheque": {
+                                "color": "dark-yellow",
+                                "index": 0
+                              },
+                              "Depósito": {
+                                "color": "dark-blue",
+                                "index": 1
+                              },
+                              "Efectivo": {
+                                "color": "dark-green",
+                                "index": 2
+                              }
+                            },
+                            "type": "value"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "custom.width",
+                        "value": 150
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Banco"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 160
+                      },
+                      {
+                        "id": "custom.wrapText",
+                        "value": true
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "No. referencia"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "string"
+                      },
+                      {
+                        "id": "custom.width",
+                        "value": 150
+                      },
+                      {
+                        "id": "custom.wrapText",
+                        "value": true
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "No. venta"
+                    },
+                    "properties": []
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Fecha venta"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 160
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Tienda"
+                    },
+                    "properties": []
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Monto (Q)"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.footer.reducers",
+                        "value": [
+                          "sum"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "scope": "series",
+                      "options": "Fecha pago"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 160
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-3": {
+        "kind": "Panel",
+        "spec": {
+          "id": 3,
+          "title": "Ventas del periodo por estado de pago",
+          "description": "Ventas del periodo por estado de pago. **Ventas totales** es el total y equivale a la suma de las otras tres barras. El estado se calcula con los montos pendientes y abonados, así que cubre por igual el pedido y el envío.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "bf9e7lr5pdvy8b"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "-- Ventas del periodo por estado de pago (conteo).\n--\n-- El estado sale de los montos, no del catalogo, para que cubra por igual el\n-- pedido y el envio (una venta puede tener el pedido al credito y el envio\n-- pagado, o al reves):\n--   pendiente = pending_amount + delivery_pending_amount\n--   pagado    = paid_amount    + delivery_paid_amount\n--\n--   Pendientes = debe todo y no ha abonado nada\n--   Abonadas   = debe algo y ya abono algo\n--   Pagadas    = no debe nada\n-- \"Ventas totales\" es el total y equivale a la suma de las otras tres.\nWITH v AS (\n    SELECT\n        (ss.pending_amount + ss.delivery_pending_amount) AS pendiente,\n        (ss.paid_amount + ss.delivery_paid_amount)       AS pagado\n    FROM shop_sale ss\n    WHERE ss.status_id = 52\n      AND ss.customer_id IS NOT NULL\n      AND ss.customer_id::text IN (${cliente:sqlstring})\n      AND $__timeFilter(ss.creation_date AT TIME ZONE 'UTC')\n)\nSELECT t.\"Estado\", t.\"Ventas\"\nFROM (\n    SELECT 1 AS orden, 'Ventas totales' AS \"Estado\", count(*)                                                AS \"Ventas\" FROM v\n    UNION ALL\n    SELECT 2, 'Pendientes', count(*) FILTER (WHERE pendiente > 0 AND pagado <= 0) FROM v\n    UNION ALL\n    SELECT 3, 'Abonadas',   count(*) FILTER (WHERE pendiente > 0 AND pagado > 0)  FROM v\n    UNION ALL\n    SELECT 4, 'Pagadas',    count(*) FILTER (WHERE pendiente <= 0)                FROM v\n) t\nORDER BY t.orden;"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "barchart",
+            "version": "13.3.0-38529393499",
+            "spec": {
+              "options": {
+                "barRadius": 0,
+                "barWidth": 0.6,
+                "fullHighlight": false,
+                "groupWidth": 0.7,
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": false
+                },
+                "orientation": "auto",
+                "showValue": "always",
+                "stacking": "none",
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "none",
+                  "decimals": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "text"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "#3987e5"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "axisSoftMin": 0,
+                    "fillOpacity": 80,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "lineWidth": 1,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "layout": {
+      "kind": "GridLayout",
+      "spec": {
+        "items": [
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 12,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-1"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 12,
+              "width": 24,
+              "height": 13,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-2"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 25,
+              "width": 24,
+              "height": 9,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-3"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "links": [],
+    "liveNow": false,
+    "preload": false,
+    "tags": [
+      "embutidos-any",
+      "clientes",
+      "pagos"
+    ],
+    "timeSettings": {
+      "timezone": "America/Guatemala",
+      "from": "now/M",
+      "to": "now",
+      "autoRefresh": "",
+      "autoRefreshIntervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "hideTimepicker": false,
+      "fiscalYearStartMonth": 0
+    },
+    "title": "Ventas al crédito por cliente",
+    "variables": [
+      {
+        "kind": "QueryVariable",
+        "spec": {
+          "name": "cliente",
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "label": "Cliente",
+          "hide": "dontHide",
+          "refresh": "onDashboardLoad",
+          "skipUrlSync": false,
+          "description": "Clientes activos. Se pueden elegir varios o todos.",
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana-postgresql-datasource",
+            "version": "v0",
+            "datasource": {
+              "name": "bf9e7lr5pdvy8b"
+            },
+            "spec": {
+              "__legacyStringValue": "SELECT c.\"name\" || ' (' || c.nit || ')' AS __text, c.id::text AS __value\nFROM customer c\nWHERE c.status_id = 62           -- solo clientes activos\nORDER BY c.\"name\";"
+            }
+          },
+          "regex": "",
+          "regexApplyTo": "value",
+          "sort": "disabled",
+          "definition": "SELECT c.\"name\" || ' (' || c.nit || ')' AS __text, c.id::text AS __value\nFROM customer c\nWHERE c.status_id = 62           -- solo clientes activos\nORDER BY c.\"name\";",
+          "options": [],
+          "multi": true,
+          "includeAll": true,
+          "allowCustomValue": true
+        }
+      }
+    ],
+    "preferences": {
+      "layout": {
+        "kind": "GridLayout",
+        "spec": {
+          "items": []
+        }
+      }
+    }
+  }
+}

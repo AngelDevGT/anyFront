@@ -69,7 +69,7 @@
                                     [searchPlaceholder]="'Buscar por nombre'"
                                     [emptyAvailableText]="'No hay producto para venta disponible.'"
                                     [emptySelectedText]="'Escribe una cantidad para agregar productos.'"
-                                    [limitMode]="'clamp'" [disabled]="submitting"
+                                    [limitMode]="'clamp'" [keepOrder]="true" [disabled]="submitting"
                                     (selectionChange)="onSelectionChange($event)">
                                 </app-element-quantity-picker>
                             </div>
