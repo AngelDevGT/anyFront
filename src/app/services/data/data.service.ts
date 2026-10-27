@@ -30,6 +30,12 @@ export const customerStatusValues = {
     eliminado: { status: {id: 63}}
 }
 
+export const cashClosingStatusValues = {
+    activo: { status: {id: 55}},
+    eliminado: { status: {id: 56}},
+    verificado: { status: {id: 57}}
+}
+
 export const storeExpenseStatusValues = {
     activo: { status: {id: 58}},
     eliminado: { status: {id: 59}}
@@ -2414,12 +2420,16 @@ export class DataService {
         return this.http.post(`${environment.apiUrlV3}/retrieveSotreCashClosing`, parameters);
     }
 
+    /**
+     * La V2 agrega status.id al listado. Los cierres eliminados (status 56) siguen
+     * en la BD y llegan en la respuesta; el listado los muestra con su estado.
+     */
     listCashClosingByFilter(params: any) {
         let parameters = JSON.stringify({
             cc: {
                 ...params
             }});
-        return this.http.post(`${environment.apiUrlV3}/listStoreCashClosing`, parameters);
+        return this.http.post(`${environment.apiUrlV3}/listStoreCashClosingV2`, parameters);
     }
 
     /**
@@ -2442,10 +2452,16 @@ export class DataService {
      * (El comentario que antes vivía acá decía que `creditPayments` siempre
      * estuvo congelado como jsonb. Nunca fue cierto; ahora lo es solo para los
      * cierres nuevos.)
+     *
+     * CIERRES ELIMINADOS
+     * Eliminar un cierre ya no borra la fila: queda en status 56
+     * (cashClosingStatusValues.eliminado). La vista previa (V8) y el cierre nuevo
+     * (addCashClosingV7) lo ignoran al buscar el cierre anterior, así que un cierre
+     * eliminado no mueve el inicio del período ni el saldo de crédito.
      */
     getNewCashClosing(id: string) {
         let params = JSON.stringify({e: { "id": id}});
-        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV7`, params);
+        return this.http.post(`${environment.apiUrlV3}/getNewStoreCashClosingV8`, params);
     }
 
     getCashClosingById(id: string) {
@@ -2514,6 +2530,23 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV6`, params);
     }
 
+    /**
+     * Igual que la V6, pero el cierre anterior (fecha de inicio del período,
+     * inventario y saldo de crédito de partida) ignora los cierres eliminados.
+     * Va junto con getNewCashClosing (/getNewStoreCashClosingV8), para que la vista
+     * previa y lo que se congela partan del mismo cierre.
+     * Ver src/database/migrations/2026-10-25-cierre-de-caja-eliminado-logico.sql
+     */
+    addCashClosingV7(notes: string, establishment_id: string, sobrante: number = 0){
+        let params = JSON.stringify({
+            "$1": notes,
+            "$2": establishment_id,
+            "$3": this.accountService.userValue.uuid,
+            "$4": sobrante
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV7`, params);
+    }
+
     updateCashClosing(id: string, note: string){
         let params = JSON.stringify({
             "$1": note,
@@ -2522,11 +2555,15 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/updateStoreCashClosing`, params);
     }
 
+    /**
+     * No borra la fila: la V2 pasa el cierre a status 56 (Eliminado) y conserva sus
+     * snapshots. /deleteStoreCashClosing (V1) hacía `delete from cash_closing`.
+     */
     deleteCashClosing(id: string) {
         let deleteCashClosing = JSON.stringify({
             "$1": id
         });
-        return this.http.patch(`${environment.apiUrlV3}/deleteStoreCashClosing`, deleteCashClosing);
+        return this.http.patch(`${environment.apiUrlV3}/deleteStoreCashClosingV2`, deleteCashClosing);
     }
 
     verifyCashClosing(id: string) {

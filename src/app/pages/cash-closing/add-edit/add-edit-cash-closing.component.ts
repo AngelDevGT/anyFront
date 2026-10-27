@@ -534,7 +534,7 @@ export class AddEditCashClosingComponent implements OnInit{
             // La V6 congela los abonos y los gastos del período dentro del cierre. Antes se
             // recalculaban en vivo en cada lectura, así que editar un gasto o cancelar una venta
             // cambiaba un cierre ya firmado.
-            this.dataService.addCashClosingV6(notes, this.establishmentId, sobrante)
+            this.dataService.addCashClosingV7(notes, this.establishmentId, sobrante)
             .pipe(first())
             .subscribe({
                 next: () => {

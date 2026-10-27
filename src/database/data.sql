@@ -1324,6 +1324,9 @@ left join status s on s.id = cc.status_id','cash_closing','POST');
 --                             -> V4 (migrations/2026-08-02-add-shop-sale-payment-comment.sql)
 --   /getStoreCashClosingV2    -> V3 (migration_shop_sale_customer.sql)
 --                             -> V4 (migrations/2026-08-02-add-shop-sale-payment-comment.sql)
+-- Y la vista previa pasa a /getNewStoreCashClosingV8 (ignora cierres eliminados), el
+-- listado a /listStoreCashClosingV2 y la eliminacion a /deleteStoreCashClosingV2, ver
+-- migrations/2026-10-25-cierre-de-caja-eliminado-logico.sql
 -- Al sembrar una base nueva: correr este archivo y después las migraciones en
 -- orden cronológico.
 -- ============================================================
@@ -4744,3 +4747,23 @@ INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,
 -- fila viva.
 -- Ver src/database/migrations/2026-10-16-fecha-creacion-listado-gastos.sql
 --   /listStoreExpense -> /listStoreExpenseV2
+
+
+-- Eliminar un cierre de caja ya no lo borra: /deleteStoreCashClosing hacia un `delete from cash_closing`,
+-- /deleteStoreCashClosingV2 lo pasa a status 56 (Eliminado) y deja la fila y sus snapshots. Como la fila
+-- sigue existiendo, "el cierre anterior" de un cierre nuevo tiene que ignorar los 56: 
+-- register_cash_closing_v7 (derivada de la v6 con regexp) y /getNewStoreCashClosingV8 (derivada de la V7)
+-- lo hacen. /listStoreCashClosingV2 es el listado mas status.id para que el front oculte los 56. El texto
+-- completo de las derivadas no se repite aca: la migracion las deriva de la fila viva.
+-- Ver src/database/migrations/2026-10-25-cierre-de-caja-eliminado-logico.sql
+--   /deleteStoreCashClosing   -> /deleteStoreCashClosingV2
+--   /addStoreCashClosingV6    -> /addStoreCashClosingV7
+--   /getNewStoreCashClosingV7 -> /getNewStoreCashClosingV8
+--   /listStoreCashClosing     -> /listStoreCashClosingV2
+
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('deleteStoreCashClosingV2','/deleteStoreCashClosingV2','update cash_closing
+set status_id = 56, updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
+where id = $1::uuid
+and status_id in (55, 57)','cash_closing','PATCH'),
+	 ('addStoreCashClosingV7','/addStoreCashClosingV7','call register_cash_closing_v7($1, $2::uuid, $3::uuid, $4::numeric)','cash_closing','PATCH');

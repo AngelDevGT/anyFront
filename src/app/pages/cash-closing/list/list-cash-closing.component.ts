@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
 
-import { AlertService, DataService, deleteStatus} from '@app/services';
+import { AlertService, DataService } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CashClosing } from '@app/models/store/cash-closing.model';
 
@@ -88,7 +88,6 @@ export class ListCashClosingComponent implements OnInit {
     setTableElements(elements: CashClosing[]) {
         this.tableElementsValues = [];
         elements?.forEach((element: CashClosing) => {
-            if (element.status?.id === deleteStatus.status.id) return;
             const curr_row = [
                 { type: 'text', value: this.dataService.getLocalDateTimeFromUTCTime(element.creationDate!), header_name: 'Fecha' },
                 { type: 'text', value: element.note, header_name: 'Notas' },

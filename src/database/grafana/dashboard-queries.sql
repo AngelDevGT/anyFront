@@ -197,6 +197,7 @@ sobrantes AS (
         sum(cc.sobrante)                      AS total_sobrante
     FROM cash_closing cc
     WHERE cc.sobrante > 0
+      AND cc.status_id <> 56                                    -- fuera cierres eliminados
       AND $__timeFilter(cc.creation_date AT TIME ZONE 'UTC')
     GROUP BY cc.establishment_id
 ),

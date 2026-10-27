@@ -1,7 +1,7 @@
 import { Component, OnInit} from '@angular/core';
 import { concatMap, first } from 'rxjs/operators';
 
-import { AlertService, DataService, PdfService, statusValues, paymentStatusValues } from '@app/services';
+import { AlertService, DataService, PdfService, statusValues, paymentStatusValues, cashClosingStatusValues } from '@app/services';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RawMaterialOrder } from '@app/models/raw-material/raw-material-order.model';
 import pdfMake from "pdfmake/build/pdfmake";  
@@ -111,11 +111,11 @@ export class ViewCashClosingComponent implements OnInit{
                     let cashClosing = this.dataService.findJsonValue(cashCls, 'json_result') || {};
                     if (cashClosing){
                         this.cashClosing = cashClosing;
-                        if(this.cashClosing?.status?.id == 55){
+                        if(this.cashClosing?.status?.id == cashClosingStatusValues.activo.status.id){
                             this.activeOption = true;
-                        } else if (this.cashClosing?.status?.id == 56){
+                        } else if (this.cashClosing?.status?.id == cashClosingStatusValues.eliminado.status.id){
                             this.deleteOption = true;
-                        } else if (this.cashClosing?.status?.id == 57){
+                        } else if (this.cashClosing?.status?.id == cashClosingStatusValues.verificado.status.id){
                             this.verifyOption = true;
                         }
                         this.setElements(this.cashClosing!);

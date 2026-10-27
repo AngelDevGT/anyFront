@@ -176,7 +176,7 @@ export class PdfService {
 
     /**
      * Abre el PDF de un pedido en una pestaña nueva. `option` es 'factory' para el formato de
-     * bodega (sin precios, con datos de preparación); cualquier otro valor da el formato de tienda.
+     * bodega (sin precios por línea, con datos de preparación); cualquier otro valor da el formato de tienda.
      */
     async generateProductForSaleOrderPDF(productForSaleOrder: ProductForSaleStoreOrder, option?: string) {
         // La pestaña se abre ANTES de esperar el logo: pasado el await el navegador ya no la
@@ -373,7 +373,7 @@ export class PdfService {
 
             { text: 'DETALLE DE PRODUCTOS', fontSize: 11, bold: true, color: muted, margin: [0, 0, 0, 8] },
 
-            // Productos: bodega no ve precios ni totales
+            // Productos: bodega no ve el precio de cada línea
             {
                 table: {
                     headerRows: 1,
@@ -417,8 +417,9 @@ export class PdfService {
                 margin: [0, 0, 0, 16]
             },
 
-            // Total: el formato de bodega no lleva montos
-            ...(isFactory ? [] : [{
+            // Total del pedido: lo llevan los dos formatos. El de bodega no detalla precios por línea,
+            // pero el monto total sí se imprime.
+            {
                 columns: [
                     { width: '*', text: '' },
                     {
@@ -439,7 +440,7 @@ export class PdfService {
                     }
                 ],
                 margin: [0, 0, 0, 18]
-            }]),
+            },
 
             // Notas: solo si el pedido trae una
             ...(note ? [
