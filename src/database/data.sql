@@ -4767,3 +4767,16 @@ set status_id = 56, updated_date = timezone(''UTC''::text, CURRENT_TIMESTAMP)
 where id = $1::uuid
 and status_id in (55, 57)','cash_closing','PATCH'),
 	 ('addStoreCashClosingV7','/addStoreCashClosingV7','call register_cash_closing_v7($1, $2::uuid, $3::uuid, $4::numeric)','cash_closing','PATCH');
+
+
+-- El snapshot de abonos (cash_closing.credit_payments) que congelan register_cash_closing_v6/v7 lee
+-- ss6.name_client / ss6.nit_client, que van en NULL cuando la venta tiene cliente registrado (todo
+-- credito). register_cash_closing_v8 (derivada de la v7) usa shop_sale_client_name / _nit. La misma
+-- migracion completa nameClient / nitClient en los snapshots ya guardados (con respaldo en
+-- cash_closing_credit_payments_bkp_20261116).
+-- Ver src/database/migrations/2026-11-16-cliente-en-snapshot-pagos-credito.sql
+--   register_cash_closing_v7  -> register_cash_closing_v8
+--   /addStoreCashClosingV7    -> /addStoreCashClosingV8
+
+INSERT INTO public.sql_queries (descripcion,"path",consulta_sql,principal_table,"type") VALUES
+	 ('addStoreCashClosingV8','/addStoreCashClosingV8','call register_cash_closing_v8($1, $2::uuid, $3::uuid, $4::numeric)','cash_closing','PATCH');

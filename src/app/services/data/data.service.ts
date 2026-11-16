@@ -2547,6 +2547,23 @@ export class DataService {
         return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV7`, params);
     }
 
+    /**
+     * Igual que la V7, pero el snapshot de abonos (credit_payments) guarda el nombre
+     * y NIT del cliente registrado (shop_sale_client_name / _nit). La V7 leía
+     * shop_sale.name_client / nit_client, que van en NULL cuando la venta tiene
+     * customer_id, y "Pagos de Crédito" salía sin cliente.
+     * Ver src/database/migrations/2026-11-16-cliente-en-snapshot-pagos-credito.sql
+     */
+    addCashClosingV8(notes: string, establishment_id: string, sobrante: number = 0){
+        let params = JSON.stringify({
+            "$1": notes,
+            "$2": establishment_id,
+            "$3": this.accountService.userValue.uuid,
+            "$4": sobrante
+        });
+        return this.http.patch(`${environment.apiUrlV3}/addStoreCashClosingV8`, params);
+    }
+
     updateCashClosing(id: string, note: string){
         let params = JSON.stringify({
             "$1": note,

@@ -533,8 +533,9 @@ export class AddEditCashClosingComponent implements OnInit{
             let sobrante = Number(this.operationRawMaterialForm.value.sobrante || 0);
             // La V6 congela los abonos y los gastos del período dentro del cierre. Antes se
             // recalculaban en vivo en cada lectura, así que editar un gasto o cancelar una venta
-            // cambiaba un cierre ya firmado.
-            this.dataService.addCashClosingV7(notes, this.establishmentId, sobrante)
+            // cambiaba un cierre ya firmado. La V8 además guarda nombre y NIT del cliente
+            // registrado en los abonos congelados.
+            this.dataService.addCashClosingV8(notes, this.establishmentId, sobrante)
             .pipe(first())
             .subscribe({
                 next: () => {

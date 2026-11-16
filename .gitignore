@@ -39,6 +39,7 @@ testem.log
 
 CLAUDE.md
 .claude/settings.local.json
+/graphify-out/
 
 # System files
 .DS_Store
